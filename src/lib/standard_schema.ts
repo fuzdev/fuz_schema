@@ -8,7 +8,7 @@
  * @module
  */
 
-import { format_issue, parse, type AnySchema, type Infer, type InferInput } from './schema.ts';
+import { parse, type AnySchema, type Infer, type InferInput } from './schema.ts';
 
 /**
  * The Standard Schema types for a schema library without JSON Schema output,
@@ -87,8 +87,8 @@ export const to_standard_schema = <T extends AnySchema>(
 				? { value: result.value }
 				: {
 						issues: result.issues.map((issue) => ({
-							// the path is its own field here, so leave it out of the text
-							message: format_issue({ ...issue, path: [] }),
+							// the text `format_issue` writes, without the path, which is its own field here
+							message: issue.message ?? `expected ${issue.expected}, received ${issue.received}`,
 							path: issue.path
 						}))
 					};

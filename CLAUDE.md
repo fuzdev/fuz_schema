@@ -81,6 +81,9 @@ Things that are easy to break without a test noticing:
 - **Every schema is exactly `{kind, def, run}`, in that key order.** A fourth
   field or another order gives it a second hidden class. Kind-specific data
   goes in `def`.
+- **Every issue is exactly `{kind, expected, received, path, message}`, built
+  by `fail`.** It never holds the value that failed, or anything else of the
+  input but the keys in `path`.
 - **Every kind has an entry in `SchemaDefs`** saying what its `def` holds.
   `optional`, `nullable`, and `with_default` hold their schema as `def.schema`.
   The types don't force a new kind to be added there.

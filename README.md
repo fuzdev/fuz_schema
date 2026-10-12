@@ -20,7 +20,7 @@ type User = s.Infer<typeof User>;
 
 const result = s.parse(User, input);
 if (result.ok) result.value;
-else result.issues; // [{kind, expected, value, path, message}]
+else result.issues; // [{kind, expected, received, path, message}]
 ```
 
 **It's an experiment, and "use Valibot" is a valid outcome.**
@@ -63,7 +63,8 @@ and the Standard Schema adapter are all like this, and all bundle to nothing unu
   A change copies only the path to it.
 - **Failures are counted, issues are built late.** Valid input never builds a path,
   a `union` tries its options without allocating, and `s.is` stops at the first failure.
-- **Issues are data.** `{kind, expected, value, path, message}`.
+- **Issues are data, and hold no input.** `{kind, expected, received, path, message}`,
+  where `received` is the type of the value that failed, not the value.
   Text is derived by `format_issue`, which is only bundled if used. No i18n registry.
 - **`variant` dispatches by map**, not by scanning its options.
 
@@ -105,7 +106,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
 | entry points | `parse`, `parse_or_throw`, `is` |
-| issues | `format_issue`, `to_type_name`, `SchemaError`, `fail` |
+| issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
 
@@ -144,6 +145,63 @@ A plain value assigns to a flavored type but not to a branded one,
 and a branded value comes from parsing or a cast.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
+
+### Issues
+
+An issue is `{kind, expected, received, path, message}`:
+
+- `kind` is the kind of the schema or action that failed, or `unknown_key`
+- `expected` says what was expected
+- `received` is the type of the value that failed: `'null'`, `'array'`, or its `typeof`
+- `path` is the keys from the root to that value, outermost first.
+  For an unknown key the last one is the key.
+- `message` is the text set by `message`, or `undefined`
+
+**An issue never holds the value that failed.**
+Issues, and the `SchemaError` that carries them, can be logged, serialized, and kept
+without leaking the input or keeping it alive.
+Two things in an issue do come from the input:
+
+- `path` holds key names as the input gave them — an unknown key, a `record` key —
+  so treat them as untrusted text
+- a `message` function that writes the value into its text has put it there
+
+`format_issue` writes an issue as `path: expected X, received Y`, the keys joined with `.`.
+A key that isn't only word characters is quoted as JSON, so a key can't pass for two keys,
+for the rest of the line, or, with a newline in it, for a line of its own:
+`a.b` is two keys and `"a.b"` is one.
+
+There are two ways to the value:
+
+```ts
+// a `message` function is handed it
+const Port = s.message(s.number, (_issue, value) => `${String(value)} is not a port`);
+
+// and it can be read back out of the input
+const result = s.parse(User, input);
+if (!result.ok) {
+	for (const issue of result.issues) {
+		const found = s.get_issue_value(issue, input);
+		if (found.ok) found.value;
+	}
+}
+```
+
+A `message` function's `value` is what the schema it wraps was given.
+Around an action that is the action's input, so the output of the pipe's steps before it.
+Around a whole `pipe` it is the pipe's input, whichever step failed.
+
+`get_issue_value(issue, input)` follows `issue.path` through `input`
+and returns `{ok: true, value}` or `{ok: false}`. It refuses where it would have to guess:
+when the path leads through something that isn't an object or array,
+and when what it finds isn't of the type in `issue.received`.
+It reads own keys only, so it never returns an inherited value,
+and a missing key is found as `undefined`, which is what the schema saw.
+
+Its limit: it compares types, not values.
+When an earlier step of a `pipe` replaced the value with another of the same type —
+a `transform`, or a container that applied a default or dropped a key —
+the issue is about the replacement, and `get_issue_value` returns the input's value at that path.
 
 ### Introspection
 

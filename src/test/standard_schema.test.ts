@@ -46,6 +46,51 @@ describe('to_standard_schema', () => {
 		});
 	});
 
+	test('a message is the text format_issue writes, without the path', () => {
+		const schemas: Array<[schema: s.AnySchema, input: unknown]> = [
+			[User, { name: 1, tags: ['a', 2], age: 'x', extra: null }],
+			[User, null],
+			[s.object({ list: s.array(s.record(s.number)) }), { list: [{ 'a.b': 'x', 'c\nd': [] }] }],
+			[s.union([s.string, s.literal(1)]), 2],
+			[s.pipe(s.string, s.min_length(2), s.regex(/^a/)), 'b'],
+			[s.message(s.number, (issue, value) => `${issue.kind}: ${String(value)}`), 'x']
+		];
+		for (const [schema, input] of schemas) {
+			const parsed = s.parse(schema, input);
+			assert(!parsed.ok);
+			const result = to_standard_schema(schema)['~standard'].validate(input);
+			assert(!(result instanceof Promise));
+			assert.deepEqual(
+				result.issues,
+				parsed.issues.map((issue) => ({
+					message: s.format_issue({ ...issue, path: [] }),
+					path: issue.path
+				}))
+			);
+		}
+	});
+
+	test('a path holds the keys as the input named them, unquoted', () => {
+		const R = to_standard_schema(s.record(s.number));
+		assert.deepEqual(R['~standard'].validate({ 'a.b': 'x', 'c\nd': null, e: 1 }), {
+			issues: [
+				{ message: 'expected number, received string', path: ['a.b'] },
+				{ message: 'expected number, received null', path: ['c\nd'] }
+			]
+		});
+	});
+
+	test('a failed result holds nothing of the input', () => {
+		const SECRET = 'hunter2-do-not-log';
+		const O = to_standard_schema(
+			s.object({ password: s.number, list: s.array(s.pipe(s.string, s.max_length(3))) })
+		);
+		const result = O['~standard'].validate({ password: SECRET, list: [SECRET], extra: SECRET });
+		assert(!(result instanceof Promise));
+		assert.strictEqual(result.issues?.length, 3);
+		assert.notInclude(JSON.stringify(result), SECRET);
+	});
+
 	test('validate takes and ignores the options argument', () => {
 		const { validate } = standard['~standard'];
 		assert.deepEqual(validate({ name: 'a', tags: [] }, { libraryOptions: { anything: 1 } }), {

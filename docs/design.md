@@ -124,11 +124,40 @@ input's order.
 
 ## Issues
 
-An issue is `{kind, expected, value, path, message}`. `format_issue` derives
-text and is only bundled when used. There is no message registry.
+An issue is `{kind, expected, received, path, message}`, built in one place,
+`fail`, so every issue has one hidden class. `format_issue` derives text and
+is only bundled when used. There is no message registry.
+
+- **An issue holds no value.** `received` is the type of the value that
+  failed: `'null'`, `'array'`, or its `typeof`. Nothing reachable from a
+  result or a `SchemaError` is the input or part of it, so issues can be
+  serialized and kept. `fail` is passed the value and names its type.
+- **`path` is the input's.** An unknown key and a `record` key are whatever
+  the input named them. An `unknown_key` issue's last path element is the key.
+- **`format_issue` quotes a key that isn't only word characters**, as JSON.
+  A key with a `.` can't read as two keys, and one with a newline can't add
+  a line to a `SchemaError`'s message, which is one issue per line.
+  Text set by `message` is not escaped.
+- **`to_standard_schema` writes the same text without the path**, which is
+  its own field there, and so doesn't reach the path formatting.
 
 `message(schema, text)` wraps a schema and labels the issues that schema
 itself reports. It copies `kind` and `def`, so it's invisible to introspection.
+A function given as the text is called with the issue and the value the
+wrapped schema's `run` was given: around an action, the output of the steps
+before it, and around a whole `pipe`, the pipe's input.
+
+`get_issue_value(issue, input)` recovers the value by following `issue.path`
+through the input, and refuses instead of guessing:
+
+- It stops at anything that isn't an object or array.
+- It reads own keys only. The object schemas read through the prototype, so
+  where one read an inherited value that isn't `undefined` the types differ
+  and it refuses. A missing key reads as `undefined`, as it did to the schema.
+- It checks that the type of what it found is `issue.received`.
+- **It can't see a change that kept the type.** After a `transform`, or a
+  container in a `pipe` that applied a default or dropped a key, the issue
+  is about the new value and the walk returns the input's.
 
 ## Nominal types
 
@@ -157,8 +186,9 @@ nothing until it imports the module.
 ## Costs are opt-in
 
 A feature not every consumer needs is a separate export or module the core
-never reaches: `message`, `format_issue`, `meta`, `to_standard_schema`. Factories are
-marked `// @__NO_SIDE_EFFECTS__` so an unused definition is dropped.
+never reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
+`to_standard_schema`. Factories are marked `// @__NO_SIDE_EFFECTS__` so an
+unused definition is dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry
 a `~standard` property. Whether they should, natively, is undecided.

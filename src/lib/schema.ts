@@ -20,6 +20,8 @@
  * - Schemas with no options are constants (`string`, not `string()`).
  * - Messages are derived from structured issues by `format_issue`, which is
  *   only bundled when used.
+ * - An issue names the type of the value that failed and never holds the
+ *   value, so issues can be logged, serialized, and kept without the input.
  * - A `union` tries its options, and `is` runs, in probe mode: failures are
  *   counted without building issues.
  *
@@ -30,16 +32,23 @@
  */
 
 /**
- * A validation failure.
+ * A validation failure. It holds nothing of the input but the keys in `path`:
+ * the value that failed is described by `received` and not kept. A `message`
+ * function is handed the value, and `get_issue_value` reads it back out of
+ * the input.
  */
 export interface SchemaIssue {
 	/** The `kind` of the schema or check that failed. */
 	kind: string;
 	/** Describes what was expected. */
 	expected: string;
-	/** The value that failed. */
-	value: unknown;
-	/** Keys from the root value to `value`, outermost first. */
+	/** The type of the value that failed: `'null'`, `'array'`, or its `typeof`. */
+	received: string;
+	/**
+	 * Keys from the root value to the one that failed, outermost first.
+	 * The keys are the input's: an unknown key or a `record` key is whatever
+	 * the input named it, so treat them as untrusted text.
+	 */
 	path: Array<PropertyKey>;
 	/** Custom text set by `message`, used by `format_issue` in place of the default. */
 	message: string | undefined;
@@ -239,6 +248,7 @@ export type Literal = string | number | bigint | boolean | null | undefined;
 /**
  * Records an issue. Returns `value` so a `run` can fail in expression position.
  *
+ * @param value - the value that failed, which the issue names the type of and doesn't hold
  * @param expected - describes what was expected, defaulting to `kind`
  * @mutates ctx - increments `ctx.fails`, and pushes to `ctx.issues` outside probe mode
  */
@@ -249,7 +259,16 @@ export const fail = (
 	expected: string = kind
 ): any => {
 	ctx.fails++;
-	if (!ctx.probe) ctx.issues.push({ kind, expected, value, path: [], message: undefined });
+	if (!ctx.probe) {
+		ctx.issues.push({
+			kind,
+			expected,
+			// `get_issue_value` names a type the same way, to compare against this
+			received: value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value,
+			path: [],
+			message: undefined
+		});
+	}
 	return value;
 };
 
@@ -331,20 +350,62 @@ export const is_schema = (value: unknown): value is SchemaNode =>
 	'def' in value;
 
 /**
- * Names the type of `value` for messages, splitting `null` and `array` out of `object`.
- */
-export const to_type_name = (value: unknown): string =>
-	value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
-
-/**
- * Formats an issue as `path: expected X, received Y`.
+ * Formats an issue as `path: expected X, received Y`, the path's keys joined
+ * with `.`.
+ *
+ * A key that isn't only word characters is quoted as JSON, so the text reads
+ * one way whatever the input's keys are: `a.b` is two keys and `"a.b"` is
+ * one, and a key with a newline or carriage return stays on its line. Text set by
+ * `message` is used as it is.
  */
 export const format_issue = (issue: SchemaIssue): string =>
-	(issue.path.length ? issue.path.join('.') + ': ' : '') +
-	(issue.message ?? `expected ${issue.expected}, received ${to_type_name(issue.value)}`);
+	(issue.path.length
+		? issue.path
+				.map(String)
+				.map((key) => (/^\w+$/.test(key) ? key : JSON.stringify(key)))
+				.join('.') + ': '
+		: '') + (issue.message ?? `expected ${issue.expected}, received ${issue.received}`);
 
 /**
- * Thrown by `parse_or_throw`. The message lists every issue, one per line.
+ * Reads the value `issue` is about out of `input`, the value that was parsed,
+ * by following `issue.path`. It refuses where it would have to guess:
+ *
+ * - when the path leads through something that isn't an object or array
+ * - when what it finds is not of the type the issue received
+ *
+ * Only own keys are read. A key that is missing reads as `undefined`, which
+ * is what the schema saw, so a missing required key is found with the value
+ * `undefined`. An inherited value is never returned.
+ *
+ * The check is by type name, so it can't tell a value from another of the
+ * same type. Where an earlier step of a `pipe` replaced the value with one of
+ * its own type (a `transform`, or a container that applied a default or
+ * dropped a key) the issue is about the replacement, and what is returned is
+ * the input's value at that path.
+ *
+ * @param input - the value given to `parse`, unchanged since
+ * @returns `ok` with the value, or not `ok` when it can't be reached
+ */
+export const get_issue_value = (
+	issue: SchemaIssue,
+	input: unknown
+): { ok: true; value: unknown } | { ok: false } => {
+	let value: any = input;
+	for (const key of issue.path) {
+		if (value === null || typeof value !== 'object') return { ok: false };
+		value = Object.hasOwn(value, key) ? value[key] : undefined;
+	}
+	// the type as `fail` names it
+	return (value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value) ===
+		issue.received
+		? { ok: true, value }
+		: { ok: false };
+};
+
+/**
+ * Thrown by `parse_or_throw`. The message lists every issue, one per line,
+ * as `format_issue` writes it. Like its issues, it holds nothing of the input
+ * but the keys in their paths.
  */
 export class SchemaError extends Error {
 	issues: Array<SchemaIssue>;
@@ -503,12 +564,18 @@ export const lazy = <T extends AnySchema>(
  * its children alone. Works on actions too, and the innermost `message` wins.
  * The result is otherwise indistinguishable from `schema`.
  *
- * @param message - the text, or a function that builds it from the issue
+ * A function is called with the issue and with the value `schema` was given
+ * to validate. Around an action that is the action's input, so the output of
+ * the pipe's steps before it. Around a whole `pipe` it is the pipe's input,
+ * whichever step failed. The issue doesn't hold the value, so text built from
+ * it puts input into an issue that otherwise has none.
+ *
+ * @param message - the text, or a function that builds it from the issue and the value
  */
 // @__NO_SIDE_EFFECTS__
 export const message = <T extends AnySchema>(
 	schema: T,
-	message: string | ((issue: SchemaIssue) => string)
+	message: string | ((issue: SchemaIssue, value: unknown) => string)
 ): T =>
 	({
 		kind: schema.kind,
@@ -522,7 +589,7 @@ export const message = <T extends AnySchema>(
 					const issue = issues[i]!;
 					// a child's issues already have their path prefixed
 					if (!issue.path.length) {
-						issue.message ??= typeof message === 'string' ? message : message(issue);
+						issue.message ??= typeof message === 'string' ? message : message(issue, value);
 					}
 				}
 			}
