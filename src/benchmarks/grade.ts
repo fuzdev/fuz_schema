@@ -504,13 +504,14 @@ if (realistic_valid.length) {
 		`realistic valid-path speed: ${format_percent(realistic_speedup)} (${by_path.join(', ')})`
 	);
 } else {
-	console.log('realistic valid-path speed: no realistic cases in this run');
+	console.log('realistic valid-path speed: no realistic valid cases in this run');
 }
 if (args.bundle) {
 	const required =
 		(Math.max(0, core_delta) / SPEEDUP_PER_CORE_BYTES.bytes) * SPEEDUP_PER_CORE_BYTES.speedup;
-	const verdict =
-		core_delta <= 0
+	const verdict = !realistic_valid.length
+		? 'not judged, no realistic valid cases in this run'
+		: core_delta <= 0
 			? realistic_speedup > -NOISE_FLOOR
 				? 'pass, no bytes added'
 				: 'FAIL, slower with no bytes saved to show for it'
