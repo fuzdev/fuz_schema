@@ -62,8 +62,10 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   its child added. Valid input never touches a path.
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
-- Outside probe mode `ctx.fails === ctx.issues.length`. Containers use the
-  count as an index into `issues`.
+- **`ctx.issues` is `undefined` until the first failure** outside probe mode,
+  so a parse that finds nothing allocates no array for them. From then on
+  `ctx.fails === ctx.issues.length` outside probe mode, and containers use
+  the count as an index into `issues`.
 
 ## Copy-on-write output
 

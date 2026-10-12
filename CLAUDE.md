@@ -110,7 +110,8 @@ Things that are easy to break without a test noticing:
   The types don't force a new kind to be added there.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
-- **Outside probe mode `ctx.fails === ctx.issues.length`.** Containers use the
+- **Outside probe mode `ctx.fails === ctx.issues.length`.** `issues` is
+  `undefined` until the first failure, when `fails` is `0`. Containers use the
   count as an index into `issues`. Report failure only through `fail`, and
   restore `fails` after probing.
 - **In probe mode nothing touches `ctx.issues`**, and containers return at

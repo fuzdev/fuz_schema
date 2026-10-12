@@ -409,6 +409,41 @@ describe('copy on write', () => {
 		assert.strictEqual(s.parse_or_throw(Upper, same), same);
 	});
 
+	test('an array copy is whole from the first change, holes and later items included', () => {
+		const Doubled = s.array(
+			s.pipe(
+				s.optional(s.number),
+				s.transform((v: number | undefined) => (v === 2 ? 20 : v))
+			)
+		);
+		// eslint-disable-next-line no-sparse-arrays
+		const input = [1, , 2, 3, undefined];
+		const output = s.parse_or_throw(Doubled, input);
+		assert.notStrictEqual(output, input);
+		assert.strictEqual(output.length, 5);
+		assert.deepEqual(Array.from(output), [1, undefined, 20, 3, undefined]);
+		// a hole before the change stays a hole, as it is in the input
+		assert.notProperty(output, '1');
+		// and the input is as it was
+		assert.notProperty(input, '1');
+		assert.strictEqual(input[2], 2);
+	});
+
+	test('an array copy holds only items that were run, when the input shrinks', () => {
+		const input: Array<unknown> = ['a', 'b', 3, 4];
+		const Upper = s.array(
+			s.pipe(
+				s.optional(s.string),
+				s.transform((v: string | undefined) => {
+					if (v === 'b') input.length = 2;
+					return v?.toUpperCase();
+				})
+			)
+		);
+		// the length is read once: what is gone reads as `undefined`, and is run
+		assert.deepEqual(s.parse_or_throw(Upper, input), ['A', 'B', undefined, undefined]);
+	});
+
 	test('record copies when a value changes or a __proto__ key is present', () => {
 		const Counts = s.record(s.with_default(s.number, 0));
 		const same = { a: 1 };
@@ -746,6 +781,26 @@ describe('object keys', () => {
 		// and when the copy is made to drop a key
 		const O = s.strip_object({ a: s.optional(s.string), b: s.string });
 		assert.deepEqual(keys_of(s.parse_or_throw(O, create_input({ b: 'x', z: 1 }))), ['a', 'b']);
+	});
+});
+
+describe('context', () => {
+	test('a context has no issues until something fails', () => {
+		const seen: Array<unknown> = [];
+		const Spy: s.Schema = {
+			kind: 'spy',
+			def: undefined,
+			run: (value, ctx) => {
+				seen.push(ctx.issues);
+				return value;
+			}
+		};
+		assert.isFalse(s.parse(s.object({ a: Spy, b: s.string, c: Spy }), { a: 1, b: 2, c: 3 }).ok);
+		assert.strictEqual(seen[0], undefined);
+		assert.isArray(seen[1]);
+		// a message around a schema that passes, with no issues to look at
+		assert.strictEqual(s.parse_or_throw(s.message(s.string, 'no'), 'a'), 'a');
+		assert.isTrue(s.is(s.message(s.string, 'no'), 'a'));
 	});
 });
 

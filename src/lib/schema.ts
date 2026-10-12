@@ -58,11 +58,15 @@ export interface SchemaIssue {
  * Mutable state threaded through a single parse.
  */
 export interface SchemaContext {
-	/** One per failure, except in probe mode where it stays as it was. */
-	issues: Array<SchemaIssue>;
+	/**
+	 * One per failure, except in probe mode where it stays as it was.
+	 * `undefined` until the first, so a parse with no failure allocates none.
+	 */
+	issues: Array<SchemaIssue> | undefined;
 	/**
 	 * How many failures have been reported. A container knows a child failed
-	 * when this grew. Outside probe mode it equals `issues.length`.
+	 * when this grew. Outside probe mode it equals `issues.length`, and is `0`
+	 * while there is no `issues`.
 	 */
 	fails: number;
 	/**
@@ -250,7 +254,7 @@ export type SchemaLiteral = string | number | bigint | boolean | null | undefine
  *
  * @param value - the value that failed, which the issue names the type of and doesn't hold
  * @param expected - describes what was expected, defaulting to `kind`
- * @mutates ctx - increments `ctx.fails`, and pushes to `ctx.issues` outside probe mode
+ * @mutates ctx - increments `ctx.fails`, and outside probe mode pushes to `ctx.issues`, creating it on the first
  */
 export const fail = (
 	ctx: SchemaContext,
@@ -260,7 +264,7 @@ export const fail = (
 ): any => {
 	ctx.fails++;
 	if (!ctx.probe) {
-		ctx.issues.push({
+		(ctx.issues ??= []).push({
 			kind,
 			expected,
 			// `get_issue_value` names a type the same way, to compare against this
@@ -288,7 +292,7 @@ const fail_at = (
 ): void => {
 	const count = ctx.fails;
 	fail(ctx, kind, value, expected);
-	if (!ctx.probe) prefix_path(ctx.issues, count, key);
+	if (!ctx.probe) prefix_path(ctx.issues!, count, key);
 };
 
 // whether `value` is anything but an object that isn't an array,
@@ -300,9 +304,9 @@ const not_object = (value: unknown): boolean =>
  * Validates `value`, returning the output or every issue found.
  */
 export const parse = <T extends AnySchema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
-	const ctx: SchemaContext = { issues: [], fails: 0, probe: false };
+	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
 	const output = schema.run(value, ctx);
-	return ctx.fails ? { ok: false, issues: ctx.issues } : { ok: true, value: output };
+	return ctx.fails ? { ok: false, issues: ctx.issues! } : { ok: true, value: output };
 };
 
 /**
@@ -311,9 +315,9 @@ export const parse = <T extends AnySchema>(schema: T, value: unknown): SchemaRes
  * @throws SchemaError when `value` doesn't match
  */
 export const parse_or_throw = <T extends AnySchema>(schema: T, value: unknown): Infer<T> => {
-	const ctx: SchemaContext = { issues: [], fails: 0, probe: false };
+	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
 	const output = schema.run(value, ctx);
-	if (ctx.fails) throw new SchemaError(ctx.issues);
+	if (ctx.fails) throw new SchemaError(ctx.issues!);
 	return output;
 };
 
@@ -323,7 +327,7 @@ export const parse_or_throw = <T extends AnySchema>(schema: T, value: unknown): 
  * Narrows to the input type because the output is discarded.
  */
 export const is = <T extends AnySchema>(schema: T, value: unknown): value is InferInput<T> => {
-	const ctx: SchemaContext = { issues: [], fails: 0, probe: true };
+	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: true };
 	schema.run(value, ctx);
 	return !ctx.fails;
 };
@@ -583,8 +587,8 @@ export const message = <T extends AnySchema>(
 		run: (value, ctx) => {
 			const count = ctx.fails;
 			const output = schema.run(value, ctx);
-			if (!ctx.probe) {
-				const { issues } = ctx;
+			const { issues } = ctx;
+			if (issues && !ctx.probe) {
 				for (let i = count; i < issues.length; i++) {
 					const issue = issues[i]!;
 					// a child's issues already have their path prefixed
@@ -693,7 +697,7 @@ const run_entries = (
 		const v = schemas[i]!.run(input, ctx);
 		if (ctx.fails > count) {
 			if (ctx.probe) return;
-			prefix_path(ctx.issues, count, key);
+			prefix_path(ctx.issues!, count, key);
 		} else if (output) {
 			// a key the input doesn't have stays out of the output
 			if (v !== undefined || key in value) output[key] = v;
@@ -774,7 +778,7 @@ export const loose_object = <T extends SchemaEntries>(
 				const v = schemas[i]!.run(input, ctx);
 				if (ctx.fails > count) {
 					if (ctx.probe) return undefined;
-					prefix_path(ctx.issues, count, key);
+					prefix_path(ctx.issues!, count, key);
 				} else if (v !== input) (output ??= { ...value })[key] = v;
 			}
 			return output ?? value;
@@ -844,7 +848,7 @@ export const record = <T extends AnySchema>(
 			const keep = key !== '__proto__';
 			if (ctx.fails > count) {
 				if (ctx.probe) break;
-				prefix_path(ctx.issues, count, key);
+				prefix_path(ctx.issues!, count, key);
 			} else if (output) {
 				if (keep) output[key] = v;
 			} else if (v !== input || !keep) {
@@ -873,16 +877,21 @@ export const array = <T extends AnySchema>(
 	run: (value, ctx): any => {
 		if (!Array.isArray(value)) return fail(ctx, 'array', value);
 		let output: Array<unknown> | undefined;
-		for (let i = 0; i < value.length; i++) {
+		// the length is read once, so every item of a copy is one that was run
+		const { length } = value;
+		for (let i = 0; i < length; i++) {
 			const input = value[i];
 			const count = ctx.fails;
 			const v = schema.run(input, ctx);
 			if (ctx.fails > count) {
 				if (ctx.probe) break;
-				prefix_path(ctx.issues, count, i);
+				prefix_path(ctx.issues!, count, i);
 			} else if (output) output[i] = v;
 			else if (v !== input) {
-				output = value.slice(0, i);
+				// one allocation of the whole length, where a prefix would be regrown,
+				// with both bounds given: the no-argument form measured slower on the
+				// valid path
+				output = value.slice(0, length);
 				output[i] = v;
 			}
 		}
