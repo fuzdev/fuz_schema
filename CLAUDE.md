@@ -77,6 +77,9 @@ Things that are easy to break without a test noticing:
 - **Every schema is exactly `{kind, def, run}`, in that key order.** A fourth
   field or another order gives it a second hidden class. Kind-specific data
   goes in `def`.
+- **Every kind has an entry in `SchemaDefs`** saying what its `def` holds.
+  `optional`, `nullable`, and `with_default` hold their schema as `def.schema`.
+  The types don't force a new kind to be added there.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
 - **Outside probe mode `ctx.fails === ctx.issues.length`.** Containers use the

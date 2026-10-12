@@ -28,16 +28,16 @@ describe('primitives', () => {
 		assert(!s.is(s.pipe(s.number, s.finite), Infinity));
 	});
 
-	test('literal and picklist', () => {
+	test('literal and one_of', () => {
 		assert(s.is(s.literal('a'), 'a'));
 		assert(!s.is(s.literal('a'), 'b'));
 		assert(s.is(s.literal(null), null));
-		assert(s.is(s.picklist(['a', 'b']), 'b'));
+		assert(s.is(s.one_of(['a', 'b']), 'b'));
 		assert.strictEqual(issues_of(s.literal(1n), 2n)[0]!.expected, '1');
 		assert.strictEqual(issues_of(s.literal('a'), 'b')[0]!.expected, '"a"');
-		assert.strictEqual(issues_of(s.picklist([1, 'a', null]), 2)[0]!.expected, '1 | "a" | null');
-		assert.deepEqual(issues_of(s.picklist(['a', 'b']), 'c'), [
-			{ kind: 'picklist', expected: '"a" | "b"', value: 'c', path: [], message: undefined }
+		assert.strictEqual(issues_of(s.one_of([1, 'a', null]), 2)[0]!.expected, '1 | "a" | null');
+		assert.deepEqual(issues_of(s.one_of(['a', 'b']), 'c'), [
+			{ kind: 'one_of', expected: '"a" | "b"', value: 'c', path: [], message: undefined }
 		]);
 	});
 });
@@ -873,6 +873,273 @@ describe('message', () => {
 	});
 });
 
+describe('def', () => {
+	const Circle = s.object({ kind: s.literal('circle'), radius: s.number });
+	const lazy_get = (): typeof s.string => s.string;
+	const check_fn = (v: number): boolean => v > 0;
+	const transform_fn = (v: string): number => v.length;
+	const pattern = /^a/;
+	const entries = { a: s.string, b: s.optional(s.number) };
+	const values = ['a', 1, null] as const;
+	const options = [s.string, s.number] as const;
+	const step = s.min_length<string>(1);
+
+	// one schema of every kind, which fails to compile when a kind is missing
+	// or a schema is not what the contract says its kind is
+	const by_kind: { [K in s.SchemaKind]: s.SchemaNode<K> } = {
+		string: s.string,
+		number: s.number,
+		boolean: s.boolean,
+		bigint: s.bigint,
+		unknown: s.unknown,
+		literal: s.literal('a'),
+		one_of: s.one_of(values),
+		optional: s.optional(s.string),
+		nullable: s.nullable(s.string),
+		default: s.with_default(s.string, 'd'),
+		lazy: s.lazy(lazy_get),
+		object: s.object(entries),
+		loose_object: s.loose_object(entries),
+		strip_object: s.strip_object(entries),
+		record: s.record(s.string),
+		array: s.array(s.string),
+		union: s.union(options),
+		variant: s.variant('kind', [Circle]),
+		pipe: s.pipe(s.string, step),
+		min_length: s.min_length(1),
+		max_length: s.max_length(2),
+		min_value: s.min_value(3),
+		max_value: s.max_value(4n),
+		integer: s.integer,
+		safe_integer: s.safe_integer,
+		finite: s.finite,
+		regex: s.regex(pattern),
+		check: s.check(check_fn),
+		transform: s.transform(transform_fn)
+	};
+
+	test('every schema is kind, def, and run, in that order', () => {
+		for (const [kind, schema] of Object.entries(by_kind)) {
+			assert.strictEqual(schema.kind, kind);
+			assert.deepEqual(Object.keys(schema), ['kind', 'def', 'run']);
+		}
+	});
+
+	test('every schema the module exports is of a kind the contract has', () => {
+		for (const value of Object.values(s)) {
+			if (s.is_schema(value)) assert.strictEqual(by_kind[value.kind], value);
+		}
+	});
+
+	test('holds what the contract says for each kind', () => {
+		const expected: { [K in s.SchemaKind]: s.SchemaDef<K> } = {
+			string: undefined,
+			number: undefined,
+			boolean: undefined,
+			bigint: undefined,
+			unknown: undefined,
+			literal: 'a',
+			one_of: values,
+			optional: { schema: s.string },
+			nullable: { schema: s.string },
+			default: { schema: s.string, value: 'd' },
+			lazy: lazy_get,
+			object: entries,
+			loose_object: entries,
+			strip_object: entries,
+			record: s.string,
+			array: s.string,
+			union: options,
+			variant: { key: 'kind', options: [Circle] },
+			pipe: [s.string, step],
+			min_length: 1,
+			max_length: 2,
+			min_value: 3,
+			max_value: 4n,
+			integer: undefined,
+			safe_integer: undefined,
+			finite: undefined,
+			regex: pattern,
+			check: check_fn,
+			transform: transform_fn
+		};
+		for (const kind of Object.keys(by_kind) as Array<s.SchemaKind>) {
+			assert.deepEqual<unknown>(by_kind[kind].def, expected[kind], kind);
+		}
+		// what was given is held as it is, not copied
+		assert.strictEqual(by_kind.one_of.def, values);
+		assert.strictEqual(by_kind.object.def, entries);
+		assert.strictEqual(by_kind.union.def, options);
+		assert.strictEqual(by_kind.variant.def.options[0], Circle);
+		assert.strictEqual(by_kind.lazy.def, lazy_get);
+		assert.strictEqual(by_kind.regex.def, pattern);
+		assert.strictEqual(by_kind.check.def, check_fn);
+		assert.strictEqual(by_kind.transform.def, transform_fn);
+	});
+
+	test('a wrapper holds its schema under one key', () => {
+		for (const kind of ['optional', 'nullable', 'default'] as const) {
+			assert.strictEqual(by_kind[kind].def.schema, s.string);
+		}
+		assert.deepEqual(Object.keys(by_kind.optional.def), ['schema']);
+		assert.deepEqual(Object.keys(by_kind.nullable.def), ['schema']);
+		assert.deepEqual(Object.keys(by_kind.default.def), ['schema', 'value']);
+		// each wrapper has a def of its own
+		assert.notStrictEqual(s.optional(s.string).def, s.optional(s.string).def);
+	});
+
+	test('message, flavor, and brand keep the kind and def of their schema', () => {
+		const schemas: Array<s.AnySchema> = Object.values(by_kind);
+		for (const schema of schemas) {
+			const labeled = s.message(schema, 'x');
+			assert.notStrictEqual(labeled, schema);
+			assert.strictEqual(labeled.kind, schema.kind);
+			assert.strictEqual(labeled.def, schema.def);
+			assert.deepEqual(Object.keys(labeled), ['kind', 'def', 'run']);
+			assert.strictEqual(s.flavor(schema, 'F'), schema);
+			assert.strictEqual(s.brand(schema, 'B'), schema);
+		}
+	});
+
+	test('variant finds its literals through message, flavor, and brand', () => {
+		const V = s.variant('kind', [
+			s.message(s.object({ kind: s.message(s.literal('a'), 'x'), n: s.number }), 'y'),
+			s.strip_object({ kind: s.flavor(s.literal('b'), 'B') }),
+			s.loose_object({ kind: s.brand(s.literal(3), 'C') })
+		]);
+		assert(s.is(V, { kind: 'a', n: 1 }));
+		assert(s.is(V, { kind: 'b' }));
+		assert(s.is(V, { kind: 3, extra: 1 }));
+		assert.strictEqual(issues_of(V, { kind: 'z' })[0]!.expected, '"a" | "b" | 3');
+		assert.deepEqual(V.def.key, 'kind');
+		assert.strictEqual(V.def.options.length, 3);
+	});
+
+	test('kind narrows def, through a recursive schema, with no cast', () => {
+		// every kind under `schema`, each schema counted once
+		const kinds_of = (schema: s.SchemaNode, seen: Set<s.SchemaNode> = new Set()): Array<string> => {
+			if (seen.has(schema)) return [];
+			seen.add(schema);
+			const children = (): Array<s.SchemaNode> => {
+				switch (schema.kind) {
+					case 'optional':
+					case 'nullable':
+					case 'default':
+						return [schema.def.schema];
+					case 'lazy':
+						return [schema.def()];
+					case 'object':
+					case 'loose_object':
+					case 'strip_object':
+						return Object.values(schema.def);
+					case 'record':
+					case 'array':
+						return [schema.def];
+					case 'union':
+					case 'pipe':
+						return [...schema.def];
+					case 'variant':
+						return [...schema.def.options];
+					default:
+						return [];
+				}
+			};
+			return [schema.kind, ...children().flatMap((child) => kinds_of(child, seen))];
+		};
+		assert.deepEqual(kinds_of(s.array(s.optional(s.with_default(s.nullable(s.string), null)))), [
+			'array',
+			'optional',
+			'default',
+			'nullable',
+			'string'
+		]);
+		// a schema typed as a bare `Schema` gets in through `is_schema`
+		interface Tree {
+			kind: 'leaf' | 'branch';
+			children?: Array<Tree>;
+		}
+		const Tree: s.Schema<Tree> = s.variant('kind', [
+			s.object({ kind: s.literal('leaf') }),
+			s.object({
+				kind: s.literal('branch'),
+				children: s.array(s.lazy(() => Tree))
+			})
+		]);
+		assert(s.is_schema(Tree));
+		assert.deepEqual(kinds_of(Tree), [
+			'variant',
+			'object',
+			'literal',
+			'object',
+			'literal',
+			'array',
+			'lazy'
+		]);
+	});
+});
+
+describe('is_schema', () => {
+	const run = (value: unknown): unknown => value;
+
+	test('accepts every schema and action, wrapped or not', () => {
+		for (const value of [
+			s.string,
+			s.integer,
+			s.literal(undefined),
+			s.object({ a: s.string }),
+			s.optional(s.string),
+			s.lazy(() => s.string),
+			s.pipe(s.string, s.min_length(1)),
+			s.transform((v: string) => v.length),
+			s.message(s.string, 'x'),
+			s.message(s.optional(s.string), () => 'x'),
+			s.flavor(s.string, 'F'),
+			s.brand(s.array(s.string), 'B')
+		]) {
+			assert(s.is_schema(value));
+		}
+	});
+
+	test('rejects what lacks a string kind, a def, or a run function', () => {
+		for (const value of [
+			null,
+			undefined,
+			0,
+			'string',
+			true,
+			Symbol('kind'),
+			{},
+			[],
+			[s.string],
+			{ a: s.string },
+			{ kind: 'string' },
+			{ kind: 'string', def: undefined },
+			{ kind: 'string', run },
+			{ def: undefined, run },
+			{ kind: 1, def: undefined, run },
+			{ kind: 'string', def: undefined, run: 'run' },
+			{ kind: 'string', def: undefined, run: null },
+			// a function is not one, whatever it carries
+			run,
+			Object.assign(() => 1, { kind: 'string', def: undefined, run }),
+			s.optional,
+			s.parse(s.string, 'a'),
+			s.parse(s.string, 1)
+		]) {
+			assert(!s.is_schema(value));
+		}
+	});
+
+	test('is structural: the kind, the def, and extra keys are not checked', () => {
+		assert(s.is_schema({ kind: 'string', def: undefined, run }));
+		assert(s.is_schema({ kind: 'not_a_kind', def: 1, run }));
+		assert(s.is_schema({ kind: 'optional', def: 'not a wrapper', run }));
+		assert(s.is_schema({ kind: 'string', def: undefined, run, extra: 1 }));
+		assert(s.is_schema({ run, def: undefined, kind: 'string' }));
+		assert(s.is_schema(Object.create({ kind: 'string', def: undefined, run })));
+	});
+});
+
 describe('probe mode', () => {
 	test('is stops at the first failure in every container', () => {
 		let calls = 0;
@@ -1023,7 +1290,7 @@ describe('types', () => {
 		const _User = s.strip_object({
 			name: s.string,
 			age: s.optional(s.number),
-			role: s.with_default(s.picklist(['user', 'admin']), 'user'),
+			role: s.with_default(s.one_of(['user', 'admin']), 'user'),
 			tags: s.array(s.string)
 		});
 		expectTypeOf<s.Infer<typeof _User>>().toEqualTypeOf<{
@@ -1109,6 +1376,146 @@ describe('types', () => {
 		const _other: Uuid = {} as Other;
 		expectTypeOf<s.InferInput<typeof Uuid>>().toEqualTypeOf<string>();
 		expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
+	});
+
+	test('each bound holds a number or a bigint', () => {
+		// asserted apart, because a `switch` case shared by both sees the union of the two
+		expectTypeOf<s.SchemaDef<'min_value'>>().toEqualTypeOf<number | bigint>();
+		expectTypeOf<s.SchemaDef<'max_value'>>().toEqualTypeOf<number | bigint>();
+		expectTypeOf(s.min_value(1n)).toExtend<s.SchemaNode<'min_value'>>();
+		expectTypeOf(s.max_value(1)).toExtend<s.SchemaNode<'max_value'>>();
+	});
+
+	test('kind narrows def to what the contract says', () => {
+		expectTypeOf<s.SchemaDef<'string'>>().toEqualTypeOf<undefined>();
+		expectTypeOf<s.SchemaDef<'literal'>>().toEqualTypeOf<s.Literal>();
+		expectTypeOf<s.SchemaDef<'default'>>().toEqualTypeOf<{
+			readonly schema: s.SchemaNode;
+			readonly value: unknown;
+		}>();
+		expectTypeOf<s.SchemaDef<'array'>>().toEqualTypeOf<s.SchemaNode>();
+		expectTypeOf<s.SchemaNode<'regex'>['def']>().toEqualTypeOf<RegExp>();
+		expectTypeOf<s.SchemaNode['kind']>().toEqualTypeOf<s.SchemaKind>();
+		expectTypeOf<s.SchemaNode<'optional' | 'nullable'>['kind']>().toEqualTypeOf<
+			'optional' | 'nullable'
+		>();
+
+		const check = (schema: s.SchemaNode): void => {
+			switch (schema.kind) {
+				case 'string':
+				case 'number':
+				case 'boolean':
+				case 'bigint':
+				case 'unknown':
+				case 'integer':
+				case 'safe_integer':
+				case 'finite':
+					expectTypeOf(schema.def).toEqualTypeOf<undefined>();
+					break;
+				case 'literal':
+					expectTypeOf(schema.def).toEqualTypeOf<s.Literal>();
+					break;
+				case 'one_of':
+					expectTypeOf(schema.def).toEqualTypeOf<ReadonlyArray<s.Literal>>();
+					break;
+				case 'optional':
+				case 'nullable':
+					expectTypeOf(schema.def).toEqualTypeOf<{ readonly schema: s.SchemaNode }>();
+					break;
+				case 'default':
+					expectTypeOf(schema.def.schema).toEqualTypeOf<s.SchemaNode>();
+					expectTypeOf(schema.def.value).toEqualTypeOf<unknown>();
+					break;
+				case 'lazy':
+					expectTypeOf(schema.def).toEqualTypeOf<() => s.SchemaNode>();
+					break;
+				case 'object':
+				case 'loose_object':
+				case 'strip_object':
+					expectTypeOf(schema.def).toEqualTypeOf<Readonly<Record<string, s.SchemaNode>>>();
+					break;
+				case 'record':
+				case 'array':
+					expectTypeOf(schema.def).toEqualTypeOf<s.SchemaNode>();
+					break;
+				case 'union':
+				case 'pipe':
+					expectTypeOf(schema.def).toEqualTypeOf<ReadonlyArray<s.SchemaNode>>();
+					break;
+				case 'variant':
+					expectTypeOf(schema.def.key).toEqualTypeOf<string>();
+					expectTypeOf(schema.def.options).toEqualTypeOf<
+						ReadonlyArray<s.SchemaNode<'object' | 'loose_object' | 'strip_object'>>
+					>();
+					break;
+				case 'min_length':
+				case 'max_length':
+					expectTypeOf(schema.def).toEqualTypeOf<number>();
+					break;
+				case 'min_value':
+				case 'max_value':
+					expectTypeOf(schema.def).toEqualTypeOf<number | bigint>();
+					break;
+				case 'regex':
+					expectTypeOf(schema.def).toEqualTypeOf<RegExp>();
+					break;
+				case 'check':
+					expectTypeOf(schema.def).toEqualTypeOf<(value: any) => boolean>();
+					break;
+				case 'transform':
+					expectTypeOf(schema.def).toEqualTypeOf<(value: any) => unknown>();
+					break;
+				default:
+					// every kind has a case
+					expectTypeOf(schema).toEqualTypeOf<never>();
+			}
+		};
+		check(s.string);
+	});
+
+	test('a schema is typed with the def its kind holds', () => {
+		const _Optional = s.optional(s.string);
+		expectTypeOf(_Optional.def).toEqualTypeOf<{ schema: typeof s.string }>();
+		expectTypeOf(_Optional.def.schema.kind).toEqualTypeOf<'string'>();
+		const _Nullable = s.nullable(s.array(s.number));
+		expectTypeOf(_Nullable.def.schema.def.kind).toEqualTypeOf<'number'>();
+		const _Default = s.with_default(s.number, 1);
+		expectTypeOf(_Default.def).toEqualTypeOf<{ schema: typeof s.number; value: number }>();
+		const _OneOf = s.one_of(['a', 'b']);
+		expectTypeOf(_OneOf.kind).toEqualTypeOf<'one_of'>();
+		expectTypeOf(_OneOf.def).toEqualTypeOf<readonly ['a', 'b']>();
+		// a typed schema is a node of its kind, and of no other
+		expectTypeOf(_Optional).toExtend<s.SchemaNode<'optional'>>();
+		expectTypeOf(_Optional).toExtend<s.SchemaNode>();
+		expectTypeOf(_Optional).not.toExtend<s.SchemaNode<'nullable'>>();
+		expectTypeOf(s.object({ a: _Optional, b: _Default })).toExtend<s.SchemaNode<'object'>>();
+		// every node is a schema
+		expectTypeOf<s.SchemaNode>().toExtend<s.AnySchema>();
+	});
+
+	test('is_schema narrows to a node', () => {
+		const narrow = (value: unknown, any_schema: s.AnySchema, bare: s.Schema<string>): void => {
+			if (s.is_schema(value)) {
+				expectTypeOf(value).toEqualTypeOf<s.SchemaNode>();
+				if (value.kind === 'optional') expectTypeOf(value.def.schema).toEqualTypeOf<s.SchemaNode>();
+			}
+			if (s.is_schema(any_schema)) expectTypeOf(any_schema.kind).toEqualTypeOf<s.SchemaKind>();
+			if (s.is_schema(bare)) {
+				expectTypeOf(bare.kind).toEqualTypeOf<s.SchemaKind>();
+				// a node is the schema as data, without what it parses to
+				expectTypeOf<s.Infer<typeof bare>>().toEqualTypeOf<unknown>();
+			}
+			expectTypeOf<s.Infer<typeof bare>>().toEqualTypeOf<string>();
+		};
+		narrow(s.string, s.string, s.string);
+	});
+
+	test('variant does not take a wrapper for an option', () => {
+		const Circle = s.object({ kind: s.literal('circle') });
+		// @ts-expect-error a wrapper's def is not an object schema's entries
+		assert.throws(() => s.variant('kind', [s.optional(Circle)]));
+		// @ts-expect-error nor is it when the key is the one a wrapper has
+		s.variant('schema', [s.nullable(s.literal('a'))]);
 	});
 
 	test('rejects an action for the wrong type', () => {

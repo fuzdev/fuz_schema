@@ -14,7 +14,7 @@ import * as s from '@fuzdev/fuz_schema/schema.ts';
 const User = s.object({
 	name: s.pipe(s.string, s.min_length(1)),
 	age: s.optional(s.number),
-	role: s.with_default(s.picklist(['user', 'admin']), 'user')
+	role: s.with_default(s.one_of(['user', 'admin']), 'user')
 });
 type User = s.Infer<typeof User>;
 
@@ -98,13 +98,14 @@ Everything is a named export of `schema.ts`, used through a namespace import.
 
 | | |
 |---|---|
-| primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `picklist` |
+| primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of` |
 | wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `to_type_name`, `SchemaError`, `fail` |
+| introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
 
 The three object schemas differ only on keys the schema doesn't name:
@@ -142,6 +143,45 @@ A plain value assigns to a flavored type but not to a branded one,
 and a branded value comes from parsing or a cast.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
+
+### Introspection
+
+A schema is data: `kind` names what it is and `def` holds what it was built from.
+Not everything given is in `def`: the `expected` text of `regex` and `check`, the text given to `message`, and the names given to `flavor` and `brand` are not.
+`SchemaDefs` says what `def` is for every kind, and `SchemaNode` is the union over it,
+so checking `kind` narrows `def`:
+
+```ts
+const unwrap = (schema: s.SchemaNode): s.SchemaNode => {
+	switch (schema.kind) {
+		case 'optional':
+		case 'nullable':
+		case 'default':
+			return unwrap(schema.def.schema); // all three hold their schema as `def.schema`
+		default:
+			return schema;
+	}
+};
+
+unwrap(User.def.age).kind; // 'number'
+```
+
+- no options: `def` is `undefined`
+- one option: `def` is that value — a `literal`'s value, a `one_of`'s array, a `regex`'s pattern,
+  the function given to `check`, `transform`, or `lazy`
+- `optional` and `nullable` hold `{schema}`, and `default` holds `{schema, value}`
+- the object schemas hold their entries, `array` and `record` the schema of their items,
+  `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
+
+`message`, `flavor`, and `brand` have no kind: the result has the `kind` and `def` of the schema given.
+
+`is_schema(value)` checks for the shape — an object with a string `kind`, a `def`, and a `run` function —
+and narrows to `SchemaNode`. It is structural: it doesn't check that the kind is known
+or that `def` matches it. It is also the way in for a schema typed as a bare `Schema`,
+as a recursive one is.
+The narrowed type is for reading a schema as data: a schema typed with its kind keeps its own type,
+while one typed as a bare `Schema` or `AnySchema` (as recursive schemas usually are) reads as `SchemaNode`,
+whose output type is `unknown`.
 
 ### Standard Schema
 

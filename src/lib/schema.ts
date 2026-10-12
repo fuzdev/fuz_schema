@@ -7,6 +7,8 @@
  * - Every schema and action is the same three-field object, `kind`, `def`,
  *   and `run`. There is no separate action type, so `pipe` is a loop over
  *   schemas, and every `run` call site loads from one object shape.
+ * - `kind` and `def` describe a schema as data. What each kind's `def` holds
+ *   is written down in `SchemaDefs`.
  * - `run` returns the output directly and reports failure by counting it in
  *   `ctx.fails`. Nothing is allocated per node on the success path.
  * - Output is copy-on-write: a container returns its input when nothing in it
@@ -83,6 +85,113 @@ export interface Schema<
 }
 
 export type AnySchema = Schema<any, any, string, any>;
+
+/**
+ * What the `def` of each kind of schema holds: the contract for reading a
+ * schema as data. `kind` names an entry here, and `def` is that entry's type.
+ *
+ * A `def` is as close to plain JSON as its kind allows. A kind that takes no
+ * options has `undefined`, one that takes a single value has that value, and
+ * `optional`, `nullable`, and `default` have an object with their schema under
+ * `schema`.
+ *
+ * `message`, `flavor`, and `brand` have no kind of their own: what they
+ * return has the `kind` and `def` of the schema they were given.
+ *
+ * A schema of a kind defined outside this module is typed by adding its
+ * entry through declaration merging, which adds it to `SchemaNode` too.
+ */
+export interface SchemaDefs {
+	string: undefined;
+	number: undefined;
+	boolean: undefined;
+	bigint: undefined;
+	unknown: undefined;
+	/** The value matched. */
+	literal: Literal;
+	/** The values matched, in the order given. */
+	one_of: ReadonlyArray<Literal>;
+	optional: { readonly schema: SchemaNode };
+	nullable: { readonly schema: SchemaNode };
+	/** `value` replaces `undefined`, and is returned as it is. */
+	default: { readonly schema: SchemaNode; readonly value: unknown };
+	/**
+	 * The function given, which returns the schema deferred to. It is not a
+	 * wrapper's `schema` because nothing is held until it is called, and
+	 * following it is how a walk of a recursive schema comes back to where it was.
+	 */
+	lazy: () => SchemaNode;
+	/** The entries, in the order they run. */
+	object: Readonly<Record<string, SchemaNode>>;
+	loose_object: Readonly<Record<string, SchemaNode>>;
+	strip_object: Readonly<Record<string, SchemaNode>>;
+	/** The schema of every value. */
+	record: SchemaNode;
+	/** The schema of every item. */
+	array: SchemaNode;
+	/** The options, in the order they are tried. */
+	union: ReadonlyArray<SchemaNode>;
+	/** `key` is the discriminator, a `literal` entry of every one of `options`. */
+	variant: {
+		readonly key: string;
+		readonly options: ReadonlyArray<SchemaNode<'object' | 'loose_object' | 'strip_object'>>;
+	};
+	/** The schema, then the actions run on its output. */
+	pipe: ReadonlyArray<SchemaNode>;
+	min_length: number;
+	max_length: number;
+	min_value: number | bigint;
+	max_value: number | bigint;
+	integer: undefined;
+	safe_integer: undefined;
+	finite: undefined;
+	regex: RegExp;
+	check: (value: any) => boolean;
+	transform: (value: any) => unknown;
+}
+
+/** The `kind` of every schema and action `SchemaDefs` describes. */
+export type SchemaKind = keyof SchemaDefs;
+
+/** The type of `def` for the kind `TKind`. */
+export type SchemaDef<TKind extends SchemaKind = SchemaKind> = SchemaDefs[TKind];
+
+/**
+ * A schema read as data: a union of one member per kind, each pairing its
+ * `kind` with its `def`, so checking `kind` narrows `def`. With no argument
+ * it is every kind, and with one it is the member of that kind.
+ *
+ * The schemas inside a `def` are typed as this too, so a walk needs no cast:
+ *
+ * ```ts
+ * const count = (schema: SchemaNode): number => {
+ * 	switch (schema.kind) {
+ * 		case 'optional':
+ * 		case 'nullable':
+ * 		case 'default':
+ * 			return 1 + count(schema.def.schema);
+ * 		case 'array':
+ * 		case 'record':
+ * 			return 1 + count(schema.def);
+ * 		default:
+ * 			return 1;
+ * 	}
+ * };
+ * ```
+ *
+ * A schema whose own type names its kind is assignable to it. One typed as
+ * `AnySchema` or as a bare `Schema` is not, and gets here through `is_schema`.
+ */
+export type SchemaNode<TKind extends SchemaKind = SchemaKind> = TKind extends unknown
+	? SchemaOfKind<TKind>
+	: never;
+
+interface SchemaOfKind<TKind extends SchemaKind> extends Schema<
+	unknown,
+	unknown,
+	TKind,
+	SchemaDefs[TKind]
+> {}
 
 /** The output type of a schema. */
 export type Infer<T extends AnySchema> = ReturnType<T['run']>;
@@ -201,6 +310,27 @@ export const is = <T extends AnySchema>(schema: T, value: unknown): value is Inf
 };
 
 /**
+ * Checks whether `value` has the shape of a schema: an object with a string
+ * `kind`, a `def`, and a `run` function.
+ *
+ * The check is structural and stops there. It doesn't look at whether `kind`
+ * is one `SchemaDefs` describes or whether `def` is what that kind holds, so
+ * the narrowing is a claim about values this library built, not a validation
+ * of ones that came from elsewhere. Keys past the three are ignored.
+ *
+ * The narrowed type is for reading a schema as data. A schema typed with its
+ * kind keeps its own type, while one typed as a bare `Schema` or `AnySchema`
+ * (as recursive schemas usually are) reads as `SchemaNode`, whose output type
+ * is `unknown`.
+ */
+export const is_schema = (value: unknown): value is SchemaNode =>
+	typeof value === 'object' &&
+	value !== null &&
+	typeof (value as AnySchema).kind === 'string' &&
+	typeof (value as AnySchema).run === 'function' &&
+	'def' in value;
+
+/**
  * Names the type of `value` for messages, splitting `null` and `array` out of `object`.
  */
 export const to_type_name = (value: unknown): string =>
@@ -286,15 +416,15 @@ export const literal = <const T extends Literal>(value: T): Schema<T, T, 'litera
  * Matches any of `values` by `===`.
  */
 // @__NO_SIDE_EFFECTS__
-export const picklist = <const T extends ReadonlyArray<Literal>>(
+export const one_of = <const T extends ReadonlyArray<Literal>>(
 	values: T
-): Schema<T[number], T[number], 'picklist', T> => {
+): Schema<T[number], T[number], 'one_of', T> => {
 	let expected: string | undefined;
 	return {
-		kind: 'picklist',
+		kind: 'one_of',
 		def: values,
 		run: (v, ctx) =>
-			values.includes(v) ? v : fail(ctx, 'picklist', v, (expected ??= format_literals(values)))
+			values.includes(v) ? v : fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
 	};
 };
 
@@ -302,15 +432,25 @@ export const picklist = <const T extends ReadonlyArray<Literal>>(
 // Wrappers
 //
 
+// `optional`, `nullable`, and `with_default` hold their schema as `def.schema`
+
+/**
+ * The `def` of `optional` and `nullable`. An interface, so it has no index
+ * signature and is not mistaken for the entries of an object schema.
+ */
+export interface WrapperDef<T extends AnySchema> {
+	schema: T;
+}
+
 /**
  * Accepts `undefined`. As an object entry it makes the key optional.
  */
 // @__NO_SIDE_EFFECTS__
 export const optional = <T extends AnySchema>(
 	schema: T
-): Schema<Infer<T> | undefined, InferInput<T> | undefined, 'optional', T> => ({
+): Schema<Infer<T> | undefined, InferInput<T> | undefined, 'optional', WrapperDef<T>> => ({
 	kind: 'optional',
-	def: schema,
+	def: { schema },
 	run: (value, ctx) => (value === undefined ? undefined : schema.run(value, ctx))
 });
 
@@ -320,9 +460,9 @@ export const optional = <T extends AnySchema>(
 // @__NO_SIDE_EFFECTS__
 export const nullable = <T extends AnySchema>(
 	schema: T
-): Schema<Infer<T> | null, InferInput<T> | null, 'nullable', T> => ({
+): Schema<Infer<T> | null, InferInput<T> | null, 'nullable', WrapperDef<T>> => ({
 	kind: 'nullable',
-	def: schema,
+	def: { schema },
 	run: (value, ctx) => (value === null ? null : schema.run(value, ctx))
 });
 
@@ -749,7 +889,7 @@ export type PipeSchema<TOutput, T extends AnySchema> = Schema<
 	TOutput,
 	InferInput<T>,
 	'pipe',
-	ReadonlyArray<AnySchema>
+	ReadonlyArray<SchemaNode>
 >;
 
 export interface Pipe {
@@ -780,7 +920,8 @@ export interface Pipe {
 // @__NO_SIDE_EFFECTS__
 export const pipe: Pipe = (...schemas: Array<AnySchema>): PipeSchema<any, AnySchema> => ({
 	kind: 'pipe',
-	def: schemas,
+	// the overloads take any schema, and `def` is typed as the contract has it
+	def: schemas as Array<SchemaNode>,
 	run: (value, ctx) => {
 		const count = ctx.fails;
 		let output = value;

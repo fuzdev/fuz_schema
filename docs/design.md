@@ -14,6 +14,44 @@ Every schema and every action is `{kind, def, run}`, keys in that order.
 - `def` makes schemas introspectable: an object's entries, a literal's value.
 - Schemas with no options are constants: `s.string`, not `s.string()`.
 
+## What `def` holds
+
+`kind` and `def` describe a schema as data. The `SchemaDefs` interface maps
+every kind to the type of its `def`, and `SchemaNode` is the union of
+`{kind, def}` pairs derived from it, so checking `kind` narrows `def`.
+`SchemaKind` and `SchemaDef` are the keys and the lookup. The schemas inside a
+`def` are typed as `SchemaNode` too, so a walk needs no cast.
+
+| `def` | Kinds |
+|---|---|
+| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer`, `finite` |
+| the value given | `literal`, `one_of`, `min_length`, `max_length`, `min_value`, `max_value`, `regex` |
+| the function given | `check`, `transform`, `lazy` |
+| `{schema}` | `optional`, `nullable` |
+| `{schema, value}` | `default` |
+| the entries | `object`, `loose_object`, `strip_object` |
+| the schema of every value or item | `record`, `array` |
+| the schemas, in order | `union`, `pipe` |
+| `{key, options}` | `variant` |
+
+- **`optional`, `nullable`, and `default` hold their schema under `schema`.**
+  Unwrapping any of the three is `kind` and that one key.
+- **`lazy` holds the function it was given**, not a schema. Nothing is held
+  until it's called, and it is where a recursive schema comes back to itself,
+  so a walk treats it apart whatever its shape.
+- **`array` and `record` hold the schema itself.** They are containers, like
+  `union`, and an object around the schema would be bytes in every bundle
+  with an array.
+- **Some inputs are not in `def`**: the `expected` text given to `regex` and
+  `check`, and the text given to `message`.
+- **A `def` is as close to plain JSON as its kind allows.** What isn't is the
+  kind's own: a function, a `RegExp`, a `bigint` or `undefined` literal.
+- **`is_schema` is the structural guard**: an object with a string `kind`, a
+  `def`, and a `run` function. It doesn't check that the kind is a known one
+  or that `def` is what the kind holds, and it ignores other keys.
+- A kind defined outside the library joins the contract by declaration
+  merging on `SchemaDefs`.
+
 ## Running
 
 `run(value, ctx)` returns the output. Failure is reported through `fail`.

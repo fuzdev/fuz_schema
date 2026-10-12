@@ -46,6 +46,12 @@ const to_object = (s: SchemaLib): ObjectFactory =>
 const to_strip_object = (s: SchemaLib): ObjectFactory =>
 	'strip_object' in s ? s.strip_object : (s as unknown as { object: ObjectFactory }).object;
 
+type OneOfFactory = (values: ReadonlyArray<schema_lib.Literal>) => schema_lib.AnySchema;
+
+// and this so a baseline from before `picklist` was renamed `one_of` can still be graded
+const to_one_of = (s: SchemaLib): OneOfFactory =>
+	'one_of' in s ? s.one_of : (s as unknown as { picklist: OneOfFactory }).picklist;
+
 export interface Case {
 	name: string;
 	group: string;
@@ -199,8 +205,8 @@ const primitive: CaseGroup = (s) => [
 	to_case(s, 'primitive/number/valid', s.number, 42, true),
 	to_case(s, 'primitive/literal/valid', s.literal('a'), 'a', true),
 	to_case(s, 'primitive/literal/invalid', s.literal('a'), 'b', false),
-	to_case(s, 'primitive/picklist_20_last/valid', s.picklist(range(20)), 19, true),
-	to_case(s, 'primitive/picklist_20/invalid', s.picklist(range(20)), 20, false)
+	to_case(s, 'primitive/one_of_20_last/valid', to_one_of(s)(range(20)), 19, true),
+	to_case(s, 'primitive/one_of_20/invalid', to_one_of(s)(range(20)), 20, false)
 ];
 
 const strip: CaseGroup = (s) => [
