@@ -316,7 +316,7 @@ is an open question.
 - [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
 - [ ] abort-early as a caller option
 - [x] a published package
-- [ ] the Rust side
+- [ ] the Rust side: the schema model and whether a JSON text matches are built, loading a schema, issues, and a wasm build are not
 
 Not designed yet: JSON Schema output, async validation, i18n.
 
@@ -395,9 +395,14 @@ gro check  # typecheck, test, format check, lint
 gro test
 ```
 
-The repo is also a Rust workspace. `crates/fuz_schema` is where the Rust side
-of the library will go, to be measured against the JS through wasm;
-it is an empty crate today.
+The repo is also a Rust workspace. `crates/fuz_schema` is the Rust side of the
+library: the same schema model, and whether a JSON text matches it. It isn't
+published, and a wasm build to measure against the JS is still to come. Run it
+with cargo:
+
+```bash
+cargo test --workspace
+```
 
 ## Docs
 
@@ -406,6 +411,8 @@ it is an empty crate today.
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and what isn't measured
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
+- [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the two evaluators,
+  where they differ from this library, and what is refused
 - `CLAUDE.md` — layout, commands, and invariants (also the context file for AI agents)
 
 ## Credits

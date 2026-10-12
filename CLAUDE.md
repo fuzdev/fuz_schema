@@ -8,7 +8,7 @@ whether Valibot's strategy, with simpler internals, can be pushed far enough
 on bundle size, speed, and memory to be worth owning. "No" is a valid outcome.
 
 The library is `src/lib/`. The rest of the repo is its benchmarks, a docs
-site, and a Rust workspace whose crate will hold the library's Rust side.
+site, and a Rust workspace whose crate is the library's Rust side.
 
 For coding conventions, see Skill(fuz-stack).
 
@@ -60,7 +60,7 @@ dev server.
   `svelte-docinfo` Vite plugin under `src/routes/docs/`, deployed to
   schema.fuz.dev (`static/CNAME`)
 - `docs/` - the written docs, below
-- `crates/` - the Rust workspace
+- `crates/fuz_schema/` - the Rust side, see [Rust workspace](#rust-workspace)
 
 ## Docs
 
@@ -71,6 +71,8 @@ dev server.
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
+- `docs/rust.md` - the Rust side: the model, the two evaluators, where they
+  differ from the library, and what is refused
 
 Keep them in step with the code. They describe what is, and stay short.
 
@@ -142,10 +144,34 @@ cargo fmt --check
 
 CI runs these in the `rust` job of `.github/workflows/check.yml`.
 
-`crates/fuz_schema` is where the Rust side of the library goes: the same
-schema model for Rust consumers, and a wasm build to measure against the JS.
-It is an empty library crate, not designed yet. Errors, when it has them,
-follow thiserror enums.
+`crates/fuz_schema` is the Rust side of the library: its schema model, and
+whether a JSON text matches a schema. `docs/rust.md` describes it.
+
+- `schema.rs`, `builder.rs` - the model, an arena of nodes, and
+  `SchemaBuilder`, whose `build` refuses what isn't portable
+- `json.rs` - `Json`, the crate's tree, which holds an object as `JSON.parse`
+  would
+- `js.rs` - the JavaScript semantics both evaluators share
+- `walk.rs` - the tree evaluator behind `is_json_exact`, the reference
+- `stream.rs` - the streaming evaluator behind `is_json`
+- `error.rs` - `JsonError` and `SchemaError`
+
+Things that are easy to break without a test noticing:
+
+- **The TypeScript library is the oracle.** `is_json_exact` gives its verdict
+  on every text the crate's parser reads. `is_json` may be stricter and is
+  never looser.
+- **Refuse, don't guess.** What the crate can't carry across is a
+  `SchemaError` at build.
+- **Errors are hand-written enums** with `Display` and `Error` impls, in the
+  shape thiserror derives. The crate's dependencies are serde and serde_json.
+- **serde_json's `arbitrary_precision` must be off** in any build the crate
+  is part of. Under it a number arrives as a map, and `build` makes no schema.
+- **`is_json` buffers only what it must.** A `union` given an array or object
+  streams into its one candidate option. A change to which options are
+  candidates can make it looser than the oracle.
+- **A new kind** needs a `Node` variant, a `Kind`, both evaluators, and the
+  builder's reading of which kinds could match an array or an object.
 
 ## Project standards
 

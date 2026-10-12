@@ -8,6 +8,12 @@ edition = "2024"
 license = "MIT"
 publish = false
 
+[workspace.dependencies]
+# no derive: the crate implements its visitors by hand
+serde = { version = "1", default-features = false, features = ["std"] }
+# float_roundtrip parses a decimal to the nearest double, as JS does
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
