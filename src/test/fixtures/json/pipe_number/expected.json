@@ -1,0 +1,2392 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"integer": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "integer"
+								}
+							]
+						}
+					}
+				},
+				"safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "safe_integer"
+								}
+							]
+						}
+					}
+				},
+				"finite": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "finite"
+								}
+							]
+						}
+					}
+				},
+				"range": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.1
+								},
+								{
+									"kind": "max_value",
+									"def": 0.3
+								}
+							]
+						}
+					}
+				},
+				"at_most_large": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1e+21
+								}
+							]
+						}
+					}
+				},
+				"at_least_large": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1e+21
+								}
+							]
+						}
+					}
+				},
+				"at_least_zero": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0
+								}
+							]
+						}
+					}
+				},
+				"at_least_tiny": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 5e-324
+								}
+							]
+						}
+					}
+				},
+				"at_most_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1.7976931348623157e+308
+								},
+								{
+									"kind": "finite"
+								}
+							]
+						}
+					}
+				},
+				"whole_percent": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "integer"
+										}
+									]
+								},
+								{
+									"kind": "min_value",
+									"def": 0
+								},
+								{
+									"kind": "max_value",
+									"def": 100
+								}
+							]
+						}
+					}
+				},
+				"bare_integer": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "integer"
+						}
+					}
+				},
+				"bare_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "safe_integer"
+						}
+					}
+				},
+				"bare_finite": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "finite"
+						}
+					}
+				},
+				"from_integer": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "integer"
+								},
+								{
+									"kind": "min_value",
+									"def": 1
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "integer_0",
+			"text": "{\"integer\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_1",
+			"text": "{\"integer\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_2",
+			"text": "{\"integer\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_3",
+			"text": "{\"integer\":-1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_4",
+			"text": "{\"integer\":1.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_5",
+			"text": "{\"integer\":1.00}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_6",
+			"text": "{\"integer\":1e2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_7",
+			"text": "{\"integer\":1E2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_8",
+			"text": "{\"integer\":1e+2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_9",
+			"text": "{\"integer\":0.1e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_10",
+			"text": "{\"integer\":4.5e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_11",
+			"text": "{\"integer\":100e-2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_12",
+			"text": "{\"integer\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_13",
+			"text": "{\"integer\":0.1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_14",
+			"text": "{\"integer\":1e-2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_15",
+			"text": "{\"integer\":5e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_16",
+			"text": "{\"integer\":9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_17",
+			"text": "{\"integer\":9007199254740991.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_18",
+			"text": "{\"integer\":9007199254740992}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_19",
+			"text": "{\"integer\":9007199254740993}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_20",
+			"text": "{\"integer\":9007199254740991e0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_21",
+			"text": "{\"integer\":900719925474099.1e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_22",
+			"text": "{\"integer\":9.007199254740991e15}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_23",
+			"text": "{\"integer\":9.007199254740992e15}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_24",
+			"text": "{\"integer\":-9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_25",
+			"text": "{\"integer\":-9007199254740992}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_26",
+			"text": "{\"integer\":9223372036854775807}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_27",
+			"text": "{\"integer\":-9223372036854775808}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_28",
+			"text": "{\"integer\":-9223372036854775809}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_29",
+			"text": "{\"integer\":18446744073709551615}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_30",
+			"text": "{\"integer\":18446744073709551616}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_31",
+			"text": "{\"integer\":123456789012345678901234567890}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_32",
+			"text": "{\"integer\":1e21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_33",
+			"text": "{\"integer\":1e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_34",
+			"text": "{\"integer\":4503599627370496.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_35",
+			"text": "{\"integer\":4503599627370495.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_36",
+			"text": "{\"integer\":0.9999999999999999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_37",
+			"text": "{\"integer\":0.99999999999999999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_38",
+			"text": "{\"integer\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_39",
+			"text": "{\"integer\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_40",
+			"text": "{\"integer\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_41",
+			"text": "{\"integer\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_0",
+			"text": "{\"safe\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_1",
+			"text": "{\"safe\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_2",
+			"text": "{\"safe\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_3",
+			"text": "{\"safe\":-1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_4",
+			"text": "{\"safe\":1.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_5",
+			"text": "{\"safe\":1.00}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_6",
+			"text": "{\"safe\":1e2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_7",
+			"text": "{\"safe\":1E2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_8",
+			"text": "{\"safe\":1e+2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_9",
+			"text": "{\"safe\":0.1e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_10",
+			"text": "{\"safe\":4.5e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_11",
+			"text": "{\"safe\":100e-2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_12",
+			"text": "{\"safe\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_13",
+			"text": "{\"safe\":0.1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_14",
+			"text": "{\"safe\":1e-2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_15",
+			"text": "{\"safe\":5e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_16",
+			"text": "{\"safe\":9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_17",
+			"text": "{\"safe\":9007199254740991.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_18",
+			"text": "{\"safe\":9007199254740992}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_19",
+			"text": "{\"safe\":9007199254740993}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_20",
+			"text": "{\"safe\":9007199254740991e0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_21",
+			"text": "{\"safe\":900719925474099.1e1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_22",
+			"text": "{\"safe\":9.007199254740991e15}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_23",
+			"text": "{\"safe\":9.007199254740992e15}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_24",
+			"text": "{\"safe\":-9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_25",
+			"text": "{\"safe\":-9007199254740992}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_26",
+			"text": "{\"safe\":9223372036854775807}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_27",
+			"text": "{\"safe\":-9223372036854775808}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_28",
+			"text": "{\"safe\":-9223372036854775809}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_29",
+			"text": "{\"safe\":18446744073709551615}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_30",
+			"text": "{\"safe\":18446744073709551616}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_31",
+			"text": "{\"safe\":123456789012345678901234567890}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_32",
+			"text": "{\"safe\":1e21}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_33",
+			"text": "{\"safe\":1e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_34",
+			"text": "{\"safe\":4503599627370496.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_35",
+			"text": "{\"safe\":4503599627370495.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_36",
+			"text": "{\"safe\":0.9999999999999999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_37",
+			"text": "{\"safe\":0.99999999999999999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_38",
+			"text": "{\"safe\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_39",
+			"text": "{\"safe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_40",
+			"text": "{\"safe\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_41",
+			"text": "{\"safe\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "finite_0",
+			"text": "{\"finite\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "finite_1",
+			"text": "{\"finite\":1.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "finite_2",
+			"text": "{\"finite\":1e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "finite_3",
+			"text": "{\"finite\":-1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "finite_4",
+			"text": "{\"finite\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"finite"
+					]
+				}
+			]
+		},
+		{
+			"name": "finite_5",
+			"text": "{\"finite\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"finite"
+					]
+				}
+			]
+		},
+		{
+			"name": "range_0",
+			"text": "{\"range\":0.1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_1",
+			"text": "{\"range\":0.3}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_2",
+			"text": "{\"range\":0.2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_3",
+			"text": "{\"range\":1e-1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_4",
+			"text": "{\"range\":3e-1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_5",
+			"text": "{\"range\":0.30000000000000004}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 0.3",
+					"received": "number",
+					"path": [
+						"range"
+					]
+				}
+			]
+		},
+		{
+			"name": "range_6",
+			"text": "{\"range\":0.30000000000000001}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_7",
+			"text": "{\"range\":0.09999999999999999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.1",
+					"received": "number",
+					"path": [
+						"range"
+					]
+				}
+			]
+		},
+		{
+			"name": "range_8",
+			"text": "{\"range\":0.099999999999999999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_9",
+			"text": "{\"range\":0.1000000000000000055511151231257827021181583404541015625}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_10",
+			"text": "{\"range\":0.29999999999999998}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "range_11",
+			"text": "{\"range\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.1",
+					"received": "number",
+					"path": [
+						"range"
+					]
+				}
+			]
+		},
+		{
+			"name": "range_12",
+			"text": "{\"range\":-0.2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.1",
+					"received": "number",
+					"path": [
+						"range"
+					]
+				}
+			]
+		},
+		{
+			"name": "range_13",
+			"text": "{\"range\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 0.3",
+					"received": "number",
+					"path": [
+						"range"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_most_large_0",
+			"text": "{\"at_most_large\":1e21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_large_1",
+			"text": "{\"at_most_large\":1000000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_large_2",
+			"text": "{\"at_most_large\":1000000000000000000001}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_large_3",
+			"text": "{\"at_most_large\":1000000000000000100000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_most_large_4",
+			"text": "{\"at_most_large\":1e22}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_most_large_5",
+			"text": "{\"at_most_large\":-1e22}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_large_0",
+			"text": "{\"at_least_large\":1e21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_large_1",
+			"text": "{\"at_least_large\":999999999999999999999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_large_2",
+			"text": "{\"at_least_large\":999999999999999934464}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_large_3",
+			"text": "{\"at_least_large\":999999999999999934463}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+21",
+					"received": "number",
+					"path": [
+						"at_least_large"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_large_4",
+			"text": "{\"at_least_large\":999999999999999868928}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+21",
+					"received": "number",
+					"path": [
+						"at_least_large"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_large_5",
+			"text": "{\"at_least_large\":1e20}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+21",
+					"received": "number",
+					"path": [
+						"at_least_large"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_zero_0",
+			"text": "{\"at_least_zero\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_1",
+			"text": "{\"at_least_zero\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_2",
+			"text": "{\"at_least_zero\":0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_3",
+			"text": "{\"at_least_zero\":-0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_4",
+			"text": "{\"at_least_zero\":5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_5",
+			"text": "{\"at_least_zero\":-5e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_zero_6",
+			"text": "{\"at_least_zero\":1e-400}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_7",
+			"text": "{\"at_least_zero\":-1e-400}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_zero_8",
+			"text": "{\"at_least_zero\":-1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_tiny_0",
+			"text": "{\"at_least_tiny\":5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_tiny_1",
+			"text": "{\"at_least_tiny\":4.9e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_tiny_2",
+			"text": "{\"at_least_tiny\":2.5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_tiny_3",
+			"text": "{\"at_least_tiny\":2.4e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 5e-324",
+					"received": "number",
+					"path": [
+						"at_least_tiny"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_tiny_4",
+			"text": "{\"at_least_tiny\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 5e-324",
+					"received": "number",
+					"path": [
+						"at_least_tiny"
+					]
+				}
+			]
+		},
+		{
+			"name": "at_least_tiny_5",
+			"text": "{\"at_least_tiny\":1e-323}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_max_0",
+			"text": "{\"at_most_max\":1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_max_1",
+			"text": "{\"at_most_max\":1.7976931348623158e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_max_2",
+			"text": "{\"at_most_max\":1e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_most_max_3",
+			"text": "{\"at_most_max\":-1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_0",
+			"text": "{\"whole_percent\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_1",
+			"text": "{\"whole_percent\":100}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_2",
+			"text": "{\"whole_percent\":100.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_3",
+			"text": "{\"whole_percent\":1e2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_4",
+			"text": "{\"whole_percent\":50.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"whole_percent"
+					]
+				}
+			]
+		},
+		{
+			"name": "whole_percent_5",
+			"text": "{\"whole_percent\":-1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"whole_percent"
+					]
+				}
+			]
+		},
+		{
+			"name": "whole_percent_6",
+			"text": "{\"whole_percent\":101}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 100",
+					"received": "number",
+					"path": [
+						"whole_percent"
+					]
+				}
+			]
+		},
+		{
+			"name": "whole_percent_7",
+			"text": "{\"whole_percent\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whole_percent_8",
+			"text": "{\"whole_percent\":\"50\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"whole_percent"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_0",
+			"text": "{\"bare_integer\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bare_integer_1",
+			"text": "{\"bare_integer\":1.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bare_integer_2",
+			"text": "{\"bare_integer\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_3",
+			"text": "{\"bare_integer\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "string",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_4",
+			"text": "{\"bare_integer\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "null",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_5",
+			"text": "{\"bare_integer\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "boolean",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_6",
+			"text": "{\"bare_integer\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "array",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_integer_7",
+			"text": "{\"bare_integer\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "object",
+					"path": [
+						"bare_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_safe_0",
+			"text": "{\"bare_safe\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bare_safe_1",
+			"text": "{\"bare_safe\":9007199254740992}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"bare_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_safe_2",
+			"text": "{\"bare_safe\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"bare_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_safe_3",
+			"text": "{\"bare_safe\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "string",
+					"path": [
+						"bare_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_safe_4",
+			"text": "{\"bare_safe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"bare_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_finite_0",
+			"text": "{\"bare_finite\":1.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bare_finite_1",
+			"text": "{\"bare_finite\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "string",
+					"path": [
+						"bare_finite"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_finite_2",
+			"text": "{\"bare_finite\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "null",
+					"path": [
+						"bare_finite"
+					]
+				}
+			]
+		},
+		{
+			"name": "bare_finite_3",
+			"text": "{\"bare_finite\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "array",
+					"path": [
+						"bare_finite"
+					]
+				}
+			]
+		},
+		{
+			"name": "from_integer_0",
+			"text": "{\"from_integer\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "from_integer_1",
+			"text": "{\"from_integer\":2.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "from_integer_2",
+			"text": "{\"from_integer\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1",
+					"received": "number",
+					"path": [
+						"from_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "from_integer_3",
+			"text": "{\"from_integer\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"from_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "from_integer_4",
+			"text": "{\"from_integer\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "string",
+					"path": [
+						"from_integer"
+					]
+				}
+			]
+		},
+		{
+			"name": "integer_overflow",
+			"text": "{\"integer\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "finite_overflow",
+			"text": "{\"finite\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"finite"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_large_overflow",
+			"text": "{\"at_most_large\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_least_zero_overflow",
+			"text": "{\"at_least_zero\":1e400}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_max_overflow",
+			"text": "{\"at_most_max\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"at_most_max"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "integer_negative_overflow",
+			"text": "{\"integer\":-1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "finite_negative_overflow",
+			"text": "{\"finite\":-1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"finite"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_large_negative_overflow",
+			"text": "{\"at_most_large\":-1e400}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_least_zero_negative_overflow",
+			"text": "{\"at_least_zero\":-1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_max_negative_overflow",
+			"text": "{\"at_most_max\":-1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"at_most_max"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "integer_overflow_by_digits",
+			"text": "{\"integer\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "finite_overflow_by_digits",
+			"text": "{\"finite\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"finite"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_large_overflow_by_digits",
+			"text": "{\"at_most_large\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_least_zero_overflow_by_digits",
+			"text": "{\"at_least_zero\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_max_overflow_by_digits",
+			"text": "{\"at_most_max\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"at_most_max"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "integer_just_past_max",
+			"text": "{\"integer\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "finite_just_past_max",
+			"text": "{\"finite\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"finite"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_large_just_past_max",
+			"text": "{\"at_most_large\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_least_zero_just_past_max",
+			"text": "{\"at_least_zero\":1.7976931348623159e308}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_max_just_past_max",
+			"text": "{\"at_most_max\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"at_most_max"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "integer_twice_max",
+			"text": "{\"integer\":2e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"integer"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "finite_twice_max",
+			"text": "{\"finite\":2e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "finite",
+					"expected": "finite",
+					"received": "number",
+					"path": [
+						"finite"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_large_twice_max",
+			"text": "{\"at_most_large\":2e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_least_zero_twice_max",
+			"text": "{\"at_least_zero\":2e308}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "at_most_max_twice_max",
+			"text": "{\"at_most_max\":2e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"at_most_max"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		}
+	]
+}

@@ -1,0 +1,310 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					}
+				},
+				"leaf": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "lazy",
+							"def": "$2"
+						}
+					}
+				},
+				"other_leaf": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "lazy",
+							"def": "$2"
+						}
+					}
+				},
+				"held_leaf": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"v": {
+									"kind": "number"
+								}
+							}
+						}
+					}
+				},
+				"list": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "nullable",
+								"def": {
+									"schema": {
+										"kind": "lazy",
+										"def": "$1"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "loose_object",
+				"def": {
+					"a": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "lazy",
+								"def": "$1"
+							}
+						}
+					},
+					"n": {
+						"kind": "number"
+					}
+				}
+			},
+			"$1": {
+				"kind": "object",
+				"def": {
+					"b": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "lazy",
+								"def": "$0"
+							}
+						}
+					},
+					"leaf": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "lazy",
+								"def": "$2"
+							}
+						}
+					},
+					"other_leaf": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "lazy",
+								"def": "$2"
+							}
+						}
+					},
+					"held_leaf": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "object",
+								"def": {
+									"v": {
+										"kind": "number"
+									}
+								}
+							}
+						}
+					},
+					"list": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "array",
+								"def": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$1"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"$2": {
+				"kind": "object",
+				"def": {
+					"v": {
+						"kind": "number"
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "leaves",
+			"text": "{\"leaf\":{\"v\":1},\"other_leaf\":{\"v\":2},\"held_leaf\":{\"v\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_leaf",
+			"text": "{\"leaf\":{\"v\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"leaf",
+						"v"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_other_leaf",
+			"text": "{\"other_leaf\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"other_leaf",
+						"v"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_held_leaf",
+			"text": "{\"held_leaf\":{\"v\":1,\"w\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"held_leaf",
+						"w"
+					]
+				}
+			]
+		},
+		{
+			"name": "there_and_back",
+			"text": "{\"b\":{\"n\":1,\"a\":{\"b\":{\"n\":2,\"a\":{\"leaf\":{\"v\":3}}}}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "b_missing_n",
+			"text": "{\"b\":{\"a\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"b",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "b_unknown_key",
+			"text": "{\"b\":{\"n\":1,\"extra\":true}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "a_unknown_key_through_b",
+			"text": "{\"b\":{\"n\":1,\"a\":{\"extra\":true}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"b",
+						"a",
+						"extra"
+					]
+				}
+			]
+		},
+		{
+			"name": "list",
+			"text": "{\"list\":[null,{},{\"list\":[{\"b\":{\"n\":0}},null]}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "list_wrong",
+			"text": "{\"list\":[null,{},{\"list\":[{\"b\":{}},1]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"list",
+						2,
+						"list",
+						0,
+						"b",
+						"n"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"list",
+						2,
+						"list",
+						1
+					]
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,404 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"bounded": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "array",
+											"def": {
+												"kind": "number"
+											}
+										},
+										{
+											"kind": "min_length",
+											"def": 1
+										}
+									]
+								},
+								{
+									"kind": "max_length",
+									"def": 3
+								}
+							]
+						}
+					}
+				},
+				"pairs": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "pipe",
+								"def": [
+									{
+										"kind": "array",
+										"def": {
+											"kind": "unknown"
+										}
+									},
+									{
+										"kind": "min_length",
+										"def": 2
+									},
+									{
+										"kind": "max_length",
+										"def": 2
+									}
+								]
+							}
+						}
+					}
+				},
+				"fractional": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "array",
+									"def": {
+										"kind": "unknown"
+									}
+								},
+								{
+									"kind": "min_length",
+									"def": 0.5
+								},
+								{
+									"kind": "max_length",
+									"def": 1.5
+								}
+							]
+						}
+					}
+				},
+				"nullable": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "nullable",
+							"def": {
+								"schema": {
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "array",
+											"def": {
+												"kind": "string"
+											}
+										},
+										{
+											"kind": "max_length",
+											"def": 1
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "bounded_empty",
+			"text": "{\"bounded\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1",
+					"received": "array",
+					"path": [
+						"bounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_one",
+			"text": "{\"bounded\":[1]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bounded_three",
+			"text": "{\"bounded\":[1,2,3]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "bounded_four",
+			"text": "{\"bounded\":[1,2,3,4]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "array",
+					"path": [
+						"bounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_wrong_item",
+			"text": "{\"bounded\":[1,\"2\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"bounded",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_wrong_items_too_many",
+			"text": "{\"bounded\":[\"1\",2,3,4,null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"bounded",
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"bounded",
+						4
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_string",
+			"text": "{\"bounded\":\"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"bounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_object",
+			"text": "{\"bounded\":{\"length\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"bounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "bounded_null",
+			"text": "{\"bounded\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"bounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "pairs_empty",
+			"text": "{\"pairs\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "pairs",
+			"text": "{\"pairs\":[[1,\"a\"],[null,[]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "pairs_short",
+			"text": "{\"pairs\":[[1,2],[1]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "array",
+					"path": [
+						"pairs",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "pairs_long",
+			"text": "{\"pairs\":[[1,2,3],[1,2]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "array",
+					"path": [
+						"pairs",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "pairs_not_array",
+			"text": "{\"pairs\":[[1,2],\"ab\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"pairs",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "fractional_empty",
+			"text": "{\"fractional\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 0.5",
+					"received": "array",
+					"path": [
+						"fractional"
+					]
+				}
+			]
+		},
+		{
+			"name": "fractional_one",
+			"text": "{\"fractional\":[null]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fractional_two",
+			"text": "{\"fractional\":[1,2]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1.5",
+					"received": "array",
+					"path": [
+						"fractional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_null",
+			"text": "{\"nullable\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_one",
+			"text": "{\"nullable\":[\"a\"]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_two",
+			"text": "{\"nullable\":[\"a\",\"b\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "array",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_wrong",
+			"text": "{\"nullable\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"nullable",
+						0
+					]
+				}
+			]
+		}
+	]
+}

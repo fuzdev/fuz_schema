@@ -1,0 +1,164 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "nullable",
+				"def": {
+					"schema": {
+						"kind": "record",
+						"def": {
+							"kind": "variant",
+							"def": {
+								"key": "t",
+								"options": [
+									{
+										"kind": "object",
+										"def": {
+											"t": {
+												"kind": "literal",
+												"def": "a"
+											},
+											"n": {
+												"kind": "number"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"t": {
+												"kind": "literal",
+												"def": "b"
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_first_and_last",
+			"text": "[null,{\"x\":{\"t\":\"a\",\"n\":1},\"y\":{\"n\":1,\"t\":\"a\"}}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_option",
+			"text": "[{\"x\":{\"t\":\"b\",\"z\":[1,{\"t\":\"a\"}]}}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "missing_entry",
+			"text": "[{\"x\":{\"t\":\"a\"}}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						0,
+						"x",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "null_value",
+			"text": "[{\"x\":null}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						0,
+						"x"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_discriminator",
+			"text": "[{\"x\":{\"t\":\"c\",\"n\":1}}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | \"b\"",
+					"received": "string",
+					"path": [
+						0,
+						"x",
+						"t"
+					]
+				}
+			]
+		},
+		{
+			"name": "second_wrong",
+			"text": "[{\"x\":{\"t\":\"a\",\"n\":1},\"y\":{\"t\":\"a\",\"n\":\"1\"}}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0,
+						"y",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "discriminator_twice_later",
+			"text": "[{\"x\":{\"n\":1,\"t\":\"b\",\"t\":\"a\"}}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_twice_first",
+			"text": "[{\"x\":{\"t\":\"b\",\"n\":1,\"t\":\"a\"}}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "wrong_then_malformed",
+			"text": "[{\"x\":{\"t\":\"c\",}}]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "later_then_malformed",
+			"text": "[{\"x\":{\"n\":1,\"t\":\"c\",}}]",
+			"json": false
+		}
+	]
+}

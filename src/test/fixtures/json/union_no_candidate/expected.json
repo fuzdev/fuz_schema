@@ -1,0 +1,210 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "union",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "number"
+				},
+				{
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"a": {
+									"kind": "number"
+								}
+							}
+						}
+					}
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "string",
+			"text": "\"x\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "object",
+			"text": "{\"a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "boolean",
+			"text": "true",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "boolean",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "empty_array",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[1]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array_of_object",
+			"text": "[{\"a\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array_then_trailing",
+			"text": "[] x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "array_cut_short",
+			"text": "[",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "array_malformed",
+			"text": "[1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "array_of_overflow",
+			"text": "[1e400]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "array_of_lone_surrogate",
+			"text": "[\"\\ud800\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "deep_array",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "array",
+					"path": []
+				}
+			],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "object_wrong",
+			"text": "{\"a\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number | nullable",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object_duplicate_last_good",
+			"text": "{\"a\":\"x\",\"a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "object_wrong_then_malformed",
+			"text": "{\"a\":\"x\",}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "object_malformed",
+			"text": "{\"a\":1,}",
+			"json": false
+		}
+	]
+}

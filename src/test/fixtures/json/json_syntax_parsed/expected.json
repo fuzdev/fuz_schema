@@ -1,0 +1,893 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "union",
+			"def": [
+				{
+					"kind": "literal",
+					"def": null
+				},
+				{
+					"kind": "boolean"
+				},
+				{
+					"kind": "number"
+				},
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "array",
+					"def": {
+						"kind": "lazy",
+						"def": "$0"
+					}
+				},
+				{
+					"kind": "record",
+					"def": {
+						"kind": "lazy",
+						"def": "$0"
+					}
+				}
+			]
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "literal",
+						"def": null
+					},
+					{
+						"kind": "boolean"
+					},
+					{
+						"kind": "number"
+					},
+					{
+						"kind": "string"
+					},
+					{
+						"kind": "array",
+						"def": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					},
+					{
+						"kind": "record",
+						"def": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "true",
+			"text": "true",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "false",
+			"text": "false",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero",
+			"text": "0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero",
+			"text": "-0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer",
+			"text": "123",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative",
+			"text": "-123",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction",
+			"text": "1.5",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "exponent",
+			"text": "1e2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "exponent_upper",
+			"text": "1E2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "exponent_plus",
+			"text": "1e+2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "exponent_minus",
+			"text": "1e-2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "exponent_leading_zeros",
+			"text": "1e002",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_exponent",
+			"text": "0e0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_fraction_exponent",
+			"text": "0.0e-0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_huge_exponent",
+			"text": "0e99999",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "underflow",
+			"text": "1e-400",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "underflow_huge",
+			"text": "1e-99999",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "many_digits",
+			"text": "123456789012345678901234567890",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "many_fraction_digits",
+			"text": "0.123456789012345678901234567890",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "many_leading_fraction_zeros",
+			"text": "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_string",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "every_escape",
+			"text": "\"\\\"\\\\\\/\\b\\f\\n\\r\\t\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unicode_escape",
+			"text": "\"\\u0041\\u00e9\\u00E9\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_nul",
+			"text": "\"\\u0000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_pair",
+			"text": "\"\\ud83d\\ude00\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_astral",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_delete",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_c1_control",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_line_separator",
+			"text": "\" \"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_paragraph_separator",
+			"text": "\" \"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_byte_order_mark_in_string",
+			"text": "\"﻿\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_no_break_space_in_string",
+			"text": "\" \"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "slash",
+			"text": "\"/\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_array",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_object",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "array",
+			"text": "[1,\"a\",null,true,[],{}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "object",
+			"text": "{\"a\":1,\"b\":[],\"c\":{\"d\":null}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_key",
+			"text": "{\"\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_key",
+			"text": "{\"a\\n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested",
+			"text": "[[[[{\"a\":[{\"b\":[]}]}]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "whitespace",
+			"text": " \t\n\r[ \t\n\r1 \t\n\r, \t\n\r{ \t\n\r\"a\" \t\n\r: \t\n\r2 \t\n\r} \t\n\r] \t\n\r",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_keys",
+			"text": "{\"a\":1,\"a\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "proto_key",
+			"text": "{\"__proto__\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "arrays_below_the_limit",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "objects_below_the_limit",
+			"text": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed_below_the_limit",
+			"text": "[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[{\"a\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty",
+			"text": "",
+			"json": false
+		},
+		{
+			"name": "only_whitespace",
+			"text": " \n",
+			"json": false
+		},
+		{
+			"name": "trailing_value",
+			"text": "1 2",
+			"json": false
+		},
+		{
+			"name": "trailing_comma_array",
+			"text": "[1,]",
+			"json": false
+		},
+		{
+			"name": "trailing_comma_object",
+			"text": "{\"a\":1,}",
+			"json": false
+		},
+		{
+			"name": "leading_comma_array",
+			"text": "[,1]",
+			"json": false
+		},
+		{
+			"name": "double_comma",
+			"text": "[1,,2]",
+			"json": false
+		},
+		{
+			"name": "only_comma",
+			"text": "[,]",
+			"json": false
+		},
+		{
+			"name": "missing_comma",
+			"text": "[1 2]",
+			"json": false
+		},
+		{
+			"name": "missing_colon",
+			"text": "{\"a\" 1}",
+			"json": false
+		},
+		{
+			"name": "missing_value",
+			"text": "{\"a\":}",
+			"json": false
+		},
+		{
+			"name": "missing_key",
+			"text": "{:1}",
+			"json": false
+		},
+		{
+			"name": "unquoted_key",
+			"text": "{a:1}",
+			"json": false
+		},
+		{
+			"name": "number_key",
+			"text": "{1:1}",
+			"json": false
+		},
+		{
+			"name": "single_quoted_key",
+			"text": "{'a':1}",
+			"json": false
+		},
+		{
+			"name": "single_quoted_string",
+			"text": "'a'",
+			"json": false
+		},
+		{
+			"name": "byte_order_mark",
+			"text": "﻿1",
+			"json": false
+		},
+		{
+			"name": "byte_order_mark_then_array",
+			"text": "﻿[]",
+			"json": false
+		},
+		{
+			"name": "leading_zero",
+			"text": "01",
+			"json": false
+		},
+		{
+			"name": "negative_leading_zero",
+			"text": "-01",
+			"json": false
+		},
+		{
+			"name": "double_zero",
+			"text": "00",
+			"json": false
+		},
+		{
+			"name": "trailing_point",
+			"text": "1.",
+			"json": false
+		},
+		{
+			"name": "trailing_point_exponent",
+			"text": "1.e1",
+			"json": false
+		},
+		{
+			"name": "leading_point",
+			"text": ".5",
+			"json": false
+		},
+		{
+			"name": "leading_plus",
+			"text": "+1",
+			"json": false
+		},
+		{
+			"name": "only_minus",
+			"text": "-",
+			"json": false
+		},
+		{
+			"name": "minus_space",
+			"text": "- 1",
+			"json": false
+		},
+		{
+			"name": "no_exponent_digits",
+			"text": "1e",
+			"json": false
+		},
+		{
+			"name": "no_exponent_digits_after_sign",
+			"text": "1e+",
+			"json": false
+		},
+		{
+			"name": "hex",
+			"text": "0x10",
+			"json": false
+		},
+		{
+			"name": "underscore",
+			"text": "1_0",
+			"json": false
+		},
+		{
+			"name": "nan",
+			"text": "NaN",
+			"json": false
+		},
+		{
+			"name": "infinity",
+			"text": "Infinity",
+			"json": false
+		},
+		{
+			"name": "negative_infinity",
+			"text": "-Infinity",
+			"json": false
+		},
+		{
+			"name": "undefined",
+			"text": "undefined",
+			"json": false
+		},
+		{
+			"name": "truncated_null",
+			"text": "nul",
+			"json": false
+		},
+		{
+			"name": "truncated_true",
+			"text": "tru",
+			"json": false
+		},
+		{
+			"name": "capitalized",
+			"text": "True",
+			"json": false
+		},
+		{
+			"name": "long_null",
+			"text": "nulll",
+			"json": false
+		},
+		{
+			"name": "raw_tab_in_string",
+			"text": "\"a\tb\"",
+			"json": false
+		},
+		{
+			"name": "raw_newline_in_string",
+			"text": "\"a\nb\"",
+			"json": false
+		},
+		{
+			"name": "raw_nul_in_string",
+			"text": "\"a\u0000b\"",
+			"json": false
+		},
+		{
+			"name": "raw_unit_separator_in_string",
+			"text": "\"\u001f\"",
+			"json": false
+		},
+		{
+			"name": "bad_escape_x",
+			"text": "\"\\x41\"",
+			"json": false
+		},
+		{
+			"name": "bad_escape_a",
+			"text": "\"\\a\"",
+			"json": false
+		},
+		{
+			"name": "bad_escape_quote",
+			"text": "\"\\'\"",
+			"json": false
+		},
+		{
+			"name": "bad_escape_upper_u",
+			"text": "\"\\U0041\"",
+			"json": false
+		},
+		{
+			"name": "short_unicode_escape",
+			"text": "\"\\u12\"",
+			"json": false
+		},
+		{
+			"name": "non_hex_unicode_escape",
+			"text": "\"\\u12g4\"",
+			"json": false
+		},
+		{
+			"name": "unterminated_string",
+			"text": "\"a",
+			"json": false
+		},
+		{
+			"name": "unterminated_escape",
+			"text": "\"a\\",
+			"json": false
+		},
+		{
+			"name": "unterminated_array",
+			"text": "[",
+			"json": false
+		},
+		{
+			"name": "unterminated_nested",
+			"text": "[[1]",
+			"json": false
+		},
+		{
+			"name": "unterminated_object",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "unterminated_object_after_key",
+			"text": "{\"a\"",
+			"json": false
+		},
+		{
+			"name": "unterminated_object_after_colon",
+			"text": "{\"a\":",
+			"json": false
+		},
+		{
+			"name": "unterminated_object_after_value",
+			"text": "{\"a\":1",
+			"json": false
+		},
+		{
+			"name": "unterminated_lone_surrogate",
+			"text": "\"\\ud800",
+			"json": false
+		},
+		{
+			"name": "stray_close_bracket",
+			"text": "]",
+			"json": false
+		},
+		{
+			"name": "stray_close_brace",
+			"text": "}",
+			"json": false
+		},
+		{
+			"name": "extra_close_bracket",
+			"text": "[]]",
+			"json": false
+		},
+		{
+			"name": "extra_close_brace",
+			"text": "{\"a\":1}}",
+			"json": false
+		},
+		{
+			"name": "mismatched_close",
+			"text": "[1}",
+			"json": false
+		},
+		{
+			"name": "mismatched_close_object",
+			"text": "{\"a\":1]",
+			"json": false
+		},
+		{
+			"name": "no_break_space_before",
+			"text": " 1",
+			"json": false
+		},
+		{
+			"name": "no_break_space_after",
+			"text": "1 ",
+			"json": false
+		},
+		{
+			"name": "vertical_tab",
+			"text": "\u000b1",
+			"json": false
+		},
+		{
+			"name": "form_feed",
+			"text": "\f1",
+			"json": false
+		},
+		{
+			"name": "line_separator_before",
+			"text": " 1",
+			"json": false
+		},
+		{
+			"name": "line_comment",
+			"text": "1 // one",
+			"json": false
+		},
+		{
+			"name": "block_comment",
+			"text": "/* one */ 1",
+			"json": false
+		},
+		{
+			"name": "two_arrays",
+			"text": "[][]",
+			"json": false
+		},
+		{
+			"name": "two_objects",
+			"text": "{}{}",
+			"json": false
+		},
+		{
+			"name": "overflow",
+			"text": "1e400",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "negative_overflow",
+			"text": "-1e400",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "overflow_huge_exponent",
+			"text": "1e99999",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "overflow_in_array",
+			"text": "[0,1e400]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "overflow_in_object",
+			"text": "{\"a\":{\"b\":-1e400}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "lone_lead",
+			"text": "\"\\ud800\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_trail",
+			"text": "\"\\udc00\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_lead_then_bmp",
+			"text": "\"\\ud800\\u0041\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_lead_then_text",
+			"text": "\"\\ud800a\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_lead_then_pair",
+			"text": "\"\\ud800\\ud83d\\ude00\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_in_array",
+			"text": "[\"a\",\"\\udfff\"]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_in_key",
+			"text": "{\"\\ud800\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "arrays_at_the_limit",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "arrays_past_the_limit",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "objects_at_the_limit",
+			"text": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		}
+	]
+}

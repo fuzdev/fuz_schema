@@ -1,0 +1,1615 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"0": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"9": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"10": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"4294967294": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				" ": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"a b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"é": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"é": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"😀": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"a\"b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"a\\b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"\u0000": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"\n": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				" ": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"01": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"-1": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"1.5": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"4294967295": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"length": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"prototype": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"then": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"__proto": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"hasOwn": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"a/b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"a~b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"$0": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"kind": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"def": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"schema": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"defs": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"null": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"undefined": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"required": {
+					"kind": "number"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "none",
+			"text": "{\"required\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all",
+			"text": "{\"\":0,\" \":1,\"a b\":2,\"é\":3,\"é\":4,\"😀\":5,\"a\\\"b\":6,\"a\\\\b\":7,\"\\u0000\":8,\"\\n\":9,\" \":10,\"10\":11,\"9\":12,\"0\":13,\"01\":14,\"-1\":15,\"1.5\":16,\"4294967294\":17,\"4294967295\":18,\"length\":19,\"prototype\":20,\"then\":21,\"__proto\":22,\"hasOwn\":23,\"a/b\":24,\"a~b\":25,\"$0\":26,\"kind\":27,\"def\":28,\"schema\":29,\"defs\":30,\"null\":31,\"undefined\":32,\"required\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all_reversed",
+			"text": "{\"required\":0,\"undefined\":0,\"null\":1,\"defs\":2,\"schema\":3,\"def\":4,\"kind\":5,\"$0\":6,\"a~b\":7,\"a/b\":8,\"hasOwn\":9,\"__proto\":10,\"then\":11,\"prototype\":12,\"length\":13,\"4294967295\":14,\"4294967294\":15,\"1.5\":16,\"-1\":17,\"01\":18,\"0\":19,\"9\":20,\"10\":21,\" \":22,\"\\n\":23,\"\\u0000\":24,\"a\\\\b\":25,\"a\\\"b\":26,\"😀\":27,\"é\":28,\"é\":29,\"a b\":30,\" \":31,\"\":32}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all_wrong",
+			"text": "{\"\":null,\" \":null,\"a b\":null,\"é\":null,\"é\":null,\"😀\":null,\"a\\\"b\":null,\"a\\\\b\":null,\"\\u0000\":null,\"\\n\":null,\" \":null,\"10\":null,\"9\":null,\"0\":null,\"01\":null,\"-1\":null,\"1.5\":null,\"4294967294\":null,\"4294967295\":null,\"length\":null,\"prototype\":null,\"then\":null,\"__proto\":null,\"hasOwn\":null,\"a/b\":null,\"a~b\":null,\"$0\":null,\"kind\":null,\"def\":null,\"schema\":null,\"defs\":null,\"null\":null,\"undefined\":null,\"required\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"0"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"9"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"4294967294"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						" "
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a\"b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a\\b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"\u0000"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"\n"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						" "
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"-1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"1.5"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"4294967295"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"length"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"prototype"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"then"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"__proto"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"hasOwn"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a/b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a~b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"$0"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"kind"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"def"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"schema"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"defs"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"null"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"undefined"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_0",
+			"text": "{\"required\":0,\"\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_0_wrong",
+			"text": "{\"required\":0,\"\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "key_1",
+			"text": "{\"required\":0,\" \":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_1_wrong",
+			"text": "{\"required\":0,\" \":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						" "
+					]
+				}
+			]
+		},
+		{
+			"name": "key_2",
+			"text": "{\"required\":0,\"a b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_2_wrong",
+			"text": "{\"required\":0,\"a b\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_3",
+			"text": "{\"required\":0,\"é\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_3_wrong",
+			"text": "{\"required\":0,\"é\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_4",
+			"text": "{\"required\":0,\"é\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_4_wrong",
+			"text": "{\"required\":0,\"é\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_5",
+			"text": "{\"required\":0,\"😀\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_5_wrong",
+			"text": "{\"required\":0,\"😀\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_6",
+			"text": "{\"required\":0,\"a\\\"b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_6_wrong",
+			"text": "{\"required\":0,\"a\\\"b\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a\"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_7",
+			"text": "{\"required\":0,\"a\\\\b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_7_wrong",
+			"text": "{\"required\":0,\"a\\\\b\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a\\b"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_8",
+			"text": "{\"required\":0,\"\\u0000\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_8_wrong",
+			"text": "{\"required\":0,\"\\u0000\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"\u0000"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_9",
+			"text": "{\"required\":0,\"\\n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_9_wrong",
+			"text": "{\"required\":0,\"\\n\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"\n"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_10",
+			"text": "{\"required\":0,\" \":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_10_wrong",
+			"text": "{\"required\":0,\" \":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						" "
+					]
+				}
+			]
+		},
+		{
+			"name": "key_11",
+			"text": "{\"required\":0,\"10\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_11_wrong",
+			"text": "{\"required\":0,\"10\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"10"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_12",
+			"text": "{\"required\":0,\"9\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_12_wrong",
+			"text": "{\"required\":0,\"9\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"9"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_13",
+			"text": "{\"required\":0,\"0\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_13_wrong",
+			"text": "{\"required\":0,\"0\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_14",
+			"text": "{\"required\":0,\"01\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_14_wrong",
+			"text": "{\"required\":0,\"01\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"01"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_15",
+			"text": "{\"required\":0,\"-1\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_15_wrong",
+			"text": "{\"required\":0,\"-1\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"-1"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_16",
+			"text": "{\"required\":0,\"1.5\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_16_wrong",
+			"text": "{\"required\":0,\"1.5\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"1.5"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_17",
+			"text": "{\"required\":0,\"4294967294\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_17_wrong",
+			"text": "{\"required\":0,\"4294967294\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967294"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_18",
+			"text": "{\"required\":0,\"4294967295\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_18_wrong",
+			"text": "{\"required\":0,\"4294967295\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967295"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_19",
+			"text": "{\"required\":0,\"length\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_19_wrong",
+			"text": "{\"required\":0,\"length\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"length"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_20",
+			"text": "{\"required\":0,\"prototype\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_20_wrong",
+			"text": "{\"required\":0,\"prototype\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"prototype"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_21",
+			"text": "{\"required\":0,\"then\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_21_wrong",
+			"text": "{\"required\":0,\"then\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"then"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_22",
+			"text": "{\"required\":0,\"__proto\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_22_wrong",
+			"text": "{\"required\":0,\"__proto\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"__proto"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_23",
+			"text": "{\"required\":0,\"hasOwn\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_23_wrong",
+			"text": "{\"required\":0,\"hasOwn\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"hasOwn"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_24",
+			"text": "{\"required\":0,\"a/b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_24_wrong",
+			"text": "{\"required\":0,\"a/b\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a/b"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_25",
+			"text": "{\"required\":0,\"a~b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_25_wrong",
+			"text": "{\"required\":0,\"a~b\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a~b"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_26",
+			"text": "{\"required\":0,\"$0\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_26_wrong",
+			"text": "{\"required\":0,\"$0\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"$0"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_27",
+			"text": "{\"required\":0,\"kind\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_27_wrong",
+			"text": "{\"required\":0,\"kind\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_28",
+			"text": "{\"required\":0,\"def\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_28_wrong",
+			"text": "{\"required\":0,\"def\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"def"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_29",
+			"text": "{\"required\":0,\"schema\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_29_wrong",
+			"text": "{\"required\":0,\"schema\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"schema"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_30",
+			"text": "{\"required\":0,\"defs\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_30_wrong",
+			"text": "{\"required\":0,\"defs\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"defs"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_31",
+			"text": "{\"required\":0,\"null\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_31_wrong",
+			"text": "{\"required\":0,\"null\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"null"
+					]
+				}
+			]
+		},
+		{
+			"name": "key_32",
+			"text": "{\"required\":0,\"undefined\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "key_32_wrong",
+			"text": "{\"required\":0,\"undefined\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"undefined"
+					]
+				}
+			]
+		},
+		{
+			"name": "escaped_ascii",
+			"text": "{\"required\":0,\"a\\u0020b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_composed",
+			"text": "{\"required\":0,\"\\u00e9\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_decomposed",
+			"text": "{\"required\":0,\"e\\u0301\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_pair",
+			"text": "{\"required\":0,\"\\ud83d\\ude00\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_quote",
+			"text": "{\"required\":0,\"a\\\"b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_backslash",
+			"text": "{\"required\":0,\"a\\\\b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_slash",
+			"text": "{\"required\":0,\"a\\/b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_nul",
+			"text": "{\"required\":0,\"\\u0000\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_newline",
+			"text": "{\"required\":0,\"\\n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_newline_as_unicode",
+			"text": "{\"required\":0,\"\\u000a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "upper",
+			"text": "{\"required\":0,\"A B\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"A B"
+					]
+				}
+			]
+		},
+		{
+			"name": "upper_composed",
+			"text": "{\"required\":0,\"É\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"É"
+					]
+				}
+			]
+		},
+		{
+			"name": "two_spaces",
+			"text": "{\"required\":0,\"  \":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"  "
+					]
+				}
+			]
+		},
+		{
+			"name": "leading_zero",
+			"text": "{\"required\":0,\"00\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"00"
+					]
+				}
+			]
+		},
+		{
+			"name": "positive_index",
+			"text": "{\"required\":0,\"+1\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"+1"
+					]
+				}
+			]
+		},
+		{
+			"name": "float_index",
+			"text": "{\"required\":0,\"1.50\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"1.50"
+					]
+				}
+			]
+		},
+		{
+			"name": "past_index",
+			"text": "{\"required\":0,\"4294967296\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"4294967296"
+					]
+				}
+			]
+		},
+		{
+			"name": "trailing_nul",
+			"text": "{\"required\":0,\"\\u0000\\u0000\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"\u0000\u0000"
+					]
+				}
+			]
+		},
+		{
+			"name": "proto",
+			"text": "{\"required\":0,\"__proto__\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"__proto__"
+					]
+				}
+			]
+		},
+		{
+			"name": "constructor",
+			"text": "{\"required\":0,\"constructor\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"constructor"
+					]
+				}
+			]
+		},
+		{
+			"name": "has_own_property",
+			"text": "{\"required\":0,\"hasOwnProperty\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"hasOwnProperty"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_escaped",
+			"text": "{\"\\u0072equired\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "required_upper",
+			"text": "{\"Required\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"required"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"Required"
+					]
+				}
+			]
+		}
+	]
+}

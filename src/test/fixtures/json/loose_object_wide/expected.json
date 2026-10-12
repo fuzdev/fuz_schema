@@ -1,0 +1,1449 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"k0": {
+					"kind": "number"
+				},
+				"k1": {
+					"kind": "number"
+				},
+				"k2": {
+					"kind": "number"
+				},
+				"k3": {
+					"kind": "number"
+				},
+				"k4": {
+					"kind": "number"
+				},
+				"k5": {
+					"kind": "number"
+				},
+				"k6": {
+					"kind": "number"
+				},
+				"k7": {
+					"kind": "number"
+				},
+				"k8": {
+					"kind": "number"
+				},
+				"k9": {
+					"kind": "number"
+				},
+				"k10": {
+					"kind": "number"
+				},
+				"k11": {
+					"kind": "number"
+				},
+				"k12": {
+					"kind": "number"
+				},
+				"k13": {
+					"kind": "number"
+				},
+				"k14": {
+					"kind": "number"
+				},
+				"k15": {
+					"kind": "number"
+				},
+				"k16": {
+					"kind": "number"
+				},
+				"k17": {
+					"kind": "number"
+				},
+				"k18": {
+					"kind": "number"
+				},
+				"k19": {
+					"kind": "number"
+				},
+				"k20": {
+					"kind": "number"
+				},
+				"k21": {
+					"kind": "number"
+				},
+				"k22": {
+					"kind": "number"
+				},
+				"k23": {
+					"kind": "number"
+				},
+				"k24": {
+					"kind": "number"
+				},
+				"k25": {
+					"kind": "number"
+				},
+				"k26": {
+					"kind": "number"
+				},
+				"k27": {
+					"kind": "number"
+				},
+				"k28": {
+					"kind": "number"
+				},
+				"k29": {
+					"kind": "number"
+				},
+				"k30": {
+					"kind": "number"
+				},
+				"k31": {
+					"kind": "number"
+				},
+				"k32": {
+					"kind": "number"
+				},
+				"k33": {
+					"kind": "number"
+				},
+				"k34": {
+					"kind": "number"
+				},
+				"k35": {
+					"kind": "number"
+				},
+				"k36": {
+					"kind": "number"
+				},
+				"k37": {
+					"kind": "number"
+				},
+				"k38": {
+					"kind": "number"
+				},
+				"k39": {
+					"kind": "number"
+				},
+				"k40": {
+					"kind": "number"
+				},
+				"k41": {
+					"kind": "number"
+				},
+				"k42": {
+					"kind": "number"
+				},
+				"k43": {
+					"kind": "number"
+				},
+				"k44": {
+					"kind": "number"
+				},
+				"k45": {
+					"kind": "number"
+				},
+				"k46": {
+					"kind": "number"
+				},
+				"k47": {
+					"kind": "number"
+				},
+				"k48": {
+					"kind": "number"
+				},
+				"k49": {
+					"kind": "number"
+				},
+				"k50": {
+					"kind": "number"
+				},
+				"k51": {
+					"kind": "number"
+				},
+				"k52": {
+					"kind": "number"
+				},
+				"k53": {
+					"kind": "number"
+				},
+				"k54": {
+					"kind": "number"
+				},
+				"k55": {
+					"kind": "number"
+				},
+				"k56": {
+					"kind": "number"
+				},
+				"k57": {
+					"kind": "number"
+				},
+				"k58": {
+					"kind": "number"
+				},
+				"k59": {
+					"kind": "number"
+				},
+				"k60": {
+					"kind": "number"
+				},
+				"k61": {
+					"kind": "number"
+				},
+				"k62": {
+					"kind": "number"
+				},
+				"k63": {
+					"kind": "number"
+				},
+				"k64": {
+					"kind": "number"
+				},
+				"k65": {
+					"kind": "number"
+				},
+				"k66": {
+					"kind": "number"
+				},
+				"k67": {
+					"kind": "number"
+				},
+				"k68": {
+					"kind": "number"
+				},
+				"k69": {
+					"kind": "number"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "all",
+			"text": "{\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":67,\"k68\":68,\"k69\":69}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all_and_extra",
+			"text": "{\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":67,\"k68\":68,\"k69\":69,\"other\":[1,{\"k0\":\"x\"}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "extra_first",
+			"text": "{\"other\":null,\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":67,\"k68\":68,\"k69\":69}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "reversed_and_extra",
+			"text": "{\"k69\":69,\"k68\":68,\"k67\":67,\"k66\":66,\"k65\":65,\"k64\":64,\"k63\":63,\"k62\":62,\"k61\":61,\"k60\":60,\"k59\":59,\"k58\":58,\"k57\":57,\"k56\":56,\"k55\":55,\"k54\":54,\"k53\":53,\"k52\":52,\"k51\":51,\"k50\":50,\"k49\":49,\"k48\":48,\"k47\":47,\"k46\":46,\"k45\":45,\"k44\":44,\"k43\":43,\"k42\":42,\"k41\":41,\"k40\":40,\"k39\":39,\"k38\":38,\"k37\":37,\"k36\":36,\"k35\":35,\"k34\":34,\"k33\":33,\"k32\":32,\"k31\":31,\"k30\":30,\"k29\":29,\"k28\":28,\"k27\":27,\"k26\":26,\"k25\":25,\"k24\":24,\"k23\":23,\"k22\":22,\"k21\":21,\"k20\":20,\"k19\":19,\"k18\":18,\"k17\":17,\"k16\":16,\"k15\":15,\"k14\":14,\"k13\":13,\"k12\":12,\"k11\":11,\"k10\":10,\"k9\":9,\"k8\":8,\"k7\":7,\"k6\":6,\"k5\":5,\"k4\":4,\"k3\":3,\"k2\":2,\"k1\":1,\"k0\":0,\"k70\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "missing_first",
+			"text": "{\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":67,\"k68\":68,\"k69\":69}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k0"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing_past_one_word",
+			"text": "{\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k67\":67,\"k68\":68,\"k69\":69}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k66"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing_last_and_extra",
+			"text": "{\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":67,\"k68\":68,\"other\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k69"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_past_one_word",
+			"text": "{\"k0\":0,\"k1\":1,\"k2\":2,\"k3\":3,\"k4\":4,\"k5\":5,\"k6\":6,\"k7\":7,\"k8\":8,\"k9\":9,\"k10\":10,\"k11\":11,\"k12\":12,\"k13\":13,\"k14\":14,\"k15\":15,\"k16\":16,\"k17\":17,\"k18\":18,\"k19\":19,\"k20\":20,\"k21\":21,\"k22\":22,\"k23\":23,\"k24\":24,\"k25\":25,\"k26\":26,\"k27\":27,\"k28\":28,\"k29\":29,\"k30\":30,\"k31\":31,\"k32\":32,\"k33\":33,\"k34\":34,\"k35\":35,\"k36\":36,\"k37\":37,\"k38\":38,\"k39\":39,\"k40\":40,\"k41\":41,\"k42\":42,\"k43\":43,\"k44\":44,\"k45\":45,\"k46\":46,\"k47\":47,\"k48\":48,\"k49\":49,\"k50\":50,\"k51\":51,\"k52\":52,\"k53\":53,\"k54\":54,\"k55\":55,\"k56\":56,\"k57\":57,\"k58\":58,\"k59\":59,\"k60\":60,\"k61\":61,\"k62\":62,\"k63\":63,\"k64\":64,\"k65\":65,\"k66\":66,\"k67\":\"67\",\"k68\":68,\"k69\":69}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"k67"
+					]
+				}
+			]
+		},
+		{
+			"name": "only_extra",
+			"text": "{\"other\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k0"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k3"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k4"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k5"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k6"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k7"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k8"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k9"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k11"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k12"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k13"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k14"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k15"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k16"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k17"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k18"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k19"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k20"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k22"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k23"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k24"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k25"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k26"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k27"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k28"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k29"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k30"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k31"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k32"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k33"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k34"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k35"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k36"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k37"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k38"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k39"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k40"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k41"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k42"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k43"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k44"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k45"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k46"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k47"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k48"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k49"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k50"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k51"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k52"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k53"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k54"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k55"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k56"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k57"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k58"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k59"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k60"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k61"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k62"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k63"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k64"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k65"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k66"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k67"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k68"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k69"
+					]
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k0"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k3"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k4"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k5"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k6"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k7"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k8"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k9"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k11"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k12"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k13"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k14"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k15"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k16"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k17"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k18"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k19"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k20"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k22"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k23"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k24"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k25"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k26"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k27"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k28"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k29"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k30"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k31"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k32"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k33"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k34"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k35"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k36"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k37"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k38"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k39"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k40"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k41"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k42"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k43"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k44"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k45"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k46"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k47"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k48"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k49"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k50"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k51"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k52"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k53"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k54"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k55"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k56"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k57"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k58"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k59"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k60"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k61"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k62"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k63"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k64"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k65"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k66"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k67"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k68"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"k69"
+					]
+				}
+			]
+		}
+	]
+}

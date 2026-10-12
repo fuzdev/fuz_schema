@@ -1,8 +1,9 @@
 //! The Rust side of `fuz_schema`: the schema model of the TypeScript library
 //! in `src/lib/` at the repo root, and the verdict on a JSON text.
 //!
-//! A `Schema` is built with `SchemaBuilder`. It answers whether a JSON text
-//! matches:
+//! A `Schema` is built with `SchemaBuilder`, or loaded from the interchange
+//! form a TypeScript schema serializes to with `Schema::from_json`. It answers
+//! whether a JSON text matches:
 //!
 //! ```
 //! use fuz_schema::SchemaBuilder;
@@ -31,8 +32,9 @@
 //! - `Schema::is_json_exact` parses the whole text into a `Json` and walks
 //!   it, and agrees with the TypeScript library on every text it reads.
 //!
-//! What the crate does not carry across is refused when a schema is built,
-//! with a `SchemaError` that says what and where. See `SchemaErrorKind`.
+//! What the crate does not carry across is refused when a schema is built or
+//! loaded, with a `SchemaError` that says what and where. See
+//! `SchemaErrorKind`.
 //!
 //! The crate reads numbers as `serde_json` hands them over by default. Its
 //! `arbitrary_precision` feature, which any crate of a build turns on for
@@ -43,6 +45,7 @@ mod builder;
 #[cfg(test)]
 mod differential;
 mod error;
+mod interchange;
 mod js;
 mod json;
 mod schema;
@@ -57,6 +60,31 @@ pub use schema::{
 };
 
 impl Schema {
+    /// Loads a schema from the text of its interchange form, which is what a
+    /// TypeScript schema serializes to: every node as `{"kind": …, "def": …}`
+    /// in an envelope, `{"schema": node, "defs": {name: node}}`, whose `defs`
+    /// are what each `lazy` names.
+    ///
+    /// ```
+    /// use fuz_schema::Schema;
+    ///
+    /// let schema = Schema::from_json(
+    ///     r#"{"schema": {"kind": "array", "def": {"kind": "number"}}}"#,
+    /// )?;
+    /// assert!(schema.is_json("[1, 2]")?);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// When `interchange` is not JSON, writes a key twice in one object, is
+    /// not shaped as the form says, or holds a schema the crate refuses, with
+    /// the reason and a path to it.
+    /// See `SchemaErrorKind`.
+    pub fn from_json(interchange: &str) -> Result<Self, SchemaError> {
+        interchange::load_text(interchange)
+    }
+
     /// Whether `json` is a JSON text that matches the schema.
     ///
     /// The verdict is reached while the text is parsed and stops at the first

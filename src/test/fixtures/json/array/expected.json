@@ -1,0 +1,292 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "array",
+				"def": {
+					"kind": "object",
+					"def": {
+						"n": {
+							"kind": "number"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_inner",
+			"text": "[[]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "valid",
+			"text": "[[{\"n\":1},{\"n\":2}],[],[{\"n\":3}]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "padded",
+			"text": " [ [ { \"n\" : 1 } , { \"n\" : 2 } ] , [ ] ] ",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_first",
+			"text": "[[{\"n\":\"1\"},{\"n\":2}],[{\"n\":3}]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0,
+						0,
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_last",
+			"text": "[[{\"n\":1},{\"n\":2}],[{\"n\":null}]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						1,
+						0,
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_every",
+			"text": "[[{\"n\":\"a\"},{\"m\":1}],[1],null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0,
+						0,
+						"n"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						0,
+						1,
+						"n"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						0,
+						1,
+						"m"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						1,
+						0
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						2
+					]
+				}
+			]
+		},
+		{
+			"name": "item_not_array",
+			"text": "[{\"n\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "item_null",
+			"text": "[null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_item_not_object",
+			"text": "[[1]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						0,
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_item_array",
+			"text": "[[[]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						0,
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "too_deep",
+			"text": "[[[{\"n\":1}]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						0,
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{\"0\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object_like_array",
+			"text": "{\"length\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "string",
+			"text": "\"[]\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "0",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": []
+				}
+			]
+		}
+	]
+}

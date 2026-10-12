@@ -1,0 +1,315 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"optional_option": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"default_option": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "default",
+											"def": {
+												"schema": {
+													"kind": "string"
+												},
+												"value": "x"
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"lazy_optional": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "lazy",
+									"def": "$0"
+								}
+							}
+						}
+					}
+				},
+				"unknown_option": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"nullable_option": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "number"
+												}
+											}
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"unknown_entries": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"l": {
+									"kind": "loose_object",
+									"def": {
+										"a": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"t": {
+									"kind": "strip_object",
+									"def": {
+										"a": {
+											"kind": "unknown"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"integer": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"i": {
+									"kind": "integer"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "optional",
+				"def": {
+					"schema": {
+						"kind": "string"
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "none",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_option_absent",
+			"text": "{\"optional_option\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_option_null",
+			"text": "{\"optional_option\":{\"u\":null}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | optional",
+					"received": "null",
+					"path": [
+						"optional_option",
+						"u"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_option_string",
+			"text": "{\"optional_option\":{\"u\":\"a\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_option_absent",
+			"text": "{\"default_option\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_option_wrong",
+			"text": "{\"default_option\":{\"u\":true}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | default",
+					"received": "boolean",
+					"path": [
+						"default_option",
+						"u"
+					]
+				}
+			]
+		},
+		{
+			"name": "lazy_optional_absent",
+			"text": "{\"lazy_optional\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "lazy_optional_wrong",
+			"text": "{\"lazy_optional\":{\"u\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"lazy_optional",
+						"u"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_option_absent",
+			"text": "{\"unknown_option\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_option_absent",
+			"text": "{\"nullable_option\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable",
+					"received": "undefined",
+					"path": [
+						"nullable_option",
+						"u"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_option_null",
+			"text": "{\"nullable_option\":{\"u\":null}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_entries_absent",
+			"text": "{\"unknown_entries\":{\"l\":{},\"t\":{}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_absent",
+			"text": "{\"integer\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "undefined",
+					"path": [
+						"integer",
+						"i"
+					]
+				}
+			]
+		}
+	]
+}

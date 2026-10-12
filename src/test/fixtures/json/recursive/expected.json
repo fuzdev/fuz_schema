@@ -1,0 +1,681 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"value": {
+					"kind": "number"
+				},
+				"children": {
+					"kind": "array",
+					"def": {
+						"kind": "lazy",
+						"def": "$0"
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "object",
+				"def": {
+					"value": {
+						"kind": "number"
+					},
+					"children": {
+						"kind": "array",
+						"def": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "leaf",
+			"text": "{\"value\":1,\"children\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "small",
+			"text": "{\"value\":1,\"children\":[{\"value\":2,\"children\":[]},{\"value\":3,\"children\":[{\"value\":4,\"children\":[]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "other_order",
+			"text": "{\"children\":[{\"children\":[],\"value\":2}],\"value\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "missing_children",
+			"text": "{\"value\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"children"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing_inner_children",
+			"text": "{\"value\":1,\"children\":[{\"value\":2}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"children",
+						0,
+						"children"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_inner_value",
+			"text": "{\"value\":1,\"children\":[{\"value\":\"2\",\"children\":[]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"children",
+						0,
+						"value"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_deep_value",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":null,\"children\":[]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"value"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_everywhere",
+			"text": "{\"value\":\"a\",\"children\":[{\"value\":\"b\",\"children\":[1,{\"children\":{}}]},null],\"extra\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"value"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"children",
+						0,
+						"value"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"children",
+						0,
+						"children",
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"children",
+						0,
+						"children",
+						1,
+						"value"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"children",
+						0,
+						"children",
+						1,
+						"children"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"children",
+						1
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"extra"
+					]
+				}
+			]
+		},
+		{
+			"name": "child_not_object",
+			"text": "{\"value\":1,\"children\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"children",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_inner_key",
+			"text": "{\"value\":1,\"children\":[{\"value\":2,\"children\":[],\"extra\":1}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"children",
+						0,
+						"extra"
+					]
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "levels_10",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "levels_50",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "levels_63",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "levels_63_wrong_leaf",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[null]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "levels_64",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "levels_100",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "levels_100_wrong_leaf",
+			"text": "{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[null]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0,
+						"children",
+						0
+					]
+				}
+			],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "levels_100_wrong_root",
+			"text": "{\"value\":\"x\",\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":1,\"children\":[{\"value\":0,\"children\":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"value"
+					]
+				}
+			],
+			"diverges": "depth_limit_unread"
+		}
+	]
+}

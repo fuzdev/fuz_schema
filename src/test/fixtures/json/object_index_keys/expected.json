@@ -1,0 +1,119 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"1": {
+					"kind": "number"
+				},
+				"b": {
+					"kind": "number"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "as_written",
+			"text": "{\"b\":3,\"1\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "index_first",
+			"text": "{\"1\":2,\"b\":3}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "both_wrong",
+			"text": "{\"b\":\"x\",\"1\":\"y\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing_index",
+			"text": "{\"b\":3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_index",
+			"text": "{\"b\":3,\"1\":2,\"0\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "around_index_last_good",
+			"text": "{\"b\":\"x\",\"1\":2,\"b\":3}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "around_index_last_bad",
+			"text": "{\"b\":3,\"1\":2,\"b\":\"x\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "index_last_good",
+			"text": "{\"1\":\"x\",\"b\":3,\"1\":2}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		}
+	]
+}

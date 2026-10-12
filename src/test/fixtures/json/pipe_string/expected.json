@@ -1,0 +1,369 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "pipe",
+			"def": [
+				{
+					"kind": "pipe",
+					"def": [
+						{
+							"kind": "string"
+						},
+						{
+							"kind": "min_length",
+							"def": 2
+						}
+					]
+				},
+				{
+					"kind": "max_length",
+					"def": 4
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "two",
+			"text": "\"ab\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "four",
+			"text": "\"abcd\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "one",
+			"text": "\"a\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "five",
+			"text": "\"abcde\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "astral",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "astral_escaped",
+			"text": "\"\\ud83d\\ude00\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "astral_escaped_upper",
+			"text": "\"\\uD83D\\uDE00\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_astral",
+			"text": "\"😀😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_astral_and_one",
+			"text": "\"😀😀a\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "astral_and_one",
+			"text": "\"a😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_bytes",
+			"text": "\"é\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "two_two_bytes",
+			"text": "\"éé\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "three_bytes",
+			"text": "\"€\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "two_three_bytes",
+			"text": "\"€€\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "five_three_bytes",
+			"text": "\"€€€€€\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "combining",
+			"text": "\"é\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_bmp",
+			"text": "\"\\u0061\\u0062\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_nul",
+			"text": "\"\\u0000\\u0000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escapes",
+			"text": "\"\\n\\t\\\"\\\\\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "five_escapes",
+			"text": "\"\\n\\t\\\"\\\\\\/\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "joined",
+			"text": "\"👨‍👩‍👧\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "flag",
+			"text": "\"🇯🇵\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "line_separators",
+			"text": "\"  \"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "lone_lead",
+			"text": "\"a\\ud800\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_trail",
+			"text": "\"\\udc00a\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_lead_then_escape",
+			"text": "\"\\ud800A\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_lead_then_newline",
+			"text": "\"\\ud800\\n\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "reversed_pair",
+			"text": "\"\\ude00\\ud83d\"",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_too_long",
+			"text": "\"abcd\\ud800\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 4",
+					"received": "string",
+					"path": []
+				}
+			],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "number",
+			"text": "2",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[\"a\",\"b\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{\"length\":2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": []
+				}
+			]
+		}
+	]
+}

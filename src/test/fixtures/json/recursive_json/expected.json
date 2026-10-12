@@ -1,0 +1,265 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "literal",
+						"def": null
+					},
+					{
+						"kind": "boolean"
+					},
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "number"
+							},
+							{
+								"kind": "integer"
+							}
+						]
+					},
+					{
+						"kind": "string"
+					},
+					{
+						"kind": "array",
+						"def": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					},
+					{
+						"kind": "record",
+						"def": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "true",
+			"text": "true",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer",
+			"text": "12",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer_as_float",
+			"text": "12.0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction",
+			"text": "1.5",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_array",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_object",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed",
+			"text": "{\"a\":[1,\"b\",null,{\"c\":[true,[[]],{}]}],\"d\":{\"e\":{\"f\":2}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction_in_array",
+			"text": "[1,2,[3,[4.5]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "fraction_in_object",
+			"text": "{\"a\":{\"b\":{\"c\":0.1}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "fraction_first",
+			"text": "[0.5,{\"a\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_last_good",
+			"text": "{\"a\":1.5,\"a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_last_bad",
+			"text": "{\"a\":1,\"a\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "proto_key",
+			"text": "{\"__proto__\":{\"a\":1.5}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "depth_100",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "depth_100_fraction",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1.5]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "depth_127",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "depth_126_fraction",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0.5]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "depth_128",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "depth_200_fraction",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1.5]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | pipe | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			],
+			"diverges": "depth_limit"
+		}
+	]
+}

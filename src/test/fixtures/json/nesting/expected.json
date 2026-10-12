@@ -1,0 +1,236 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "lazy",
+				"def": "$1"
+			},
+			"$1": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "bigint"
+					},
+					{
+						"kind": "nullable",
+						"def": {
+							"schema": {
+								"kind": "default",
+								"def": {
+									"schema": {
+										"kind": "optional",
+										"def": {
+											"schema": {
+												"kind": "lazy",
+												"def": "$2"
+											}
+										}
+									},
+									"value": null
+								}
+							}
+						}
+					}
+				]
+			},
+			"$2": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "bigint"
+					},
+					{
+						"kind": "nullable",
+						"def": {
+							"schema": {
+								"kind": "default",
+								"def": {
+									"schema": {
+										"kind": "optional",
+										"def": {
+											"schema": {
+												"kind": "lazy",
+												"def": "$3"
+											}
+										}
+									},
+									"value": null
+								}
+							}
+						}
+					}
+				]
+			},
+			"$3": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "bigint"
+					},
+					{
+						"kind": "nullable",
+						"def": {
+							"schema": {
+								"kind": "union",
+								"def": [
+									{
+										"kind": "pipe",
+										"def": [
+											{
+												"kind": "string"
+											},
+											{
+												"kind": "max_length",
+												"def": 1
+											}
+										]
+									},
+									{
+										"kind": "array",
+										"def": {
+											"kind": "lazy",
+											"def": "$0"
+										}
+									}
+								]
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "long_string",
+			"text": "\"ab\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested",
+			"text": "[[\"a\",null,[[]]],\"b\",[null]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested_wrong",
+			"text": "[[\"a\",null,[[1]]],\"b\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "nested_long_string",
+			"text": "[[[[\"ab\"]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "deepest",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "deepest_wrong",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | nullable",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "too_deep",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		}
+	]
+}

@@ -37,7 +37,7 @@ use crate::walk;
 #[derive(Debug, Clone, Default)]
 pub struct SchemaBuilder {
     nodes: Vec<Node>,
-    /// Every `lazy`, with the name its target has in the path of an error.
+    /// Every `lazy`, with the name its target has in the interchange form.
     lazies: Vec<(NodeId, Box<str>)>,
     /// A `define` that could not be done, reported by `build`.
     deferred: Option<SchemaErrorKind>,
@@ -112,8 +112,8 @@ impl SchemaBuilder {
         self.declare_named(name.into_boxed_str())
     }
 
-    /// Declares a `lazy` whose target has `name` in the path of an error.
-    fn declare_named(&mut self, name: Box<str>) -> NodeId {
+    /// Declares a `lazy` whose target has `name` in the interchange form.
+    pub(crate) fn declare_named(&mut self, name: Box<str>) -> NodeId {
         let id = self.push(Node::Lazy(NodeId::UNDEFINED));
         self.lazies.push((id, name));
         id
@@ -459,7 +459,7 @@ enum Origin {
 struct Checker<'a> {
     nodes: &'a [Node],
     /// The path of each root and its node: the schema, then each lazy target
-    /// under the name it has in a path.
+    /// under the name it has in the interchange form.
     roots: Vec<(String, NodeId)>,
     origins: Vec<Origin>,
     /// The reachable nodes, in the order they were reached.

@@ -1,0 +1,132 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "one_of",
+			"def": [
+				0,
+				"a"
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "zero",
+			"text": "0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero",
+			"text": "-0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_fraction",
+			"text": "0.0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero_fraction",
+			"text": "-0.0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_exponent",
+			"text": "0e9",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "underflow",
+			"text": "1e-400",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_string",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "0 | \"a\"",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_zero",
+			"text": "\"0\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "0 | \"a\"",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "false",
+			"text": "false",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "0 | \"a\"",
+					"received": "boolean",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "0 | \"a\"",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "tiny",
+			"text": "5e-324",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "0 | \"a\"",
+					"received": "number",
+					"path": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,146 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "pipe",
+			"def": [
+				{
+					"kind": "array",
+					"def": {
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "array",
+								"def": {
+									"kind": "number"
+								}
+							},
+							{
+								"kind": "min_length",
+								"def": 1
+							}
+						]
+					}
+				},
+				{
+					"kind": "min_length",
+					"def": 1
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "one_of_one",
+			"text": "[[1]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "inner_empty",
+			"text": "[[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "second_inner_empty",
+			"text": "[[1],[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1",
+					"received": "array",
+					"path": [
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "two_of_two",
+			"text": "[[1,2],[3,4]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "inner_wrong",
+			"text": "[[1,\"2\"]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0,
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_not_array",
+			"text": "[1]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "not_array",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "inner_empty_then_malformed",
+			"text": "[[],}",
+			"json": false,
+			"diverges": "malformed_tail"
+		}
+	]
+}

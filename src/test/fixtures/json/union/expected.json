@@ -1,0 +1,375 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "string"
+					},
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "number"
+							},
+							{
+								"kind": "integer"
+							}
+						]
+					},
+					{
+						"kind": "object",
+						"def": {
+							"a": {
+								"kind": "string"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"a": {
+								"kind": "number"
+							},
+							"c": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "boolean"
+									}
+								}
+							}
+						}
+					},
+					{
+						"kind": "array",
+						"def": {
+							"kind": "number"
+						}
+					},
+					{
+						"kind": "lazy",
+						"def": "$0"
+					},
+					{
+						"kind": "union",
+						"def": [
+							{
+								"kind": "literal",
+								"def": true
+							},
+							{
+								"kind": "pipe",
+								"def": [
+									{
+										"kind": "array",
+										"def": {
+											"kind": "string"
+										}
+									},
+									{
+										"kind": "min_length",
+										"def": 2
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "literal",
+				"def": null
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "every_option",
+			"text": "[\"x\",1,{\"a\":\"x\"},{\"a\":1},{\"a\":1,\"c\":true},[1,2],null,true,[\"a\",\"b\"]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string",
+			"text": "[\"\"]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer",
+			"text": "[1e2]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "not_integer",
+			"text": "[1.5]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "number",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "first_object",
+			"text": "[{\"a\":\"x\"}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "second_object",
+			"text": "[{\"a\":1,\"c\":false}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "neither_object",
+			"text": "[{\"a\":true}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "mixed_object",
+			"text": "[{\"a\":\"x\",\"c\":true}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "empty_object",
+			"text": "[{}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_key",
+			"text": "[{\"a\":1,\"d\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "numbers",
+			"text": "[[1,2,3]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_array",
+			"text": "[[]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "one_string",
+			"text": "[[\"a\"]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "two_strings",
+			"text": "[[\"a\",\"b\"]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed_array",
+			"text": "[[1,\"a\"]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "false",
+			"text": "[false]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "boolean",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "nested_array",
+			"text": "[[[1]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "no_match_last",
+			"text": "[\"x\",1,null,false]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "boolean",
+					"path": [
+						3
+					]
+				}
+			]
+		},
+		{
+			"name": "no_match_first",
+			"text": "[false,\"x\",1]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "boolean",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "not_array",
+			"text": "\"x\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_last_good",
+			"text": "[{\"a\":true,\"a\":\"x\"}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_last_bad",
+			"text": "[{\"a\":\"x\",\"a\":true}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | pipe | object | object | array | lazy | union",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_changes_option",
+			"text": "[{\"a\":\"x\",\"c\":true,\"a\":1}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

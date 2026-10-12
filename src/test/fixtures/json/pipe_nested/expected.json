@@ -1,0 +1,223 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "bigint"
+					},
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "pipe",
+								"def": [
+									{
+										"kind": "pipe",
+										"def": [
+											{
+												"kind": "pipe",
+												"def": [
+													{
+														"kind": "pipe",
+														"def": [
+															{
+																"kind": "pipe",
+																"def": [
+																	{
+																		"kind": "pipe",
+																		"def": [
+																			{
+																				"kind": "array",
+																				"def": {
+																					"kind": "lazy",
+																					"def": "$0"
+																				}
+																			},
+																			{
+																				"kind": "max_length",
+																				"def": 2
+																			}
+																		]
+																	},
+																	{
+																		"kind": "max_length",
+																		"def": 3
+																	}
+																]
+															},
+															{
+																"kind": "min_length",
+																"def": 0
+															}
+														]
+													},
+													{
+														"kind": "max_length",
+														"def": 3
+													}
+												]
+											},
+											{
+												"kind": "min_length",
+												"def": 0
+											}
+										]
+									},
+									{
+										"kind": "max_length",
+										"def": 3
+									}
+								]
+							},
+							{
+								"kind": "min_length",
+								"def": 0
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "one",
+			"text": "[[[]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two",
+			"text": "[[[]],[[]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "three",
+			"text": "[[[]],[[]],[[]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | pipe",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "inner_empty",
+			"text": "[[]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | pipe",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "item_number",
+			"text": "[1]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | pipe",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | pipe",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "depth_20",
+			"text": "[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "depth_20_of_one",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "depth_20_of_three",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[]],[[]],[[]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | pipe",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "deepest",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "too_deep",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		},
+		{
+			"name": "three_then_malformed",
+			"text": "[[[]],[[]],[[]],}",
+			"json": false,
+			"diverges": "malformed_tail"
+		}
+	]
+}

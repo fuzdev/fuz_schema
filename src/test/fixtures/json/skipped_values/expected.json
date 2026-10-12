@@ -1,0 +1,346 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"any": {
+					"kind": "unknown"
+				},
+				"items": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "unknown"
+							}
+						}
+					}
+				},
+				"map": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "record",
+							"def": {
+								"kind": "nullable",
+								"def": {
+									"schema": {
+										"kind": "optional",
+										"def": {
+											"schema": {
+												"kind": "unknown"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"loose": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "loose_object",
+							"def": {
+								"a": {
+									"kind": "number"
+								}
+							}
+						}
+					}
+				},
+				"strip": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "strip_object",
+							"def": {}
+						}
+					}
+				},
+				"either": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "lazy",
+									"def": "$0"
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "unknown"
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "valid",
+			"text": "{\"any\":[1,{\"a\":null}],\"items\":[1,\"a\"],\"map\":{\"a\":1},\"loose\":{\"a\":1,\"b\":2},\"strip\":{\"c\":3},\"either\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "any_missing",
+			"text": "{\"items\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "any_overflow",
+			"text": "{\"any\":1e400}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "any_lone_surrogate",
+			"text": "{\"any\":\"\\ud800\"}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "any_lone_surrogate_key",
+			"text": "{\"any\":{\"\\udc00\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "any_deep",
+			"text": "{\"any\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "items_overflow",
+			"text": "{\"items\":[1,-1e400]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "items_lone_surrogate",
+			"text": "{\"items\":[\"a\\ud800b\"]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "items_deep",
+			"text": "{\"items\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "map_overflow",
+			"text": "{\"map\":{\"a\":1e400}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "map_lone_surrogate_key",
+			"text": "{\"map\":{\"\\ud800\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "loose_overflow",
+			"text": "{\"loose\":{\"a\":1,\"b\":1e400}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "loose_entry_overflow",
+			"text": "{\"loose\":{\"a\":1e400}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "loose_deep",
+			"text": "{\"loose\":{\"b\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "strip_lone_surrogate",
+			"text": "{\"strip\":{\"a\":\"\\ud800\"}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "either_overflow",
+			"text": "{\"either\":1e400}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "either_deep",
+			"text": "{\"either\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "any_trailing_comma",
+			"text": "{\"any\":[1,]}",
+			"json": false
+		},
+		{
+			"name": "any_leading_zero",
+			"text": "{\"any\":01}",
+			"json": false
+		},
+		{
+			"name": "any_raw_tab",
+			"text": "{\"any\":\"\t\"}",
+			"json": false
+		},
+		{
+			"name": "any_bad_escape",
+			"text": "{\"any\":\"\\x\"}",
+			"json": false
+		},
+		{
+			"name": "any_short_escape",
+			"text": "{\"any\":\"\\u12\"}",
+			"json": false
+		},
+		{
+			"name": "any_cut_short",
+			"text": "{\"any\":[1",
+			"json": false
+		},
+		{
+			"name": "any_single_quotes",
+			"text": "{\"any\":'a'}",
+			"json": false
+		},
+		{
+			"name": "any_nan",
+			"text": "{\"any\":NaN}",
+			"json": false
+		},
+		{
+			"name": "any_mismatched",
+			"text": "{\"any\":[{]}}",
+			"json": false
+		},
+		{
+			"name": "loose_unknown_trailing_comma",
+			"text": "{\"loose\":{\"a\":1,\"b\":{\"c\":1,}}}",
+			"json": false
+		},
+		{
+			"name": "loose_wrong",
+			"text": "{\"loose\":{\"a\":\"1\",\"b\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_not_object",
+			"text": "{\"strip\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"strip"
+					]
+				}
+			]
+		},
+		{
+			"name": "items_not_array",
+			"text": "{\"items\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"items"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_key",
+			"text": "{\"other\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"other"
+					]
+				}
+			]
+		}
+	]
+}

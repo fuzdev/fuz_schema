@@ -1,0 +1,230 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "union",
+			"def": [
+				{
+					"kind": "array",
+					"def": {
+						"kind": "string"
+					}
+				},
+				{
+					"kind": "array",
+					"def": {
+						"kind": "number"
+					}
+				},
+				{
+					"kind": "object",
+					"def": {
+						"a": {
+							"kind": "string"
+						}
+					}
+				},
+				{
+					"kind": "object",
+					"def": {
+						"a": {
+							"kind": "number"
+						},
+						"b": {
+							"kind": "optional",
+							"def": {
+								"schema": {
+									"kind": "boolean"
+								}
+							}
+						}
+					}
+				},
+				{
+					"kind": "literal",
+					"def": null
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "strings",
+			"text": "[\"a\",\"b\"]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "numbers",
+			"text": "[1,2]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_array",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed",
+			"text": "[1,\"a\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "first_object",
+			"text": "{\"a\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "second_object",
+			"text": "{\"a\":1,\"b\":true}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "neither_object",
+			"text": "{\"a\":\"x\",\"b\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "empty_object",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_last_good",
+			"text": "{\"a\":true,\"a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_last_bad",
+			"text": "{\"a\":1,\"a\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_changes_option",
+			"text": "{\"a\":\"x\",\"b\":true,\"a\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed_then_malformed",
+			"text": "[1,\"a\",}",
+			"json": false
+		},
+		{
+			"name": "wrong_then_malformed",
+			"text": "{\"a\":true,}",
+			"json": false
+		},
+		{
+			"name": "wrong_then_cut_short",
+			"text": "[true",
+			"json": false
+		},
+		{
+			"name": "overflow",
+			"text": "[1e400]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "wrong_then_overflow",
+			"text": "[true,1e400]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "array",
+					"path": []
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "wrong_then_lone_surrogate",
+			"text": "{\"a\":true,\"b\":\"\\ud800\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "object",
+					"path": []
+				}
+			],
+			"diverges": "lone_surrogate"
+		}
+	]
+}

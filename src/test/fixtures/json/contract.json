@@ -1,0 +1,33 @@
+{
+	"max_nesting": 16,
+	"max_depth": 127,
+	"object_prototype_keys": [
+		"__defineGetter__",
+		"__defineSetter__",
+		"__lookupGetter__",
+		"__lookupSetter__",
+		"__proto__",
+		"constructor",
+		"hasOwnProperty",
+		"isPrototypeOf",
+		"propertyIsEnumerable",
+		"toLocaleString",
+		"toString",
+		"valueOf"
+	],
+	"unsupported_kinds": [
+		"regex",
+		"check",
+		"transform"
+	],
+	"divergences": [
+		"duplicate_keys",
+		"malformed_tail",
+		"number_overflow",
+		"lone_surrogate",
+		"depth_limit",
+		"number_overflow_unread",
+		"lone_surrogate_unread",
+		"depth_limit_unread"
+	]
+}

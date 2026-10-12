@@ -1,0 +1,467 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"loose": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "loose_object",
+							"def": {
+								"a": {
+									"kind": "number"
+								},
+								"b": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"strip": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "strip_object",
+							"def": {
+								"a": {
+									"kind": "number"
+								},
+								"b": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "loose_valid",
+			"text": "{\"loose\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_valid_all",
+			"text": "{\"loose\":{\"a\":1,\"b\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_unknown_keys",
+			"text": "{\"loose\":{\"z\":[1,{\"y\":null}],\"a\":1,\"x\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_unknown_first_and_last",
+			"text": "{\"loose\":{\"c\":1,\"a\":1,\"d\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_proto_key",
+			"text": "{\"loose\":{\"a\":1,\"__proto__\":{\"a\":\"x\"}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_only_proto_key",
+			"text": "{\"loose\":{\"__proto__\":{\"a\":1}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_empty",
+			"text": "{\"loose\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing",
+			"text": "{\"loose\":{\"b\":\"x\",\"c\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_wrong",
+			"text": "{\"loose\":{\"a\":\"1\",\"c\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_wrong_optional",
+			"text": "{\"loose\":{\"a\":1,\"b\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"loose",
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_duplicate_unknown",
+			"text": "{\"loose\":{\"a\":1,\"c\":1,\"c\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_duplicate_last_good",
+			"text": "{\"loose\":{\"a\":\"x\",\"c\":1,\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "loose_duplicate_last_bad",
+			"text": "{\"loose\":{\"a\":1,\"c\":1,\"a\":\"x\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_array",
+			"text": "{\"loose\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"loose"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_null",
+			"text": "{\"loose\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"loose"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_number",
+			"text": "{\"loose\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"loose"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_valid",
+			"text": "{\"strip\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_valid_all",
+			"text": "{\"strip\":{\"a\":1,\"b\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_unknown_keys",
+			"text": "{\"strip\":{\"z\":[1,{\"y\":null}],\"a\":1,\"x\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_unknown_first_and_last",
+			"text": "{\"strip\":{\"c\":1,\"a\":1,\"d\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_proto_key",
+			"text": "{\"strip\":{\"a\":1,\"__proto__\":{\"a\":\"x\"}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_only_proto_key",
+			"text": "{\"strip\":{\"__proto__\":{\"a\":1}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_empty",
+			"text": "{\"strip\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing",
+			"text": "{\"strip\":{\"b\":\"x\",\"c\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_wrong",
+			"text": "{\"strip\":{\"a\":\"1\",\"c\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"strip",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_wrong_optional",
+			"text": "{\"strip\":{\"a\":1,\"b\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"strip",
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_duplicate_unknown",
+			"text": "{\"strip\":{\"a\":1,\"c\":1,\"c\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_duplicate_last_good",
+			"text": "{\"strip\":{\"a\":\"x\",\"c\":1,\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "strip_duplicate_last_bad",
+			"text": "{\"strip\":{\"a\":1,\"c\":1,\"a\":\"x\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"strip",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_array",
+			"text": "{\"strip\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"strip"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_null",
+			"text": "{\"strip\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"strip"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_number",
+			"text": "{\"strip\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"strip"
+					]
+				}
+			]
+		},
+		{
+			"name": "both",
+			"text": "{\"loose\":{\"a\":1,\"c\":1},\"strip\":{\"a\":2,\"c\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "neither",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

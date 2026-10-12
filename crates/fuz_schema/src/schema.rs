@@ -537,7 +537,8 @@ pub enum Candidates {
 
 /// A schema: an arena of nodes and the one validation starts at.
 ///
-/// Made by `SchemaBuilder`. It owns everything it refers to, holds no interior
+/// Made by `SchemaBuilder`, or loaded from the interchange form with
+/// `Schema::from_json`. It owns everything it refers to, holds no interior
 /// state, and can be shared between threads.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Schema {

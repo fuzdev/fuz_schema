@@ -1,0 +1,158 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"a": {
+					"kind": "number"
+				},
+				"b": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "string"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "{\"a\":1,\"b\":[\"x\"]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_then_malformed",
+			"text": "{\"a\":\"x\",}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "wrong_then_cut_short",
+			"text": "{\"a\":null",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "wrong_item_then_malformed",
+			"text": "{\"a\":1,\"b\":[1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "unknown_key_then_malformed",
+			"text": "{\"z\":1,]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "unknown_key_without_colon",
+			"text": "{\"a\":1,\"z\"",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "unknown_key_without_value",
+			"text": "{\"a\":1,\"z\":}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "unknown_key_cut_short",
+			"text": "{\"a\":1,\"z",
+			"json": false
+		},
+		{
+			"name": "right_item_then_malformed",
+			"text": "{\"a\":1,\"b\":[\"x\",}",
+			"json": false
+		},
+		{
+			"name": "cut_short",
+			"text": "{\"a\":1",
+			"json": false
+		},
+		{
+			"name": "missing_then_malformed",
+			"text": "{\"b\":[],}",
+			"json": false
+		},
+		{
+			"name": "missing_then_cut_short",
+			"text": "{\"b\":[]",
+			"json": false
+		},
+		{
+			"name": "missing",
+			"text": "{\"b\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing_then_trailing",
+			"text": "{\"b\":[]} x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "wrong_then_overflow",
+			"text": "{\"a\":\"x\",\"b\":[1e400]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"b",
+						0
+					]
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "unknown_key_then_lone_surrogate",
+			"text": "{\"z\":\"\\ud800\",\"a\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"z"
+					]
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		}
+	]
+}

@@ -1,0 +1,865 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"string": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "string"
+						}
+					}
+				},
+				"number": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"boolean": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "boolean"
+						}
+					}
+				},
+				"bigint": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "bigint"
+						}
+					}
+				},
+				"unknown": {
+					"kind": "unknown"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_null",
+			"text": "{\"string\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_true",
+			"text": "{\"string\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_false",
+			"text": "{\"string\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_zero",
+			"text": "{\"string\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_number",
+			"text": "{\"string\":-1.5e3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_empty_string",
+			"text": "{\"string\":\"\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_string",
+			"text": "{\"string\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_number_in_string",
+			"text": "{\"string\":\"1\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_array",
+			"text": "{\"string\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_array_of_one",
+			"text": "{\"string\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_object",
+			"text": "{\"string\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_object_of_one",
+			"text": "{\"string\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"string"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_null",
+			"text": "{\"number\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_true",
+			"text": "{\"number\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_false",
+			"text": "{\"number\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_zero",
+			"text": "{\"number\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_number",
+			"text": "{\"number\":-1.5e3}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_empty_string",
+			"text": "{\"number\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_string",
+			"text": "{\"number\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_number_in_string",
+			"text": "{\"number\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_array",
+			"text": "{\"number\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_array_of_one",
+			"text": "{\"number\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_object",
+			"text": "{\"number\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "number_object_of_one",
+			"text": "{\"number\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						"number"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_null",
+			"text": "{\"boolean\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "null",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_true",
+			"text": "{\"boolean\":true}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "boolean_false",
+			"text": "{\"boolean\":false}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "boolean_zero",
+			"text": "{\"boolean\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_number",
+			"text": "{\"boolean\":-1.5e3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_empty_string",
+			"text": "{\"boolean\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "string",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_string",
+			"text": "{\"boolean\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "string",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_number_in_string",
+			"text": "{\"boolean\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "string",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_array",
+			"text": "{\"boolean\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "array",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_array_of_one",
+			"text": "{\"boolean\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "array",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_object",
+			"text": "{\"boolean\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "object",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "boolean_object_of_one",
+			"text": "{\"boolean\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "object",
+					"path": [
+						"boolean"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_null",
+			"text": "{\"bigint\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "null",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_true",
+			"text": "{\"bigint\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_false",
+			"text": "{\"bigint\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_zero",
+			"text": "{\"bigint\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_number",
+			"text": "{\"bigint\":-1.5e3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_empty_string",
+			"text": "{\"bigint\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_string",
+			"text": "{\"bigint\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_number_in_string",
+			"text": "{\"bigint\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_array",
+			"text": "{\"bigint\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_array_of_one",
+			"text": "{\"bigint\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_object",
+			"text": "{\"bigint\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_object_of_one",
+			"text": "{\"bigint\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_null",
+			"text": "{\"unknown\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_true",
+			"text": "{\"unknown\":true}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_false",
+			"text": "{\"unknown\":false}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_zero",
+			"text": "{\"unknown\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_number",
+			"text": "{\"unknown\":-1.5e3}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_empty_string",
+			"text": "{\"unknown\":\"\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_string",
+			"text": "{\"unknown\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_number_in_string",
+			"text": "{\"unknown\":\"1\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_array",
+			"text": "{\"unknown\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_array_of_one",
+			"text": "{\"unknown\":[1]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_object",
+			"text": "{\"unknown\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_object_of_one",
+			"text": "{\"unknown\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all",
+			"text": "{\"string\":\"a\",\"number\":1,\"boolean\":true,\"unknown\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "all_with_bigint",
+			"text": "{\"string\":\"a\",\"number\":1,\"boolean\":true,\"bigint\":1,\"unknown\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		}
+	]
+}

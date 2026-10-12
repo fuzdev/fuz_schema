@@ -1,0 +1,297 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "string"
+					},
+					{
+						"kind": "literal",
+						"def": null
+					},
+					{
+						"kind": "array",
+						"def": {
+							"kind": "number"
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"name": {
+								"kind": "string"
+							},
+							"n": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "number"
+									}
+								}
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "every_option",
+			"text": "[\"x\",null,[1,2],{\"name\":\"a\"},[],{\"n\":1,\"name\":\"a\"}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_scalar",
+			"text": "[1]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "number",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_item",
+			"text": "[[1,\"x\"]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "nested_array",
+			"text": "[[[1]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "empty_object",
+			"text": "[{}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_key",
+			"text": "[{\"name\":\"a\",\"other\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_entry",
+			"text": "[{\"name\":\"a\",\"n\":\"1\"}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_both_good",
+			"text": "[{\"name\":\"a\",\"name\":\"b\"}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_last_good",
+			"text": "[{\"name\":1,\"name\":\"a\"}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_last_bad",
+			"text": "[{\"name\":\"a\",\"name\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_optional_last_good",
+			"text": "[{\"name\":\"a\",\"n\":\"x\",\"n\":1}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "wrong_item_then_malformed",
+			"text": "[[1,\"x\",}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "wrong_entry_then_malformed",
+			"text": "[{\"name\":1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "unknown_key_then_malformed",
+			"text": "[{\"other\":}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "valid_then_malformed",
+			"text": "[[1,2],}",
+			"json": false
+		},
+		{
+			"name": "valid_object_then_malformed",
+			"text": "[{\"name\":\"a\",}]",
+			"json": false
+		},
+		{
+			"name": "overflow",
+			"text": "[[1e400]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "wrong_item_then_overflow",
+			"text": "[[\"x\",1e400]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "unknown_key_overflow",
+			"text": "[{\"other\":1e400}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "lone_surrogate",
+			"text": "[{\"name\":\"\\ud800\"}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "wrong_entry_then_lone_surrogate",
+			"text": "[{\"name\":1,\"n\":\"\\ud800\"}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "object",
+					"path": [
+						0
+					]
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "wrong_item_then_deep",
+			"text": "[[\"x\",[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | literal | array | object",
+					"received": "array",
+					"path": [
+						0
+					]
+				}
+			],
+			"diverges": "depth_limit_unread"
+		}
+	]
+}

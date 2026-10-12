@@ -112,7 +112,7 @@ impl Error for JsonError {}
 ///
 /// Nothing is guessed at: a schema whose meaning the TypeScript library gets
 /// from JavaScript itself, such as a function, a `RegExp`, a coercion, or a
-/// read through the prototype, is refused when it is built.
+/// read through the prototype, is refused when it is built or loaded.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SchemaError {
     kind: SchemaErrorKind,
@@ -132,10 +132,10 @@ impl SchemaError {
         &self.kind
     }
 
-    /// Where the reason is, as a JSON Pointer from the root, through the
-    /// `def` of each schema on the way: `/schema/def/name` is the `name`
-    /// entry of a root `object`, and `/defs/$0` is the target of the first
-    /// `lazy` declared. Empty when the error is about the whole schema.
+    /// Where the reason is, as a JSON Pointer into the schema's interchange
+    /// form: `/schema/def/name` is the `name` entry of a root `object`, and
+    /// `/defs/$0` is the target of the first `lazy`. Empty when the error is
+    /// about the whole document.
     pub fn path(&self) -> &str {
         &self.path
     }
@@ -145,6 +145,38 @@ impl SchemaError {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum SchemaErrorKind {
+    /// The interchange text is not JSON.
+    Json(JsonError),
+    /// The interchange document is not shaped as the form says.
+    Malformed {
+        /// What the form has there.
+        expected: &'static str,
+    },
+    /// A key the form does not have.
+    UnexpectedKey {
+        /// The key.
+        key: Box<str>,
+    },
+    /// A key written twice in one object of the interchange document, which
+    /// JSON would read as its last value.
+    RepeatedKey {
+        /// The key.
+        key: Box<str>,
+    },
+    /// A `kind` that is not one of the library's.
+    UnknownKind {
+        /// The kind as written.
+        kind: Box<str>,
+    },
+    /// A kind whose meaning is a JavaScript value: `regex`, `check`, or
+    /// `transform`.
+    UnsupportedKind {
+        /// The kind.
+        kind: &'static str,
+    },
+    /// A literal that JSON does not hold: `undefined`, a bigint, or anything
+    /// but a string, a number, a boolean, or `null`.
+    UnsupportedLiteral,
     /// A number that is not finite, as a literal or a bound.
     NonFiniteNumber,
     /// An entry named like a member of `Object.prototype`, which the
@@ -194,6 +226,11 @@ pub enum SchemaErrorKind {
         /// The discriminator.
         key: Box<str>,
     },
+    /// A `lazy` naming a schema the document does not define.
+    UnresolvedLazy {
+        /// The name.
+        name: Box<str>,
+    },
     /// A `lazy` that was declared and never defined.
     UndefinedLazy,
     /// Two definitions of one `lazy`.
@@ -220,6 +257,17 @@ pub enum SchemaErrorKind {
 impl fmt::Display for SchemaErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Json(error) => write!(f, "the schema is not JSON: {error}"),
+            Self::Malformed { expected } => write!(f, "expected {expected}"),
+            Self::UnexpectedKey { key } => write!(f, "unexpected key {key:?}"),
+            Self::RepeatedKey { key } => write!(f, "the key {key:?} is written twice"),
+            Self::UnknownKind { kind } => write!(f, "unknown kind {kind:?}"),
+            Self::UnsupportedKind { kind } => {
+                write!(f, "`{kind}` holds a JavaScript value and is not portable")
+            }
+            Self::UnsupportedLiteral => {
+                f.write_str("a literal must be a string, a finite number, a boolean, or null")
+            }
             Self::NonFiniteNumber => f.write_str("a number that is not finite"),
             Self::PrototypeKey { key } => write!(
                 f,
@@ -247,6 +295,7 @@ impl fmt::Display for SchemaErrorKind {
             Self::VariantDiscriminator { key } => {
                 write!(f, "a variant option needs a `literal` entry at {key:?}")
             }
+            Self::UnresolvedLazy { name } => write!(f, "no schema is defined as {name:?}"),
             Self::UndefinedLazy => f.write_str("a lazy that was never defined"),
             Self::RedefinedLazy => f.write_str("a lazy that is defined twice"),
             Self::UnguardedRecursion => {
@@ -276,7 +325,14 @@ impl fmt::Display for SchemaError {
     }
 }
 
-impl Error for SchemaError {}
+impl Error for SchemaError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match &self.kind {
+            SchemaErrorKind::Json(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -314,7 +370,19 @@ mod tests {
         let error = SchemaError::new(SchemaErrorKind::EmptyPipe, "/schema/def/a");
         assert_eq!(error.to_string(), "a pipe with no schema at /schema/def/a");
         assert_eq!(error.path(), "/schema/def/a");
+        assert!(error.source().is_none());
         let whole = SchemaError::new(SchemaErrorKind::TooManyNodes, "");
         assert_eq!(whole.to_string(), "too many nodes");
+    }
+
+    #[test]
+    fn a_json_schema_error_has_its_source() {
+        let json = serde_json::from_str::<bool>("nope").unwrap_err();
+        let json = JsonError::from_serde(&json);
+        let error = SchemaError::new(SchemaErrorKind::Json(json.clone()), "");
+        assert_eq!(
+            error.source().map(ToString::to_string),
+            Some(json.to_string())
+        );
     }
 }

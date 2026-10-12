@@ -1,0 +1,208 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "union",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "number"
+							}
+						}
+					}
+				},
+				{
+					"kind": "union",
+					"def": [
+						{
+							"kind": "boolean"
+						},
+						{
+							"kind": "integer"
+						}
+					]
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "string",
+			"text": "\"x\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "integer",
+			"text": "1",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "array",
+			"text": "[1]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_object",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{\"a\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object_of_array",
+			"text": "{\"a\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object_duplicate",
+			"text": "{\"a\":1,\"a\":2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object_then_trailing",
+			"text": "{} x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "object_cut_short",
+			"text": "{",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "object_malformed",
+			"text": "{\"a\":1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "object_of_overflow",
+			"text": "{\"a\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "object_of_lone_surrogate_key",
+			"text": "{\"\\ud800\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "deep_object",
+			"text": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "object",
+					"path": []
+				}
+			],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "array_wrong",
+			"text": "[\"1\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | nullable | union",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array_wrong_then_malformed",
+			"text": "[\"1\",}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "array_malformed",
+			"text": "[1,}",
+			"json": false
+		}
+	]
+}

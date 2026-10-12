@@ -1,0 +1,599 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "variant",
+			"def": {
+				"key": "kind",
+				"options": [
+					{
+						"kind": "object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": "circle"
+							},
+							"r": {
+								"kind": "number"
+							}
+						}
+					},
+					{
+						"kind": "loose_object",
+						"def": {
+							"side": {
+								"kind": "number"
+							},
+							"kind": {
+								"kind": "literal",
+								"def": "square"
+							}
+						}
+					},
+					{
+						"kind": "strip_object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": 1
+							},
+							"n": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "number"
+									}
+								}
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": null
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": false
+							},
+							"off": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "literal",
+										"def": true
+									}
+								}
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": 0
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"kind": {
+								"kind": "literal",
+								"def": "circle"
+							},
+							"r": {
+								"kind": "number"
+							},
+							"label": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "string"
+									}
+								}
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "first",
+			"text": "{\"kind\":\"circle\",\"r\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "first_with_label",
+			"text": "{\"kind\":\"circle\",\"r\":1,\"label\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_last",
+			"text": "{\"r\":1,\"label\":\"x\",\"kind\":\"circle\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_middle",
+			"text": "{\"r\":1,\"kind\":\"circle\",\"label\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose",
+			"text": "{\"kind\":\"square\",\"side\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_unknown_keys",
+			"text": "{\"kind\":\"square\",\"other\":[1,{\"a\":null}],\"side\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_discriminator_last",
+			"text": "{\"other\":true,\"side\":2,\"kind\":\"square\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip",
+			"text": "{\"kind\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_float",
+			"text": "{\"kind\":1.0,\"n\":2,\"other\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null_discriminator",
+			"text": "{\"kind\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "false_discriminator",
+			"text": "{\"kind\":false,\"off\":true}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero",
+			"text": "{\"kind\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero",
+			"text": "{\"kind\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_float",
+			"text": "{\"kind\":0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "missing_entry",
+			"text": "{\"kind\":\"circle\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_entry",
+			"text": "{\"kind\":\"circle\",\"r\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"r"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_key",
+			"text": "{\"kind\":\"circle\",\"r\":1,\"other\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"other"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_key_before",
+			"text": "{\"other\":1,\"kind\":\"circle\",\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"other"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_entry",
+			"text": "{\"kind\":\"square\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"side"
+					]
+				}
+			]
+		},
+		{
+			"name": "null_with_unknown_key",
+			"text": "{\"kind\":null,\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"r"
+					]
+				}
+			]
+		},
+		{
+			"name": "missing",
+			"text": "{\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "undefined",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "undefined",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown",
+			"text": "{\"kind\":\"triangle\",\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_last",
+			"text": "{\"r\":1,\"kind\":\"triangle\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_one",
+			"text": "{\"kind\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "true",
+			"text": "{\"kind\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "boolean",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "string_null",
+			"text": "{\"kind\":\"null\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_discriminator",
+			"text": "{\"kind\":[\"circle\"],\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "array",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_discriminator",
+			"text": "{\"kind\":{\"kind\":\"circle\"},\"r\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "object",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array_of_entries",
+			"text": "[{\"kind\":\"circle\",\"r\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "string",
+			"text": "\"circle\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_same",
+			"text": "{\"kind\":\"circle\",\"r\":1,\"kind\":\"circle\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_first_other",
+			"text": "{\"kind\":\"square\",\"r\":1,\"kind\":\"circle\"}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_first_unknown",
+			"text": "{\"kind\":\"triangle\",\"kind\":\"circle\",\"r\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_first_array",
+			"text": "{\"kind\":[],\"kind\":\"circle\",\"r\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_last_other",
+			"text": "{\"kind\":\"circle\",\"r\":1,\"kind\":\"square\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"side"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_last_unknown",
+			"text": "{\"kind\":\"circle\",\"r\":1,\"kind\":\"triangle\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"circle\" | \"square\" | 1 | null | false | 0",
+					"received": "string",
+					"path": [
+						"kind"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_later_first_other",
+			"text": "{\"r\":1,\"kind\":\"square\",\"kind\":\"circle\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "duplicate_later_last_other",
+			"text": "{\"r\":1,\"kind\":\"circle\",\"kind\":\"square\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"side"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_entry",
+			"text": "{\"kind\":\"circle\",\"r\":\"x\",\"r\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		}
+	]
+}

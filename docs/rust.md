@@ -5,8 +5,7 @@ question of it: does this JSON text match? The TypeScript library is the
 reference for the answer. It validates what `JSON.parse` returns, so the
 semantics are JavaScript's.
 
-Loading a schema made in TypeScript, issues, output, and a wasm build are not
-built.
+Issues, output, and a wasm build are not built.
 
 ## The model
 
@@ -24,7 +23,62 @@ A `Schema` is an arena of `Node`s and the id of the one validation starts at.
 - **`bigint` is a kind** that no JSON value matches.
 
 A schema is made with `SchemaBuilder`, which adds a node per call and checks
-nothing until `build`.
+nothing until `build`, or loaded from the interchange form.
+
+## The interchange form
+
+A node is `{"kind": …, "def": …}` with `def` as `SchemaDefs` has it, and left
+out where that is `undefined`:
+
+```json
+{"kind":"string"}  {"kind":"number"}  {"kind":"boolean"}  {"kind":"bigint"}  {"kind":"unknown"}
+{"kind":"integer"}  {"kind":"safe_integer"}  {"kind":"finite"}
+{"kind":"literal","def":"a"}  {"kind":"literal","def":null}
+{"kind":"one_of","def":["a",1,null]}
+{"kind":"optional","def":{"schema":{"kind":"string"}}}
+{"kind":"nullable","def":{"schema":{"kind":"string"}}}
+{"kind":"default","def":{"schema":{"kind":"number"},"value":0}}
+{"kind":"lazy","def":"$0"}
+{"kind":"object","def":{"id":{"kind":"number"},"name":{"kind":"string"}}}
+{"kind":"loose_object","def":{}}  {"kind":"strip_object","def":{}}
+{"kind":"record","def":{"kind":"number"}}
+{"kind":"array","def":{"kind":"string"}}
+{"kind":"union","def":[{"kind":"string"},{"kind":"number"}]}
+{"kind":"variant","def":{"key":"kind","options":[{"kind":"object","def":{"kind":{"kind":"literal","def":"a"}}}]}}
+{"kind":"pipe","def":[{"kind":"string"},{"kind":"min_length","def":1},{"kind":"max_length","def":50}]}
+{"kind":"pipe","def":[{"kind":"number"},{"kind":"min_value","def":0},{"kind":"max_value","def":150}]}
+```
+
+A `lazy` holds a function in TypeScript, so here its `def` is a name, and the
+document is an envelope that says what the names stand for:
+
+```json
+{
+	"schema": { "kind": "lazy", "def": "$0" },
+	"defs": {
+		"$0": {
+			"kind": "object",
+			"def": { "children": { "kind": "array", "def": { "kind": "lazy", "def": "$0" } } }
+		}
+	}
+}
+```
+
+- `defs` is left out when there is no `lazy`.
+- A `literal` with no `def` is an error, not `null`: no `def` is what
+  `undefined` would be.
+- A `default`'s `value` is any JSON value. It is kept and never validated.
+- A key the form doesn't have is an error, and so is a key written twice in
+  one object.
+
+`Schema::from_json` loads a document, and `to_schema_json` in
+`src/test/schema_json.ts` writes one from a TypeScript schema. The writer is a
+helper for the tests and fixtures, not part of the published library. It
+throws on everything the loader refuses, and on what the crate's parser does
+not read of a document: a string that is not well-formed Unicode, and nesting
+past `MAX_DEPTH`. So a schema that serializes loads. It also refuses a schema
+more than `MAX_DEPTH` schemas deep counting through every `lazy`, which the
+crate would load.
 
 ## Two evaluators
 
@@ -58,18 +112,19 @@ nothing until `build`.
 - The walker reports failures to a `Report`. `Probe` wants only the verdict.
   A report that collects is what issues will be built on.
 
-## Where it differs from the library
+## Declared divergences
 
-Against `JSON.parse` followed by `is`:
+Where the crate differs from `JSON.parse` followed by `is`. Each is a flag a
+fixture case declares, and the Rust tests assert the declared behavior.
 
-| The text | `is_json` | `is_json_exact` |
-|---|---|---|
-| a key is written twice, and the last value makes it match | `false`: every occurrence is checked | as the library |
-| stops matching, then stops being JSON | `false`: nothing after a failure is read | an error, as the library throws |
-| a number past a double, which JavaScript reads as an infinity | an error | an error |
-| a `\u` escape of half a surrogate pair, which JavaScript keeps | an error | an error |
-| nested deeper than the parser goes | an error | an error |
-| the last three, in a value that is skipped or follows the first failure | as the library | an error |
+| Flag | The text | `is_json` | `is_json_exact` |
+|---|---|---|---|
+| `duplicate_keys` | a key is written twice, and the last value makes it match | `false`: every occurrence is checked | as the library |
+| `malformed_tail` | stops matching, then stops being JSON | `false`: nothing after a failure is read | an error, as the library throws |
+| `number_overflow` | a number past a double, which JavaScript reads as an infinity | an error | an error |
+| `lone_surrogate` | a `\u` escape of half a surrogate pair, which JavaScript keeps | an error | an error |
+| `depth_limit` | nested deeper than the parser goes | an error | an error |
+| `number_overflow_unread`, `lone_surrogate_unread`, `depth_limit_unread` | the same three, in a value that is skipped or follows the first failure | as the library | an error |
 
 The three errors have their own `JsonErrorKind`. They come from serde_json,
 which the crate parses with, and so does the depth: nesting is read to
@@ -84,25 +139,27 @@ once and makes no schema under it.
 
 ## What is refused
 
-A schema whose meaning comes from JavaScript itself is refused by `build`,
-with a `SchemaError` holding the reason and a JSON Pointer to it from the
-root. Nothing is guessed at.
+A schema whose meaning comes from JavaScript itself is refused when it is
+built or loaded, with a `SchemaError` holding the reason and a JSON Pointer to
+it in the interchange form. Nothing is guessed at.
 
 | Refused | `SchemaErrorKind` |
 |---|---|
+| `regex`, `check`, `transform` | `UnsupportedKind` |
+| a kind that isn't the library's | `UnknownKind` |
+| an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
 | a literal or bound that isn't finite | `NonFiniteNumber` |
 | an entry named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
 | a `pipe` that is empty, or starts with a schema that doesn't fix its value's type | `EmptyPipe`, `PipeHead` |
 | a step after a pipe's first that isn't an action, or is for another type | `PipeStep`, `ActionMismatch` |
 | a length or bound outside a `pipe`, where the library coerces or throws | `ActionOutsidePipe` |
 | a `variant` option that isn't an object schema, or has no `literal` at the key | `VariantOption`, `VariantDiscriminator` |
+| a `lazy` naming nothing | `UnresolvedLazy` |
 | what only a builder can be given: an entry twice, a `lazy` never defined or defined twice, an id that isn't its own | `DuplicateKey`, `UndefinedLazy`, `RedefinedLazy`, `InvalidNode` |
 | a schema that comes back to itself without reading into the value | `UnguardedRecursion` |
 | more than `MAX_NESTING` wrappers, lazies, unions, and pipes around one value | `TooNested` |
+| a document that isn't JSON, isn't shaped as the form says, or writes a key twice in one object | `Json`, `Malformed`, `UnexpectedKey`, `RepeatedKey` |
 | any schema, in a build with serde_json's `arbitrary_precision` on | `ArbitraryPrecision` |
-
-The model has no `regex`, `check`, or `transform`, and no `undefined` or
-bigint literal.
 
 A pipe's first schema fixes the type when it is `string`, `number`, `array`,
 one of the number tests, or a pipe of one of those. The number tests
@@ -115,3 +172,29 @@ input under the most nesting on a small stack. Neither bounds the work: a
 `union` whose options each come back to it tries every option at every
 level, which can take time exponential in the depth of the input, as it does
 in the TypeScript library.
+
+## Fixtures
+
+`src/test/fixtures/json/` holds the cases both sides are tested against.
+
+- A group is a directory with an authored `fixture.ts`: a TypeScript schema
+  and named JSON texts. They are texts and not values, because how a value
+  is written is part of what's tested.
+- `gro src/test/fixtures/json/update` generates each group's `expected.json`:
+  the schema in the interchange form, and for each text whether `JSON.parse`
+  reads it, whether `is` accepts it, the issues `parse` reports, and any
+  declared divergence. It asserts `is` and `parse` agree, and that a case
+  declares an overflow, a lone surrogate, or the depth limit exactly when the
+  value read has one. The file is never edited by hand.
+- It also generates `contract.json`, the constants both sides hold: the
+  nesting limit, the parser's depth, the refused entry names and kinds, and
+  the flags.
+- `src/test/json.fixtures.test.ts` fails when a generated file is stale.
+- `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
+  evaluators against the oracle or the declared divergence. It also fails on
+  an unknown flag, a flag no case declares, a kind no fixture schema has, too
+  few groups or cases, and a constant that differs from `contract.json`. It
+  reads the generated files with serde_json's tree and not the crate's.
+- The generated issues are not read by the crate yet.
+- A text must be well-formed Unicode, because it is written into a JSON
+  file. So must every key in an issue's path.

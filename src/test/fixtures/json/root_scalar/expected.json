@@ -1,0 +1,163 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "string"
+		}
+	},
+	"cases": [
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "padded",
+			"text": " \t\n\r\"a\"\r\n\t ",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escapes",
+			"text": "\"\\\"\\\\\\/\\b\\f\\n\\r\\t\\u0041\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_upper_hex",
+			"text": "\"\\u00E9\\uD83D\\uDE00\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_delete",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_line_separators",
+			"text": "\"  \"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "raw_byte_order_mark",
+			"text": "\"﻿\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped_nul",
+			"text": "\"\\u0000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "astral",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "true",
+			"text": "true",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[\"a\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "object",
+			"text": "{\"a\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "nested_array",
+			"text": "[[[\"a\"]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": []
+				}
+			]
+		}
+	]
+}

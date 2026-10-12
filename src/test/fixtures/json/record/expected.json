@@ -1,0 +1,392 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "record",
+			"def": {
+				"kind": "record",
+				"def": {
+					"kind": "number"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_inner",
+			"text": "{\"a\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "valid",
+			"text": "{\"a\":{\"x\":1,\"y\":2},\"b\":{\"z\":-1.5}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "any_key",
+			"text": "{\"\":{\"\":0},\"a b\":{\"é\":1,\"😀\":2},\"0\":{\"1\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "proto_key",
+			"text": "{\"__proto__\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "proto_key_inner",
+			"text": "{\"a\":{\"__proto__\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "proto_key_wrong",
+			"text": "{\"a\":{\"__proto__\":\"x\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"__proto__"
+					]
+				}
+			]
+		},
+		{
+			"name": "proto_key_not_object",
+			"text": "{\"__proto__\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"__proto__"
+					]
+				}
+			]
+		},
+		{
+			"name": "prototype_member_keys",
+			"text": "{\"constructor\":{\"toString\":1,\"valueOf\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_value",
+			"text": "{\"a\":{\"x\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"x"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_first",
+			"text": "{\"a\":{\"x\":null,\"y\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"a",
+						"x"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_last",
+			"text": "{\"a\":{\"x\":1},\"b\":{\"y\":true}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"b",
+						"y"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_in_key_order",
+			"text": "{\"b\":{\"z\":\"x\",\"10\":\"x\",\"2\":\"x\"},\"1\":null,\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b",
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b",
+						"10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b",
+						"z"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_array",
+			"text": "{\"a\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_null",
+			"text": "{\"a\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "inner_number",
+			"text": "{\"a\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_last_good",
+			"text": "{\"a\":{\"x\":\"x\",\"x\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_last_bad",
+			"text": "{\"a\":{\"x\":1,\"x\":\"x\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"x"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_outer_last_good",
+			"text": "{\"a\":1,\"b\":{},\"a\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_outer_last_bad",
+			"text": "{\"a\":{},\"b\":{},\"a\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_both_good",
+			"text": "{\"a\":{\"x\":1,\"x\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "lone_surrogate_key",
+			"text": "{\"a\":{\"\\ud800\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "lone_surrogate_outer_key",
+			"text": "{\"\\udc00\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "wrong_then_lone_surrogate_key",
+			"text": "{\"a\":1,\"\\ud800\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"a"
+					]
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "array",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array_of_objects",
+			"text": "[{\"a\":1}]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		}
+	]
+}

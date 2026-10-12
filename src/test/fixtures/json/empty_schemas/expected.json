@@ -1,0 +1,1986 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"object": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {}
+						}
+					}
+				},
+				"loose_object": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "loose_object",
+							"def": {}
+						}
+					}
+				},
+				"strip_object": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "strip_object",
+							"def": {}
+						}
+					}
+				},
+				"record": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "record",
+							"def": {
+								"kind": "bigint"
+							}
+						}
+					}
+				},
+				"array": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "bigint"
+							}
+						}
+					}
+				},
+				"union": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": []
+						}
+					}
+				},
+				"one_of": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "one_of",
+							"def": []
+						}
+					}
+				},
+				"variant": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "variant",
+							"def": {
+								"key": "k",
+								"options": []
+							}
+						}
+					}
+				},
+				"bigint": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "bigint"
+						}
+					}
+				},
+				"nullable_bigint": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "nullable",
+							"def": {
+								"schema": {
+									"kind": "bigint"
+								}
+							}
+						}
+					}
+				},
+				"default_bigint": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "nullable",
+							"def": {
+								"schema": {
+									"kind": "bigint"
+								}
+							}
+						},
+						"value": null
+					}
+				},
+				"safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "safe_integer"
+								},
+								{
+									"kind": "finite"
+								},
+								{
+									"kind": "integer"
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "object_0",
+			"text": "{\"object\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_1",
+			"text": "{\"object\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_2",
+			"text": "{\"object\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_3",
+			"text": "{\"object\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_4",
+			"text": "{\"object\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_5",
+			"text": "{\"object\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_6",
+			"text": "{\"object\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_7",
+			"text": "{\"object\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"object"
+					]
+				}
+			]
+		},
+		{
+			"name": "object_8",
+			"text": "{\"object\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "object_9",
+			"text": "{\"object\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"object",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_0",
+			"text": "{\"loose_object\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_1",
+			"text": "{\"loose_object\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_2",
+			"text": "{\"loose_object\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_3",
+			"text": "{\"loose_object\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_4",
+			"text": "{\"loose_object\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_5",
+			"text": "{\"loose_object\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_6",
+			"text": "{\"loose_object\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_7",
+			"text": "{\"loose_object\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"loose_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_object_8",
+			"text": "{\"loose_object\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_object_9",
+			"text": "{\"loose_object\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_object_0",
+			"text": "{\"strip_object\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_1",
+			"text": "{\"strip_object\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_2",
+			"text": "{\"strip_object\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_3",
+			"text": "{\"strip_object\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_4",
+			"text": "{\"strip_object\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_5",
+			"text": "{\"strip_object\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_6",
+			"text": "{\"strip_object\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_7",
+			"text": "{\"strip_object\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"strip_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_object_8",
+			"text": "{\"strip_object\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_object_9",
+			"text": "{\"strip_object\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "record_0",
+			"text": "{\"record\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_1",
+			"text": "{\"record\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_2",
+			"text": "{\"record\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_3",
+			"text": "{\"record\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_4",
+			"text": "{\"record\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_5",
+			"text": "{\"record\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_6",
+			"text": "{\"record\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_7",
+			"text": "{\"record\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"record"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_8",
+			"text": "{\"record\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "record_9",
+			"text": "{\"record\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"record",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_0",
+			"text": "{\"array\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_1",
+			"text": "{\"array\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "boolean",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_2",
+			"text": "{\"array\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_3",
+			"text": "{\"array\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_4",
+			"text": "{\"array\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_5",
+			"text": "{\"array\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_6",
+			"text": "{\"array\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "array_7",
+			"text": "{\"array\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "null",
+					"path": [
+						"array",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "array_8",
+			"text": "{\"array\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "array_9",
+			"text": "{\"array\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"array"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_0",
+			"text": "{\"union\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "null",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_1",
+			"text": "{\"union\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "boolean",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_2",
+			"text": "{\"union\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "number",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_3",
+			"text": "{\"union\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "number",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_4",
+			"text": "{\"union\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_5",
+			"text": "{\"union\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_6",
+			"text": "{\"union\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "array",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_7",
+			"text": "{\"union\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "array",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_8",
+			"text": "{\"union\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "object",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "union_9",
+			"text": "{\"union\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "object",
+					"path": [
+						"union"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_0",
+			"text": "{\"one_of\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "null",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_1",
+			"text": "{\"one_of\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "boolean",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_2",
+			"text": "{\"one_of\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "number",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_3",
+			"text": "{\"one_of\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "number",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_4",
+			"text": "{\"one_of\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_5",
+			"text": "{\"one_of\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_6",
+			"text": "{\"one_of\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "array",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_7",
+			"text": "{\"one_of\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "array",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_8",
+			"text": "{\"one_of\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "object",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_of_9",
+			"text": "{\"one_of\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "",
+					"received": "object",
+					"path": [
+						"one_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_0",
+			"text": "{\"variant\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_1",
+			"text": "{\"variant\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_2",
+			"text": "{\"variant\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_3",
+			"text": "{\"variant\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_4",
+			"text": "{\"variant\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_5",
+			"text": "{\"variant\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_6",
+			"text": "{\"variant\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_7",
+			"text": "{\"variant\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"variant"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_8",
+			"text": "{\"variant\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "",
+					"received": "undefined",
+					"path": [
+						"variant",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "variant_9",
+			"text": "{\"variant\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"variant",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_0",
+			"text": "{\"bigint\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "null",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_1",
+			"text": "{\"bigint\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_2",
+			"text": "{\"bigint\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_3",
+			"text": "{\"bigint\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_4",
+			"text": "{\"bigint\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_5",
+			"text": "{\"bigint\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_6",
+			"text": "{\"bigint\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_7",
+			"text": "{\"bigint\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_8",
+			"text": "{\"bigint\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "bigint_9",
+			"text": "{\"bigint\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_0",
+			"text": "{\"nullable_bigint\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_bigint_1",
+			"text": "{\"nullable_bigint\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_2",
+			"text": "{\"nullable_bigint\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_3",
+			"text": "{\"nullable_bigint\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_4",
+			"text": "{\"nullable_bigint\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_5",
+			"text": "{\"nullable_bigint\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_6",
+			"text": "{\"nullable_bigint\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_7",
+			"text": "{\"nullable_bigint\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_8",
+			"text": "{\"nullable_bigint\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_9",
+			"text": "{\"nullable_bigint\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_0",
+			"text": "{\"default_bigint\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_bigint_1",
+			"text": "{\"default_bigint\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_2",
+			"text": "{\"default_bigint\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_3",
+			"text": "{\"default_bigint\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_4",
+			"text": "{\"default_bigint\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_5",
+			"text": "{\"default_bigint\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_6",
+			"text": "{\"default_bigint\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_7",
+			"text": "{\"default_bigint\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_8",
+			"text": "{\"default_bigint\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_bigint_9",
+			"text": "{\"default_bigint\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"default_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_0",
+			"text": "{\"safe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_1",
+			"text": "{\"safe\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "boolean",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_2",
+			"text": "{\"safe\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_3",
+			"text": "{\"safe\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_4",
+			"text": "{\"safe\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "string",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_5",
+			"text": "{\"safe\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "string",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_6",
+			"text": "{\"safe\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "array",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_7",
+			"text": "{\"safe\":[null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "array",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_8",
+			"text": "{\"safe\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "object",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_9",
+			"text": "{\"safe\":{\"k\":\"k\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "object",
+					"path": [
+						"safe"
+					]
+				}
+			]
+		}
+	]
+}

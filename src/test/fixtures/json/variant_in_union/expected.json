@@ -1,0 +1,173 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "union",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "variant",
+					"def": {
+						"key": "t",
+						"options": [
+							{
+								"kind": "object",
+								"def": {
+									"t": {
+										"kind": "literal",
+										"def": "a"
+									},
+									"n": {
+										"kind": "number"
+									}
+								}
+							},
+							{
+								"kind": "loose_object",
+								"def": {
+									"t": {
+										"kind": "literal",
+										"def": "b"
+									}
+								}
+							}
+						]
+					}
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "string",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_last",
+			"text": "{\"n\":1,\"t\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "discriminator_first",
+			"text": "{\"t\":\"a\",\"n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_option",
+			"text": "{\"t\":\"b\",\"z\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_discriminator",
+			"text": "{\"t\":\"c\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | variant",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "missing_entry",
+			"text": "{\"t\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | variant",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | variant",
+					"received": "object",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | variant",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | variant",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "duplicate_entry",
+			"text": "{\"t\":\"a\",\"n\":\"x\",\"n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "duplicate_keys"
+		},
+		{
+			"name": "duplicate_entry_later",
+			"text": "{\"n\":\"x\",\"t\":\"a\",\"n\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "wrong_then_malformed",
+			"text": "{\"t\":\"c\",}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "valid_then_malformed",
+			"text": "{\"t\":\"a\",\"n\":1,}",
+			"json": false
+		},
+		{
+			"name": "array_then_malformed",
+			"text": "[1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		}
+	]
+}

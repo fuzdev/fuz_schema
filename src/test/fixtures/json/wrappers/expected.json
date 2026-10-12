@@ -1,0 +1,1800 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"required": {
+					"kind": "string"
+				},
+				"optional": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "string"
+						}
+					}
+				},
+				"nullable": {
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "string"
+						}
+					}
+				},
+				"with_default": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "string"
+						},
+						"value": "x"
+					}
+				},
+				"optional_nullable": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "nullable",
+							"def": {
+								"schema": {
+									"kind": "string"
+								}
+							}
+						}
+					}
+				},
+				"nullable_optional": {
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "optional",
+							"def": {
+								"schema": {
+									"kind": "string"
+								}
+							}
+						}
+					}
+				},
+				"default_nullable": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "nullable",
+							"def": {
+								"schema": {
+									"kind": "number"
+								}
+							}
+						},
+						"value": null
+					}
+				},
+				"optional_default": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "default",
+							"def": {
+								"schema": {
+									"kind": "string"
+								},
+								"value": "y"
+							}
+						}
+					}
+				},
+				"default_object": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"a": {
+									"kind": "number"
+								}
+							}
+						},
+						"value": {
+							"a": 1
+						}
+					}
+				},
+				"default_array": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "string"
+							}
+						},
+						"value": []
+					}
+				},
+				"optional_unknown": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "unknown"
+						}
+					}
+				},
+				"nullable_unknown": {
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "unknown"
+						}
+					}
+				},
+				"nullable_bigint": {
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "bigint"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "all_missing",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"required"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"nullable"
+					]
+				},
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "undefined",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "base",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "required_missing",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_missing",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_missing",
+			"text": "{\"required\":\"r\",\"nullable\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "undefined",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_null",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_string",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "required_number",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_false",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_array",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_strings",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_object",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_object_a",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "required_object_a_wrong",
+			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"required"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_null",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_string",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_number",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_false",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_array",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_strings",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_object",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_object_a",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "with_default_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_nullable_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_nullable_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_nullable_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_optional_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_optional_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_optional_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"nullable_optional"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_nullable_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_nullable_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_nullable_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						"default_nullable"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_default_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_default_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"optional_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"default_object"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"default_object",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_object_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_object_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"default_object",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "boolean",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_array_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":[\"a\"]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "default_array_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "default_array_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"default_array"
+					]
+				}
+			]
+		},
+		{
+			"name": "optional_unknown_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":false}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":[\"a\"]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "optional_unknown_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":false}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":[\"a\"]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":{\"a\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_unknown_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_unknown\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_bigint_null",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nullable_bigint_string",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "string",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_number",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "number",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_false",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "boolean",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_array",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_strings",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "array",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_object",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_object_a",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		},
+		{
+			"name": "nullable_bigint_object_a_wrong",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{\"a\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "bigint",
+					"expected": "bigint",
+					"received": "object",
+					"path": [
+						"nullable_bigint"
+					]
+				}
+			]
+		}
+	]
+}

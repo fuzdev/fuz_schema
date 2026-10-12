@@ -1,0 +1,102 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "variant",
+			"def": {
+				"key": "0",
+				"options": [
+					{
+						"kind": "object",
+						"def": {
+							"0": {
+								"kind": "literal",
+								"def": "a"
+							},
+							"b": {
+								"kind": "number"
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "index_last",
+			"text": "{\"b\":1,\"0\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "index_first",
+			"text": "{\"0\":\"a\",\"b\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "missing",
+			"text": "{\"b\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\"",
+					"received": "undefined",
+					"path": [
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "wrong_entry",
+			"text": "{\"b\":\"1\",\"0\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown",
+			"text": "{\"0\":\"b\",\"b\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\"",
+					"received": "string",
+					"path": [
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "array",
+			"text": "[\"a\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		}
+	]
+}

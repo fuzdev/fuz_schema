@@ -1,0 +1,300 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "number"
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "[1,2,3]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "first_wrong",
+			"text": "[\"x\",1,2]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "last_wrong",
+			"text": "[1,2,\"x\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						2
+					]
+				}
+			]
+		},
+		{
+			"name": "first_wrong_then_malformed",
+			"text": "[\"x\",1,}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "first_wrong_then_cut_short",
+			"text": "[\"x\",1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "first_wrong_then_not_json",
+			"text": "[\"x\" this is not JSON",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "last_wrong_then_malformed",
+			"text": "[1,2,\"x\"} ]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "wrong_then_trailing_value",
+			"text": "[null] []",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "malformed_then_wrong",
+			"text": "[1,} \"x\"]",
+			"json": false
+		},
+		{
+			"name": "cut_short_before_wrong",
+			"text": "[1,",
+			"json": false
+		},
+		{
+			"name": "wrong_token_cut_short",
+			"text": "[1,\"x",
+			"json": false
+		},
+		{
+			"name": "wrong_token_bad_escape",
+			"text": "[1,\"\\x\"]",
+			"json": false
+		},
+		{
+			"name": "not_array_then_malformed",
+			"text": "{\"a\":",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "not_array_then_mismatched",
+			"text": "{]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "string_then_trailing",
+			"text": "\"x\" y",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "true_then_trailing",
+			"text": "truex",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "null_then_trailing",
+			"text": "nullx",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "leading_zero",
+			"text": "01",
+			"json": false
+		},
+		{
+			"name": "leading_zero_item",
+			"text": "[01]",
+			"json": false
+		},
+		{
+			"name": "not_json_from_the_start",
+			"text": "x[\"x\"]",
+			"json": false
+		},
+		{
+			"name": "valid_then_trailing",
+			"text": "[1] x",
+			"json": false
+		},
+		{
+			"name": "wrong_then_overflow",
+			"text": "[\"x\",1e400]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0
+					]
+				}
+			],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "overflow_then_wrong",
+			"text": "[1e400,\"x\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						1
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "wrong_then_lone_surrogate",
+			"text": "[null,\"\\ud800\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						1
+					]
+				}
+			],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "lone_surrogate_then_wrong",
+			"text": "[\"\\ud800\",null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						1
+					]
+				}
+			],
+			"diverges": "lone_surrogate"
+		},
+		{
+			"name": "wrong_then_deep",
+			"text": "[null,[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						1
+					]
+				}
+			],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "deep_then_wrong",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						1
+					]
+				}
+			],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "not_array_and_deep",
+			"text": "{\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": []
+				}
+			],
+			"diverges": "depth_limit_unread"
+		}
+	]
+}

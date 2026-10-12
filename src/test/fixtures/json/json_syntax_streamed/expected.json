@@ -1,0 +1,180 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "array",
+			"def": {
+				"kind": "record",
+				"def": {
+					"kind": "array",
+					"def": {
+						"kind": "number"
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "[{\"a\":[1,2]},{\"b\":[]}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "padded",
+			"text": "\n[ { \"a\" : [ 1 , 2 ] } ]\n\n",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "trailing_comma_inner",
+			"text": "[{\"a\":[1,2,]}]",
+			"json": false
+		},
+		{
+			"name": "trailing_comma_object",
+			"text": "[{\"a\":[1,2],}]",
+			"json": false
+		},
+		{
+			"name": "trailing_comma_outer",
+			"text": "[{\"a\":[1,2]},]",
+			"json": false
+		},
+		{
+			"name": "leading_comma_object",
+			"text": "[{,\"a\":[1]}]",
+			"json": false
+		},
+		{
+			"name": "double_comma",
+			"text": "[{\"a\":[1,,2]}]",
+			"json": false
+		},
+		{
+			"name": "missing_comma",
+			"text": "[{\"a\":[1 2]}]",
+			"json": false
+		},
+		{
+			"name": "missing_comma_objects",
+			"text": "[{\"a\":[1]} {\"b\":[2]}]",
+			"json": false
+		},
+		{
+			"name": "missing_colon",
+			"text": "[{\"a\" [1]}]",
+			"json": false
+		},
+		{
+			"name": "missing_value",
+			"text": "[{\"a\":[1],\"b\"}]",
+			"json": false
+		},
+		{
+			"name": "single_quoted_key",
+			"text": "[{'a':[1]}]",
+			"json": false
+		},
+		{
+			"name": "unquoted_key",
+			"text": "[{a:[1]}]",
+			"json": false
+		},
+		{
+			"name": "mismatched_close",
+			"text": "[{\"a\":[1]]",
+			"json": false
+		},
+		{
+			"name": "unterminated",
+			"text": "[{\"a\":[1]}",
+			"json": false
+		},
+		{
+			"name": "unterminated_inner",
+			"text": "[{\"a\":[1",
+			"json": false
+		},
+		{
+			"name": "extra_close",
+			"text": "[{\"a\":[1]}]]",
+			"json": false
+		},
+		{
+			"name": "trailing_value",
+			"text": "[{\"a\":[1]}] []",
+			"json": false
+		},
+		{
+			"name": "line_comment",
+			"text": "[{\"a\":[1]}] // x",
+			"json": false
+		},
+		{
+			"name": "leading_zero",
+			"text": "[{\"a\":[01]}]",
+			"json": false
+		},
+		{
+			"name": "trailing_point",
+			"text": "[{\"a\":[1.]}]",
+			"json": false
+		},
+		{
+			"name": "only_minus",
+			"text": "[{\"a\":[-]}]",
+			"json": false
+		},
+		{
+			"name": "leading_plus",
+			"text": "[{\"a\":[+1]}]",
+			"json": false
+		},
+		{
+			"name": "nan",
+			"text": "[{\"a\":[NaN]}]",
+			"json": false
+		},
+		{
+			"name": "infinity",
+			"text": "[{\"a\":[Infinity]}]",
+			"json": false
+		},
+		{
+			"name": "raw_tab_in_key",
+			"text": "[{\"a\tb\":[1]}]",
+			"json": false
+		},
+		{
+			"name": "bad_escape_in_key",
+			"text": "[{\"\\x\":[1]}]",
+			"json": false
+		},
+		{
+			"name": "escaped_key",
+			"text": "[{\"\\u0061\\ud83d\\ude00\":[1]}]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "overflow",
+			"text": "[{\"a\":[1,1e400]}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "lone_surrogate_in_key",
+			"text": "[{\"a\\ud800\":[1]}]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate"
+		}
+	]
+}

@@ -1,0 +1,252 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"fractional": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "min_length",
+									"def": 1.5
+								},
+								{
+									"kind": "max_length",
+									"def": 2.5
+								}
+							]
+						}
+					}
+				},
+				"negative": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "min_length",
+									"def": -1
+								},
+								{
+									"kind": "max_length",
+									"def": 0
+								}
+							]
+						}
+					}
+				},
+				"impossible": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "min_length",
+									"def": 2
+								},
+								{
+									"kind": "max_length",
+									"def": 1
+								}
+							]
+						}
+					}
+				},
+				"repeated": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "min_length",
+									"def": 1
+								},
+								{
+									"kind": "min_length",
+									"def": 3
+								},
+								{
+									"kind": "max_length",
+									"def": 4
+								},
+								{
+									"kind": "max_length",
+									"def": 3
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "fractional_one",
+			"text": "{\"fractional\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1.5",
+					"received": "string",
+					"path": [
+						"fractional"
+					]
+				}
+			]
+		},
+		{
+			"name": "fractional_two",
+			"text": "{\"fractional\":\"ab\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fractional_three",
+			"text": "{\"fractional\":\"abc\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 2.5",
+					"received": "string",
+					"path": [
+						"fractional"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_empty",
+			"text": "{\"negative\":\"\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_one",
+			"text": "{\"negative\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 0",
+					"received": "string",
+					"path": [
+						"negative"
+					]
+				}
+			]
+		},
+		{
+			"name": "impossible_one",
+			"text": "{\"impossible\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [
+						"impossible"
+					]
+				}
+			]
+		},
+		{
+			"name": "impossible_two",
+			"text": "{\"impossible\":\"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": [
+						"impossible"
+					]
+				}
+			]
+		},
+		{
+			"name": "repeated_two",
+			"text": "{\"repeated\":\"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 3",
+					"received": "string",
+					"path": [
+						"repeated"
+					]
+				}
+			]
+		},
+		{
+			"name": "repeated_three",
+			"text": "{\"repeated\":\"abc\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "repeated_four",
+			"text": "{\"repeated\":\"abcd\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"repeated"
+					]
+				}
+			]
+		},
+		{
+			"name": "repeated_number",
+			"text": "{\"repeated\":3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"repeated"
+					]
+				}
+			]
+		}
+	]
+}
