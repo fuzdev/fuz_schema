@@ -54,7 +54,7 @@ describe('wrappers', () => {
 			children: Array<Tree>;
 		}
 		let calls = 0;
-		const Tree: s.Schema<Tree> = s.strict_object({
+		const Tree: s.Schema<Tree> = s.object({
 			children: s.array(
 				s.lazy(() => {
 					calls++;
@@ -74,7 +74,7 @@ describe('wrappers', () => {
 });
 
 describe('object', () => {
-	const User = s.object({
+	const User = s.strip_object({
 		name: s.string,
 		age: s.optional(s.number),
 		role: s.with_default(s.string, 'user')
@@ -105,8 +105,8 @@ describe('object', () => {
 		assert(!s.is(User, 'a'));
 	});
 
-	test('strict_object fails on unknown keys', () => {
-		const Strict = s.strict_object({ a: s.string });
+	test('object fails on unknown keys', () => {
+		const Strict = s.object({ a: s.string });
 		assert.deepEqual(s.parse_or_throw(Strict, { a: 'x' }), { a: 'x' });
 		assert.deepEqual(issues_of(Strict, { a: 'x', b: 1, toString: 2 }), [
 			{
@@ -126,6 +126,37 @@ describe('object', () => {
 		]);
 	});
 
+	test('loose_object keeps unknown keys and returns the input when nothing changed', () => {
+		const Loose = s.loose_object({ a: s.string, b: s.with_default(s.number, 1) });
+		const same = { a: 'x', b: 2, extra: true };
+		assert.strictEqual(s.parse_or_throw(Loose, same), same);
+		const input = { a: 'x', extra: true };
+		const output = s.parse_or_throw(Loose, input);
+		assert.deepEqual(output, { a: 'x', extra: true, b: 1 });
+		assert.deepEqual(input, { a: 'x', extra: true });
+		assert.deepEqual(issues_of(Loose, { a: 1, extra: true }), [
+			{ kind: 'string', expected: 'string', value: 1, path: ['a'], message: undefined }
+		]);
+		assert(!s.is(Loose, null));
+		// a `__proto__` key in the input stays an own key of the copy
+		const proto_output = s.parse_or_throw(Loose, JSON.parse('{"a": "x", "__proto__": {"p": 1}}'));
+		assert.strictEqual(Object.getPrototypeOf(proto_output), Object.prototype);
+		assert(Object.hasOwn(proto_output, '__proto__'));
+	});
+
+	test('the three object schemas differ only on unknown keys', () => {
+		const entries = { a: s.string };
+		const input = { a: 'x', extra: 1 };
+		assert(!s.is(s.object(entries), input));
+		assert.deepEqual(s.parse_or_throw(s.loose_object(entries), input), { a: 'x', extra: 1 });
+		assert.deepEqual(s.parse_or_throw(s.strip_object(entries), input), { a: 'x' });
+		for (const schema of [s.object(entries), s.loose_object(entries), s.strip_object(entries)]) {
+			assert.deepEqual(s.parse_or_throw(schema, { a: 'x' }), { a: 'x' });
+			assert(!s.is(schema, { a: 1 }));
+			assert(!s.is(schema, 'x'));
+		}
+	});
+
 	test('record validates values and ignores __proto__', () => {
 		const Counts = s.record(s.number);
 		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: 2 }), { a: 1, b: 2 });
@@ -137,8 +168,8 @@ describe('object', () => {
 });
 
 describe('copy on write', () => {
-	const Address = s.strict_object({ city: s.string, zip: s.optional(s.string) });
-	const User = s.strict_object({
+	const Address = s.object({ city: s.string, zip: s.optional(s.string) });
+	const User = s.object({
 		name: s.string,
 		tags: s.array(s.string),
 		address: Address,
@@ -159,7 +190,7 @@ describe('copy on write', () => {
 		assert.strictEqual(s.parse_or_throw(s.array(User), list), list);
 		const loose = { city: 'c' };
 		assert.strictEqual(
-			s.parse_or_throw(s.object({ city: s.string, zip: s.optional(s.string) }), loose),
+			s.parse_or_throw(s.strip_object({ city: s.string, zip: s.optional(s.string) }), loose),
 			loose
 		);
 		assert.strictEqual(s.parse_or_throw(s.union([s.number, Address]), loose), loose);
@@ -178,8 +209,8 @@ describe('copy on write', () => {
 	});
 
 	test('a change deep in a tree copies each ancestor', () => {
-		const Tree = s.object({
-			items: s.array(s.object({ n: s.with_default(s.number, 0), keep: s.string }))
+		const Tree = s.strip_object({
+			items: s.array(s.strip_object({ n: s.with_default(s.number, 0), keep: s.string }))
 		});
 		const input = { items: [{ n: 1, keep: 'a' }, { keep: 'b' }, { n: 3, keep: 'c' }] };
 		const output = s.parse_or_throw(Tree, input);
@@ -196,15 +227,15 @@ describe('copy on write', () => {
 		assert.deepEqual(input.items[1], { keep: 'b' });
 	});
 
-	test('object still drops unknown keys, by copying', () => {
-		const O = s.object({ a: s.string });
+	test('strip_object drops unknown keys, by copying', () => {
+		const O = s.strip_object({ a: s.string });
 		const input = { a: 'x', secret: 1 };
 		const output = s.parse_or_throw(O, input);
 		assert.deepEqual(output, { a: 'x' });
 		assert.deepEqual(input, { a: 'x', secret: 1 });
 		// including when a later entry changes
 		assert.deepEqual(
-			s.parse_or_throw(s.object({ a: s.string, b: s.with_default(s.number, 1) }), input),
+			s.parse_or_throw(s.strip_object({ a: s.string, b: s.with_default(s.number, 1) }), input),
 			{
 				a: 'x',
 				b: 1
@@ -239,7 +270,7 @@ describe('array, union, variant', () => {
 	test('array prefixes the index', () => {
 		assert.deepEqual(s.parse_or_throw(s.array(s.number), [1, 2]), [1, 2]);
 		assert.deepEqual(
-			issues_of(s.array(s.object({ a: s.number })), [{ a: 1 }, { a: 'x' }])[0]!.path,
+			issues_of(s.array(s.strip_object({ a: s.number })), [{ a: 1 }, { a: 'x' }])[0]!.path,
 			[1, 'a']
 		);
 		assert(!s.is(s.array(s.number), {}));
@@ -254,7 +285,7 @@ describe('array, union, variant', () => {
 	});
 
 	test('union restores issues recorded before it', () => {
-		const O = s.object({ a: s.string, b: s.union([s.string, s.number]) });
+		const O = s.strip_object({ a: s.string, b: s.union([s.string, s.number]) });
 		assert.deepEqual(
 			issues_of(O, { a: 1, b: 2 }).map((i) => i.path),
 			[['a']]
@@ -263,8 +294,8 @@ describe('array, union, variant', () => {
 
 	test('variant dispatches on the discriminator', () => {
 		const Shape = s.variant('kind', [
-			s.strict_object({ kind: s.literal('circle'), radius: s.number }),
-			s.strict_object({ kind: s.literal('square'), size: s.number })
+			s.object({ kind: s.literal('circle'), radius: s.number }),
+			s.object({ kind: s.literal('square'), size: s.number })
 		]);
 		assert.deepEqual(s.parse_or_throw(Shape, { kind: 'square', size: 2 }), {
 			kind: 'square',
@@ -330,7 +361,7 @@ describe('pipe and actions', () => {
 describe('message', () => {
 	test('labels the issues of the schema it wraps, not its children', () => {
 		const O = s.message(
-			s.object({ a: s.message(s.string, 'a must be text'), b: s.number }),
+			s.strip_object({ a: s.message(s.string, 'a must be text'), b: s.number }),
 			'not an object'
 		);
 		assert.deepEqual(
@@ -358,12 +389,12 @@ describe('message', () => {
 	});
 
 	test('is transparent to introspection and optional keys', () => {
-		const O = s.object({ a: s.message(s.optional(s.string), 'x') });
+		const O = s.strip_object({ a: s.message(s.optional(s.string), 'x') });
 		assert.strictEqual(O.def.a.kind, 'optional');
 		assert.deepEqual(s.parse_or_throw(O, {}), {});
 		const V = s.variant('kind', [
-			s.message(s.strict_object({ kind: s.literal('a') }), 'x'),
-			s.strict_object({ kind: s.literal('b') })
+			s.message(s.object({ kind: s.literal('a') }), 'x'),
+			s.object({ kind: s.literal('b') })
 		]);
 		assert(s.is(V, { kind: 'a' }));
 	});
@@ -380,8 +411,8 @@ describe('probe mode', () => {
 			})
 		);
 		for (const [schema, value] of [
+			[s.strip_object({ a: Counted, b: Counted }), { a: 1, b: 2 }],
 			[s.object({ a: Counted, b: Counted }), { a: 1, b: 2 }],
-			[s.strict_object({ a: Counted, b: Counted }), { a: 1, b: 2 }],
 			[s.array(Counted), [1, 2, 3]],
 			[s.record(Counted), { a: 1, b: 2 }]
 		] as const) {
@@ -396,33 +427,33 @@ describe('probe mode', () => {
 	});
 
 	test('is matches parse on unknown keys, variants, and messages', () => {
-		const Strict = s.strict_object({ a: s.string });
+		const Strict = s.object({ a: s.string });
 		assert(s.is(Strict, { a: 'x' }));
 		assert(!s.is(Strict, { a: 'x', b: 1 }));
-		const V = s.variant('kind', [s.strict_object({ kind: s.literal('a') })]);
+		const V = s.variant('kind', [s.object({ kind: s.literal('a') })]);
 		assert(!s.is(V, { kind: 'z' }));
-		assert(!s.is(s.message(s.object({ a: s.message(s.string, 'x') }), 'y'), { a: 1 }));
+		assert(!s.is(s.message(s.strip_object({ a: s.message(s.string, 'x') }), 'y'), { a: 1 }));
 	});
 
 	test('union probes options without leaking failures', () => {
 		const Item = s.union([
-			s.strict_object({ a: s.array(s.string) }),
-			s.strict_object({ b: s.union([s.number, s.literal('x')]) })
+			s.object({ a: s.array(s.string) }),
+			s.object({ b: s.union([s.number, s.literal('x')]) })
 		]);
 		assert.deepEqual(s.parse_or_throw(Item, { b: 'x' }), { b: 'x' });
-		const List = s.object({ first: s.string, items: s.array(Item) });
+		const List = s.strip_object({ first: s.string, items: s.array(Item) });
 		assert.deepEqual(issues_of(List, { first: 1, items: [{ b: 1 }, { a: [1] }, { c: 1 }] }), [
 			{ kind: 'string', expected: 'string', value: 1, path: ['first'], message: undefined },
 			{
 				kind: 'union',
-				expected: 'strict_object | strict_object',
+				expected: 'object | object',
 				value: { a: [1] },
 				path: ['items', 1],
 				message: undefined
 			},
 			{
 				kind: 'union',
-				expected: 'strict_object | strict_object',
+				expected: 'object | object',
 				value: { c: 1 },
 				path: ['items', 2],
 				message: undefined
@@ -431,9 +462,9 @@ describe('probe mode', () => {
 	});
 
 	test('a failed union leaves probe mode off for its siblings', () => {
-		const O = s.object({
+		const O = s.strip_object({
 			a: s.union([s.string, s.number]),
-			b: s.object({ c: s.string, d: s.string })
+			b: s.strip_object({ c: s.string, d: s.string })
 		});
 		assert.deepEqual(
 			issues_of(O, { a: true, b: { c: 1, d: 2 } }).map((i) => i.path),
@@ -444,7 +475,7 @@ describe('probe mode', () => {
 
 describe('parse_or_throw', () => {
 	test('throws SchemaError listing every issue', () => {
-		const O = s.object({ a: s.string, b: s.array(s.number) });
+		const O = s.strip_object({ a: s.string, b: s.array(s.number) });
 		try {
 			s.parse_or_throw(O, { a: 1, b: [1, null] });
 			assert.fail('expected a throw');
@@ -459,9 +490,26 @@ describe('parse_or_throw', () => {
 	});
 });
 
+describe('flavor and brand', () => {
+	test('return the schema itself', () => {
+		assert.strictEqual(s.flavor(s.string, 'Email'), s.string);
+		assert.strictEqual(s.brand(s.string, 'Uuid'), s.string);
+	});
+
+	test('parse like the wrapped schema and still report issues', () => {
+		const Email = s.flavor(s.pipe(s.string, s.min_length(3)), 'Email');
+		const Uuid = s.brand(s.string, 'Uuid');
+		assert.deepEqual(s.parse(Email, 'abc'), { ok: true, value: 'abc' });
+		const parsed: unknown = s.parse(Uuid, 'x');
+		assert.deepEqual(parsed, { ok: true, value: 'x' });
+		assert.strictEqual(issues_of(Email, 'a').length, 1);
+		assert.strictEqual(issues_of(Uuid, 1).length, 1);
+	});
+});
+
 describe('types', () => {
 	test('infers object output and input', () => {
-		const _User = s.object({
+		const _User = s.strip_object({
 			name: s.string,
 			age: s.optional(s.number),
 			role: s.with_default(s.picklist(['user', 'admin']), 'user'),
@@ -494,12 +542,62 @@ describe('types', () => {
 		expectTypeOf<s.Infer<typeof _U>>().toEqualTypeOf<string | 1 | boolean | null>();
 
 		const _Shape = s.variant('kind', [
-			s.strict_object({ kind: s.literal('circle'), radius: s.number }),
-			s.strict_object({ kind: s.literal('square'), size: s.number })
+			s.object({ kind: s.literal('circle'), radius: s.number }),
+			s.object({ kind: s.literal('square'), size: s.number })
 		]);
 		expectTypeOf<s.Infer<typeof _Shape>>().toEqualTypeOf<
 			{ kind: 'circle'; radius: number } | { kind: 'square'; size: number }
 		>();
+	});
+
+	test('loose_object types its unknown keys as unknown', () => {
+		const _Loose = s.loose_object({ a: s.string, b: s.optional(s.number) });
+		type Loose = s.Infer<typeof _Loose>;
+		expectTypeOf<Loose['a']>().toEqualTypeOf<string>();
+		expectTypeOf<Loose['b']>().toEqualTypeOf<number | undefined>();
+		expectTypeOf<Loose['anything_else']>().toEqualTypeOf<unknown>();
+	});
+
+	test('flavor is loose nominal typing', () => {
+		const Email = s.flavor(s.pipe(s.string, s.min_length(3)), 'Email');
+		const Address = s.flavor(s.string, 'Address');
+		type Email = s.Infer<typeof Email>;
+		type Address = s.Infer<typeof Address>;
+		const _plain: Email = 'plain';
+		expectTypeOf(_plain).toEqualTypeOf<Email>();
+		const _address = 'x' as Address;
+		// @ts-expect-error a different flavor does not assign
+		const _email: Email = _address;
+		expectTypeOf<s.InferInput<typeof Email>>().toEqualTypeOf<string>();
+		expectTypeOf<s.Infer<typeof Email>>().toEqualTypeOf<s.Flavored<string, 'Email'>>();
+
+		const _Piped = s.pipe(Email, s.max_length(10));
+		expectTypeOf<s.Infer<typeof _Piped>>().toEqualTypeOf<Email>();
+
+		const _Obj = s.object({ email: Email, other: s.optional(Address) });
+		expectTypeOf<s.Infer<typeof _Obj>>().toEqualTypeOf<{
+			email: Email;
+			other?: Address | undefined;
+		}>();
+
+		const _Opt = s.object({ a: s.flavor(s.optional(s.string), 'A') });
+		type Opt = s.Infer<typeof _Opt>;
+		expectTypeOf<Opt>().toEqualTypeOf<{ a?: s.Flavored<string, 'A'> | undefined }>();
+	});
+
+	test('brand is strict nominal typing', () => {
+		const Uuid = s.brand(s.string, 'Uuid');
+		const _Other = s.brand(s.string, 'Other');
+		type Uuid = s.Infer<typeof Uuid>;
+		type Other = s.Infer<typeof _Other>;
+		// @ts-expect-error a plain string does not assign
+		const _plain: Uuid = 'x';
+		const _parsed: Uuid = s.parse_or_throw(Uuid, 'x');
+		expectTypeOf(_parsed).toEqualTypeOf<Uuid>();
+		// @ts-expect-error a different brand does not assign
+		const _other: Uuid = {} as Other;
+		expectTypeOf<s.InferInput<typeof Uuid>>().toEqualTypeOf<string>();
+		expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
 	});
 
 	test('rejects an action for the wrong type', () => {

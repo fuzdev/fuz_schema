@@ -11,7 +11,7 @@ export const scenario_string: ScenarioModule['scenario_string'] = () => to_runne
 
 export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =>
 	to_runner(
-		s.object({
+		s.strip_object({
 			id: s.number,
 			name: s.string,
 			email: s.string,
@@ -22,17 +22,17 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
-		s.strict_object({
+		s.object({
 			id: s.number,
 			name: s.string,
 			tags: s.array(s.string),
-			address: s.strict_object({ street: s.string, city: s.string, zip: s.string })
+			address: s.object({ street: s.string, city: s.string, zip: s.string })
 		})
 	);
 
 export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 	to_runner(
-		s.object({
+		s.strip_object({
 			name: s.pipe(s.string, s.min_length(1), s.max_length(50)),
 			age: s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150)),
 			slug: s.pipe(s.string, s.regex(/^[a-z0-9-]+$/))
@@ -44,43 +44,43 @@ export const scenario_union: ScenarioModule['scenario_union'] = () =>
 
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	const TypeJson: s.Schema = s.variant('kind', [
-		s.strict_object({ kind: s.literal('intrinsic'), text: s.string }),
-		s.strict_object({
+		s.object({ kind: s.literal('intrinsic'), text: s.string }),
+		s.object({
 			kind: s.literal('literal'),
 			value: s.union([s.string, s.pipe(s.number, s.finite), s.boolean]),
 			text: s.string
 		}),
-		s.strict_object({
+		s.object({
 			kind: s.literal('reference'),
 			name: s.string,
 			module: s.optional(s.string),
 			typeArgs: s.optional(s.array(s.lazy(() => TypeJson)))
 		}),
-		s.strict_object({
+		s.object({
 			kind: s.literal('array'),
 			element: s.lazy(() => TypeJson),
 			readonly: s.optional(s.boolean)
 		}),
-		s.strict_object({
+		s.object({
 			kind: s.literal('tuple'),
 			elements: s.optional(s.array(s.lazy(() => TupleElementJson))),
 			readonly: s.optional(s.boolean)
 		}),
-		s.strict_object({
+		s.object({
 			kind: s.literal('union'),
 			alias: s.optional(s.string),
 			members: s.array(s.lazy(() => TypeJson))
 		}),
-		s.strict_object({
+		s.object({
 			kind: s.literal('intersection'),
 			alias: s.optional(s.string),
 			members: s.array(s.lazy(() => TypeJson))
 		}),
-		s.strict_object({ kind: s.literal('function'), text: s.string }),
-		s.strict_object({ kind: s.literal('object'), text: s.string }),
-		s.strict_object({ kind: s.literal('other'), text: s.string })
+		s.object({ kind: s.literal('function'), text: s.string }),
+		s.object({ kind: s.literal('object'), text: s.string }),
+		s.object({ kind: s.literal('other'), text: s.string })
 	]);
-	const TupleElementJson: s.Schema = s.strict_object({
+	const TupleElementJson: s.Schema = s.object({
 		name: s.optional(s.string),
 		type: TypeJson,
 		optional: s.optional(s.boolean),

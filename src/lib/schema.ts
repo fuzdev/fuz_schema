@@ -18,7 +18,6 @@
  * - Schemas with no options are constants (`string`, not `string()`).
  * - Messages are derived from structured issues by `format_issue`, which is
  *   only bundled when used.
- *
  * - A `union` tries its options, and `is` runs, in probe mode: failures are
  *   counted without building issues.
  *
@@ -390,6 +389,81 @@ export const message = <T extends AnySchema>(
 	}) as AnySchema as T;
 
 //
+// Nominal types
+//
+
+declare const FlavoredSymbol: unique symbol;
+declare const BrandedSymbol: unique symbol;
+
+/** The marker `Flavored` adds: an optional property, so unmarked values still fit. */
+export interface Flavor<T> {
+	readonly [FlavoredSymbol]?: T;
+}
+
+/** The marker `Branded` adds: a required property, so unmarked values don't fit. */
+export interface Brand<T> {
+	readonly [BrandedSymbol]: T;
+}
+
+/**
+ * Loose nominal typing. A plain value of the base type is assignable to the flavored type,
+ * so producing one needs no cast or parse, but two different flavors of the same base type
+ * are not assignable to each other. Good for values like ids and units,
+ * where mixing them up is the bug to prevent.
+ *
+ * ```ts
+ * type Email = Flavored<string, 'Email'>;
+ * type Address = Flavored<string, 'Address'>;
+ * const email: Email = 'a@b.c'; // ok
+ * const address: Address = email; // error!
+ * ```
+ */
+export type Flavored<TValue, TName> = TValue & Flavor<TName>;
+
+/**
+ * Strict nominal typing. A plain value of the base type is not assignable to the branded type,
+ * so the only way to get one is through a schema or a cast.
+ * Good for values that must have been validated.
+ *
+ * ```ts
+ * type Uuid = Branded<string, 'Uuid'>;
+ * const a: Uuid = 'abc'; // error!
+ * const b: Uuid = 'abc' as Uuid; // ok
+ * ```
+ */
+export type Branded<TValue, TName> = TValue & Brand<TName>;
+
+/**
+ * Flavors the output type of `schema` with `name`, see `Flavored`.
+ * The input type is unchanged. The schema is returned as-is, so this adds nothing
+ * to a parse and is invisible to introspection: `kind` and `def` are the wrapped schema's.
+ *
+ * @param schema - the schema to flavor
+ * @param name - the flavor's name, which exists only in the types and is not stored
+ */
+// @__NO_SIDE_EFFECTS__
+export const flavor: <T extends AnySchema, const TName extends string>(
+	schema: T,
+	name: TName
+) => Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
+	schema;
+
+/**
+ * Brands the output type of `schema` with `name`, see `Branded`.
+ * The input type is unchanged. The schema is returned as-is, so this adds nothing
+ * to a parse and is invisible to introspection: `kind` and `def` are the wrapped schema's.
+ *
+ * @param schema - the schema to brand
+ * @param name - the brand's name, which exists only in the types and is not stored
+ */
+// @__NO_SIDE_EFFECTS__
+export const brand: <T extends AnySchema, const TName extends string>(
+	schema: T,
+	name: TName
+) => Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
+	schema;
+
+//
 // Containers
 //
 
@@ -436,8 +510,8 @@ const run_entries = (
 };
 
 /**
- * Matches an object with `entries`, dropping unknown keys from the output.
- * The output is the input itself when no entry changed and there was nothing to drop.
+ * Matches an object with `entries`, failing on unknown keys.
+ * The output is the input itself when no entry changed.
  */
 // @__NO_SIDE_EFFECTS__
 export const object = <T extends SchemaEntries>(
@@ -452,32 +526,6 @@ export const object = <T extends SchemaEntries>(
 			if (!is_object(value)) return fail(ctx, 'object', value);
 			const count = ctx.fails;
 			const output = run_entries(keys, schemas, value, ctx);
-			if (output || ctx.fails > count) return output;
-			for (const key in value) {
-				if (!Object.hasOwn(entries, key)) return copy_entries(keys, value, keys.length);
-			}
-			return value;
-		}
-	};
-};
-
-/**
- * Matches an object with `entries`, failing on unknown keys.
- * The output is the input itself when no entry changed.
- */
-// @__NO_SIDE_EFFECTS__
-export const strict_object = <T extends SchemaEntries>(
-	entries: T
-): Schema<ObjectOutput<T>, ObjectInput<T>, 'strict_object', T> => {
-	const keys = Object.keys(entries);
-	const schemas = Object.values(entries);
-	return {
-		kind: 'strict_object',
-		def: entries,
-		run: (value, ctx): any => {
-			if (!is_object(value)) return fail(ctx, 'strict_object', value, 'object');
-			const count = ctx.fails;
-			const output = run_entries(keys, schemas, value, ctx);
 			if (ctx.probe && ctx.fails > count) return undefined;
 			for (const key in value) {
 				if (!Object.hasOwn(entries, key)) {
@@ -486,6 +534,72 @@ export const strict_object = <T extends SchemaEntries>(
 				}
 			}
 			return output ?? value;
+		}
+	};
+};
+
+/**
+ * Matches an object with `entries`, keeping unknown keys as they are.
+ * The cheapest of the object schemas: unknown keys are never looked at, and
+ * the output is the input itself when no entry changed.
+ */
+// @__NO_SIDE_EFFECTS__
+export const loose_object = <T extends SchemaEntries>(
+	entries: T
+): Schema<
+	ObjectOutput<T> & Record<string, unknown>,
+	ObjectInput<T> & Record<string, unknown>,
+	'loose_object',
+	T
+> => {
+	const keys = Object.keys(entries);
+	const schemas = Object.values(entries);
+	return {
+		kind: 'loose_object',
+		def: entries,
+		// its own loop, so keeping unknown keys costs the other object schemas nothing
+		run: (value, ctx): any => {
+			if (!is_object(value)) return fail(ctx, 'loose_object', value, 'object');
+			let output: Record<string, unknown> | undefined;
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i]!;
+				const input = value[key];
+				const count = ctx.fails;
+				const v = schemas[i]!.run(input, ctx);
+				if (ctx.fails > count) {
+					if (ctx.probe) return undefined;
+					prefix_path(ctx.issues, count, key);
+				} else if (v !== input) (output ??= { ...value })[key] = v;
+			}
+			return output ?? value;
+		}
+	};
+};
+
+/**
+ * Matches an object with `entries`, dropping unknown keys from the output.
+ * Dropping means copying, so this costs more than `object` or `loose_object`
+ * whenever there is a key to drop. The output is the input itself when no
+ * entry changed and there was nothing to drop.
+ */
+// @__NO_SIDE_EFFECTS__
+export const strip_object = <T extends SchemaEntries>(
+	entries: T
+): Schema<ObjectOutput<T>, ObjectInput<T>, 'strip_object', T> => {
+	const keys = Object.keys(entries);
+	const schemas = Object.values(entries);
+	return {
+		kind: 'strip_object',
+		def: entries,
+		run: (value, ctx): any => {
+			if (!is_object(value)) return fail(ctx, 'strip_object', value, 'object');
+			const count = ctx.fails;
+			const output = run_entries(keys, schemas, value, ctx);
+			if (output || ctx.fails > count) return output;
+			for (const key in value) {
+				if (!Object.hasOwn(entries, key)) return copy_entries(keys, value, keys.length);
+			}
+			return value;
 		}
 	};
 };

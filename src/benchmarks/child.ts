@@ -61,6 +61,8 @@ export interface EntryVariant {
 	id: string;
 	/** The file `#lib/schema.ts` resolves to. */
 	schema_path: string;
+	/** The scenario module written for that version, when its API differs. */
+	lib_path?: string;
 }
 
 /**
@@ -83,13 +85,16 @@ export const prepare_entry = async (
 			path,
 			await build_scenario_bundle(lib, [scenario], {
 				call: false,
-				schema_path: variant?.schema_path
+				schema_path: variant?.schema_path,
+				lib_path: variant?.lib_path
 			})
 		);
 		return path;
 	}
 	const path = join(CHILD_DIR, 'unbundled', `${name}.mjs`);
-	let source = strip_types(fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url)));
+	let source = strip_types(
+		variant?.lib_path ?? fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url))
+	);
 	if (source.includes('#lib/schema.ts')) {
 		// this repo's own library has no built output, so its stripped source stands in for one
 		const schema_name = variant ? `schema.lib.${variant.id}.mjs` : 'schema.lib.mjs';

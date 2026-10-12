@@ -11,7 +11,7 @@ with simpler internals.
 ```ts
 import * as s from '@fuzdev/fuz_schema/schema.ts';
 
-const User = s.strict_object({
+const User = s.object({
 	name: s.pipe(s.string, s.min_length(1)),
 	age: s.optional(s.number),
 	role: s.with_default(s.picklist(['user', 'admin']), 'user')
@@ -78,7 +78,7 @@ This is deliberate, for speed, and it's the main thing to know before using it.
   Parsed JSON can't do this; objects from untrusted in-process code can.
 - A class instance that matches comes back as that instance, not a plain object.
 
-What it doesn't give up: `object` still drops unknown keys, by copying when there are any,
+What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
 and the input is never mutated.
 
 ### Other differences in behavior
@@ -86,6 +86,8 @@ and the input is never mutated.
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options' issues.
 - A missing object key and an `undefined` value are treated the same.
+- `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
+  `strip_object` drops them and `loose_object` keeps them.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.
@@ -98,11 +100,16 @@ Everything is a named export of `schema.ts`, used through a namespace import.
 |---|---|
 | primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `picklist` |
 | wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
-| containers | `object`, `strict_object`, `record`, `array`, `union`, `variant` |
+| nominal | `flavor`, `brand` |
+| containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `to_type_name`, `SchemaError`, `fail` |
-| types | `Infer`, `InferInput`, `Schema`, `SchemaIssue` |
+| types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
+
+The three object schemas differ only on keys the schema doesn't name:
+`object` rejects them, `loose_object` keeps them and is the cheapest,
+`strip_object` drops them and pays for a copy when there are any.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
@@ -115,13 +122,25 @@ interface Tree {
 	// ...
 }
 const Tree: s.Schema<Tree> = s.variant('kind', [
-	s.strict_object({kind: s.literal('leaf'), value: s.number}),
-	s.strict_object({kind: s.literal('branch'), children: s.array(s.lazy(() => Tree))})
+	s.object({kind: s.literal('leaf'), value: s.number}),
+	s.object({kind: s.literal('branch'), children: s.array(s.lazy(() => Tree))})
 ]);
 
 // custom text, on a schema or on one step of a pipe
 const Name = s.pipe(s.string, s.message(s.min_length(1), 'name is required'));
+
+// nominal types: a plain string assigns to an Email but not to a Uuid
+const Email = s.flavor(s.pipe(s.string, s.min_length(3)), 'Email');
+const Uuid = s.brand(s.string, 'Uuid');
+const email: s.Infer<typeof Email> = 'a@b.c'; // ok
+const uuid: s.Infer<typeof Uuid> = 'abc'; // error, parse it instead
 ```
+
+`flavor` and `brand` change only the output type.
+A plain value assigns to a flavored type but not to a branded one,
+and a branded value comes from parsing or a cast.
+Both return the schema itself, so they add nothing to a parse;
+the name ships as a string at the call site and is otherwise unused.
 
 ### Standard Schema
 
@@ -146,8 +165,9 @@ is an open question.
 - [x] custom messages, as an opt-in wrapper
 - [x] Standard Schema v1, as an opt-in adapter
 - [x] copy-on-write output
+- [x] `flavor` and `brand`, type-level only
 - [ ] nested issues for a failed `union`
-- [ ] `meta` and `brand`
+- [ ] `meta`
 - [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
 - [ ] abort-early as a caller option
 - [ ] a published package
@@ -155,8 +175,8 @@ is an open question.
 
 Not designed yet: JSON Schema output, async validation, i18n.
 
-Known regressions to fix: `object` got slower when it has unknown keys to drop,
-and when a default applies late in a wide object.
+Known regressions to fix: `strip_object` got slower when it has unknown keys to drop,
+and `object` and `strip_object` when a default applies late in a wide object.
 Both came with copy-on-write and share a cause.
 
 ## Measurements

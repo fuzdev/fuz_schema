@@ -4,7 +4,7 @@ import * as s from '#lib/schema.ts';
 import { to_standard_schema, type StandardSchemaV1 } from '#lib/standard_schema.ts';
 
 describe('to_standard_schema', () => {
-	const User = s.object({
+	const User = s.strip_object({
 		name: s.message(s.string, 'name must be text'),
 		tags: s.array(s.string),
 		age: s.with_default(s.number, 0)

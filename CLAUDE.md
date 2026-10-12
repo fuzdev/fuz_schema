@@ -84,8 +84,10 @@ Things that are easy to break without a test noticing:
   restore `fails` after probing.
 - **In probe mode nothing touches `ctx.issues`**, and containers return at
   their first failed child.
-- **The input is never mutated**, and `object` never returns an input that has
-  unknown keys.
+- **The input is never mutated**, `object` never accepts an input with unknown
+  keys, and `strip_object` never returns one.
+- **`loose_object` has its own loop.** Folding it into the shared one put its
+  bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
   export or module the core path doesn't reach. It should take that shape
   before it adds a field to an issue, a schema, or the context, or a branch to

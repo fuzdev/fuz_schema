@@ -33,7 +33,7 @@ When a change targets a path no case isolates, add the case first.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
 
 `grade` checks 2, 4, 5, and 6, and lists what allocates more, retains more, or
-starts slower. The rest is judgment. Rule 4's "core" is the `object_flat`
-scenario's bundle.
+starts slower. The rest is judgment. Rule 4's "core" is the `strict_nested`
+scenario's bundle, the one built from `object`.
 
 A pass doesn't mean nothing regressed. Read the lists.

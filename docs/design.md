@@ -43,9 +43,24 @@ Given up:
 
 Kept:
 
-- `object` drops unknown keys, copying when there are any.
+- `strip_object` drops unknown keys, copying when there are any.
+- `object` never accepts them.
 - `record` drops a `__proto__` key.
 - The input is never mutated.
+
+## Object schemas
+
+Three, differing only in what they do with keys the schema doesn't name:
+
+| | Unknown keys | Cost on valid input |
+|---|---|---|
+| `object` | an error | one pass over the input's keys |
+| `loose_object` | kept | none; they are never looked at |
+| `strip_object` | dropped | one pass, then a copy when there are any |
+
+`object` is the default name because rejecting is the safe default.
+`loose_object` is the cheapest, and `strip_object` is the one that works for
+its result.
 
 ## Issues
 
@@ -54,6 +69,12 @@ text and is only bundled when used. There is no message registry.
 
 `message(schema, text)` wraps a schema and labels the issues that schema
 itself reports. It copies `kind` and `def`, so it's invisible to introspection.
+
+## Nominal types
+
+`flavor` and `brand` change only the output type and return the schema object
+itself. They add no wrapper and no second shape, so `kind` and `def` are the
+wrapped schema's and nothing is stored at runtime.
 
 ## Costs are opt-in
 
@@ -69,6 +90,8 @@ a `~standard` property. Whether they should, natively, is undecided.
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options'.
 - A missing key and an `undefined` value are the same.
+- `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
+  Dropping is `strip_object`, and keeping is `loose_object`.
 - `variant` dispatches by map; its options need a `literal` discriminator.
 - Output is copy-on-write.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.

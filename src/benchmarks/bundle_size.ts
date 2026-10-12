@@ -25,6 +25,11 @@ export interface BuildScenarioBundleOptions {
 	call?: boolean;
 	/** A file to resolve `#lib/schema.ts` to, for building against another version of it. */
 	schema_path?: string;
+	/**
+	 * A file to use as the library's scenario module. Another version of the
+	 * library may have another API, so it needs the scenario module written for it.
+	 */
+	lib_path?: string;
 }
 
 /**
@@ -41,7 +46,7 @@ export const build_scenario_bundle = async (
 	options: BuildScenarioBundleOptions = {}
 ): Promise<string> => {
 	const { call = true, schema_path } = options;
-	const lib_path = fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url));
+	const lib_path = options.lib_path ?? fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url));
 	const names = scenario_names.map((n) => `scenario_${n}`);
 	const entry = call
 		? `import {${names.join(', ')}} from ${JSON.stringify(lib_path)};
@@ -70,13 +75,12 @@ export const runners = [${names.map((n) => `${n}()`).join(', ')}];`
  * Measures the bundle `build_scenario_bundle` builds with the factories called.
  *
  * @param lib - basename of a module in `libs/`
- * @param schema_path - a file to resolve `#lib/schema.ts` to, for measuring another version of it
  */
 export const measure_bundle_size = async (
 	lib: string,
 	scenario_names: Array<string>,
-	schema_path?: string
+	options: Pick<BuildScenarioBundleOptions, 'schema_path' | 'lib_path'> = {}
 ): Promise<BundleSize> => {
-	const code = await build_scenario_bundle(lib, scenario_names, { schema_path });
+	const code = await build_scenario_bundle(lib, scenario_names, options);
 	return { minified: Buffer.byteLength(code), gzip: gzipSync(code, { level: 9 }).length };
 };

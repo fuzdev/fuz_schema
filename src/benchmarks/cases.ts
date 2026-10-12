@@ -36,6 +36,16 @@ const to_parse = (s: SchemaLib): ParseResult =>
 const to_parse_or_throw = (s: SchemaLib): ParseThrowing =>
 	'parse_or_throw' in s ? s.parse_or_throw : (s as unknown as { parse: ParseThrowing }).parse;
 
+type ObjectFactory = (entries: schema_lib.SchemaEntries) => schema_lib.AnySchema;
+
+// and these so a baseline from before the object rename, where `strict_object`
+// rejected unknown keys and `object` dropped them, can still be graded
+const to_object = (s: SchemaLib): ObjectFactory =>
+	'strip_object' in s ? s.object : (s as unknown as { strict_object: ObjectFactory }).strict_object;
+
+const to_strip_object = (s: SchemaLib): ObjectFactory =>
+	'strip_object' in s ? s.strip_object : (s as unknown as { object: ObjectFactory }).object;
+
 export interface Case {
 	name: string;
 	group: string;
@@ -108,55 +118,55 @@ const to_user_shaped = (i: number): Record<string, unknown> => {
 };
 
 const create_user = (s: SchemaLib): schema_lib.AnySchema =>
-	s.strict_object({
+	to_object(s)({
 		id: s.number,
 		name: s.string,
 		email: s.string,
 		active: s.boolean,
 		tags: s.array(s.string),
-		address: s.strict_object({ street: s.string, city: s.string, zip: s.string })
+		address: to_object(s)({ street: s.string, city: s.string, zip: s.string })
 	});
 
 // svelte-docinfo's recursive `TypeJson`, as in `libs/fuz_schema.ts`
 const create_type_json = (s: SchemaLib): schema_lib.AnySchema => {
 	const TypeJson: schema_lib.Schema = s.variant('kind', [
-		s.strict_object({ kind: s.literal('intrinsic'), text: s.string }),
-		s.strict_object({
+		to_object(s)({ kind: s.literal('intrinsic'), text: s.string }),
+		to_object(s)({
 			kind: s.literal('literal'),
 			value: s.union([s.string, s.pipe(s.number, s.finite), s.boolean]),
 			text: s.string
 		}),
-		s.strict_object({
+		to_object(s)({
 			kind: s.literal('reference'),
 			name: s.string,
 			module: s.optional(s.string),
 			typeArgs: s.optional(s.array(s.lazy(() => TypeJson)))
 		}),
-		s.strict_object({
+		to_object(s)({
 			kind: s.literal('array'),
 			element: s.lazy(() => TypeJson),
 			readonly: s.optional(s.boolean)
 		}),
-		s.strict_object({
+		to_object(s)({
 			kind: s.literal('tuple'),
 			elements: s.optional(s.array(s.lazy(() => TupleElementJson))),
 			readonly: s.optional(s.boolean)
 		}),
-		s.strict_object({
+		to_object(s)({
 			kind: s.literal('union'),
 			alias: s.optional(s.string),
 			members: s.array(s.lazy(() => TypeJson))
 		}),
-		s.strict_object({
+		to_object(s)({
 			kind: s.literal('intersection'),
 			alias: s.optional(s.string),
 			members: s.array(s.lazy(() => TypeJson))
 		}),
-		s.strict_object({ kind: s.literal('function'), text: s.string }),
-		s.strict_object({ kind: s.literal('object'), text: s.string }),
-		s.strict_object({ kind: s.literal('other'), text: s.string })
+		to_object(s)({ kind: s.literal('function'), text: s.string }),
+		to_object(s)({ kind: s.literal('object'), text: s.string }),
+		to_object(s)({ kind: s.literal('other'), text: s.string })
 	]);
-	const TupleElementJson: schema_lib.Schema = s.strict_object({
+	const TupleElementJson: schema_lib.Schema = to_object(s)({
 		name: s.optional(s.string),
 		type: TypeJson,
 		optional: s.optional(s.boolean),
@@ -193,71 +203,77 @@ const primitive: CaseGroup = (s) => [
 	to_case(s, 'primitive/picklist_20/invalid', s.picklist(range(20)), 20, false)
 ];
 
-const object: CaseGroup = (s) => [
-	to_case(s, 'object/1_key/valid', s.object(to_entries(1, s.string)), to_record(1), true),
-	to_case(s, 'object/5_keys/valid', s.object(to_entries(5, s.string)), to_record(5), true),
-	to_case(s, 'object/20_keys/valid', s.object(to_entries(20, s.string)), to_record(20), true),
-	// unknown keys must be dropped, so this one has to build an output
-	to_case(s, 'object/5_of_8_keys/valid', s.object(to_entries(5, s.string)), to_record(8), true),
+const strip: CaseGroup = (s) => [
+	to_case(s, 'strip/1_key/valid', to_strip_object(s)(to_entries(1, s.string)), to_record(1), true),
+	to_case(s, 'strip/5_keys/valid', to_strip_object(s)(to_entries(5, s.string)), to_record(5), true),
 	to_case(
 		s,
-		'object/5_optional_absent/valid',
-		s.object(to_entries(5, s.optional(s.string))),
+		'strip/20_keys/valid',
+		to_strip_object(s)(to_entries(20, s.string)),
+		to_record(20),
+		true
+	),
+	// unknown keys must be dropped, so this one has to build an output
+	to_case(
+		s,
+		'strip/5_of_8_keys/valid',
+		to_strip_object(s)(to_entries(5, s.string)),
+		to_record(8),
+		true
+	),
+	to_case(
+		s,
+		'strip/5_optional_absent/valid',
+		to_strip_object(s)(to_entries(5, s.optional(s.string))),
 		{},
 		true
 	),
 	// defaults change the value, so this one has to build an output too
 	to_case(
 		s,
-		'object/5_defaults_absent/valid',
-		s.object(to_entries(5, s.with_default(s.string, 'd'))),
+		'strip/5_defaults_absent/valid',
+		to_strip_object(s)(to_entries(5, s.with_default(s.string, 'd'))),
 		{},
 		true
 	),
 	to_case(
 		s,
-		'object/5_keys_first_bad/invalid',
-		s.object(to_entries(5, s.string)),
+		'strip/5_keys_first_bad/invalid',
+		to_strip_object(s)(to_entries(5, s.string)),
 		{ ...to_record(5), k0: 1 },
 		false
 	),
 	to_case(
 		s,
-		'object/5_keys_all_bad/invalid',
-		s.object(to_entries(5, s.string)),
+		'strip/5_keys_all_bad/invalid',
+		to_strip_object(s)(to_entries(5, s.string)),
 		to_record(5, 1),
 		false
 	),
-	to_case(s, 'object/not_object/invalid', s.object(to_entries(5, s.string)), 'x', false)
+	to_case(s, 'strip/not_object/invalid', to_strip_object(s)(to_entries(5, s.string)), 'x', false)
 ];
 
-const strict: CaseGroup = (s) => [
-	to_case(s, 'strict/5_keys/valid', s.strict_object(to_entries(5, s.string)), to_record(5), true),
+const object: CaseGroup = (s) => [
+	to_case(s, 'object/5_keys/valid', to_object(s)(to_entries(5, s.string)), to_record(5), true),
+	to_case(s, 'object/20_keys/valid', to_object(s)(to_entries(20, s.string)), to_record(20), true),
 	to_case(
 		s,
-		'strict/20_keys/valid',
-		s.strict_object(to_entries(20, s.string)),
-		to_record(20),
-		true
-	),
-	to_case(
-		s,
-		'strict/5_optional_absent/valid',
-		s.strict_object(to_entries(5, s.optional(s.string))),
+		'object/5_optional_absent/valid',
+		to_object(s)(to_entries(5, s.optional(s.string))),
 		{},
 		true
 	),
 	to_case(
 		s,
-		'strict/unknown_key/invalid',
-		s.strict_object(to_entries(5, s.string)),
+		'object/unknown_key/invalid',
+		to_object(s)(to_entries(5, s.string)),
 		to_record(6),
 		false
 	),
-	to_case(s, 'strict/user/valid', create_user(s), to_user(1), true, true),
+	to_case(s, 'object/user/valid', create_user(s), to_user(1), true, true),
 	to_case(
 		s,
-		'strict/user/invalid',
+		'object/user/invalid',
 		create_user(s),
 		{ ...to_user(1), address: { street: 1, city: 'x', zip: 2 } },
 		false,
@@ -265,9 +281,37 @@ const strict: CaseGroup = (s) => [
 	)
 ];
 
+const loose: CaseGroup = (s) => [
+	to_case(s, 'loose/5_keys/valid', s.loose_object(to_entries(5, s.string)), to_record(5), true),
+	to_case(s, 'loose/20_keys/valid', s.loose_object(to_entries(20, s.string)), to_record(20), true),
+	// unknown keys are never looked at, so they cost nothing
+	to_case(
+		s,
+		'loose/5_of_8_keys/valid',
+		s.loose_object(to_entries(5, s.string)),
+		to_record(8),
+		true
+	),
+	// a default changes the value, so this one copies the whole input
+	to_case(
+		s,
+		'loose/5_defaults_absent_3_unknown/valid',
+		s.loose_object(to_entries(5, s.with_default(s.string, 'd'))),
+		{ x: 1, y: 2, z: 3 },
+		true
+	),
+	to_case(
+		s,
+		'loose/5_keys_first_bad/invalid',
+		s.loose_object(to_entries(5, s.string)),
+		{ ...to_record(5), k0: 1 },
+		false
+	)
+];
+
 const nested: CaseGroup = (s) => {
 	const to_schema = (depth: number): schema_lib.AnySchema =>
-		depth === 0 ? s.string : s.strict_object({ a: s.number, next: to_schema(depth - 1) });
+		depth === 0 ? s.string : to_object(s)({ a: s.number, next: to_schema(depth - 1) });
 	const to_input = (depth: number, leaf: unknown): unknown =>
 		depth === 0 ? leaf : { a: depth, next: to_input(depth - 1, leaf) };
 	return [
@@ -304,9 +348,9 @@ const union: CaseGroup = (s) => {
 	const primitives = s.union([s.string, s.number, s.boolean]);
 	const literals = s.union([s.literal('a'), s.literal('b'), s.literal('c'), s.literal('d')]);
 	const objects = s.union([
-		s.strict_object({ a: s.string }),
-		s.strict_object({ b: s.string }),
-		s.strict_object({ c: s.string, d: s.array(s.number) })
+		to_object(s)({ a: s.string }),
+		to_object(s)({ b: s.string }),
+		to_object(s)({ c: s.string, d: s.array(s.number) })
 	]);
 	return [
 		to_case(s, 'union/3_primitives_first/valid', primitives, 'x', true),
@@ -322,7 +366,7 @@ const union: CaseGroup = (s) => {
 const variant: CaseGroup = (s) => {
 	const V = s.variant(
 		'kind',
-		range(10).map((i) => s.strict_object({ kind: s.literal(`k${i}`), value: s.number }))
+		range(10).map((i) => to_object(s)({ kind: s.literal(`k${i}`), value: s.number }))
 	);
 	return [
 		to_case(s, 'variant/10_first/valid', V, { kind: 'k0', value: 1 }, true),
@@ -342,7 +386,7 @@ const pipe: CaseGroup = (s) => {
 		to_case(
 			s,
 			'pipe/form/valid',
-			s.object({ name: Name, age: Age }),
+			to_strip_object(s)({ name: Name, age: Age }),
 			{ name: 'ada lovelace', age: 36 },
 			true,
 			true
@@ -376,7 +420,7 @@ const wrapper: CaseGroup = (s) => [
 ];
 
 const message: CaseGroup = (s) => {
-	const O = s.object(to_entries(5, s.message(s.string, 'must be text')));
+	const O = to_strip_object(s)(to_entries(5, s.message(s.string, 'must be text')));
 	return [
 		to_case(s, 'message/5_keys/valid', O, to_record(5), true),
 		to_case(s, 'message/5_keys_all_bad/invalid', O, to_record(5, 1), false)
@@ -408,29 +452,35 @@ const scale: CaseGroup = (s) => {
 	const to_bad_every = (n: number, every: number): Array<unknown> =>
 		range(n).map((i) => (i % every === 0 ? 'x' : i));
 	const to_nested_schema = (depth: number): schema_lib.AnySchema =>
-		depth === 0 ? s.string : s.strict_object({ next: to_nested_schema(depth - 1) });
+		depth === 0 ? s.string : to_object(s)({ next: to_nested_schema(depth - 1) });
 	const to_nested_input = (depth: number): unknown =>
 		depth === 0 ? 'x' : { next: to_nested_input(depth - 1) };
-	const objects = s.union(range(10).map((i) => s.strict_object({ [`k${i}`]: s.string })));
+	const objects = s.union(range(10).map((i) => to_object(s)({ [`k${i}`]: s.string })));
 	return [
 		// wide objects, which V8 may hold as dictionaries
 		to_case(
 			s,
-			'scale/object_100_keys/valid',
-			s.object(to_entries(100, s.string)),
+			'scale/strip_100_keys/valid',
+			to_strip_object(s)(to_entries(100, s.string)),
 			to_record(100),
 			true
 		),
 		to_case(
 			s,
-			'scale/strict_100_keys/valid',
-			s.strict_object(to_entries(100, s.string)),
+			'scale/object_100_keys/valid',
+			to_object(s)(to_entries(100, s.string)),
 			to_record(100),
 			true
 		),
 		to_case(s, 'scale/record_1000_keys/valid', s.record(s.string), to_record(1000), true),
 		// a config-like object: many optional keys, few given
-		to_case(s, 'scale/20_optional_2_present/valid', s.object(sparse), { k3: 'a', k17: 'b' }, true),
+		to_case(
+			s,
+			'scale/20_optional_2_present/valid',
+			to_strip_object(s)(sparse),
+			{ k3: 'a', k17: 'b' },
+			true
+		),
 		to_case(s, 'scale/array_10000_numbers/valid', s.array(s.number), range(10_000), true),
 		to_case(
 			s,
@@ -465,8 +515,8 @@ const scale: CaseGroup = (s) => {
 		),
 		to_case(
 			s,
-			'scale/object_20_keys_last_defaulted/valid',
-			s.object({ ...to_entries(19, s.string), last: s.with_default(s.string, 'd') }),
+			'scale/strip_20_keys_last_defaulted/valid',
+			to_strip_object(s)({ ...to_entries(19, s.string), last: s.with_default(s.string, 'd') }),
 			to_record(19),
 			true
 		),
@@ -532,7 +582,8 @@ const api: CaseGroup = (s) => {
 export const CASE_GROUPS: Array<CaseGroup> = [
 	primitive,
 	object,
-	strict,
+	loose,
+	strip,
 	nested,
 	array,
 	union,

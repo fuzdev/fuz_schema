@@ -7,8 +7,14 @@
  * Both versions are loaded into one process and timed back to back per case,
  * so load on the machine hits them alike. Retained heap and cold start are
  * measured in processes of their own (`heap.ts`, `coldstart.ts`), the two
- * versions' cold-start processes interleaved round by round. The baseline comes from git
- * (`--against`, default `HEAD`) or from a file (`--against-file`).
+ * versions' cold-start processes interleaved round by round. The baseline
+ * comes from git (`--against`, default `HEAD`) or from a file (`--against-file`).
+ *
+ * The baseline may have another API. The cases reach renamed exports through
+ * helpers in `cases.ts`; the bundle, heap, and cold-start comparisons use the
+ * baseline's own scenario module, taken from the same git ref or given with
+ * `--against-libs-file`. Without one they use the working tree's, which is
+ * only right when the two versions share an API.
  *
  * Both versions' cases share call sites inside the library they belong to, so
  * timings reflect code that has seen many schema shapes, as in an app, not a
@@ -58,6 +64,10 @@ const Args = z.strictObject({
 		.string()
 		.optional()
 		.meta({ description: 'file to use as the baseline instead of a git ref' }),
+	'against-libs-file': z
+		.string()
+		.optional()
+		.meta({ description: "the baseline's scenario module, with --against-file" }),
 	filter: z.string().optional().meta({ description: 'only run cases whose name includes this' }),
 	duration: z.number().default(200).meta({ description: 'measurement ms per case per version' }),
 	bundle: z.boolean().default(true).meta({ description: 'also measure bundle sizes' }),
@@ -83,8 +93,9 @@ hold_benchmark_lock('fuz_schema grade');
 const NOISE_FLOOR = 0.1;
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 const CEILING_VS_VALIBOT = 2 / 3;
-// the scenario standing in for "what `parse` plus an object schema reaches"
-const CORE_SCENARIO = 'object_flat';
+// the scenario standing in for "what `parse` plus an object schema reaches":
+// the one built from `object`, the default object schema
+const CORE_SCENARIO = 'strict_nested';
 // the scenarios cold start samples: one small schema, one large
 const COLDSTART_SCENARIOS = ['object_flat', 'type_json'];
 const COLDSTART_DISCARD = 2;
@@ -93,16 +104,21 @@ const COLDSTART_DISCARD = 2;
 // Load the baseline
 //
 
+const LIB_MODULE = 'src/benchmarks/libs/fuz_schema.ts';
+
 let baseline_path: string;
+let baseline_lib_path: string | undefined;
 let baseline_label: string;
 if (args['against-file']) {
 	baseline_path = resolve(args['against-file']);
+	baseline_lib_path = args['against-libs-file'] && resolve(args['against-libs-file']);
 	baseline_label = args['against-file'];
 } else {
-	const source = execFileSync('git', ['show', `${args.against}:src/lib/schema.ts`]);
 	mkdirSync('.gro/grade', { recursive: true });
 	baseline_path = resolve('.gro/grade/against_schema.ts');
-	writeFileSync(baseline_path, source);
+	writeFileSync(baseline_path, execFileSync('git', ['show', `${args.against}:src/lib/schema.ts`]));
+	baseline_lib_path = resolve('.gro/grade/against_libs_fuz_schema.ts');
+	writeFileSync(baseline_lib_path, execFileSync('git', ['show', `${args.against}:${LIB_MODULE}`]));
 	baseline_label = args.against;
 }
 const baseline_lib: SchemaLib = await import(pathToFileURL(baseline_path).href);
@@ -279,7 +295,14 @@ if (args.bundle) {
 	const base_sizes: Array<number> = [];
 	const sizes: Array<number> = [];
 	for (const column of columns) {
-		base_sizes.push((await measure_bundle_size('fuz_schema', column, baseline_path)).gzip);
+		base_sizes.push(
+			(
+				await measure_bundle_size('fuz_schema', column, {
+					schema_path: baseline_path,
+					lib_path: baseline_lib_path
+				})
+			).gzip
+		);
 		sizes.push((await measure_bundle_size('fuz_schema', column)).gzip);
 	}
 	const valibot_all = (await measure_bundle_size('valibot', columns.at(-1)!)).gzip;
@@ -310,7 +333,11 @@ const coldstart_slower: Array<string> = [];
 let coldstart_ratio = NaN;
 
 if (args.process) {
-	const variant: EntryVariant = { id: 'base', schema_path: baseline_path };
+	const variant: EntryVariant = {
+		id: 'base',
+		schema_path: baseline_path,
+		lib_path: baseline_lib_path
+	};
 
 	const heap_rows: Array<Array<string>> = [];
 	for (const scenario of SCENARIOS) {
