@@ -119,7 +119,7 @@ describe('meta', () => {
 			[
 				['name', 'string', { description: 'name' }],
 				['age', 'optional', { description: 'age' }],
-				['role', 'default', { description: 'role' }]
+				['role', 'with_default', { description: 'role' }]
 			]
 		);
 

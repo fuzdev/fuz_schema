@@ -7,7 +7,7 @@
 use crate::builder::SchemaBuilder;
 use crate::error::{JsonError, JsonErrorKind};
 use crate::json::Json;
-use crate::schema::{Literal, NodeId, Schema};
+use crate::schema::{NodeId, Schema, SchemaLiteral};
 use crate::walk::tests::build;
 use crate::{stream, walk};
 
@@ -37,7 +37,11 @@ fn schemas() -> Vec<(&'static str, Schema)> {
         ("integer", SchemaBuilder::integer),
         ("literal", |b| b.literal("a")),
         ("one_of", |b| {
-            b.one_of([Literal::from(1), Literal::Null, Literal::from("a")])
+            b.one_of([
+                SchemaLiteral::from(1),
+                SchemaLiteral::Null,
+                SchemaLiteral::from("a"),
+            ])
         }),
         ("nullable", |b| {
             let number = b.number();
@@ -94,7 +98,7 @@ fn schemas() -> Vec<(&'static str, Schema)> {
         // what is looked through, then two of each
         ("union_of_scalars", |b| {
             let string = b.string();
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let integer = b.integer();
             b.union([string, null, integer])
         }),
@@ -159,7 +163,7 @@ fn schemas() -> Vec<(&'static str, Schema)> {
         }),
         ("json", |b| {
             let json = b.declare();
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let boolean = b.boolean();
             let number = b.number();
             let string = b.string();
@@ -301,8 +305,8 @@ const TEXTS: &[(&str, Mark)] = &[
 ];
 
 fn compare(name: &str, schema: &Schema, text: &str, mark: Mark) {
-    let tree = walk::is_json(schema, text);
-    let streamed = stream::is_json(schema, text);
+    let tree = walk::matches_json(schema, text);
+    let streamed = stream::matches_json(schema, text);
     let agree = match (&tree, &streamed) {
         (Ok(tree), Ok(streamed)) => {
             // never looser, and stricter only where a key is repeated
@@ -368,7 +372,7 @@ fn every_mark_is_used_and_every_verdict_reached() {
     for (name, schema) in &schemas() {
         let verdicts: Vec<bool> = TEXTS
             .iter()
-            .filter_map(|&(text, _)| walk::is_json(schema, text).ok())
+            .filter_map(|&(text, _)| walk::matches_json(schema, text).ok())
             .collect();
         assert!(
             verdicts.contains(&false) || ["unknown", "json"].contains(name),
@@ -383,8 +387,8 @@ fn every_mark_is_used_and_every_verdict_reached() {
             schemas.iter().any(|(_, schema)| {
                 TEXTS.iter().any(|&(text, m)| {
                     m == mark
-                        && tree(&walk::is_json(schema, text))
-                        && stream::is_json(schema, text).map_err(drop) == streamed
+                        && tree(&walk::matches_json(schema, text))
+                        && stream::matches_json(schema, text).map_err(drop) == streamed
                 })
             })
         };

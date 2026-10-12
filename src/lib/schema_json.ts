@@ -16,12 +16,13 @@
  * `SCHEMA_JSON_MAX_DEPTH` schemas deep that way is refused though its
  * document would load.
  *
- * This is a helper for the tests and the fixtures, not part of the library.
+ * It is a module of its own, so a bundle that serializes no schema carries
+ * none of it. It needs `String.prototype.isWellFormed`.
  *
  * @module
  */
 
-import { is_schema, type AnySchema } from '#lib/schema.ts';
+import { is_schema, type AnySchema } from './schema.ts';
 
 /** A schema in the interchange form. */
 export interface SchemaJson {
@@ -54,7 +55,7 @@ export const SCHEMA_JSON_MAX_DEPTH = 127;
  * sees the member when the input lacks the key, and is refused. So is a
  * `variant` whose key is one.
  */
-export const OBJECT_PROTOTYPE_KEYS: ReadonlyArray<string> = [
+export const SCHEMA_JSON_REFUSED_KEYS: ReadonlyArray<string> = [
 	'__defineGetter__',
 	'__defineSetter__',
 	'__lookupGetter__',
@@ -252,7 +253,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 				// the key is not written into the message, which must be well-formed too
 				refuse(kind, path, `an entry is named by ${ILL_FORMED}`);
 			}
-			if (OBJECT_PROTOTYPE_KEYS.includes(key)) {
+			if (SCHEMA_JSON_REFUSED_KEYS.includes(key)) {
 				refuse(
 					kind,
 					`${path}/${pointer_token(key)}`,
@@ -296,7 +297,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 			case 'optional':
 			case 'nullable':
 				return { kind, def: { schema: child(def?.schema, `${path}/def/schema`, inner) } };
-			case 'default': {
+			case 'with_default': {
 				const refusal = default_refusal(def?.value);
 				if (refusal !== undefined) refuse(kind, `${path}/def/value`, refusal);
 				return {
@@ -350,7 +351,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 				}
 				if (!key.isWellFormed()) refuse(kind, `${path}/def/key`, `its key is ${ILL_FORMED}`);
 				// with options the key is an entry of each, and refused there
-				if (!options.length && OBJECT_PROTOTYPE_KEYS.includes(key)) {
+				if (!options.length && SCHEMA_JSON_REFUSED_KEYS.includes(key)) {
 					refuse(kind, `${path}/def/key`, 'the key is named like a member of Object.prototype');
 				}
 				return {
@@ -449,7 +450,7 @@ const check_nesting = (json: SchemaJson): void => {
 		switch (node.kind) {
 			case 'optional':
 			case 'nullable':
-			case 'default':
+			case 'with_default':
 				return [def.schema];
 			case 'lazy':
 				return [json.defs![def]!];

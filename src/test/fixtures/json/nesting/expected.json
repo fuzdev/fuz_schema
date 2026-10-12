@@ -19,7 +19,7 @@
 						"kind": "nullable",
 						"def": {
 							"schema": {
-								"kind": "default",
+								"kind": "with_default",
 								"def": {
 									"schema": {
 										"kind": "optional",
@@ -47,7 +47,7 @@
 						"kind": "nullable",
 						"def": {
 							"schema": {
-								"kind": "default",
+								"kind": "with_default",
 								"def": {
 									"schema": {
 										"kind": "optional",

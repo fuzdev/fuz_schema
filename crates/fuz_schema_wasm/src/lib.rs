@@ -1,22 +1,22 @@
 //! `fuz_schema`'s verdict on a JSON text, for JavaScript: a schema loaded
 //! once from its interchange form into a handle, and whether a text matches.
 //!
-//! A verdict is a `bool`. Everything `fuz_schema::Schema::is_json` reports as
+//! A verdict is a `bool`. Everything `fuz_schema::Schema::matches_json` reports as
 //! an error is `false` here: a text that is not JSON, bytes that are not
 //! UTF-8, and what the crate's parser refuses.
 //!
 //! The input crosses into the module's memory one of three ways:
 //!
-//! - `CompiledSchema::is_json` takes a JavaScript string, which the glue
+//! - `CompiledSchema::matches_json` takes a JavaScript string, which the glue
 //!   transcodes to UTF-8 on every call.
-//! - `CompiledSchema::is_json_bytes` takes a `Uint8Array`, which the glue
+//! - `CompiledSchema::matches_json_bytes` takes a `Uint8Array`, which the glue
 //!   copies in.
-//! - `CompiledSchema::input_ptr` and `CompiledSchema::is_json_input` share a
+//! - `CompiledSchema::input_ptr` and `CompiledSchema::matches_json_input` share a
 //!   buffer the handle owns, which the caller fills through a view over the
 //!   module's memory, so a source that can write into a view is never copied.
 //!
 //! A JavaScript string can hold half a surrogate pair, and UTF-8 cannot. The
-//! glue writes U+FFFD in its place, so `is_json` reads a text with one as
+//! glue writes U+FFFD in its place, so `matches_json` reads a text with one as
 //! though U+FFFD were there, and can accept what `JSON.parse` followed by the
 //! TypeScript library would reject.
 
@@ -51,18 +51,18 @@ impl CompiledSchema {
     }
 
     /// Whether `text` is a JSON text that matches the schema.
-    pub fn is_json(&self, text: &str) -> bool {
-        self.schema.is_json(text).unwrap_or(false)
+    pub fn matches_json(&self, text: &str) -> bool {
+        self.schema.matches_json(text).unwrap_or(false)
     }
 
     /// Whether `bytes` are the UTF-8 of a JSON text that matches the schema.
-    pub fn is_json_bytes(&self, bytes: &[u8]) -> bool {
-        self.schema.is_json_bytes(bytes).unwrap_or(false)
+    pub fn matches_json_bytes(&self, bytes: &[u8]) -> bool {
+        self.schema.matches_json_bytes(bytes).unwrap_or(false)
     }
 
     /// The address in the module's memory of a buffer at least `len` bytes
     /// long, for the caller to write a text's UTF-8 into before
-    /// `is_json_input`. `0` when the memory cannot hold a buffer of `len`
+    /// `matches_json_input`. `0` when the memory cannot hold a buffer of `len`
     /// bytes, and the buffer is left as it was.
     ///
     /// The buffer is the handle's and is kept between calls, growing when
@@ -82,11 +82,11 @@ impl CompiledSchema {
         self.input.as_ptr().addr()
     }
 
-    /// `is_json_bytes` of the first `len` bytes of the buffer `input_ptr`
+    /// `matches_json_bytes` of the first `len` bytes of the buffer `input_ptr`
     /// lends. `false` when the buffer is shorter than `len`.
-    pub fn is_json_input(&self, len: usize) -> bool {
+    pub fn matches_json_input(&self, len: usize) -> bool {
         self.input
             .get(..len)
-            .is_some_and(|bytes| self.schema.is_json_bytes(bytes).unwrap_or(false))
+            .is_some_and(|bytes| self.schema.matches_json_bytes(bytes).unwrap_or(false))
     }
 }

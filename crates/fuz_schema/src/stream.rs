@@ -32,11 +32,11 @@ use crate::bits::Bits;
 use crate::error::JsonError;
 use crate::js;
 use crate::json::{self, JsonSeed, Value};
-use crate::schema::{Candidates, Container, Entries, Node, NodeId, Schema, VariantDef};
+use crate::schema::{Candidates, Container, NodeId, Schema, SchemaEntries, SchemaNode, VariantDef};
 use crate::walk::{self, Probe};
 
 /// Whether `text` is JSON that matches `schema`.
-pub fn is_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
+pub fn matches_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
     let context = Context {
         schema,
         failed: Cell::new(false),
@@ -103,7 +103,7 @@ impl<'a> NodeSeed<'a> {
     /// key is if the input is in the schema's order.
     fn entries<'de, A: MapAccess<'de>>(
         self,
-        entries: &Entries,
+        entries: &SchemaEntries,
         strict: bool,
         mut map: A,
         mut seen: Bits,
@@ -140,10 +140,10 @@ impl<'a> NodeSeed<'a> {
                     variant,
                 })?;
                 let option = selected.map(|option| schema.at(option));
-                let Some(entries) = option.and_then(Node::entries) else {
+                let Some(entries) = option.and_then(SchemaNode::entries) else {
                     return Err(self.context.fail());
                 };
-                let strict = matches!(option, Some(Node::Object(_)));
+                let strict = matches!(option, Some(SchemaNode::Object(_)));
                 // the option's entry at the discriminator is the literal that
                 // selected it
                 let mut seen = Bits::new(entries.len());
@@ -217,24 +217,26 @@ impl<'de> Visitor<'de> for NodeSeed<'_> {
         loop {
             match schema.at(id) {
                 // an array is neither a missing key nor `null`
-                Node::Optional(inner) | Node::Nullable(inner) | Node::Lazy(inner) => id = *inner,
-                Node::Default(default) => id = default.schema(),
-                Node::Pipe(steps) => {
+                SchemaNode::Optional(inner)
+                | SchemaNode::Nullable(inner)
+                | SchemaNode::Lazy(inner) => id = *inner,
+                SchemaNode::WithDefault(default) => id = default.schema(),
+                SchemaNode::Pipe(steps) => {
                     // `build` refuses a pipe with no schema
                     let Some((&head, actions)) = steps.split_first() else {
                         return Err(self.context.fail());
                     };
                     for &action in actions {
                         match schema.at(action) {
-                            Node::MinLength(bound) => min = min.max(*bound),
-                            Node::MaxLength(bound) => max = max.min(*bound),
+                            SchemaNode::MinLength(bound) => min = min.max(*bound),
+                            SchemaNode::MaxLength(bound) => max = max.min(*bound),
                             // an action for a number, which an array is not
                             _ => return Err(self.context.fail()),
                         }
                     }
                     id = head;
                 }
-                Node::Array(inner) => {
+                SchemaNode::Array(inner) => {
                     let item = self.at(*inner);
                     let mut length = 0;
                     while seq.next_element_seed(item)?.is_some() {
@@ -245,7 +247,7 @@ impl<'de> Visitor<'de> for NodeSeed<'_> {
                     }
                     return self.context.verdict(js::length_number(length) >= min);
                 }
-                Node::Union(_) => match schema.candidates(id, Container::Array) {
+                SchemaNode::Union(_) => match schema.candidates(id, Container::Array) {
                     Candidates::One(option) => id = option,
                     // which option matches is not known until the array is whole
                     Candidates::Many => {
@@ -267,23 +269,25 @@ impl<'de> Visitor<'de> for NodeSeed<'_> {
         loop {
             match schema.at(id) {
                 // an object is neither a missing key nor `null`
-                Node::Optional(inner) | Node::Nullable(inner) | Node::Lazy(inner) => id = *inner,
-                Node::Default(default) => id = default.schema(),
-                Node::Object(entries) => {
+                SchemaNode::Optional(inner)
+                | SchemaNode::Nullable(inner)
+                | SchemaNode::Lazy(inner) => id = *inner,
+                SchemaNode::WithDefault(default) => id = default.schema(),
+                SchemaNode::Object(entries) => {
                     return self.entries(entries, true, map, Bits::new(entries.len()), 0);
                 }
-                Node::LooseObject(entries) | Node::StripObject(entries) => {
+                SchemaNode::LooseObject(entries) | SchemaNode::StripObject(entries) => {
                     return self.entries(entries, false, map, Bits::new(entries.len()), 0);
                 }
-                Node::Record(inner) => {
+                SchemaNode::Record(inner) => {
                     let value = self.at(*inner);
                     while map.next_key::<IgnoredAny>()?.is_some() {
                         map.next_value_seed(value)?;
                     }
                     return Ok(());
                 }
-                Node::Variant(variant) => return self.variant(variant, map),
-                Node::Union(_) => match schema.candidates(id, Container::Object) {
+                SchemaNode::Variant(variant) => return self.variant(variant, map),
+                SchemaNode::Union(_) => match schema.candidates(id, Container::Object) {
                     Candidates::One(option) => id = option,
                     // which option matches is not known until the object is whole
                     Candidates::Many => {
@@ -303,7 +307,7 @@ impl<'de> Visitor<'de> for NodeSeed<'_> {
 
 /// Reads a key as the position of its entry.
 struct KeySeed<'a> {
-    entries: &'a Entries,
+    entries: &'a SchemaEntries,
     hint: usize,
 }
 
@@ -426,20 +430,20 @@ mod tests {
     use super::*;
     use crate::builder::SchemaBuilder;
     use crate::error::JsonErrorKind;
-    use crate::schema::Literal;
+    use crate::schema::SchemaLiteral;
     use crate::walk::tests::build;
 
     fn check(schema: &Schema, valid: &[&str], invalid: &[&str]) {
         for text in valid {
-            assert_eq!(is_json(schema, text), Ok(true), "{text}");
+            assert_eq!(matches_json(schema, text), Ok(true), "{text}");
         }
         for text in invalid {
-            assert_eq!(is_json(schema, text), Ok(false), "{text}");
+            assert_eq!(matches_json(schema, text), Ok(false), "{text}");
         }
     }
 
     fn error(schema: &Schema, text: &str) -> JsonErrorKind {
-        is_json(schema, text).unwrap_err().kind()
+        matches_json(schema, text).unwrap_err().kind()
     }
 
     fn numbers() -> Schema {
@@ -514,14 +518,14 @@ mod tests {
             r#"{"name":1,"name":"b"}"#,
             r#"{"name":"a","age":"x","age":1}"#,
         ] {
-            assert_eq!(walk::is_json(&person, text), Ok(true), "{text}");
+            assert_eq!(walk::matches_json(&person, text), Ok(true), "{text}");
         }
         let record = build(|b| {
             let number = b.number();
             b.record(number)
         });
         check(&record, &[r#"{"a":1,"a":2}"#], &[r#"{"a":"x","a":2}"#]);
-        assert_eq!(walk::is_json(&record, r#"{"a":"x","a":2}"#), Ok(true));
+        assert_eq!(walk::matches_json(&record, r#"{"a":"x","a":2}"#), Ok(true));
     }
 
     #[test]
@@ -564,7 +568,7 @@ mod tests {
             &[r#"{"b":1}"#, r#"{"a":"1","b":1}"#],
         );
         assert_eq!(
-            walk::is_json(&loose, r#"{"a":1,"b":1e400}"#)
+            walk::matches_json(&loose, r#"{"a":1,"b":1e400}"#)
                 .unwrap_err()
                 .kind(),
             JsonErrorKind::NumberOutOfRange
@@ -596,9 +600,9 @@ mod tests {
             &["{}", "1"],
         );
         let deep = format!("[{}{}]", "[".repeat(500), "]".repeat(500));
-        assert_eq!(is_json(&schema, &deep), Ok(true));
+        assert_eq!(matches_json(&schema, &deep), Ok(true));
         assert_eq!(
-            walk::is_json(&schema, &deep).unwrap_err().kind(),
+            walk::matches_json(&schema, &deep).unwrap_err().kind(),
             JsonErrorKind::DepthLimit
         );
     }
@@ -612,7 +616,7 @@ mod tests {
             lazy
         });
         let nested = |depth: usize| format!("{}{}", "[".repeat(depth), "]".repeat(depth));
-        assert_eq!(is_json(&schema, &nested(127)), Ok(true));
+        assert_eq!(matches_json(&schema, &nested(127)), Ok(true));
         assert_eq!(error(&schema, &nested(128)), JsonErrorKind::DepthLimit);
     }
 
@@ -621,7 +625,7 @@ mod tests {
         let schema = build(|b| {
             let string = b.string();
             let number = b.number();
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let numbers = b.array(number);
             let optional = b.optional(number);
             let named = b.object([("name", string), ("n", optional)]);
@@ -659,11 +663,11 @@ mod tests {
             r#"[{"name":1,"name":"a"}]"#,
             r#"[{"name":"a","n":"x","n":1}]"#,
         ] {
-            assert_eq!(walk::is_json(&schema, text), Ok(true), "{text}");
+            assert_eq!(walk::matches_json(&schema, text), Ok(true), "{text}");
         }
         for text in [r#"[[1,"x",}"#, r#"[{"name":1,}"#] {
             assert_eq!(
-                walk::is_json(&schema, text).unwrap_err().kind(),
+                walk::matches_json(&schema, text).unwrap_err().kind(),
                 JsonErrorKind::Syntax,
                 "{text}"
             );
@@ -695,7 +699,7 @@ mod tests {
             &[r#"{"b":1}"#, "[]"],
         );
         assert_eq!(
-            walk::is_json(&schema, r#"{"a":1,"b":1e400}"#)
+            walk::matches_json(&schema, r#"{"a":1,"b":1e400}"#)
                 .unwrap_err()
                 .kind(),
             JsonErrorKind::NumberOutOfRange
@@ -730,7 +734,7 @@ mod tests {
         );
         for (schema, text) in [(&no_array, "[1,}"), (&no_object, r#"{"a":}"#)] {
             assert_eq!(
-                walk::is_json(schema, text).unwrap_err().kind(),
+                walk::matches_json(schema, text).unwrap_err().kind(),
                 JsonErrorKind::Syntax
             );
         }
@@ -796,7 +800,7 @@ mod tests {
             let circle = b.literal("circle");
             let square = b.literal("square");
             let one = b.literal(1);
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let number = b.number();
             let optional = b.optional(number);
             let a = b.object([("kind", circle), ("r", number)]);
@@ -845,8 +849,8 @@ mod tests {
             r#"{"kind":"square","r":1,"kind":"circle"}"#,
             r#"{"kind":"triangle","kind":"circle","r":1}"#,
         ] {
-            assert_eq!(is_json(&shapes, text), Ok(false), "{text}");
-            assert_eq!(walk::is_json(&shapes, text), Ok(true), "{text}");
+            assert_eq!(matches_json(&shapes, text), Ok(false), "{text}");
+            assert_eq!(walk::matches_json(&shapes, text), Ok(true), "{text}");
         }
     }
 
@@ -955,41 +959,47 @@ mod tests {
                 .collect();
             format!("{{{}}}", fields.join(","))
         };
-        assert_eq!(is_json(&schema, &text(1000)), Ok(true));
-        assert_eq!(is_json(&schema, &text(99)), Ok(true));
-        assert_eq!(is_json(&schema, &text(98)), Ok(false));
-        assert_eq!(is_json(&schema, &text(0)), Ok(false));
-        assert_eq!(walk::is_json(&schema, &text(98)), Ok(false));
-        assert_eq!(walk::is_json(&schema, &text(99)), Ok(true));
+        assert_eq!(matches_json(&schema, &text(1000)), Ok(true));
+        assert_eq!(matches_json(&schema, &text(99)), Ok(true));
+        assert_eq!(matches_json(&schema, &text(98)), Ok(false));
+        assert_eq!(matches_json(&schema, &text(0)), Ok(false));
+        assert_eq!(walk::matches_json(&schema, &text(98)), Ok(false));
+        assert_eq!(walk::matches_json(&schema, &text(99)), Ok(true));
     }
 
     #[test]
     fn bytes_are_validated_as_utf8_first() {
         let loose = build(|b| b.loose_object::<&str>([]));
-        assert_eq!(loose.is_json_bytes("{\"a\":\"é\"}".as_bytes()), Ok(true));
+        assert_eq!(
+            loose.matches_json_bytes("{\"a\":\"é\"}".as_bytes()),
+            Ok(true)
+        );
         // invalid even where the value would be skipped, or follows a failure
         let skipped = [br#"{"a":""#.as_slice(), &[0xff], br#""}"#].concat();
-        let error = loose.is_json_bytes(&skipped).unwrap_err();
+        let error = loose.matches_json_bytes(&skipped).unwrap_err();
         assert_eq!(error.kind(), JsonErrorKind::InvalidUtf8);
         assert_eq!((error.line(), error.column()), (1, 7));
         let after = [b"[1,".as_slice(), &[0xc3], b"]"].concat();
         assert_eq!(
-            loose.is_json_bytes(&after).unwrap_err().kind(),
+            loose.matches_json_bytes(&after).unwrap_err().kind(),
             JsonErrorKind::InvalidUtf8
         );
         // a surrogate encoded as UTF-8, and an overlong form
         for bytes in [[0xed, 0xa0, 0x80].as_slice(), &[0xc0, 0x80]] {
             let text = [b"\"".as_slice(), bytes, b"\""].concat();
             assert_eq!(
-                loose.is_json_bytes(&text).unwrap_err().kind(),
+                loose.matches_json_bytes(&text).unwrap_err().kind(),
                 JsonErrorKind::InvalidUtf8
             );
         }
         // a byte order mark is not JSON
         assert_eq!(
-            loose.is_json_bytes(b"\xef\xbb\xbf{}").unwrap_err().kind(),
+            loose
+                .matches_json_bytes(b"\xef\xbb\xbf{}")
+                .unwrap_err()
+                .kind(),
             JsonErrorKind::Syntax
         );
-        assert_eq!(loose.is_json_bytes(b"[]"), Ok(false));
+        assert_eq!(loose.matches_json_bytes(b"[]"), Ok(false));
     }
 }

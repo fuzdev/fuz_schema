@@ -1,10 +1,10 @@
 //! The crate's errors: `JsonError` for text that is not JSON this crate reads,
-//! and `SchemaError` for a schema it refuses.
+//! and `SchemaBuildError` for a schema it refuses.
 
 use std::error::Error;
 use std::fmt;
 
-use crate::schema::Kind;
+use crate::schema::SchemaKind;
 
 /// Why a text could not be read as JSON.
 ///
@@ -114,13 +114,13 @@ impl Error for JsonError {}
 /// from JavaScript itself, such as a function, a `RegExp`, a coercion, or a
 /// read through the prototype, is refused when it is built or loaded.
 #[derive(Debug, Clone, PartialEq)]
-pub struct SchemaError {
-    kind: SchemaErrorKind,
+pub struct SchemaBuildError {
+    kind: SchemaBuildErrorKind,
     path: Box<str>,
 }
 
-impl SchemaError {
-    pub(crate) fn new(kind: SchemaErrorKind, path: impl Into<Box<str>>) -> Self {
+impl SchemaBuildError {
+    pub(crate) fn new(kind: SchemaBuildErrorKind, path: impl Into<Box<str>>) -> Self {
         Self {
             kind,
             path: path.into(),
@@ -128,7 +128,7 @@ impl SchemaError {
     }
 
     /// The reason.
-    pub const fn kind(&self) -> &SchemaErrorKind {
+    pub const fn kind(&self) -> &SchemaBuildErrorKind {
         &self.kind
     }
 
@@ -141,10 +141,10 @@ impl SchemaError {
     }
 }
 
-/// The reason for a `SchemaError`.
+/// The reason for a `SchemaBuildError`.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
-pub enum SchemaErrorKind {
+pub enum SchemaBuildErrorKind {
     /// The interchange text is not JSON.
     Json(JsonError),
     /// The interchange document is not shaped as the form says.
@@ -198,29 +198,29 @@ pub enum SchemaErrorKind {
     /// `pipe` of one of those can start a pipe.
     PipeHead {
         /// The kind found.
-        kind: Kind,
+        kind: SchemaKind,
     },
     /// A step of a `pipe` after the first that is not an action.
     PipeStep {
         /// The kind found.
-        kind: Kind,
+        kind: SchemaKind,
     },
     /// An action on a value it is not for: a length of a number, or a bound
     /// or number test of a string or array.
     ActionMismatch {
         /// The action.
-        kind: Kind,
+        kind: SchemaKind,
     },
     /// A length or bound action outside a `pipe`, where the TypeScript
     /// library would coerce or throw.
     ActionOutsidePipe {
         /// The action.
-        kind: Kind,
+        kind: SchemaKind,
     },
     /// A `variant` option that is not an object schema.
     VariantOption {
         /// The kind found.
-        kind: Kind,
+        kind: SchemaKind,
     },
     /// A `variant` option with no `literal` entry at the discriminator.
     VariantDiscriminator {
@@ -255,7 +255,7 @@ pub enum SchemaErrorKind {
     TooManyNodes,
 }
 
-impl fmt::Display for SchemaErrorKind {
+impl fmt::Display for SchemaBuildErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Json(error) => write!(f, "the schema is not JSON: {error}"),
@@ -316,7 +316,7 @@ impl fmt::Display for SchemaErrorKind {
     }
 }
 
-impl fmt::Display for SchemaError {
+impl fmt::Display for SchemaBuildError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.path.is_empty() {
             write!(f, "{}", self.kind)
@@ -326,10 +326,10 @@ impl fmt::Display for SchemaError {
     }
 }
 
-impl Error for SchemaError {
+impl Error for SchemaBuildError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            SchemaErrorKind::Json(error) => Some(error),
+            SchemaBuildErrorKind::Json(error) => Some(error),
             _ => None,
         }
     }
@@ -367,20 +367,20 @@ mod tests {
     }
 
     #[test]
-    fn schema_error_displays_its_path() {
-        let error = SchemaError::new(SchemaErrorKind::EmptyPipe, "/schema/def/a");
+    fn schema_build_error_displays_its_path() {
+        let error = SchemaBuildError::new(SchemaBuildErrorKind::EmptyPipe, "/schema/def/a");
         assert_eq!(error.to_string(), "a pipe with no schema at /schema/def/a");
         assert_eq!(error.path(), "/schema/def/a");
         assert!(error.source().is_none());
-        let whole = SchemaError::new(SchemaErrorKind::TooManyNodes, "");
+        let whole = SchemaBuildError::new(SchemaBuildErrorKind::TooManyNodes, "");
         assert_eq!(whole.to_string(), "too many nodes");
     }
 
     #[test]
-    fn a_json_schema_error_has_its_source() {
+    fn a_json_schema_build_error_has_its_source() {
         let json = serde_json::from_str::<bool>("nope").unwrap_err();
         let json = JsonError::from_serde(&json);
-        let error = SchemaError::new(SchemaErrorKind::Json(json.clone()), "");
+        let error = SchemaBuildError::new(SchemaBuildErrorKind::Json(json.clone()), "");
         assert_eq!(
             error.source().map(ToString::to_string),
             Some(json.to_string())

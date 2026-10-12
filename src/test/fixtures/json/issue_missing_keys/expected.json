@@ -182,7 +182,7 @@
 									}
 								},
 								"with_default": {
-									"kind": "default",
+									"kind": "with_default",
 									"def": {
 										"schema": {
 											"kind": "string"
@@ -401,7 +401,7 @@
 									}
 								},
 								"with_default": {
-									"kind": "default",
+									"kind": "with_default",
 									"def": {
 										"schema": {
 											"kind": "string"
@@ -620,7 +620,7 @@
 									}
 								},
 								"with_default": {
-									"kind": "default",
+									"kind": "with_default",
 									"def": {
 										"schema": {
 											"kind": "string"

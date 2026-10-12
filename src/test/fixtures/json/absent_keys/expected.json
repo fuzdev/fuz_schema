@@ -42,7 +42,7 @@
 											"kind": "number"
 										},
 										{
-											"kind": "default",
+											"kind": "with_default",
 											"def": {
 												"schema": {
 													"kind": "string"
@@ -223,7 +223,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | default",
+					"expected": "number | with_default",
 					"received": "boolean",
 					"path": [
 						"default_option",

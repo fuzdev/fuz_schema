@@ -23,7 +23,7 @@
 					}
 				},
 				"with_default": {
-					"kind": "default",
+					"kind": "with_default",
 					"def": {
 						"schema": {
 							"kind": "string"
@@ -58,7 +58,7 @@
 					}
 				},
 				"default_nullable": {
-					"kind": "default",
+					"kind": "with_default",
 					"def": {
 						"schema": {
 							"kind": "nullable",
@@ -75,7 +75,7 @@
 					"kind": "optional",
 					"def": {
 						"schema": {
-							"kind": "default",
+							"kind": "with_default",
 							"def": {
 								"schema": {
 									"kind": "string"
@@ -86,7 +86,7 @@
 					}
 				},
 				"default_object": {
-					"kind": "default",
+					"kind": "with_default",
 					"def": {
 						"schema": {
 							"kind": "object",
@@ -102,7 +102,7 @@
 					}
 				},
 				"default_array": {
-					"kind": "default",
+					"kind": "with_default",
 					"def": {
 						"schema": {
 							"kind": "array",

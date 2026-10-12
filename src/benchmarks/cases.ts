@@ -46,7 +46,7 @@ const to_object = (s: SchemaLib): ObjectFactory =>
 const to_strip_object = (s: SchemaLib): ObjectFactory =>
 	'strip_object' in s ? s.strip_object : (s as unknown as { object: ObjectFactory }).object;
 
-type OneOfFactory = (values: ReadonlyArray<schema_lib.Literal>) => schema_lib.AnySchema;
+type OneOfFactory = (values: ReadonlyArray<schema_lib.SchemaLiteral>) => schema_lib.AnySchema;
 
 // and this so a baseline from before `picklist` was renamed `one_of` can still be graded
 const to_one_of = (s: SchemaLib): OneOfFactory =>

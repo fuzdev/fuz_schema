@@ -15,9 +15,9 @@
 //! let person = builder.object([("name", name), ("age", age)]);
 //! let schema = builder.build(person)?;
 //!
-//! assert!(schema.is_json(r#"{"name": "Ada", "age": 36}"#)?);
-//! assert!(!schema.is_json(r#"{"name": "Ada"}"#)?);
-//! assert!(schema.is_json("{").is_err());
+//! assert!(schema.matches_json(r#"{"name": "Ada", "age": 36}"#)?);
+//! assert!(!schema.matches_json(r#"{"name": "Ada"}"#)?);
+//! assert!(schema.matches_json("{").is_err());
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -28,23 +28,23 @@
 //!
 //! There are two evaluators:
 //!
-//! - `Schema::is_json` reaches its verdict while it parses, builds no tree,
+//! - `Schema::matches_json` reaches its verdict while it parses, builds no tree,
 //!   and stops at the first failure.
-//! - `Schema::is_json_exact` parses the whole text into a `Json` and walks
+//! - `Schema::matches_json_exact` parses the whole text into a `Json` and walks
 //!   it, and agrees with the TypeScript library on every text it reads.
 //!
 //! `Schema::validate_json` walks the same tree for the issues: every failure
 //! the TypeScript library's `parse` reports, in its order and its words.
 //!
 //! ```
-//! use fuz_schema::{IssueKind, PathSegment, Received, Schema};
+//! use fuz_schema::{SchemaIssueKind, PathSegment, Received, Schema};
 //!
 //! let schema = Schema::from_json(
 //!     r#"{"schema": {"kind": "array", "def": {"kind": "number"}}}"#,
 //! )?;
 //! let issues = schema.validate_json(r#"[1, "2"]"#)?;
 //! assert_eq!(issues.len(), 1);
-//! assert_eq!(issues[0].kind(), IssueKind::Number);
+//! assert_eq!(issues[0].kind(), SchemaIssueKind::Number);
 //! assert_eq!(issues[0].expected(), "number");
 //! assert_eq!(issues[0].received(), Received::String);
 //! assert_eq!(issues[0].path(), [PathSegment::Index(1)]);
@@ -53,8 +53,8 @@
 //! ```
 //!
 //! What the crate does not carry across is refused when a schema is built or
-//! loaded, with a `SchemaError` that says what and where. See
-//! `SchemaErrorKind`.
+//! loaded, with a `SchemaBuildError` that says what and where. See
+//! `SchemaBuildErrorKind`.
 //!
 //! The crate reads numbers as `serde_json` hands them over by default. Its
 //! `arbitrary_precision` feature, which any crate of a build turns on for
@@ -74,11 +74,12 @@ mod stream;
 mod walk;
 
 pub use builder::SchemaBuilder;
-pub use error::{JsonError, JsonErrorKind, SchemaError, SchemaErrorKind};
-pub use issue::{Issue, IssueKind, PathSegment, Received};
+pub use error::{JsonError, JsonErrorKind, SchemaBuildError, SchemaBuildErrorKind};
+pub use issue::{PathSegment, Received, SchemaIssue, SchemaIssueKind};
 pub use json::{Json, JsonObject, MAX_DEPTH};
 pub use schema::{
-    DefaultDef, Entries, Kind, Literal, MAX_NESTING, Node, NodeId, Schema, VariantDef,
+    MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaKind, SchemaLiteral, SchemaNode, VariantDef,
+    WithDefaultDef,
 };
 
 impl Schema {
@@ -93,7 +94,7 @@ impl Schema {
     /// let schema = Schema::from_json(
     ///     r#"{"schema": {"kind": "array", "def": {"kind": "number"}}}"#,
     /// )?;
-    /// assert!(schema.is_json("[1, 2]")?);
+    /// assert!(schema.matches_json("[1, 2]")?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     ///
@@ -102,8 +103,8 @@ impl Schema {
     /// When `interchange` is not JSON, writes a key twice in one object, is
     /// not shaped as the form says, or holds a schema the crate refuses, with
     /// the reason and a path to it.
-    /// See `SchemaErrorKind`.
-    pub fn from_json(interchange: &str) -> Result<Self, SchemaError> {
+    /// See `SchemaBuildErrorKind`.
+    pub fn from_json(interchange: &str) -> Result<Self, SchemaBuildError> {
         interchange::load_text(interchange)
     }
 
@@ -129,22 +130,22 @@ impl Schema {
     /// double, a `\u` escape of half a surrogate pair, and nesting deeper
     /// than `MAX_DEPTH`. The error is of the first problem met. See
     /// `JsonErrorKind`.
-    pub fn is_json(&self, json: &str) -> Result<bool, JsonError> {
-        stream::is_json(self, json)
+    pub fn matches_json(&self, json: &str) -> Result<bool, JsonError> {
+        stream::matches_json(self, json)
     }
 
-    /// `is_json` for bytes, which must be UTF-8.
+    /// `matches_json` for bytes, which must be UTF-8.
     ///
     /// The bytes are validated as UTF-8 first, in full, and then read as
-    /// `is_json` reads a string.
+    /// `matches_json` reads a string.
     ///
     /// # Errors
     ///
-    /// When `json` is not UTF-8, and as `is_json`.
-    pub fn is_json_bytes(&self, json: &[u8]) -> Result<bool, JsonError> {
+    /// When `json` is not UTF-8, and as `matches_json`.
+    pub fn matches_json_bytes(&self, json: &[u8]) -> Result<bool, JsonError> {
         let text =
             std::str::from_utf8(json).map_err(|error| JsonError::invalid_utf8(json, error))?;
-        self.is_json(text)
+        self.matches_json(text)
     }
 
     /// Whether `json` is a JSON text that matches the schema, by parsing all
@@ -159,8 +160,8 @@ impl Schema {
     /// When `json` is not JSON, and for the three things `JSON.parse` reads
     /// that this crate does not, wherever in the text they are. The error is
     /// of the first problem met. See `JsonErrorKind`.
-    pub fn is_json_exact(&self, json: &str) -> Result<bool, JsonError> {
-        walk::is_json(self, json)
+    pub fn matches_json_exact(&self, json: &str) -> Result<bool, JsonError> {
+        walk::matches_json(self, json)
     }
 
     /// The issues of the JSON text `json` against the schema, none when it
@@ -170,12 +171,12 @@ impl Schema {
     /// `JSON.parse` of the same text, in the same order: each one's kind,
     /// `expected` text, received type, and path. A message a TypeScript
     /// schema sets is not carried, because the interchange form holds none.
-    /// The issues are empty exactly when `is_json_exact` is `true`.
+    /// The issues are empty exactly when `matches_json_exact` is `true`.
     ///
     /// # Errors
     ///
-    /// As `is_json_exact`.
-    pub fn validate_json(&self, json: &str) -> Result<Vec<Issue>, JsonError> {
+    /// As `matches_json_exact`.
+    pub fn validate_json(&self, json: &str) -> Result<Vec<SchemaIssue>, JsonError> {
         walk::validate_json(self, json)
     }
 
@@ -187,7 +188,7 @@ impl Schema {
     /// # Errors
     ///
     /// When `json` is not UTF-8, and as `validate_json`.
-    pub fn validate_json_bytes(&self, json: &[u8]) -> Result<Vec<Issue>, JsonError> {
+    pub fn validate_json_bytes(&self, json: &[u8]) -> Result<Vec<SchemaIssue>, JsonError> {
         let text =
             std::str::from_utf8(json).map_err(|error| JsonError::invalid_utf8(json, error))?;
         self.validate_json(text)

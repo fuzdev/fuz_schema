@@ -104,7 +104,7 @@
 					}
 				},
 				"default_bigint": {
-					"kind": "default",
+					"kind": "with_default",
 					"def": {
 						"schema": {
 							"kind": "nullable",

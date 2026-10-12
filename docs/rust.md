@@ -10,9 +10,10 @@ Output is not built. `crates/fuz_schema_wasm` is the crate compiled to wasm,
 
 ## The model
 
-A `Schema` is an arena of `Node`s and the id of the one validation starts at.
+A `Schema` is an arena of `SchemaNode`s and the id of the one validation starts
+at.
 
-- **One `Node` variant per kind** of the `SchemaDefs` contract that can be
+- **One `SchemaNode` variant per kind** of the `SchemaDefs` contract that can be
   carried across, which is all but `regex`, `check`, and `transform`. A
   node holds what the kind's `def` holds, with schemas as `NodeId`s.
 - **`lazy` is a node**, holding the id it defers to. It is where a schema
@@ -38,7 +39,7 @@ out where that is `undefined`:
 {"kind":"one_of","def":["a",1,null]}
 {"kind":"optional","def":{"schema":{"kind":"string"}}}
 {"kind":"nullable","def":{"schema":{"kind":"string"}}}
-{"kind":"default","def":{"schema":{"kind":"number"},"value":0}}
+{"kind":"with_default","def":{"schema":{"kind":"number"},"value":0}}
 {"kind":"lazy","def":"$0"}
 {"kind":"object","def":{"id":{"kind":"number"},"name":{"kind":"string"}}}
 {"kind":"loose_object","def":{}}  {"kind":"strip_object","def":{}}
@@ -68,22 +69,21 @@ document is an envelope that says what the names stand for:
 - `defs` is left out when there is no `lazy`.
 - A `literal` with no `def` is an error, not `null`: no `def` is what
   `undefined` would be.
-- A `default`'s `value` is any JSON value. It is kept and never validated.
+- A `with_default`'s `value` is any JSON value. It is kept and never validated.
 - A key the form doesn't have is an error, and so is a key written twice in
   one object.
 
 `Schema::from_json` loads a document, and `to_schema_json` in
-`src/test/schema_json.ts` writes one from a TypeScript schema. The writer is a
-helper for the tests and fixtures, not part of the published library. It
-throws on everything the loader refuses, and on what the crate's parser does
-not read of a document: a string that is not well-formed Unicode, and nesting
+`src/lib/schema_json.ts` writes one from a TypeScript schema. The writer is a
+module of its own, which the core never reaches. It throws on everything the
+loader refuses, and on what the crate's parser does not read of a document: a string that is not well-formed Unicode, and nesting
 past `MAX_DEPTH`. So a schema that serializes loads. It also refuses a schema
 more than `MAX_DEPTH` schemas deep counting through every `lazy`, which the
 crate would load.
 
 ## Two evaluators
 
-| | `is_json`, `is_json_bytes` | `is_json_exact` |
+| | `matches_json`, `matches_json_bytes` | `matches_json_exact` |
 |---|---|---|
 | Reads | as it parses, with no tree | the whole text into a `Json`, then walks it |
 | Stops | at the first failure | at the end of the text |
@@ -109,23 +109,23 @@ crate would load.
 - **`js.rs` holds the JavaScript semantics** both share: a string's length in
   UTF-16 code units, the integer tests on the value and not the token, `===`
   on doubles, and key order.
-- **`is_json_bytes` validates UTF-8 first**, in full, then reads the text.
+- **`matches_json_bytes` validates UTF-8 first**, in full, then reads the text.
 - The walker reports failures to a `Report`. `Probe` wants only the verdict,
   and `Collect` keeps every failure as an issue.
 
 ## Issues
 
-`validate_json` and `validate_json_bytes` return the issues of a text, and
-none when it matches. They parse the whole text and walk the tree, as
-`is_json_exact` does, with the same errors, and the issues are empty exactly
-when it is `true`.
+`validate_json` and `validate_json_bytes` return the issues of a text, and none
+when it matches. They parse the whole text and walk the tree, as
+`matches_json_exact` does, with the same errors, and the issues are empty
+exactly when it is `true`.
 
 The issues are the ones `parse` reports of `JSON.parse` of the same text, in
-the same order. An `Issue` owns what it holds:
+the same order. A `SchemaIssue` owns what it holds:
 
 | | |
 |---|---|
-| `kind()` | an `IssueKind`: the kind of the schema or action that failed, or `UnknownKey` |
+| `kind()` | a `SchemaIssueKind`: the kind of the schema or action that failed, or `UnknownKey` |
 | `expected()` | the library's text, character for character |
 | `received()` | a `Received`: the type of the value, `Undefined` for a missing key |
 | `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
@@ -147,14 +147,14 @@ the same order. An `Issue` owns what it holds:
 - **There is no streaming form.** Issues need every failure, so nothing is
   skipped and nothing stops early.
 - `unknown`, the wrappers, `lazy`, and `pipe` never fail themselves, and have
-  no `IssueKind`.
+  no `SchemaIssueKind`.
 
 ## Declared divergences
 
 Where the crate differs from `JSON.parse` followed by `is`. Each is a flag a
 fixture case declares, and the Rust tests assert the declared behavior.
 
-| Flag | The text | `is_json` | `is_json_exact` |
+| Flag | The text | `matches_json` | `matches_json_exact` |
 |---|---|---|---|
 | `duplicate_keys` | a key is written twice, and the last value makes it match | `false`: every occurrence is checked | as the library |
 | `malformed_tail` | stops matching, then stops being JSON | `false`: nothing after a failure is read | an error, as the library throws |
@@ -176,11 +176,11 @@ once and makes no schema under it.
 
 ## What is refused
 
-A schema whose meaning comes from JavaScript itself is refused when it is
-built or loaded, with a `SchemaError` holding the reason and a JSON Pointer to
+A schema whose meaning comes from JavaScript itself is refused when it is built
+or loaded, with a `SchemaBuildError` holding the reason and a JSON Pointer to
 it in the interchange form. Nothing is guessed at.
 
-| Refused | `SchemaErrorKind` |
+| Refused | `SchemaBuildErrorKind` |
 |---|---|
 | `regex`, `check`, `transform` | `UnsupportedKind` |
 | a kind that isn't the library's | `UnknownKind` |
@@ -251,29 +251,29 @@ npm run build:wasm     # wasm-pack, into target/fuz_schema_wasm
 npm run benchmark:wasm # against the library, see benchmarks.md
 ```
 
-It exports one class. `new CompiledSchema(schema_json)` loads a schema from
-its interchange form, and throws an `Error` with the `SchemaError`'s message.
-The handle answers with a boolean, and everything `is_json` reports as an
+It exports one class. `new CompiledSchema(schema_json)` loads a schema from its
+interchange form, and throws an `Error` with the `SchemaBuildError`'s message.
+The handle answers with a boolean, and everything `matches_json` reports as an
 error is `false`.
 
 | Entry point | How the text gets into the module's memory |
 |---|---|
-| `is_json(text)` | The glue allocates, writes the string a code unit at a time while it is ASCII, and from the first unit that isn't, grows the allocation and calls `encodeInto`. The whole string is transcoded on every call. |
-| `is_json_bytes(bytes)` | The glue allocates and copies the bytes in with one `set`. |
-| `input_ptr(len)`, then `is_json_input(len)` | The handle keeps a buffer and `input_ptr` returns its address. The caller makes a `Uint8Array` over the module's memory there and writes into it. Nothing is allocated per call, and a source that writes into the view is never copied. |
+| `matches_json(text)` | The glue allocates, writes the string a code unit at a time while it is ASCII, and from the first unit that isn't, grows the allocation and calls `encodeInto`. The whole string is transcoded on every call. |
+| `matches_json_bytes(bytes)` | The glue allocates and copies the bytes in with one `set`. |
+| `input_ptr(len)`, then `matches_json_input(len)` | The handle keeps a buffer and `input_ptr` returns its address. The caller makes a `Uint8Array` over the module's memory there and writes into it. Nothing is allocated per call, and a source that writes into the view is never copied. |
 
-- **The two byte entry points validate UTF-8 first**, in full. `is_json`
+- **The two byte entry points validate UTF-8 first**, in full. `matches_json`
   doesn't: what the glue wrote is UTF-8.
 - **The view is made after `input_ptr` returns.** A view over the memory
   holds only until the memory grows, which any call into the module can
   cause. The address holds until the next `input_ptr`.
-- **`input_ptr` returns `0` when the memory can't hold a buffer of `len` bytes**,
-  and leaves the buffer as it was. The buffer never shrinks, and is freed
-  with the handle.
+- **`input_ptr` returns `0` when the memory can't hold a buffer of `len`
+  bytes**, and leaves the buffer as it was. The buffer never shrinks, and is
+  freed with the handle.
 - **A handle is released with `free()`.**
 - **A lone surrogate in a string becomes U+FFFD.** A JavaScript string can
   hold half a surrogate pair and UTF-8 can't, so `encodeInto` writes U+FFFD
-  for it. `is_json` then reads the text as though U+FFFD were written, and
+  for it. `matches_json` then reads the text as though U+FFFD were written, and
   can accept what the library rejects. This is the one place a verdict of the
   wasm build is looser than the library. `new CompiledSchema` reads a
   schema text with a raw lone surrogate the same way, and `to_schema_json`

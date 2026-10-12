@@ -1,6 +1,6 @@
 import * as s from '#lib/schema.ts';
 import type { JsonFixture } from '../json_test_helpers.ts';
-import { SCHEMA_JSON_MAX_NESTING } from '../../../schema_json.ts';
+import { SCHEMA_JSON_MAX_NESTING } from '#lib/schema_json.ts';
 
 // as many wrappers, lazies, unions, and pipes around one value as there can be,
 // at every level of a recursive schema

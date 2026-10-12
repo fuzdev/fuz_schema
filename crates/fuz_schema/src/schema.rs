@@ -41,7 +41,7 @@ impl NodeId {
 /// The kind of a node, named as the TypeScript library names it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum Kind {
+pub enum SchemaKind {
     /// `string`.
     String,
     /// `number`.
@@ -60,8 +60,8 @@ pub enum Kind {
     Optional,
     /// `nullable`.
     Nullable,
-    /// `default`.
-    Default,
+    /// `with_default`.
+    WithDefault,
     /// `lazy`.
     Lazy,
     /// `object`.
@@ -96,7 +96,7 @@ pub enum Kind {
     Finite,
 }
 
-impl Kind {
+impl SchemaKind {
     /// Every kind.
     pub const ALL: &'static [Self] = &[
         Self::String,
@@ -108,7 +108,7 @@ impl Kind {
         Self::OneOf,
         Self::Optional,
         Self::Nullable,
-        Self::Default,
+        Self::WithDefault,
         Self::Lazy,
         Self::Object,
         Self::LooseObject,
@@ -139,7 +139,7 @@ impl Kind {
             Self::OneOf => "one_of",
             Self::Optional => "optional",
             Self::Nullable => "nullable",
-            Self::Default => "default",
+            Self::WithDefault => "with_default",
             Self::Lazy => "lazy",
             Self::Object => "object",
             Self::LooseObject => "loose_object",
@@ -189,7 +189,7 @@ impl Kind {
     }
 }
 
-impl fmt::Display for Kind {
+impl fmt::Display for SchemaKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -198,7 +198,7 @@ impl fmt::Display for Kind {
 /// A value a `literal` or `one_of` matches by JavaScript's `===`.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
-pub enum Literal {
+pub enum SchemaLiteral {
     /// `null`.
     Null,
     /// `true` or `false`.
@@ -209,7 +209,7 @@ pub enum Literal {
     String(Box<str>),
 }
 
-impl Literal {
+impl SchemaLiteral {
     pub(crate) fn matches(&self, value: Value<'_>) -> bool {
         match (self, value) {
             (Self::Null, Value::Null) => true,
@@ -228,31 +228,31 @@ impl Literal {
     }
 }
 
-impl From<bool> for Literal {
+impl From<bool> for SchemaLiteral {
     fn from(value: bool) -> Self {
         Self::Boolean(value)
     }
 }
 
-impl From<f64> for Literal {
+impl From<f64> for SchemaLiteral {
     fn from(value: f64) -> Self {
         Self::Number(value)
     }
 }
 
-impl From<i32> for Literal {
+impl From<i32> for SchemaLiteral {
     fn from(value: i32) -> Self {
         Self::Number(f64::from(value))
     }
 }
 
-impl From<&str> for Literal {
+impl From<&str> for SchemaLiteral {
     fn from(value: &str) -> Self {
         Self::String(value.into())
     }
 }
 
-impl From<String> for Literal {
+impl From<String> for SchemaLiteral {
     fn from(value: String) -> Self {
         Self::String(value.into_boxed_str())
     }
@@ -261,7 +261,7 @@ impl From<String> for Literal {
 /// A node: a schema or action and what its `def` holds.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
-pub enum Node {
+pub enum SchemaNode {
     /// Matches a string.
     String,
     /// Matches a number.
@@ -273,24 +273,24 @@ pub enum Node {
     /// Matches anything, a missing key included.
     Unknown,
     /// Matches one value.
-    Literal(Literal),
+    Literal(SchemaLiteral),
     /// Matches any of the values.
-    OneOf(Box<[Literal]>),
+    OneOf(Box<[SchemaLiteral]>),
     /// Accepts a missing key, or matches the schema.
     Optional(NodeId),
     /// Accepts `null`, or matches the schema.
     Nullable(NodeId),
     /// Accepts a missing key, or matches the schema.
-    Default(Box<DefaultDef>),
+    WithDefault(Box<WithDefaultDef>),
     /// Defers to the schema, which is how a schema refers to itself.
     Lazy(NodeId),
     /// Matches an object with the entries and no other key.
-    Object(Box<Entries>),
+    Object(Box<SchemaEntries>),
     /// Matches an object with the entries, whatever other keys it has.
-    LooseObject(Box<Entries>),
+    LooseObject(Box<SchemaEntries>),
     /// Matches an object with the entries, whatever other keys it has. It
     /// differs from `LooseObject` in the output, which a verdict has none of.
-    StripObject(Box<Entries>),
+    StripObject(Box<SchemaEntries>),
     /// Matches an object whose values all match the schema.
     Record(NodeId),
     /// Matches an array whose items all match the schema.
@@ -318,41 +318,41 @@ pub enum Node {
     Finite,
 }
 
-impl Node {
+impl SchemaNode {
     /// The node's kind.
-    pub const fn kind(&self) -> Kind {
+    pub const fn kind(&self) -> SchemaKind {
         match self {
-            Self::String => Kind::String,
-            Self::Number => Kind::Number,
-            Self::Boolean => Kind::Boolean,
-            Self::Bigint => Kind::Bigint,
-            Self::Unknown => Kind::Unknown,
-            Self::Literal(_) => Kind::Literal,
-            Self::OneOf(_) => Kind::OneOf,
-            Self::Optional(_) => Kind::Optional,
-            Self::Nullable(_) => Kind::Nullable,
-            Self::Default(_) => Kind::Default,
-            Self::Lazy(_) => Kind::Lazy,
-            Self::Object(_) => Kind::Object,
-            Self::LooseObject(_) => Kind::LooseObject,
-            Self::StripObject(_) => Kind::StripObject,
-            Self::Record(_) => Kind::Record,
-            Self::Array(_) => Kind::Array,
-            Self::Union(_) => Kind::Union,
-            Self::Variant(_) => Kind::Variant,
-            Self::Pipe(_) => Kind::Pipe,
-            Self::MinLength(_) => Kind::MinLength,
-            Self::MaxLength(_) => Kind::MaxLength,
-            Self::MinValue(_) => Kind::MinValue,
-            Self::MaxValue(_) => Kind::MaxValue,
-            Self::Integer => Kind::Integer,
-            Self::SafeInteger => Kind::SafeInteger,
-            Self::Finite => Kind::Finite,
+            Self::String => SchemaKind::String,
+            Self::Number => SchemaKind::Number,
+            Self::Boolean => SchemaKind::Boolean,
+            Self::Bigint => SchemaKind::Bigint,
+            Self::Unknown => SchemaKind::Unknown,
+            Self::Literal(_) => SchemaKind::Literal,
+            Self::OneOf(_) => SchemaKind::OneOf,
+            Self::Optional(_) => SchemaKind::Optional,
+            Self::Nullable(_) => SchemaKind::Nullable,
+            Self::WithDefault(_) => SchemaKind::WithDefault,
+            Self::Lazy(_) => SchemaKind::Lazy,
+            Self::Object(_) => SchemaKind::Object,
+            Self::LooseObject(_) => SchemaKind::LooseObject,
+            Self::StripObject(_) => SchemaKind::StripObject,
+            Self::Record(_) => SchemaKind::Record,
+            Self::Array(_) => SchemaKind::Array,
+            Self::Union(_) => SchemaKind::Union,
+            Self::Variant(_) => SchemaKind::Variant,
+            Self::Pipe(_) => SchemaKind::Pipe,
+            Self::MinLength(_) => SchemaKind::MinLength,
+            Self::MaxLength(_) => SchemaKind::MaxLength,
+            Self::MinValue(_) => SchemaKind::MinValue,
+            Self::MaxValue(_) => SchemaKind::MaxValue,
+            Self::Integer => SchemaKind::Integer,
+            Self::SafeInteger => SchemaKind::SafeInteger,
+            Self::Finite => SchemaKind::Finite,
         }
     }
 
     /// The entries of an object schema.
-    pub(crate) fn entries(&self) -> Option<&Entries> {
+    pub(crate) fn entries(&self) -> Option<&SchemaEntries> {
         match self {
             Self::Object(entries) | Self::LooseObject(entries) | Self::StripObject(entries) => {
                 Some(entries)
@@ -367,7 +367,7 @@ impl Node {
             Self::Optional(schema) | Self::Nullable(schema) | Self::Lazy(schema) => {
                 std::slice::from_ref(schema)
             }
-            Self::Default(default) => std::slice::from_ref(&default.schema),
+            Self::WithDefault(default) => std::slice::from_ref(&default.schema),
             Self::Union(options) => options,
             Self::Pipe(steps) => steps.get(..1).unwrap_or_default(),
             _ => &[],
@@ -375,14 +375,14 @@ impl Node {
     }
 }
 
-/// What a `default` holds.
+/// What a `with_default` holds.
 #[derive(Debug, Clone, PartialEq)]
-pub struct DefaultDef {
+pub struct WithDefaultDef {
     pub(crate) schema: NodeId,
     pub(crate) value: Json,
 }
 
-impl DefaultDef {
+impl WithDefaultDef {
     /// The schema a present value must match.
     pub const fn schema(&self) -> NodeId {
         self.schema
@@ -397,7 +397,7 @@ impl DefaultDef {
 /// The entries of an object schema, in the order they run: the order the
 /// keys were given in, with array indices first, as JavaScript orders them.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Entries {
+pub struct SchemaEntries {
     pub(crate) keys: Box<[Box<str>]>,
     pub(crate) schemas: Box<[NodeId]>,
     /// The positions sorted by key, empty for a small object.
@@ -406,7 +406,7 @@ pub struct Entries {
     pub(crate) required: Bits,
 }
 
-impl Entries {
+impl SchemaEntries {
     pub(crate) fn new(entries: Vec<(Box<str>, NodeId)>) -> Self {
         let (keys, schemas): (Vec<_>, Vec<_>) = entries.into_iter().unzip();
         Self {
@@ -493,7 +493,7 @@ pub struct VariantDef {
     /// Each discriminator value and the option it selects, in the order the
     /// values first appear. A value given twice selects the later option, as
     /// the TypeScript library's `Map` does.
-    pub(crate) table: Box<[(Literal, NodeId)]>,
+    pub(crate) table: Box<[(SchemaLiteral, NodeId)]>,
 }
 
 impl VariantDef {
@@ -542,7 +542,7 @@ pub enum Candidates {
 /// state, and can be shared between threads.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Schema {
-    pub(crate) nodes: Box<[Node]>,
+    pub(crate) nodes: Box<[SchemaNode]>,
     pub(crate) root: NodeId,
     /// Whether each node accepts every value that is present, so that the
     /// value need not be read.
@@ -559,18 +559,18 @@ impl Schema {
     }
 
     /// The node with `id`, when `id` is one of this schema's.
-    pub fn node(&self, id: NodeId) -> Option<&Node> {
+    pub fn node(&self, id: NodeId) -> Option<&SchemaNode> {
         self.nodes.get(id.index())
     }
 
     /// The node with `id`, which must be one this schema's nodes refer to.
-    pub(crate) fn at(&self, id: NodeId) -> &Node {
+    pub(crate) fn at(&self, id: NodeId) -> &SchemaNode {
         &self.nodes[id.index()]
     }
 
     /// Every node, in no order that means anything. All but those a builder
     /// was given and never used are reachable from the root.
-    pub fn nodes(&self) -> impl ExactSizeIterator<Item = &Node> {
+    pub fn nodes(&self) -> impl ExactSizeIterator<Item = &SchemaNode> {
         self.nodes.iter()
     }
 
@@ -599,60 +599,60 @@ mod tests {
 
     #[test]
     fn kinds_have_distinct_names_that_read_back() {
-        for &kind in Kind::ALL {
-            assert_eq!(Kind::from_name(kind.as_str()), Some(kind));
+        for &kind in SchemaKind::ALL {
+            assert_eq!(SchemaKind::from_name(kind.as_str()), Some(kind));
             assert_eq!(kind.to_string(), kind.as_str());
         }
-        let mut names: Vec<&str> = Kind::ALL.iter().map(|kind| kind.as_str()).collect();
+        let mut names: Vec<&str> = SchemaKind::ALL.iter().map(|kind| kind.as_str()).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), Kind::ALL.len());
+        assert_eq!(names.len(), SchemaKind::ALL.len());
         for name in ["regex", "check", "transform", "", "String"] {
-            assert_eq!(Kind::from_name(name), None);
+            assert_eq!(SchemaKind::from_name(name), None);
         }
     }
 
-    /// The place of each kind in `Kind::ALL`. Every one is named, so a new
+    /// The place of each kind in `SchemaKind::ALL`. Every one is named, so a new
     /// one does not compile until it is given a place here, which the test
     /// then asks `ALL` for.
-    const fn place(kind: Kind) -> usize {
+    const fn place(kind: SchemaKind) -> usize {
         match kind {
-            Kind::String => 0,
-            Kind::Number => 1,
-            Kind::Boolean => 2,
-            Kind::Bigint => 3,
-            Kind::Unknown => 4,
-            Kind::Literal => 5,
-            Kind::OneOf => 6,
-            Kind::Optional => 7,
-            Kind::Nullable => 8,
-            Kind::Default => 9,
-            Kind::Lazy => 10,
-            Kind::Object => 11,
-            Kind::LooseObject => 12,
-            Kind::StripObject => 13,
-            Kind::Record => 14,
-            Kind::Array => 15,
-            Kind::Union => 16,
-            Kind::Variant => 17,
-            Kind::Pipe => 18,
-            Kind::MinLength => 19,
-            Kind::MaxLength => 20,
-            Kind::MinValue => 21,
-            Kind::MaxValue => 22,
-            Kind::Integer => 23,
-            Kind::SafeInteger => 24,
-            Kind::Finite => 25,
+            SchemaKind::String => 0,
+            SchemaKind::Number => 1,
+            SchemaKind::Boolean => 2,
+            SchemaKind::Bigint => 3,
+            SchemaKind::Unknown => 4,
+            SchemaKind::Literal => 5,
+            SchemaKind::OneOf => 6,
+            SchemaKind::Optional => 7,
+            SchemaKind::Nullable => 8,
+            SchemaKind::WithDefault => 9,
+            SchemaKind::Lazy => 10,
+            SchemaKind::Object => 11,
+            SchemaKind::LooseObject => 12,
+            SchemaKind::StripObject => 13,
+            SchemaKind::Record => 14,
+            SchemaKind::Array => 15,
+            SchemaKind::Union => 16,
+            SchemaKind::Variant => 17,
+            SchemaKind::Pipe => 18,
+            SchemaKind::MinLength => 19,
+            SchemaKind::MaxLength => 20,
+            SchemaKind::MinValue => 21,
+            SchemaKind::MaxValue => 22,
+            SchemaKind::Integer => 23,
+            SchemaKind::SafeInteger => 24,
+            SchemaKind::Finite => 25,
         }
     }
 
     #[test]
     fn every_kind_is_listed_at_its_place() {
-        for (index, &kind) in Kind::ALL.iter().enumerate() {
+        for (index, &kind) in SchemaKind::ALL.iter().enumerate() {
             assert_eq!(place(kind), index, "{kind}");
         }
         // the last place is the last of the list, so none is past its end
-        assert_eq!(place(Kind::Finite) + 1, Kind::ALL.len());
+        assert_eq!(place(SchemaKind::Finite) + 1, SchemaKind::ALL.len());
     }
 
     #[test]
@@ -669,7 +669,7 @@ mod tests {
         let person = builder.object([("name", name), ("age", age)]);
         let schema = builder.build(person).unwrap();
         assert_eq!(schema.root(), person);
-        let Some(Node::Object(entries)) = schema.node(person) else {
+        let Some(SchemaNode::Object(entries)) = schema.node(person) else {
             panic!("not an object");
         };
         assert_eq!(entries.len(), 2);
@@ -680,7 +680,10 @@ mod tests {
             entries.iter().collect::<Vec<_>>(),
             [("name", name), ("age", age)]
         );
-        assert_eq!(schema.node(name).map(Node::kind), Some(Kind::String));
+        assert_eq!(
+            schema.node(name).map(SchemaNode::kind),
+            Some(SchemaKind::String)
+        );
         assert_eq!(schema.node(NodeId::new(99)), None);
     }
 
@@ -791,7 +794,7 @@ mod tests {
         let mut b = SchemaBuilder::new();
         let string = b.string();
         let number = b.number();
-        let null = b.literal(Literal::Null);
+        let null = b.literal(SchemaLiteral::Null);
         let unknown = b.unknown();
         let strings = b.array(string);
         let numbers = b.array(number);
@@ -887,7 +890,7 @@ mod tests {
         let one = b.literal(1);
         let zero = b.literal(0.0);
         let negative_zero = b.literal(-0.0);
-        let null = b.literal(Literal::Null);
+        let null = b.literal(SchemaLiteral::Null);
         let yes = b.literal(true);
         let first = b.object([("k", a)]);
         let second = b.loose_object([("k", one)]);
@@ -898,7 +901,7 @@ mod tests {
         let seventh = b.object([("k", yes)]);
         let variant = b.variant("k", [first, second, third, fourth, fifth, sixth, seventh]);
         let schema = b.build(variant).unwrap();
-        let Node::Variant(def) = schema.at(variant) else {
+        let SchemaNode::Variant(def) = schema.at(variant) else {
             panic!("not a variant");
         };
         assert_eq!(def.key(), "k");

@@ -2,12 +2,12 @@ import { describe, test, assert } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import {
-	OBJECT_PROTOTYPE_KEYS,
+	SCHEMA_JSON_REFUSED_KEYS,
 	SCHEMA_JSON_MAX_DEPTH,
 	SCHEMA_JSON_MAX_NESTING,
 	to_schema_json,
 	type SchemaJsonNode
-} from './schema_json.ts';
+} from '#lib/schema_json.ts';
 
 const node = (schema: s.AnySchema): SchemaJsonNode => to_schema_json(schema).schema;
 
@@ -57,11 +57,11 @@ describe('to_schema_json', () => {
 		assert.deepEqual(node(s.optional(s.string)), { kind: 'optional', def: { schema: STRING } });
 		assert.deepEqual(node(s.nullable(s.string)), { kind: 'nullable', def: { schema: STRING } });
 		assert.deepEqual(node(s.with_default(s.number, 0)), {
-			kind: 'default',
+			kind: 'with_default',
 			def: { schema: NUMBER, value: 0 }
 		});
 		assert.deepEqual(node(s.with_default(s.unknown, { a: [1, null, 'x', { b: true }] })), {
-			kind: 'default',
+			kind: 'with_default',
 			def: { schema: { kind: 'unknown' }, value: { a: [1, null, 'x', { b: true }] } }
 		});
 	});
@@ -396,7 +396,7 @@ describe('to_schema_json refuses', () => {
 		for (const value of [lead, ['a', [trail]], { a: { [lead]: 1 } }, { a: [{ b: trail }] }]) {
 			refuses(
 				() => s.object({ a: s.with_default(s.unknown, value) }),
-				`cannot serialize \`default\` at /schema/def/a/def/value: the default holds ${reason}`
+				`cannot serialize \`with_default\` at /schema/def/a/def/value: the default holds ${reason}`
 			);
 		}
 		// a pair is a well-formed string
@@ -438,7 +438,7 @@ describe('to_schema_json refuses', () => {
 		for (const value of [array, object, { a: [object] }]) {
 			refuses(
 				() => s.with_default(s.unknown, value),
-				`cannot serialize \`default\` at /schema/def/value: the default nests deeper than ${SCHEMA_JSON_MAX_DEPTH}`
+				`cannot serialize \`with_default\` at /schema/def/value: the default nests deeper than ${SCHEMA_JSON_MAX_DEPTH}`
 			);
 		}
 	});
@@ -464,13 +464,13 @@ describe('to_schema_json refuses', () => {
 		for (const value of [undefined, 1n, NaN, new Date(0), () => 1, [undefined], { a: undefined }]) {
 			refuses(
 				() => s.object({ a: s.with_default(s.unknown, value) }),
-				'cannot serialize `default` at /schema/def/a/def/value: the default is not a JSON value'
+				'cannot serialize `with_default` at /schema/def/a/def/value: the default is not a JSON value'
 			);
 		}
 	});
 
 	test('entries named like members of Object.prototype', () => {
-		for (const key of OBJECT_PROTOTYPE_KEYS) {
+		for (const key of SCHEMA_JSON_REFUSED_KEYS) {
 			for (const object of [s.object, s.loose_object, s.strip_object]) {
 				// computed, so that `__proto__` is an entry and not the prototype
 				const schema = object({ ok: s.string, [key]: s.unknown });
@@ -494,7 +494,7 @@ describe('to_schema_json refuses', () => {
 
 	test('the names are the members of Object.prototype', () => {
 		assert.deepEqual(
-			[...OBJECT_PROTOTYPE_KEYS],
+			[...SCHEMA_JSON_REFUSED_KEYS],
 			Object.getOwnPropertyNames(Object.prototype).sort()
 		);
 		assert.strictEqual(Object.getPrototypeOf(Object.prototype), null);
@@ -599,7 +599,7 @@ describe('to_schema_json refuses', () => {
 			s.lazy(() => a),
 			null
 		);
-		refuses(() => s.object({ a }), 'cannot serialize `default` at /schema' + message);
+		refuses(() => s.object({ a }), 'cannot serialize `with_default` at /schema' + message);
 	});
 
 	test('schemas that come back to themselves through a container are fine', () => {

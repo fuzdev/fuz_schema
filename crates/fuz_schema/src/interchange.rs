@@ -30,31 +30,37 @@ use std::fmt;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 
 use crate::builder::{SchemaBuilder, pointer_token};
-use crate::error::{JsonError, SchemaError, SchemaErrorKind};
+use crate::error::{JsonError, SchemaBuildError, SchemaBuildErrorKind};
 use crate::json::{Json, JsonObject, JsonSeed};
-use crate::schema::{Kind, Literal, NodeId, Schema};
+use crate::schema::{NodeId, Schema, SchemaKind, SchemaLiteral};
 
 /// The kinds of the TypeScript library that hold a JavaScript value.
 const UNSUPPORTED_KINDS: [&str; 3] = ["regex", "check", "transform"];
 
 /// Loads the schema of the interchange document that `text` is.
-pub fn load_text(text: &str) -> Result<Schema, SchemaError> {
+pub fn load_text(text: &str) -> Result<Schema, SchemaBuildError> {
     load(&parse(text)?)
 }
 
 /// Parses an interchange document, refusing a key written twice in one
 /// object.
-fn parse(text: &str) -> Result<Json, SchemaError> {
+fn parse(text: &str) -> Result<Json, SchemaBuildError> {
     let state = RefCell::new(DocumentState::default());
     let mut deserializer = serde_json::Deserializer::from_str(text);
     let document = DocumentSeed { state: &state }
         .deserialize(&mut deserializer)
         .and_then(|document| deserializer.end().map(|()| document))
         .map_err(|error| {
-            SchemaError::new(SchemaErrorKind::Json(JsonError::from_serde(&error)), "")
+            SchemaBuildError::new(
+                SchemaBuildErrorKind::Json(JsonError::from_serde(&error)),
+                "",
+            )
         })?;
     match state.into_inner().repeated {
-        Some((key, path)) => Err(SchemaError::new(SchemaErrorKind::RepeatedKey { key }, path)),
+        Some((key, path)) => Err(SchemaBuildError::new(
+            SchemaBuildErrorKind::RepeatedKey { key },
+            path,
+        )),
         None => Ok(document),
     }
 }
@@ -161,7 +167,7 @@ impl<'de> Visitor<'de> for DocumentSeed<'_> {
 }
 
 /// Loads the schema of an interchange document.
-fn load(document: &Json) -> Result<Schema, SchemaError> {
+fn load(document: &Json) -> Result<Schema, SchemaBuildError> {
     let mut loader = Loader {
         builder: SchemaBuilder::new(),
         defs: Vec::new(),
@@ -218,20 +224,20 @@ struct Loader<'a> {
 }
 
 impl<'a> Loader<'a> {
-    fn error(&self, kind: SchemaErrorKind) -> SchemaError {
-        SchemaError::new(kind, self.path.as_str())
+    fn error(&self, kind: SchemaBuildErrorKind) -> SchemaBuildError {
+        SchemaBuildError::new(kind, self.path.as_str())
     }
 
-    fn malformed(&self, expected: &'static str) -> SchemaError {
-        self.error(SchemaErrorKind::Malformed { expected })
+    fn malformed(&self, expected: &'static str) -> SchemaBuildError {
+        self.error(SchemaBuildErrorKind::Malformed { expected })
     }
 
     /// Runs `read` with `token` added to the path.
     fn at<T>(
         &mut self,
         token: &str,
-        read: impl FnOnce(&mut Self) -> Result<T, SchemaError>,
-    ) -> Result<T, SchemaError> {
+        read: impl FnOnce(&mut Self) -> Result<T, SchemaBuildError>,
+    ) -> Result<T, SchemaBuildError> {
         let len = self.path.len();
         self.path.push('/');
         self.path.push_str(&pointer_token(token));
@@ -244,14 +250,18 @@ impl<'a> Loader<'a> {
         &self,
         json: &'a Json,
         expected: &'static str,
-    ) -> Result<&'a JsonObject, SchemaError> {
+    ) -> Result<&'a JsonObject, SchemaBuildError> {
         match json {
             Json::Object(object) => Ok(object),
             _ => Err(self.malformed(expected)),
         }
     }
 
-    fn array(&self, json: &'a Json, expected: &'static str) -> Result<&'a [Json], SchemaError> {
+    fn array(
+        &self,
+        json: &'a Json,
+        expected: &'static str,
+    ) -> Result<&'a [Json], SchemaBuildError> {
         match json {
             Json::Array(items) => Ok(items),
             _ => Err(self.malformed(expected)),
@@ -263,22 +273,22 @@ impl<'a> Loader<'a> {
         object: &'a JsonObject,
         key: &str,
         expected: &'static str,
-    ) -> Result<&'a Json, SchemaError> {
+    ) -> Result<&'a Json, SchemaBuildError> {
         object.get(key).ok_or_else(|| self.malformed(expected))
     }
 
     /// Refuses a key that is not one of `keys`.
-    fn only_keys(&mut self, object: &JsonObject, keys: &[&str]) -> Result<(), SchemaError> {
+    fn only_keys(&mut self, object: &JsonObject, keys: &[&str]) -> Result<(), SchemaBuildError> {
         match object.iter().find(|(key, _)| !keys.contains(key)) {
             Some((key, _)) => self.at(key, |loader| {
-                Err(loader.error(SchemaErrorKind::UnexpectedKey { key: key.into() }))
+                Err(loader.error(SchemaBuildErrorKind::UnexpectedKey { key: key.into() }))
             }),
             None => Ok(()),
         }
     }
 
     /// Reads a node and adds it to the builder.
-    fn node(&mut self, json: &'a Json) -> Result<NodeId, SchemaError> {
+    fn node(&mut self, json: &'a Json) -> Result<NodeId, SchemaBuildError> {
         let node = self.object(json, "a schema, an object with a `kind`")?;
         self.only_keys(node, &["kind", "def"])?;
         let name = match node.get("kind") {
@@ -287,48 +297,50 @@ impl<'a> Loader<'a> {
             None => return Err(self.malformed("a schema, an object with a `kind`")),
         };
         if let Some(kind) = UNSUPPORTED_KINDS.into_iter().find(|&kind| kind == name) {
-            return Err(self.error(SchemaErrorKind::UnsupportedKind { kind }));
+            return Err(self.error(SchemaBuildErrorKind::UnsupportedKind { kind }));
         }
-        let Some(kind) = Kind::from_name(name) else {
-            return Err(self.error(SchemaErrorKind::UnknownKind { kind: name.into() }));
+        let Some(kind) = SchemaKind::from_name(name) else {
+            return Err(self.error(SchemaBuildErrorKind::UnknownKind { kind: name.into() }));
         };
         let def = node.get("def");
         match kind {
-            Kind::String => self.bare(def, SchemaBuilder::string),
-            Kind::Number => self.bare(def, SchemaBuilder::number),
-            Kind::Boolean => self.bare(def, SchemaBuilder::boolean),
-            Kind::Bigint => self.bare(def, SchemaBuilder::bigint),
-            Kind::Unknown => self.bare(def, SchemaBuilder::unknown),
-            Kind::Integer => self.bare(def, SchemaBuilder::integer),
-            Kind::SafeInteger => self.bare(def, SchemaBuilder::safe_integer),
-            Kind::Finite => self.bare(def, SchemaBuilder::finite),
-            Kind::Literal => {
+            SchemaKind::String => self.bare(def, SchemaBuilder::string),
+            SchemaKind::Number => self.bare(def, SchemaBuilder::number),
+            SchemaKind::Boolean => self.bare(def, SchemaBuilder::boolean),
+            SchemaKind::Bigint => self.bare(def, SchemaBuilder::bigint),
+            SchemaKind::Unknown => self.bare(def, SchemaBuilder::unknown),
+            SchemaKind::Integer => self.bare(def, SchemaBuilder::integer),
+            SchemaKind::SafeInteger => self.bare(def, SchemaBuilder::safe_integer),
+            SchemaKind::Finite => self.bare(def, SchemaBuilder::finite),
+            SchemaKind::Literal => {
                 // with no `def` the TypeScript literal is `undefined`
                 let Some(def) = def else {
-                    return Err(self.error(SchemaErrorKind::UnsupportedLiteral));
+                    return Err(self.error(SchemaBuildErrorKind::UnsupportedLiteral));
                 };
                 let literal = self.at("def", |loader| loader.literal(def))?;
                 Ok(self.builder.literal(literal))
             }
-            Kind::OneOf => self.with_def(def, "a `def`, an array of literals", |loader, def| {
-                let values = loader.array(def, "an array of literals")?;
-                let literals = loader.each(values, Self::literal)?;
-                Ok(loader.builder.one_of(literals))
-            }),
-            Kind::Optional | Kind::Nullable => {
+            SchemaKind::OneOf => {
+                self.with_def(def, "a `def`, an array of literals", |loader, def| {
+                    let values = loader.array(def, "an array of literals")?;
+                    let literals = loader.each(values, Self::literal)?;
+                    Ok(loader.builder.one_of(literals))
+                })
+            }
+            SchemaKind::Optional | SchemaKind::Nullable => {
                 self.with_def(def, "a `def` with a `schema`", |loader, def| {
                     let def = loader.object(def, "an object with a `schema`")?;
                     loader.only_keys(def, &["schema"])?;
                     let schema = loader.required(def, "schema", "an object with a `schema`")?;
                     let schema = loader.at("schema", |loader| loader.node(schema))?;
-                    Ok(if kind == Kind::Optional {
+                    Ok(if kind == SchemaKind::Optional {
                         loader.builder.optional(schema)
                     } else {
                         loader.builder.nullable(schema)
                     })
                 })
             }
-            Kind::Default => self.with_def(
+            SchemaKind::WithDefault => self.with_def(
                 def,
                 "a `def` with a `schema` and a `value`",
                 |loader, def| {
@@ -341,21 +353,22 @@ impl<'a> Loader<'a> {
                     Ok(loader.builder.with_default(schema, value.clone()))
                 },
             ),
-            Kind::Lazy => self.with_def(def, "a `def`, the name of a schema", |loader, def| {
-                let Json::String(name) = def else {
-                    return Err(loader.malformed("the name of a schema"));
-                };
-                let Some(&position) = loader.names.get(&**name) else {
-                    return Err(
-                        loader.error(SchemaErrorKind::UnresolvedLazy { name: name.clone() })
-                    );
-                };
-                let lazy = loader.builder.declare_named(name.clone());
-                loader.lazies.push((lazy, position));
-                Ok(lazy)
-            }),
-            Kind::Object | Kind::LooseObject | Kind::StripObject => {
-                self.with_def(def, "a `def`, an object of entries", |loader, def| {
+            SchemaKind::Lazy => {
+                self.with_def(def, "a `def`, the name of a schema", |loader, def| {
+                    let Json::String(name) = def else {
+                        return Err(loader.malformed("the name of a schema"));
+                    };
+                    let Some(&position) = loader.names.get(&**name) else {
+                        return Err(loader
+                            .error(SchemaBuildErrorKind::UnresolvedLazy { name: name.clone() }));
+                    };
+                    let lazy = loader.builder.declare_named(name.clone());
+                    loader.lazies.push((lazy, position));
+                    Ok(lazy)
+                })
+            }
+            SchemaKind::Object | SchemaKind::LooseObject | SchemaKind::StripObject => self
+                .with_def(def, "a `def`, an object of entries", |loader, def| {
                     let def = loader.object(def, "an object of entries")?;
                     let mut entries = Vec::with_capacity(def.len());
                     for (key, entry) in def.iter() {
@@ -363,32 +376,33 @@ impl<'a> Loader<'a> {
                         entries.push((key, entry));
                     }
                     Ok(match kind {
-                        Kind::Object => loader.builder.object(entries),
-                        Kind::LooseObject => loader.builder.loose_object(entries),
+                        SchemaKind::Object => loader.builder.object(entries),
+                        SchemaKind::LooseObject => loader.builder.loose_object(entries),
                         _ => loader.builder.strip_object(entries),
+                    })
+                }),
+            SchemaKind::Record | SchemaKind::Array => {
+                self.with_def(def, "a `def`, a schema", |loader, def| {
+                    let schema = loader.node(def)?;
+                    Ok(if kind == SchemaKind::Record {
+                        loader.builder.record(schema)
+                    } else {
+                        loader.builder.array(schema)
                     })
                 })
             }
-            Kind::Record | Kind::Array => self.with_def(def, "a `def`, a schema", |loader, def| {
-                let schema = loader.node(def)?;
-                Ok(if kind == Kind::Record {
-                    loader.builder.record(schema)
-                } else {
-                    loader.builder.array(schema)
-                })
-            }),
-            Kind::Union | Kind::Pipe => {
+            SchemaKind::Union | SchemaKind::Pipe => {
                 self.with_def(def, "a `def`, an array of schemas", |loader, def| {
                     let schemas = loader.array(def, "an array of schemas")?;
                     let schemas = loader.each(schemas, Self::node)?;
-                    Ok(if kind == Kind::Union {
+                    Ok(if kind == SchemaKind::Union {
                         loader.builder.union(schemas)
                     } else {
                         loader.builder.pipe(schemas)
                     })
                 })
             }
-            Kind::Variant => {
+            SchemaKind::Variant => {
                 self.with_def(def, "a `def` with a `key` and `options`", |loader, def| {
                     let expected = "an object with a `key` and `options`";
                     let def = loader.object(def, expected)?;
@@ -405,10 +419,10 @@ impl<'a> Loader<'a> {
                     Ok(loader.builder.variant(key.clone(), options))
                 })
             }
-            Kind::MinLength => self.bound(def, SchemaBuilder::min_length),
-            Kind::MaxLength => self.bound(def, SchemaBuilder::max_length),
-            Kind::MinValue => self.bound(def, SchemaBuilder::min_value),
-            Kind::MaxValue => self.bound(def, SchemaBuilder::max_value),
+            SchemaKind::MinLength => self.bound(def, SchemaBuilder::min_length),
+            SchemaKind::MaxLength => self.bound(def, SchemaBuilder::max_length),
+            SchemaKind::MinValue => self.bound(def, SchemaBuilder::min_value),
+            SchemaKind::MaxValue => self.bound(def, SchemaBuilder::max_value),
         }
     }
 
@@ -417,11 +431,11 @@ impl<'a> Loader<'a> {
         &mut self,
         def: Option<&Json>,
         add: fn(&mut SchemaBuilder) -> NodeId,
-    ) -> Result<NodeId, SchemaError> {
+    ) -> Result<NodeId, SchemaBuildError> {
         if def.is_some() {
             let key = "def".into();
             return self.at("def", |loader| {
-                Err(loader.error(SchemaErrorKind::UnexpectedKey { key }))
+                Err(loader.error(SchemaBuildErrorKind::UnexpectedKey { key }))
             });
         }
         Ok(add(&mut self.builder))
@@ -432,8 +446,8 @@ impl<'a> Loader<'a> {
         &mut self,
         def: Option<&'a Json>,
         expected: &'static str,
-        read: impl FnOnce(&mut Self, &'a Json) -> Result<NodeId, SchemaError>,
-    ) -> Result<NodeId, SchemaError> {
+        read: impl FnOnce(&mut Self, &'a Json) -> Result<NodeId, SchemaBuildError>,
+    ) -> Result<NodeId, SchemaBuildError> {
         let def = def.ok_or_else(|| self.malformed(expected))?;
         self.at("def", |loader| read(loader, def))
     }
@@ -442,7 +456,7 @@ impl<'a> Loader<'a> {
         &mut self,
         def: Option<&'a Json>,
         add: fn(&mut SchemaBuilder, f64) -> NodeId,
-    ) -> Result<NodeId, SchemaError> {
+    ) -> Result<NodeId, SchemaBuildError> {
         self.with_def(def, "a `def`, a number", |loader, def| match def {
             Json::Number(bound) => Ok(add(&mut loader.builder, *bound)),
             _ => Err(loader.malformed("a number")),
@@ -453,8 +467,8 @@ impl<'a> Loader<'a> {
     fn each<T>(
         &mut self,
         items: &'a [Json],
-        read: fn(&mut Self, &'a Json) -> Result<T, SchemaError>,
-    ) -> Result<Vec<T>, SchemaError> {
+        read: fn(&mut Self, &'a Json) -> Result<T, SchemaBuildError>,
+    ) -> Result<Vec<T>, SchemaBuildError> {
         let mut values = Vec::with_capacity(items.len());
         for (index, item) in items.iter().enumerate() {
             values.push(self.at(&index.to_string(), |loader| read(loader, item))?);
@@ -462,15 +476,15 @@ impl<'a> Loader<'a> {
         Ok(values)
     }
 
-    fn literal(&mut self, json: &'a Json) -> Result<Literal, SchemaError> {
+    fn literal(&mut self, json: &'a Json) -> Result<SchemaLiteral, SchemaBuildError> {
         match json {
-            Json::Null => Ok(Literal::Null),
-            Json::Bool(value) => Ok(Literal::Boolean(*value)),
-            Json::Number(value) => Ok(Literal::Number(*value)),
-            Json::String(value) => Ok(Literal::String(value.clone())),
+            Json::Null => Ok(SchemaLiteral::Null),
+            Json::Bool(value) => Ok(SchemaLiteral::Boolean(*value)),
+            Json::Number(value) => Ok(SchemaLiteral::Number(*value)),
+            Json::String(value) => Ok(SchemaLiteral::String(value.clone())),
             // where a later form would hold `undefined` or a bigint
             Json::Array(_) | Json::Object(_) => {
-                Err(self.error(SchemaErrorKind::UnsupportedLiteral))
+                Err(self.error(SchemaBuildErrorKind::UnsupportedLiteral))
             }
         }
     }
@@ -480,24 +494,24 @@ impl<'a> Loader<'a> {
 mod tests {
     use super::*;
     use crate::error::JsonErrorKind;
-    use crate::schema::{MAX_NESTING, Node};
+    use crate::schema::{MAX_NESTING, SchemaNode};
 
     fn load(schema: &str) -> Schema {
         Schema::from_json(&format!(r#"{{"schema":{schema}}}"#))
             .unwrap_or_else(|error| panic!("{schema}: {error}"))
     }
 
-    fn refusal(document: &str) -> (SchemaErrorKind, String) {
+    fn refusal(document: &str) -> (SchemaBuildErrorKind, String) {
         let error = Schema::from_json(document).unwrap_err();
         (error.kind().clone(), error.path().to_owned())
     }
 
-    fn malformed(expected: &'static str) -> SchemaErrorKind {
-        SchemaErrorKind::Malformed { expected }
+    fn malformed(expected: &'static str) -> SchemaBuildErrorKind {
+        SchemaBuildErrorKind::Malformed { expected }
     }
 
-    fn unexpected(key: &str) -> SchemaErrorKind {
-        SchemaErrorKind::UnexpectedKey { key: key.into() }
+    fn unexpected(key: &str) -> SchemaBuildErrorKind {
+        SchemaBuildErrorKind::UnexpectedKey { key: key.into() }
     }
 
     /// One schema of every kind, a text it matches, and one it does not.
@@ -524,7 +538,7 @@ mod tests {
             "1",
         ),
         (
-            r#"{"kind":"object","def":{"a":{"kind":"default","def":{"schema":{"kind":"number"},"value":{"any":[1,null]}}}}}"#,
+            r#"{"kind":"object","def":{"a":{"kind":"with_default","def":{"schema":{"kind":"number"},"value":{"any":[1,null]}}}}}"#,
             "{}",
             r#"{"a":"1"}"#,
         ),
@@ -605,20 +619,24 @@ mod tests {
             let document = format!(r#"{{"schema":{schema},"defs":{{"$0":{schema}}}}}"#);
             let schema =
                 Schema::from_json(&document).unwrap_or_else(|error| panic!("{document}: {error}"));
-            kinds.extend(schema.nodes().map(Node::kind));
+            kinds.extend(schema.nodes().map(SchemaNode::kind));
             for (text, expected) in [(valid, true), (invalid, false)] {
                 // an empty text stands for a kind with nothing on that side
                 if !text.is_empty() {
-                    assert_eq!(schema.is_json(text), Ok(expected), "{document} on {text}");
                     assert_eq!(
-                        schema.is_json_exact(text),
+                        schema.matches_json(text),
+                        Ok(expected),
+                        "{document} on {text}"
+                    );
+                    assert_eq!(
+                        schema.matches_json_exact(text),
                         Ok(expected),
                         "{document} on {text}"
                     );
                 }
             }
         }
-        for kind in Kind::ALL {
+        for kind in SchemaKind::ALL {
             assert!(kinds.contains(kind), "{kind}");
         }
     }
@@ -630,10 +648,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            schema.is_json(r#"{"children":[{"children":[]}]}"#),
+            schema.matches_json(r#"{"children":[{"children":[]}]}"#),
             Ok(true)
         );
-        assert_eq!(schema.is_json(r#"{"children":[{}]}"#), Ok(false));
+        assert_eq!(schema.matches_json(r#"{"children":[{}]}"#), Ok(false));
     }
 
     #[test]
@@ -642,8 +660,8 @@ mod tests {
             r#"{"schema":{"kind":"array","def":{"kind":"lazy","def":""}},"defs":{"":{"kind":"lazy","def":"a/b"},"a/b":{"kind":"number"},"kind":{"kind":"string"}}}"#,
         )
         .unwrap();
-        assert_eq!(schema.is_json("[1]"), Ok(true));
-        assert_eq!(schema.is_json(r#"["a"]"#), Ok(false));
+        assert_eq!(schema.matches_json("[1]"), Ok(true));
+        assert_eq!(schema.matches_json(r#"["a"]"#), Ok(false));
     }
 
     #[test]
@@ -652,7 +670,7 @@ mod tests {
             r#"{"kind":"object","def":{"kind":{"kind":"string"},"def":{"kind":"number"},"schema":{"kind":"boolean"}}}"#,
         );
         assert_eq!(
-            schema.is_json(r#"{"kind":"a","def":1,"schema":true}"#),
+            schema.matches_json(r#"{"kind":"a","def":1,"schema":true}"#),
             Ok(true)
         );
     }
@@ -660,7 +678,7 @@ mod tests {
     #[test]
     fn text_that_is_not_json_is_refused() {
         let (kind, path) = refusal(r#"{"schema":"#);
-        let SchemaErrorKind::Json(error) = kind else {
+        let SchemaBuildErrorKind::Json(error) = kind else {
             panic!("{kind:?}");
         };
         assert_eq!(error.kind(), JsonErrorKind::Eof);
@@ -668,7 +686,7 @@ mod tests {
         // a number that is not finite can only be written as one JSON refuses
         let (kind, _) = refusal(r#"{"schema":{"kind":"literal","def":1e400}}"#);
         assert!(
-            matches!(kind, SchemaErrorKind::Json(error) if error.kind() == JsonErrorKind::NumberOutOfRange)
+            matches!(kind, SchemaBuildErrorKind::Json(error) if error.kind() == JsonErrorKind::NumberOutOfRange)
         );
     }
 
@@ -716,7 +734,7 @@ mod tests {
             // in a default, which is data, as anywhere else
             (
                 format!(
-                    r#"{{"schema":{{"kind":"default","def":{{"schema":{string},"value":[{{"x":1,"x":2}}]}}}}}}"#
+                    r#"{{"schema":{{"kind":"with_default","def":{{"schema":{string},"value":[{{"x":1,"x":2}}]}}}}}}"#
                 ),
                 "x",
                 "/schema/def/value/0/x",
@@ -733,7 +751,7 @@ mod tests {
             assert_eq!(
                 refusal(&document),
                 (
-                    SchemaErrorKind::RepeatedKey { key: key.into() },
+                    SchemaBuildErrorKind::RepeatedKey { key: key.into() },
                     path.to_owned()
                 ),
                 "{document}"
@@ -741,10 +759,10 @@ mod tests {
         }
         // text that is not JSON is that first
         let (kind, _) = refusal(r#"{"schema":{"kind":"string","kind":"number"}"#);
-        assert!(matches!(kind, SchemaErrorKind::Json(_)), "{kind:?}");
+        assert!(matches!(kind, SchemaBuildErrorKind::Json(_)), "{kind:?}");
         // and a JSON text keeps the last value of a key, as it did
         let schema = load(r#"{"kind":"record","def":{"kind":"number"}}"#);
-        assert_eq!(schema.is_json_exact(r#"{"a":"x","a":1}"#), Ok(true));
+        assert_eq!(schema.matches_json_exact(r#"{"a":"x","a":1}"#), Ok(true));
     }
 
     #[test]
@@ -761,7 +779,7 @@ mod tests {
         assert!(Schema::from_json(&nested(MAX_DEPTH - 2)).is_ok());
         let (kind, path) = refusal(&nested(MAX_DEPTH - 1));
         assert!(
-            matches!(&kind, SchemaErrorKind::Json(error) if error.kind() == JsonErrorKind::DepthLimit),
+            matches!(&kind, SchemaBuildErrorKind::Json(error) if error.kind() == JsonErrorKind::DepthLimit),
             "{kind:?}"
         );
         assert_eq!(path, "");
@@ -864,12 +882,12 @@ mod tests {
                 "/schema/def",
             ),
             (
-                r#"{"schema":{"kind":"default","def":{"schema":{"kind":"string"}}}}"#,
+                r#"{"schema":{"kind":"with_default","def":{"schema":{"kind":"string"}}}}"#,
                 malformed("an object with a `schema` and a `value`"),
                 "/schema/def",
             ),
             (
-                r#"{"schema":{"kind":"default","def":{"schema":{"kind":"string"},"value":1,"x":1}}}"#,
+                r#"{"schema":{"kind":"with_default","def":{"schema":{"kind":"string"},"value":1,"x":1}}}"#,
                 unexpected("x"),
                 "/schema/def/x",
             ),
@@ -956,7 +974,7 @@ mod tests {
                     r#"{{"schema":{{"kind":"pipe","def":[{{"kind":"string"}},{{"kind":"{kind}"}}]}}}}"#
                 )),
                 (
-                    SchemaErrorKind::UnsupportedKind { kind },
+                    SchemaBuildErrorKind::UnsupportedKind { kind },
                     "/schema/def/1".to_owned()
                 )
             );
@@ -965,7 +983,7 @@ mod tests {
             assert_eq!(
                 refusal(&format!(r#"{{"schema":{{"kind":"{kind}"}}}}"#)),
                 (
-                    SchemaErrorKind::UnknownKind { kind: kind.into() },
+                    SchemaBuildErrorKind::UnknownKind { kind: kind.into() },
                     "/schema".to_owned()
                 )
             );
@@ -985,7 +1003,7 @@ mod tests {
         ] {
             assert_eq!(
                 refusal(document),
-                (SchemaErrorKind::UnsupportedLiteral, path.to_owned()),
+                (SchemaBuildErrorKind::UnsupportedLiteral, path.to_owned()),
                 "{document}"
             );
         }
@@ -998,87 +1016,87 @@ mod tests {
         for (document, kind, path) in [
             (
                 format!(r#"{{"schema":{{"kind":"array","def":{{"kind":"object","def":{{"ok":{string},"toString":{string}}}}}}}}}"#),
-                SchemaErrorKind::PrototypeKey { key: "toString".into() },
+                SchemaBuildErrorKind::PrototypeKey { key: "toString".into() },
                 "/schema/def/def/toString",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"loose_object","def":{{"__proto__":{string}}}}}}}"#),
-                SchemaErrorKind::PrototypeKey { key: "__proto__".into() },
+                SchemaBuildErrorKind::PrototypeKey { key: "__proto__".into() },
                 "/schema/def/__proto__",
             ),
             (
                 r#"{"schema":{"kind":"variant","def":{"key":"toString","options":[]}}}"#.to_owned(),
-                SchemaErrorKind::PrototypeKey { key: "toString".into() },
+                SchemaBuildErrorKind::PrototypeKey { key: "toString".into() },
                 "/schema/def/key",
             ),
             (
                 r#"{"schema":{"kind":"variant","def":{"key":"toString","options":[{"kind":"object","def":{"toString":{"kind":"literal","def":"a"}}}]}}}"#.to_owned(),
-                SchemaErrorKind::PrototypeKey { key: "toString".into() },
+                SchemaBuildErrorKind::PrototypeKey { key: "toString".into() },
                 "/schema/def/options/0/def/toString",
             ),
             (
                 r#"{"schema":{"kind":"pipe","def":[]}}"#.to_owned(),
-                SchemaErrorKind::EmptyPipe,
+                SchemaBuildErrorKind::EmptyPipe,
                 "/schema",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"pipe","def":[{{"kind":"unknown"}},{bound}]}}}}"#),
-                SchemaErrorKind::PipeHead { kind: Kind::Unknown },
+                SchemaBuildErrorKind::PipeHead { kind: SchemaKind::Unknown },
                 "/schema/def/0",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"pipe","def":[{string},{string}]}}}}"#),
-                SchemaErrorKind::PipeStep { kind: Kind::String },
+                SchemaBuildErrorKind::PipeStep { kind: SchemaKind::String },
                 "/schema/def/1",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"pipe","def":[{{"kind":"number"}},{bound}]}}}}"#),
-                SchemaErrorKind::ActionMismatch { kind: Kind::MinLength },
+                SchemaBuildErrorKind::ActionMismatch { kind: SchemaKind::MinLength },
                 "/schema/def/1",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"object","def":{{"a/b":{bound}}}}}}}"#),
-                SchemaErrorKind::ActionOutsidePipe { kind: Kind::MinLength },
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::MinLength },
                 "/schema/def/a~1b",
             ),
             (
                 format!(r#"{{"schema":{bound}}}"#),
-                SchemaErrorKind::ActionOutsidePipe { kind: Kind::MinLength },
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::MinLength },
                 "/schema",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"lazy","def":"a"}},"defs":{{"a":{bound}}}}}"#),
-                SchemaErrorKind::ActionOutsidePipe { kind: Kind::MinLength },
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::MinLength },
                 "/defs/a",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"variant","def":{{"key":"k","options":[{string}]}}}}}}"#),
-                SchemaErrorKind::VariantOption { kind: Kind::String },
+                SchemaBuildErrorKind::VariantOption { kind: SchemaKind::String },
                 "/schema/def/options/0",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"variant","def":{{"key":"k","options":[{{"kind":"object","def":{{"k":{string}}}}}]}}}}}}"#),
-                SchemaErrorKind::VariantDiscriminator { key: "k".into() },
+                SchemaBuildErrorKind::VariantDiscriminator { key: "k".into() },
                 "/schema/def/options/0",
             ),
             (
                 r#"{"schema":{"kind":"array","def":{"kind":"lazy","def":"missing"}},"defs":{"other":{"kind":"string"}}}"#.to_owned(),
-                SchemaErrorKind::UnresolvedLazy { name: "missing".into() },
+                SchemaBuildErrorKind::UnresolvedLazy { name: "missing".into() },
                 "/schema/def/def",
             ),
             (
                 r#"{"schema":{"kind":"lazy","def":"$0"}}"#.to_owned(),
-                SchemaErrorKind::UnresolvedLazy { name: "$0".into() },
+                SchemaBuildErrorKind::UnresolvedLazy { name: "$0".into() },
                 "/schema/def",
             ),
             (
                 r#"{"schema":{"kind":"lazy","def":"a"},"defs":{"a":{"kind":"nullable","def":{"schema":{"kind":"lazy","def":"a"}}}}}"#.to_owned(),
-                SchemaErrorKind::UnguardedRecursion,
+                SchemaBuildErrorKind::UnguardedRecursion,
                 "/defs/a",
             ),
             (
                 r#"{"schema":{"kind":"string"},"defs":{"a":{"kind":"lazy","def":"b"},"b":{"kind":"union","def":[{"kind":"lazy","def":"a"}]}}}"#.to_owned(),
-                SchemaErrorKind::UnguardedRecursion,
+                SchemaBuildErrorKind::UnguardedRecursion,
                 "/defs/b",
             ),
         ] {
@@ -1090,12 +1108,12 @@ mod tests {
     fn a_definition_nothing_refers_to_is_checked() {
         assert_eq!(
             refusal(r#"{"schema":{"kind":"string"},"defs":{"unused":{"kind":"pipe","def":[]}}}"#),
-            (SchemaErrorKind::EmptyPipe, "/defs/unused".to_owned())
+            (SchemaBuildErrorKind::EmptyPipe, "/defs/unused".to_owned())
         );
         assert_eq!(
             refusal(r#"{"schema":{"kind":"string"},"defs":{"unused":{"kind":"regex"}}}"#),
             (
-                SchemaErrorKind::UnsupportedKind { kind: "regex" },
+                SchemaBuildErrorKind::UnsupportedKind { kind: "regex" },
                 "/defs/unused".to_owned()
             )
         );
@@ -1114,7 +1132,7 @@ mod tests {
         assert_eq!(
             refusal(&nested(MAX_NESTING + 1)),
             (
-                SchemaErrorKind::TooNested { limit: MAX_NESTING },
+                SchemaBuildErrorKind::TooNested { limit: MAX_NESTING },
                 "/schema".to_owned()
             )
         );

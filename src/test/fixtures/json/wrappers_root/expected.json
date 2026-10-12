@@ -7,7 +7,7 @@
 					"kind": "optional",
 					"def": {
 						"schema": {
-							"kind": "default",
+							"kind": "with_default",
 							"def": {
 								"schema": {
 									"kind": "array",
@@ -15,7 +15,7 @@
 										"kind": "optional",
 										"def": {
 											"schema": {
-												"kind": "default",
+												"kind": "with_default",
 												"def": {
 													"schema": {
 														"kind": "nullable",

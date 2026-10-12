@@ -75,17 +75,17 @@ and never a table.
 
   | Holding | JS | wasm |
   |---|---|---|
-  | a string | `JSON.parse`, `is` | `is_json(text)`, or `encodeInto` the handle's buffer then `is_json_input` |
-  | bytes | the faster of `TextDecoder` and `Buffer.toString`, then `JSON.parse`, `is` | `is_json_bytes(bytes)`, or `set` into the handle's buffer then `is_json_input`, or `is_json_input` alone with the bytes already in place |
+  | a string | `JSON.parse`, `is` | `matches_json(text)`, or `encodeInto` the handle's buffer then `matches_json_input` |
+  | bytes | the faster of `TextDecoder` and `Buffer.toString`, then `JSON.parse`, `is` | `matches_json_bytes(bytes)`, or `set` into the handle's buffer then `matches_json_input`, or `matches_json_input` alone with the bytes already in place |
 
 - **The reference rows** are `JSON.parse` alone, `is` alone on the parsed
   value, and for a valid payload the wasm verdict followed by `JSON.parse`,
   which is the cost when the value is wanted after all.
-- **`is_json_input` alone** is what a source that writes into the module's
+- **`matches_json_input` alone** is what a source that writes into the module's
   memory would pay. The gap between it and the row with `set` is what the
   copy costs.
 - **The `encodeInto` row validates as UTF-8 what the encoder just wrote**,
-  because `is_json_input` is a byte entry point. `is_json(text)` does not.
+  because `matches_json_input` is a byte entry point. `matches_json(text)` does not.
 - **Before any timing**, every row's verdict is asserted, and every fixture
   is run through every wasm entry point. See [rust.md](rust.md#the-wasm-build).
 - **The last lines are the summary**, each figure a wasm row's time over the

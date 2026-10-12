@@ -14,8 +14,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use fuz_schema::{
-    Issue, IssueKind, Json, JsonError, JsonErrorKind, Kind, MAX_DEPTH, MAX_NESTING, Node,
-    PathSegment, Received, Schema, SchemaBuilder, SchemaErrorKind,
+    Json, JsonError, JsonErrorKind, MAX_DEPTH, MAX_NESTING, PathSegment, Received, Schema,
+    SchemaBuildErrorKind, SchemaBuilder, SchemaIssue, SchemaIssueKind, SchemaKind, SchemaNode,
 };
 use serde::de::IgnoredAny;
 use serde_json::{Value, json};
@@ -245,7 +245,7 @@ fn check(expect: Expect, actual: &Result<bool, JsonError>, oracle: Option<bool>)
 
 /// An issue as `expected.json` holds one: the library's, without `message`.
 /// A key of the path is a string and an index a number, as they are there.
-fn issue_json(issue: &Issue) -> Value {
+fn issue_json(issue: &SchemaIssue) -> Value {
     let path: Vec<Value> = issue
         .path()
         .iter()
@@ -297,8 +297,8 @@ fn both_evaluators_match_the_oracle_or_the_declared_divergence() {
     for group in load_groups().unwrap() {
         for case in &group.cases {
             let at = format!("{}/{}", group.name, case.name);
-            let stream = group.schema.is_json(&case.text);
-            let exact = group.schema.is_json_exact(&case.text);
+            let stream = group.schema.matches_json(&case.text);
+            let exact = group.schema.matches_json_exact(&case.text);
             let (expect_stream, expect_exact) = match &case.diverges {
                 None => (Expect::Oracle, Expect::Oracle),
                 Some(flag) => {
@@ -322,22 +322,28 @@ fn both_evaluators_match_the_oracle_or_the_declared_divergence() {
                 }
             };
             if let Some(why) = check(expect_stream, &stream, case.oracle) {
-                failures.push(format!("{at}: is_json {why}"));
+                failures.push(format!("{at}: matches_json {why}"));
             }
             if let Some(why) = check(expect_exact, &exact, case.oracle) {
-                failures.push(format!("{at}: is_json_exact {why}"));
+                failures.push(format!("{at}: matches_json_exact {why}"));
             }
             // with nothing declared the two agree, error for error
             if case.diverges.is_none() && stream.is_ok() != exact.is_ok() {
-                failures.push(format!("{at}: is_json {stream:?}, is_json_exact {exact:?}"));
+                failures.push(format!(
+                    "{at}: matches_json {stream:?}, matches_json_exact {exact:?}"
+                ));
             }
             // and the streaming evaluator is never the looser of the two
             if stream == Ok(true) && exact == Ok(false) {
-                failures.push(format!("{at}: is_json accepts what is_json_exact rejects"));
+                failures.push(format!(
+                    "{at}: matches_json accepts what matches_json_exact rejects"
+                ));
             }
-            let bytes = group.schema.is_json_bytes(case.text.as_bytes());
+            let bytes = group.schema.matches_json_bytes(case.text.as_bytes());
             if bytes != stream {
-                failures.push(format!("{at}: is_json_bytes {bytes:?}, is_json {stream:?}"));
+                failures.push(format!(
+                    "{at}: matches_json_bytes {bytes:?}, matches_json {stream:?}"
+                ));
             }
         }
     }
@@ -349,7 +355,7 @@ fn both_evaluators_match_the_oracle_or_the_declared_divergence() {
     );
 }
 
-/// `validate_json` is the tree evaluator: it errs where `is_json_exact` errs,
+/// `validate_json` is the tree evaluator: it errs where `matches_json_exact` errs,
 /// has no issues where that is `true`, and where that gives the library's
 /// verdict its issues are the library's.
 #[test]
@@ -359,12 +365,12 @@ fn validate_json_reports_the_issues_of_the_oracle() {
     for group in load_groups().unwrap() {
         for case in &group.cases {
             let at = format!("{}/{}", group.name, case.name);
-            let exact = group.schema.is_json_exact(&case.text);
+            let exact = group.schema.matches_json_exact(&case.text);
             let issues = group.schema.validate_json(&case.text);
             let verdict = issues.as_ref().map(Vec::is_empty).map_err(Clone::clone);
             if verdict != exact {
                 failures.push(format!(
-                    "{at}: validate_json {issues:?}, is_json_exact {exact:?}"
+                    "{at}: validate_json {issues:?}, matches_json_exact {exact:?}"
                 ));
             }
             let bytes = group.schema.validate_json_bytes(case.text.as_bytes());
@@ -402,7 +408,7 @@ fn validate_json_reports_the_issues_of_the_oracle() {
 #[test]
 fn every_issue_kind_and_received_type_is_reported_by_a_case() {
     let groups = load_groups().unwrap();
-    let issues: Vec<Issue> = groups
+    let issues: Vec<SchemaIssue> = groups
         .iter()
         .flat_map(|group| {
             group
@@ -412,7 +418,7 @@ fn every_issue_kind_and_received_type_is_reported_by_a_case() {
         })
         .flatten()
         .collect();
-    for &kind in IssueKind::ALL {
+    for &kind in SchemaIssueKind::ALL {
         assert!(
             issues.iter().any(|issue| issue.kind() == kind),
             "no case has a `{kind}` issue"
@@ -451,11 +457,11 @@ fn every_divergence_is_known_and_declared_by_a_case() {
 #[test]
 fn every_kind_appears_in_a_fixture_schema() {
     let groups = load_groups().unwrap();
-    let kinds: Vec<Kind> = groups
+    let kinds: Vec<SchemaKind> = groups
         .iter()
-        .flat_map(|group| group.schema.nodes().map(Node::kind))
+        .flat_map(|group| group.schema.nodes().map(SchemaNode::kind))
         .collect();
-    for kind in Kind::ALL {
+    for kind in SchemaKind::ALL {
         assert!(kinds.contains(kind), "no fixture schema has a `{kind}`");
     }
 }
@@ -489,10 +495,10 @@ fn the_constants_of_both_sides_are_the_same() {
     for kind in kinds {
         let error = Schema::from_json(&format!(r#"{{"schema":{{"kind":"{kind}"}}}}"#)).unwrap_err();
         assert!(
-            matches!(error.kind(), SchemaErrorKind::UnsupportedKind { kind: refused } if **refused == *kind),
+            matches!(error.kind(), SchemaBuildErrorKind::UnsupportedKind { kind: refused } if **refused == *kind),
             "{kind}: {error}"
         );
-        assert_eq!(Kind::from_name(&kind), None, "{kind}");
+        assert_eq!(SchemaKind::from_name(&kind), None, "{kind}");
     }
     let keys = strings(contract, "object_prototype_keys", "contract.json").unwrap();
     assert!(!keys.is_empty());
@@ -502,7 +508,7 @@ fn the_constants_of_both_sides_are_the_same() {
         let entries = builder.object([(key.as_str(), string)]);
         let error = builder.build(entries).unwrap_err();
         assert!(
-            matches!(error.kind(), SchemaErrorKind::PrototypeKey { key: refused } if **refused == *key),
+            matches!(error.kind(), SchemaBuildErrorKind::PrototypeKey { key: refused } if **refused == *key),
             "{key}: {error}"
         );
     }

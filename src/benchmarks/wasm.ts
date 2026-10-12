@@ -10,12 +10,12 @@
  * A caller holds the text one of two ways, and each is compared only with
  * itself:
  *
- * - **a string**: `JSON.parse` then `is`, against `is_json`, which the glue
+ * - **a string**: `JSON.parse` then `is`, against `matches_json`, which the glue
  *   transcodes to UTF-8, and against `encodeInto` the handle's buffer then
- *   `is_json_input`
- * - **bytes**: a decode, then `JSON.parse` then `is`, against `is_json_bytes`,
+ *   `matches_json_input`
+ * - **bytes**: a decode, then `JSON.parse` then `is`, against `matches_json_bytes`,
  *   which the glue copies in, against a copy into the handle's buffer then
- *   `is_json_input`, and against `is_json_input` alone, which is what a source
+ *   `matches_json_input`, and against `matches_json_input` alone, which is what a source
  *   that writes into the buffer itself would pay
  *
  * `JSON.parse` alone and `is` alone are there to read the others by. For a
@@ -52,7 +52,7 @@ import { z } from 'zod';
 import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
 import * as s from '#lib/schema.ts';
-import { to_schema_json } from '../test/schema_json.ts';
+import { to_schema_json } from '#lib/schema_json.ts';
 import {
 	load_json_fixture,
 	load_json_fixture_names,
@@ -121,10 +121,10 @@ for (const source of find_wasm_sources()) {
 
 /** The handle the wasm crate exports, as its generated glue has it. */
 interface WasmCompiledSchema {
-	is_json: (text: string) => boolean;
-	is_json_bytes: (bytes: Uint8Array) => boolean;
+	matches_json: (text: string) => boolean;
+	matches_json_bytes: (bytes: Uint8Array) => boolean;
 	input_ptr: (len: number) => number;
-	is_json_input: (len: number) => boolean;
+	matches_json_input: (len: number) => boolean;
 	free: () => void;
 }
 
@@ -161,17 +161,17 @@ const wasm_set_input = (handle: WasmCompiledSchema, bytes: Uint8Array): void => 
 	new Uint8Array(memory.buffer, ptr, bytes.length).set(bytes);
 };
 
-const wasm_is_json_set = (handle: WasmCompiledSchema, bytes: Uint8Array): boolean => {
+const wasm_matches_json_set = (handle: WasmCompiledSchema, bytes: Uint8Array): boolean => {
 	wasm_set_input(handle, bytes);
-	return handle.is_json_input(bytes.length);
+	return handle.matches_json_input(bytes.length);
 };
 
-const wasm_is_json_encode_into = (handle: WasmCompiledSchema, text: string): boolean => {
+const wasm_matches_json_encode_into = (handle: WasmCompiledSchema, text: string): boolean => {
 	// a UTF-16 code unit is at most three bytes of UTF-8
 	const capacity = text.length * 3;
 	const ptr = wasm_input_ptr(handle, capacity);
 	const { written } = encoder.encodeInto(text, new Uint8Array(memory.buffer, ptr, capacity));
-	return handle.is_json_input(written);
+	return handle.matches_json_input(written);
 };
 
 const to_bytes = (text: string): Uint8Array => new Uint8Array(Buffer.from(text, 'utf8'));
@@ -223,10 +223,10 @@ const check_fixtures = async (): Promise<{ groups: number; cases: number }> => {
 			const expect = expect_of_fixture_case(c);
 			const bytes = to_bytes(c.text);
 			const actual = {
-				is_json: handle.is_json(c.text),
-				is_json_bytes: handle.is_json_bytes(bytes),
-				is_json_input: wasm_is_json_set(handle, bytes),
-				'encodeInto + is_json_input': wasm_is_json_encode_into(handle, c.text)
+				matches_json: handle.matches_json(c.text),
+				matches_json_bytes: handle.matches_json_bytes(bytes),
+				matches_json_input: wasm_matches_json_set(handle, bytes),
+				'encodeInto + matches_json_input': wasm_matches_json_encode_into(handle, c.text)
 			};
 			for (const [entry, verdict] of Object.entries(actual)) {
 				if (verdict !== expect) {
@@ -254,13 +254,13 @@ const check_lone_surrogate = (): void => {
 	const checks: Array<[what: string, actual: boolean, expect: boolean]> = [
 		['the library on a lone surrogate', s.is(s.literal('�'), JSON.parse(text)), false],
 		// looser than the library: the text is read as though U+FFFD were written
-		['is_json on a lone surrogate', replaced.is_json(text), true],
-		['encodeInto on a lone surrogate', wasm_is_json_encode_into(replaced, text), true],
-		['is_json of a string with a lone surrogate', any_string.is_json(text), true],
+		['matches_json on a lone surrogate', replaced.matches_json(text), true],
+		['encodeInto on a lone surrogate', wasm_matches_json_encode_into(replaced, text), true],
+		['matches_json of a string with a lone surrogate', any_string.matches_json(text), true],
 		// and bytes that hold one as it is are not UTF-8
 		[
-			'is_json_bytes on a lone surrogate',
-			any_string.is_json_bytes(Uint8Array.of(0x22, 0xed, 0xa0, 0x80, 0x22)),
+			'matches_json_bytes on a lone surrogate',
+			any_string.matches_json_bytes(Uint8Array.of(0x22, 0xed, 0xa0, 0x80, 0x22)),
 			false
 		]
 	];
@@ -285,11 +285,15 @@ const check_input_ptr_refusal = (): void => {
 		if (refused !== 0) fail(`input_ptr of more than the memory can hold is ${refused}`);
 		const checks: Array<[what: string, actual: boolean, expect: boolean]> = [
 			// the buffer is as it was, with the bytes written before
-			['is_json_input after a refused input_ptr', handle.is_json_input(bytes.length), true],
-			['is_json after a refused input_ptr', handle.is_json(text), true],
-			['is_json_bytes after a refused input_ptr', handle.is_json_bytes(bytes), true],
-			['a set after a refused input_ptr', wasm_is_json_set(handle, to_bytes('7')), false],
-			['encodeInto after a refused input_ptr', wasm_is_json_encode_into(handle, text), true]
+			[
+				'matches_json_input after a refused input_ptr',
+				handle.matches_json_input(bytes.length),
+				true
+			],
+			['matches_json after a refused input_ptr', handle.matches_json(text), true],
+			['matches_json_bytes after a refused input_ptr', handle.matches_json_bytes(bytes), true],
+			['a set after a refused input_ptr', wasm_matches_json_set(handle, to_bytes('7')), false],
+			['encodeInto after a refused input_ptr', wasm_matches_json_encode_into(handle, text), true]
 		];
 		for (const [what, actual, expect] of checks) {
 			if (actual !== expect) fail(`${what} is ${actual}, expected ${expect}`);
@@ -398,11 +402,11 @@ interface Row {
 	verdict: boolean | null;
 }
 
-const LABEL_IS_JSON = 'wasm is_json(text)';
-const LABEL_ENCODE_INTO = 'wasm encodeInto, is_json_input';
-const LABEL_IS_JSON_BYTES = 'wasm is_json_bytes(bytes)';
-const LABEL_SET = 'wasm set, is_json_input';
-const LABEL_IN_PLACE = 'wasm is_json_input, bytes in place';
+const LABEL_IS_JSON = 'wasm matches_json(text)';
+const LABEL_ENCODE_INTO = 'wasm encodeInto, matches_json_input';
+const LABEL_IS_JSON_BYTES = 'wasm matches_json_bytes(bytes)';
+const LABEL_SET = 'wasm set, matches_json_input';
+const LABEL_IN_PLACE = 'wasm matches_json_input, bytes in place';
 
 const items_json = JSON.stringify(to_schema_json(Items));
 const handle = new CompiledSchema(items_json);
@@ -442,14 +446,14 @@ const make_rows = (payload: Payload): Array<Row> => {
 			holding: 'string',
 			side: 'wasm',
 			label: LABEL_IS_JSON,
-			run: () => handle.is_json(text),
+			run: () => handle.matches_json(text),
 			verdict: expect
 		},
 		{
 			holding: 'string',
 			side: 'wasm',
 			label: LABEL_ENCODE_INTO,
-			run: () => wasm_is_json_encode_into(handle, text),
+			run: () => wasm_matches_json_encode_into(handle, text),
 			verdict: expect
 		},
 		{
@@ -470,21 +474,21 @@ const make_rows = (payload: Payload): Array<Row> => {
 			holding: 'bytes',
 			side: 'wasm',
 			label: LABEL_IS_JSON_BYTES,
-			run: () => handle.is_json_bytes(bytes),
+			run: () => handle.matches_json_bytes(bytes),
 			verdict: expect
 		},
 		{
 			holding: 'bytes',
 			side: 'wasm',
 			label: LABEL_SET,
-			run: () => wasm_is_json_set(handle, bytes),
+			run: () => wasm_matches_json_set(handle, bytes),
 			verdict: expect
 		},
 		{
 			holding: 'bytes',
 			side: 'wasm',
 			label: LABEL_IN_PLACE,
-			run: () => handle_in_place.is_json_input(length),
+			run: () => handle_in_place.matches_json_input(length),
 			verdict: expect
 		}
 	];
@@ -493,15 +497,15 @@ const make_rows = (payload: Payload): Array<Row> => {
 			{
 				holding: 'string',
 				side: 'reference',
-				label: 'wasm is_json(text), then JSON.parse',
-				run: () => (handle.is_json(text) ? JSON.parse(text) : null),
+				label: 'wasm matches_json(text), then JSON.parse',
+				run: () => (handle.matches_json(text) ? JSON.parse(text) : null),
 				verdict: null
 			},
 			{
 				holding: 'bytes',
 				side: 'reference',
-				label: 'wasm is_json_bytes(bytes), then TextDecoder, JSON.parse',
-				run: () => (handle.is_json_bytes(bytes) ? JSON.parse(decoder.decode(bytes)) : null),
+				label: 'wasm matches_json_bytes(bytes), then TextDecoder, JSON.parse',
+				run: () => (handle.matches_json_bytes(bytes) ? JSON.parse(decoder.decode(bytes)) : null),
 				verdict: null
 			}
 		);

@@ -49,7 +49,7 @@ In order:
 
 Flexibility comes after all four.
 Where a feature not everyone needs would cost every user, it's a separate export
-that the core never reaches: custom messages, message formatting, metadata,
+that the core never reaches: custom messages, message formatting, metadata, serializing,
 and the Standard Schema adapter are all like this, and all bundle to nothing unused.
 
 ## What's different from Valibot
@@ -96,7 +96,7 @@ and the input is never mutated.
 ## API
 
 Everything here is a named export of `schema.ts`, used through a namespace import.
-[Metadata](#metadata) and the [Standard Schema](#standard-schema) adapter are modules of their own.
+[Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, and the [serializer](#serializing) are modules of their own.
 
 | | |
 |---|---|
@@ -215,7 +215,7 @@ const unwrap = (schema: s.SchemaNode): s.SchemaNode => {
 	switch (schema.kind) {
 		case 'optional':
 		case 'nullable':
-		case 'default':
+		case 'with_default':
 			return unwrap(schema.def.schema); // all three hold their schema as `def.schema`
 		default:
 			return schema;
@@ -228,7 +228,7 @@ unwrap(User.def.age).kind; // 'number'
 - no options: `def` is `undefined`
 - one option: `def` is that value — a `literal`'s value, a `one_of`'s array, a `regex`'s pattern,
   the function given to `check`, `transform`, or `lazy`
-- `optional` and `nullable` hold `{schema}`, and `default` holds `{schema, value}`
+- `optional` and `nullable` hold `{schema}`, and `with_default` holds `{schema, value}`
 - the object schemas hold their entries, `array` and `record` the schema of their items,
   `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
 
@@ -302,6 +302,27 @@ It's an adapter so that schemas don't each carry a `~standard` property.
 Whether schemas should be Standard Schemas natively, at a flat cost to every bundle,
 is an open question.
 
+### Serializing
+
+`to_schema_json` writes a schema as plain JSON: every node as `{kind, def}`,
+in an envelope whose `defs` hold what each `lazy` names.
+It is the form the [Rust side](docs/rust.md) loads, and a module of its own.
+The Rust crate isn't published; the form is plain JSON and stands without it.
+
+```ts
+import {to_schema_json} from '@fuzdev/fuz_schema/schema_json.ts';
+
+to_schema_json(s.array(s.optional(s.number)));
+// {schema: {kind: 'array', def: {kind: 'optional', def: {schema: {kind: 'number'}}}}}
+```
+
+It throws on a schema the form can't hold, saying where:
+`regex`, `check`, and `transform`, which hold JavaScript values;
+a `bigint` or `undefined` literal; a default that isn't a JSON value;
+an entry named like a member of `Object.prototype`.
+The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
+[`docs/rust.md`](docs/rust.md) has the form and everything refused.
+
 ## Status
 
 > **status**: early experiment — unstable, incomplete
@@ -310,6 +331,7 @@ is an open question.
 - [x] custom messages, as an opt-in wrapper
 - [x] Standard Schema v1, as an opt-in adapter
 - [x] metadata, as an opt-in module
+- [x] serializing a schema to JSON, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
 - [ ] nested issues for a failed `union`

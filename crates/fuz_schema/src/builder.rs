@@ -4,11 +4,12 @@
 use std::collections::HashSet;
 
 use crate::bits::Bits;
-use crate::error::{SchemaError, SchemaErrorKind};
+use crate::error::{SchemaBuildError, SchemaBuildErrorKind};
 use crate::js;
 use crate::json::{self, Json, Value};
 use crate::schema::{
-    Candidates, DefaultDef, Entries, Kind, Literal, MAX_NESTING, Node, NodeId, Schema, VariantDef,
+    Candidates, MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaKind, SchemaLiteral, SchemaNode,
+    VariantDef, WithDefaultDef,
 };
 use crate::walk;
 
@@ -27,8 +28,8 @@ use crate::walk;
 /// let node = builder.object([("children", children)]);
 /// builder.define(tree, node);
 /// let schema = builder.build(tree)?;
-/// assert!(schema.is_json(r#"{"children":[{"children":[]}]}"#)?);
-/// assert!(!schema.is_json(r#"{"children":[1]}"#)?);
+/// assert!(schema.matches_json(r#"{"children":[{"children":[]}]}"#)?);
+/// assert!(!schema.matches_json(r#"{"children":[1]}"#)?);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 ///
@@ -36,11 +37,11 @@ use crate::walk;
 /// carry across from the TypeScript library.
 #[derive(Debug, Clone, Default)]
 pub struct SchemaBuilder {
-    nodes: Vec<Node>,
+    nodes: Vec<SchemaNode>,
     /// Every `lazy`, with the name its target has in the interchange form.
     lazies: Vec<(NodeId, Box<str>)>,
     /// A `define` that could not be done, reported by `build`.
-    deferred: Option<SchemaErrorKind>,
+    deferred: Option<SchemaBuildErrorKind>,
 }
 
 impl SchemaBuilder {
@@ -49,7 +50,7 @@ impl SchemaBuilder {
         Self::default()
     }
 
-    fn push(&mut self, node: Node) -> NodeId {
+    fn push(&mut self, node: SchemaNode) -> NodeId {
         let id = NodeId::new(self.nodes.len());
         self.nodes.push(node);
         id
@@ -57,53 +58,61 @@ impl SchemaBuilder {
 
     /// Matches a string.
     pub fn string(&mut self) -> NodeId {
-        self.push(Node::String)
+        self.push(SchemaNode::String)
     }
 
     /// Matches a number.
     pub fn number(&mut self) -> NodeId {
-        self.push(Node::Number)
+        self.push(SchemaNode::Number)
     }
 
     /// Matches a boolean.
     pub fn boolean(&mut self) -> NodeId {
-        self.push(Node::Boolean)
+        self.push(SchemaNode::Boolean)
     }
 
     /// Matches a bigint, which JSON never holds.
     pub fn bigint(&mut self) -> NodeId {
-        self.push(Node::Bigint)
+        self.push(SchemaNode::Bigint)
     }
 
     /// Matches anything, a missing key included.
     pub fn unknown(&mut self) -> NodeId {
-        self.push(Node::Unknown)
+        self.push(SchemaNode::Unknown)
     }
 
     /// Matches `value` by JavaScript's `===`.
-    pub fn literal(&mut self, value: impl Into<Literal>) -> NodeId {
-        self.push(Node::Literal(value.into()))
+    pub fn literal(&mut self, value: impl Into<SchemaLiteral>) -> NodeId {
+        self.push(SchemaNode::Literal(value.into()))
     }
 
     /// Matches any of `values`.
-    pub fn one_of<T: Into<Literal>>(&mut self, values: impl IntoIterator<Item = T>) -> NodeId {
-        self.push(Node::OneOf(values.into_iter().map(Into::into).collect()))
+    pub fn one_of<T: Into<SchemaLiteral>>(
+        &mut self,
+        values: impl IntoIterator<Item = T>,
+    ) -> NodeId {
+        self.push(SchemaNode::OneOf(
+            values.into_iter().map(Into::into).collect(),
+        ))
     }
 
     /// Accepts a missing key, or matches `schema`.
     pub fn optional(&mut self, schema: NodeId) -> NodeId {
-        self.push(Node::Optional(schema))
+        self.push(SchemaNode::Optional(schema))
     }
 
     /// Accepts `null`, or matches `schema`.
     pub fn nullable(&mut self, schema: NodeId) -> NodeId {
-        self.push(Node::Nullable(schema))
+        self.push(SchemaNode::Nullable(schema))
     }
 
     /// Accepts a missing key, or matches `schema`. `value` is what the key is
     /// given in the output, and is not validated.
     pub fn with_default(&mut self, schema: NodeId, value: Json) -> NodeId {
-        self.push(Node::Default(Box::new(DefaultDef { schema, value })))
+        self.push(SchemaNode::WithDefault(Box::new(WithDefaultDef {
+            schema,
+            value,
+        })))
     }
 
     /// Declares a `lazy`, to be given the schema it defers to with `define`.
@@ -114,7 +123,7 @@ impl SchemaBuilder {
 
     /// Declares a `lazy` whose target has `name` in the interchange form.
     pub(crate) fn declare_named(&mut self, name: Box<str>) -> NodeId {
-        let id = self.push(Node::Lazy(NodeId::UNDEFINED));
+        let id = self.push(SchemaNode::Lazy(NodeId::UNDEFINED));
         self.lazies.push((id, name));
         id
     }
@@ -125,22 +134,24 @@ impl SchemaBuilder {
     /// defined, makes `build` fail.
     pub fn define(&mut self, lazy: NodeId, schema: NodeId) {
         match self.nodes.get_mut(lazy.index()) {
-            Some(Node::Lazy(target)) if *target == NodeId::UNDEFINED => *target = schema,
-            Some(Node::Lazy(_)) => {
-                self.deferred.get_or_insert(SchemaErrorKind::RedefinedLazy);
+            Some(SchemaNode::Lazy(target)) if *target == NodeId::UNDEFINED => *target = schema,
+            Some(SchemaNode::Lazy(_)) => {
+                self.deferred
+                    .get_or_insert(SchemaBuildErrorKind::RedefinedLazy);
             }
             _ => {
-                self.deferred.get_or_insert(SchemaErrorKind::InvalidNode);
+                self.deferred
+                    .get_or_insert(SchemaBuildErrorKind::InvalidNode);
             }
         }
     }
 
-    fn entries<K: Into<Box<str>>>(entries: impl IntoIterator<Item = (K, NodeId)>) -> Entries {
+    fn entries<K: Into<Box<str>>>(entries: impl IntoIterator<Item = (K, NodeId)>) -> SchemaEntries {
         let entries = entries
             .into_iter()
             .map(|(key, schema)| (key.into(), schema))
             .collect();
-        Entries::new(entries)
+        SchemaEntries::new(entries)
     }
 
     /// Matches an object with `entries` and no other key.
@@ -148,7 +159,7 @@ impl SchemaBuilder {
         &mut self,
         entries: impl IntoIterator<Item = (K, NodeId)>,
     ) -> NodeId {
-        self.push(Node::Object(Box::new(Self::entries(entries))))
+        self.push(SchemaNode::Object(Box::new(Self::entries(entries))))
     }
 
     /// Matches an object with `entries`, whatever other keys it has.
@@ -156,7 +167,7 @@ impl SchemaBuilder {
         &mut self,
         entries: impl IntoIterator<Item = (K, NodeId)>,
     ) -> NodeId {
-        self.push(Node::LooseObject(Box::new(Self::entries(entries))))
+        self.push(SchemaNode::LooseObject(Box::new(Self::entries(entries))))
     }
 
     /// Matches an object with `entries`, whatever other keys it has.
@@ -164,22 +175,22 @@ impl SchemaBuilder {
         &mut self,
         entries: impl IntoIterator<Item = (K, NodeId)>,
     ) -> NodeId {
-        self.push(Node::StripObject(Box::new(Self::entries(entries))))
+        self.push(SchemaNode::StripObject(Box::new(Self::entries(entries))))
     }
 
     /// Matches an object whose values all match `schema`.
     pub fn record(&mut self, schema: NodeId) -> NodeId {
-        self.push(Node::Record(schema))
+        self.push(SchemaNode::Record(schema))
     }
 
     /// Matches an array whose items all match `schema`.
     pub fn array(&mut self, schema: NodeId) -> NodeId {
-        self.push(Node::Array(schema))
+        self.push(SchemaNode::Array(schema))
     }
 
     /// Matches when any of `options` does, tried in order.
     pub fn union(&mut self, options: impl IntoIterator<Item = NodeId>) -> NodeId {
-        self.push(Node::Union(options.into_iter().collect()))
+        self.push(SchemaNode::Union(options.into_iter().collect()))
     }
 
     /// Matches the object schema in `options` whose `literal` entry at `key`
@@ -189,7 +200,7 @@ impl SchemaBuilder {
         key: impl Into<Box<str>>,
         options: impl IntoIterator<Item = NodeId>,
     ) -> NodeId {
-        self.push(Node::Variant(Box::new(VariantDef {
+        self.push(SchemaNode::Variant(Box::new(VariantDef {
             key: key.into(),
             options: options.into_iter().collect(),
             table: Box::default(),
@@ -199,43 +210,43 @@ impl SchemaBuilder {
     /// Matches when every one of `steps` does: a schema that fixes the type
     /// of the value, then actions for that type.
     pub fn pipe(&mut self, steps: impl IntoIterator<Item = NodeId>) -> NodeId {
-        self.push(Node::Pipe(steps.into_iter().collect()))
+        self.push(SchemaNode::Pipe(steps.into_iter().collect()))
     }
 
     /// An action: a string or array of at least `min` length.
     pub fn min_length(&mut self, min: f64) -> NodeId {
-        self.push(Node::MinLength(min))
+        self.push(SchemaNode::MinLength(min))
     }
 
     /// An action: a string or array of at most `max` length.
     pub fn max_length(&mut self, max: f64) -> NodeId {
-        self.push(Node::MaxLength(max))
+        self.push(SchemaNode::MaxLength(max))
     }
 
     /// An action: a number at least `min`.
     pub fn min_value(&mut self, min: f64) -> NodeId {
-        self.push(Node::MinValue(min))
+        self.push(SchemaNode::MinValue(min))
     }
 
     /// An action: a number at most `max`.
     pub fn max_value(&mut self, max: f64) -> NodeId {
-        self.push(Node::MaxValue(max))
+        self.push(SchemaNode::MaxValue(max))
     }
 
     /// Matches a number with no fraction. An action too.
     pub fn integer(&mut self) -> NodeId {
-        self.push(Node::Integer)
+        self.push(SchemaNode::Integer)
     }
 
     /// Matches an integer every neighbor of which is a distinct double. An
     /// action too.
     pub fn safe_integer(&mut self) -> NodeId {
-        self.push(Node::SafeInteger)
+        self.push(SchemaNode::SafeInteger)
     }
 
     /// Matches a number that is not an infinity. An action too.
     pub fn finite(&mut self) -> NodeId {
-        self.push(Node::Finite)
+        self.push(SchemaNode::Finite)
     }
 
     /// Checks the nodes reachable from `root` and from every defined `lazy`,
@@ -244,8 +255,8 @@ impl SchemaBuilder {
     /// # Errors
     ///
     /// When the schema is one the crate refuses, with the reason and a path to
-    /// it. See `SchemaErrorKind`.
-    pub fn build(self, root: NodeId) -> Result<Schema, SchemaError> {
+    /// it. See `SchemaBuildErrorKind`.
+    pub fn build(self, root: NodeId) -> Result<Schema, SchemaBuildError> {
         let Self {
             mut nodes,
             lazies,
@@ -253,26 +264,33 @@ impl SchemaBuilder {
         } = self;
         // no schema is made that the evaluators would misread a number under
         if !json::parser_reads_numbers() {
-            return Err(SchemaError::new(SchemaErrorKind::ArbitraryPrecision, ""));
+            return Err(SchemaBuildError::new(
+                SchemaBuildErrorKind::ArbitraryPrecision,
+                "",
+            ));
         }
         if let Some(kind) = deferred {
-            return Err(SchemaError::new(kind, ""));
+            return Err(SchemaBuildError::new(kind, ""));
         }
         if nodes.len() >= NodeId::UNDEFINED.index() {
-            return Err(SchemaError::new(SchemaErrorKind::TooManyNodes, ""));
+            return Err(SchemaBuildError::new(
+                SchemaBuildErrorKind::TooManyNodes,
+                "",
+            ));
         }
         let order = Checker::new(&nodes, &lazies, root)?.check()?;
         for node in &mut nodes {
-            if let Node::Object(entries) | Node::LooseObject(entries) | Node::StripObject(entries) =
-                node
+            if let SchemaNode::Object(entries)
+            | SchemaNode::LooseObject(entries)
+            | SchemaNode::StripObject(entries) = node
             {
                 entries.finish();
             }
         }
         for &id in &order {
-            if let Node::Variant(variant) = &nodes[id.index()] {
+            if let SchemaNode::Variant(variant) = &nodes[id.index()] {
                 let table = variant_table(&nodes, variant);
-                if let Node::Variant(variant) = &mut nodes[id.index()] {
+                if let SchemaNode::Variant(variant) = &mut nodes[id.index()] {
                     variant.table = table;
                 }
             }
@@ -287,7 +305,7 @@ impl SchemaBuilder {
         let mut memo = vec![None; nodes.len()];
         let mut candidates = vec![[Candidates::None; 2]; nodes.len()];
         for &id in &order {
-            if let Node::Union(options) = &nodes[id.index()] {
+            if let SchemaNode::Union(options) = &nodes[id.index()] {
                 candidates[id.index()] = union_candidates(&nodes, options, &mut memo);
             }
         }
@@ -308,8 +326,9 @@ impl SchemaBuilder {
                     required.insert(position);
                 }
             }
-            if let Node::Object(entries) | Node::LooseObject(entries) | Node::StripObject(entries) =
-                &mut schema.nodes[id.index()]
+            if let SchemaNode::Object(entries)
+            | SchemaNode::LooseObject(entries)
+            | SchemaNode::StripObject(entries) = &mut schema.nodes[id.index()]
             {
                 entries.required = required;
             }
@@ -320,21 +339,21 @@ impl SchemaBuilder {
 
 /// The discriminator values of a variant's options and the option each
 /// selects.
-fn variant_table(nodes: &[Node], variant: &VariantDef) -> Box<[(Literal, NodeId)]> {
-    let mut table: Vec<(Literal, NodeId)> = Vec::new();
+fn variant_table(nodes: &[SchemaNode], variant: &VariantDef) -> Box<[(SchemaLiteral, NodeId)]> {
+    let mut table: Vec<(SchemaLiteral, NodeId)> = Vec::new();
     for &option in &variant.options {
         let literal = nodes
             .get(option.index())
-            .and_then(Node::entries)
+            .and_then(SchemaNode::entries)
             .and_then(|entries| entries.get(&variant.key))
             .and_then(|entry| nodes.get(entry.index()));
         // an option without one was refused, or is out of reach of the root
-        let Some(Node::Literal(literal)) = literal else {
+        let Some(SchemaNode::Literal(literal)) = literal else {
             continue;
         };
         // equal as the values of a `Map` key are: `0` and `-0` are one key
-        let same = |known: &Literal| match (known, literal) {
-            (Literal::Number(a), Literal::Number(b)) => js::number_equals(*a, *b),
+        let same = |known: &SchemaLiteral| match (known, literal) {
+            (SchemaLiteral::Number(a), SchemaLiteral::Number(b)) => js::number_equals(*a, *b),
             _ => known == literal,
         };
         if let Some(known) = table.iter_mut().find(|(known, _)| same(known)) {
@@ -348,20 +367,23 @@ fn variant_table(nodes: &[Node], variant: &VariantDef) -> Box<[(Literal, NodeId)
 
 /// Whether the node accepts every value that is present.
 ///
-/// Recurses only along `Node::nesting`, which `Checker` has bounded for the
+/// Recurses only along `SchemaNode::nesting`, which `Checker` has bounded for the
 /// nodes it reached, the only ones this is asked of.
-fn accepts_any(nodes: &[Node], id: NodeId, memo: &mut [Option<bool>]) -> bool {
+fn accepts_any(nodes: &[SchemaNode], id: NodeId, memo: &mut [Option<bool>]) -> bool {
     if let Some(known) = memo[id.index()] {
         return known;
     }
     let node = &nodes[id.index()];
     let any = match node {
-        Node::Unknown => true,
-        Node::Optional(_) | Node::Nullable(_) | Node::Default(_) | Node::Lazy(_) => node
+        SchemaNode::Unknown => true,
+        SchemaNode::Optional(_)
+        | SchemaNode::Nullable(_)
+        | SchemaNode::WithDefault(_)
+        | SchemaNode::Lazy(_) => node
             .nesting()
             .iter()
             .all(|&schema| accepts_any(nodes, schema, memo)),
-        Node::Union(options) => options
+        SchemaNode::Union(options) => options
             .iter()
             .any(|&option| accepts_any(nodes, option, memo)),
         _ => false,
@@ -377,20 +399,20 @@ fn accepts_any(nodes: &[Node], id: NodeId, memo: &mut [Option<bool>]) -> bool {
 /// could when any option could. The answer is of the kind and not of what is
 /// held, so an array schema could match an array whatever its items are.
 ///
-/// Recurses only along `Node::nesting`, as `accepts_any` does.
-fn holds_containers(nodes: &[Node], id: NodeId, memo: &mut [Option<[bool; 2]>]) -> [bool; 2] {
+/// Recurses only along `SchemaNode::nesting`, as `accepts_any` does.
+fn holds_containers(nodes: &[SchemaNode], id: NodeId, memo: &mut [Option<[bool; 2]>]) -> [bool; 2] {
     if let Some(known) = memo[id.index()] {
         return known;
     }
     let node = &nodes[id.index()];
     let holds = match node {
-        Node::Unknown => [true, true],
-        Node::Array(_) => [true, false],
-        Node::Object(_)
-        | Node::LooseObject(_)
-        | Node::StripObject(_)
-        | Node::Record(_)
-        | Node::Variant(_) => [false, true],
+        SchemaNode::Unknown => [true, true],
+        SchemaNode::Array(_) => [true, false],
+        SchemaNode::Object(_)
+        | SchemaNode::LooseObject(_)
+        | SchemaNode::StripObject(_)
+        | SchemaNode::Record(_)
+        | SchemaNode::Variant(_) => [false, true],
         // the rest are scalars and actions, which step nowhere
         _ => node.nesting().iter().fold([false, false], |holds, &next| {
             let [array, object] = holds_containers(nodes, next, memo);
@@ -403,7 +425,7 @@ fn holds_containers(nodes: &[Node], id: NodeId, memo: &mut [Option<[bool; 2]>]) 
 
 /// The candidates of a `union` with `options`, for an array and for an object.
 fn union_candidates(
-    nodes: &[Node],
+    nodes: &[SchemaNode],
     options: &[NodeId],
     memo: &mut [Option<[bool; 2]>],
 ) -> [Candidates; 2] {
@@ -459,7 +481,7 @@ enum Origin {
 /// The checks `SchemaBuilder::build` makes, over the nodes reachable from the
 /// root and from every `lazy` target.
 struct Checker<'a> {
-    nodes: &'a [Node],
+    nodes: &'a [SchemaNode],
     /// The path of each root and its node: the schema, then each lazy target
     /// under the name it has in the interchange form.
     roots: Vec<(String, NodeId)>,
@@ -468,19 +490,19 @@ struct Checker<'a> {
     order: Vec<NodeId>,
 }
 
-type Refusal = (SchemaErrorKind, NodeId, Option<Step>);
+type Refusal = (SchemaBuildErrorKind, NodeId, Option<Step>);
 
 impl<'a> Checker<'a> {
     /// Finds the reachable nodes, refusing an id that is not the builder's.
     fn new(
-        nodes: &'a [Node],
+        nodes: &'a [SchemaNode],
         lazies: &[(NodeId, Box<str>)],
         root: NodeId,
-    ) -> Result<Self, SchemaError> {
+    ) -> Result<Self, SchemaBuildError> {
         let mut roots = vec![("/schema".to_owned(), root)];
         let mut named: HashSet<&str> = HashSet::new();
         for (lazy, name) in lazies {
-            if let Some(Node::Lazy(target)) = nodes.get(lazy.index())
+            if let Some(SchemaNode::Lazy(target)) = nodes.get(lazy.index())
                 && *target != NodeId::UNDEFINED
                 && named.insert(&**name)
             {
@@ -497,13 +519,16 @@ impl<'a> Checker<'a> {
         Ok(checker)
     }
 
-    fn reach(&mut self) -> Result<(), SchemaError> {
+    fn reach(&mut self) -> Result<(), SchemaBuildError> {
         let nodes = self.nodes;
         for root in 0..self.roots.len() {
             let id = self.roots[root].1;
             if id.index() >= nodes.len() {
                 let path = self.roots[root].0.clone();
-                return Err(SchemaError::new(SchemaErrorKind::InvalidNode, path));
+                return Err(SchemaBuildError::new(
+                    SchemaBuildErrorKind::InvalidNode,
+                    path,
+                ));
             }
             if !matches!(self.origins[id.index()], Origin::Unreached) {
                 continue;
@@ -515,7 +540,7 @@ impl<'a> Checker<'a> {
                 next += 1;
                 let node = &nodes[parent.index()];
                 // a lazy's target is a root of its own
-                if matches!(node, Node::Lazy(_)) {
+                if matches!(node, SchemaNode::Lazy(_)) {
                     continue;
                 }
                 let mut refused = None;
@@ -530,7 +555,7 @@ impl<'a> Checker<'a> {
                     }
                 });
                 if let Some(step) = refused {
-                    return Err(self.error(SchemaErrorKind::InvalidNode, parent, Some(step)));
+                    return Err(self.error(SchemaBuildErrorKind::InvalidNode, parent, Some(step)));
                 }
             }
         }
@@ -538,11 +563,15 @@ impl<'a> Checker<'a> {
     }
 
     /// Checks every reachable node and returns them.
-    fn check(self) -> Result<Vec<NodeId>, SchemaError> {
+    fn check(self) -> Result<Vec<NodeId>, SchemaBuildError> {
         for (_, root) in &self.roots {
             let kind = self.nodes[root.index()].kind();
             if kind.needs_pipe() {
-                return Err(self.error(SchemaErrorKind::ActionOutsidePipe { kind }, *root, None));
+                return Err(self.error(
+                    SchemaBuildErrorKind::ActionOutsidePipe { kind },
+                    *root,
+                    None,
+                ));
             }
         }
         for &id in &self.order {
@@ -554,7 +583,7 @@ impl<'a> Checker<'a> {
         Ok(self.order)
     }
 
-    fn kind(&self, id: NodeId) -> Kind {
+    fn kind(&self, id: NodeId) -> SchemaKind {
         self.nodes[id.index()].kind()
     }
 
@@ -564,48 +593,58 @@ impl<'a> Checker<'a> {
         let outside_pipe = |step: Step, child: NodeId| {
             let kind = self.kind(child);
             if kind.needs_pipe() {
-                Err((SchemaErrorKind::ActionOutsidePipe { kind }, id, Some(step)))
+                Err((
+                    SchemaBuildErrorKind::ActionOutsidePipe { kind },
+                    id,
+                    Some(step),
+                ))
             } else {
                 Ok(())
             }
         };
         match node {
-            Node::Literal(literal) => {
+            SchemaNode::Literal(literal) => {
                 if !literal.is_finite() {
-                    return Err((SchemaErrorKind::NonFiniteNumber, id, Some(Step::Def)));
+                    return Err((SchemaBuildErrorKind::NonFiniteNumber, id, Some(Step::Def)));
                 }
             }
-            Node::OneOf(literals) => {
+            SchemaNode::OneOf(literals) => {
                 if let Some(index) = literals.iter().position(|literal| !literal.is_finite()) {
                     return Err((
-                        SchemaErrorKind::NonFiniteNumber,
+                        SchemaBuildErrorKind::NonFiniteNumber,
                         id,
                         Some(Step::Index(index)),
                     ));
                 }
             }
-            Node::MinLength(bound)
-            | Node::MaxLength(bound)
-            | Node::MinValue(bound)
-            | Node::MaxValue(bound) => {
+            SchemaNode::MinLength(bound)
+            | SchemaNode::MaxLength(bound)
+            | SchemaNode::MinValue(bound)
+            | SchemaNode::MaxValue(bound) => {
                 if !bound.is_finite() {
-                    return Err((SchemaErrorKind::NonFiniteNumber, id, Some(Step::Def)));
+                    return Err((SchemaBuildErrorKind::NonFiniteNumber, id, Some(Step::Def)));
                 }
             }
-            Node::Optional(schema) | Node::Nullable(schema) => outside_pipe(Step::Schema, *schema)?,
-            Node::Default(default) => outside_pipe(Step::Schema, default.schema)?,
-            Node::Lazy(target) => {
+            SchemaNode::Optional(schema) | SchemaNode::Nullable(schema) => {
+                outside_pipe(Step::Schema, *schema)?;
+            }
+            SchemaNode::WithDefault(default) => outside_pipe(Step::Schema, default.schema)?,
+            SchemaNode::Lazy(target) => {
                 if *target == NodeId::UNDEFINED {
-                    return Err((SchemaErrorKind::UndefinedLazy, id, None));
+                    return Err((SchemaBuildErrorKind::UndefinedLazy, id, None));
                 }
                 // the target is a root, and checked as one
             }
-            Node::Record(schema) | Node::Array(schema) => outside_pipe(Step::Def, *schema)?,
-            Node::Object(entries) | Node::LooseObject(entries) | Node::StripObject(entries) => {
+            SchemaNode::Record(schema) | SchemaNode::Array(schema) => {
+                outside_pipe(Step::Def, *schema)?;
+            }
+            SchemaNode::Object(entries)
+            | SchemaNode::LooseObject(entries)
+            | SchemaNode::StripObject(entries) => {
                 for (position, (key, schema)) in entries.iter().enumerate() {
                     if js::OBJECT_PROTOTYPE_KEYS.contains(&key) {
                         return Err((
-                            SchemaErrorKind::PrototypeKey { key: key.into() },
+                            SchemaBuildErrorKind::PrototypeKey { key: key.into() },
                             id,
                             Some(Step::Entry(position)),
                         ));
@@ -616,7 +655,7 @@ impl<'a> Checker<'a> {
                 keys.sort_unstable();
                 if let Some(pair) = keys.windows(2).find(|pair| pair[0] == pair[1]) {
                     return Err((
-                        SchemaErrorKind::DuplicateKey {
+                        SchemaBuildErrorKind::DuplicateKey {
                             key: pair[0].into(),
                         },
                         id,
@@ -624,66 +663,74 @@ impl<'a> Checker<'a> {
                     ));
                 }
             }
-            Node::Union(options) => {
+            SchemaNode::Union(options) => {
                 for (index, &option) in options.iter().enumerate() {
                     outside_pipe(Step::Index(index), option)?;
                 }
             }
-            Node::Variant(variant) => {
+            SchemaNode::Variant(variant) => {
                 // with options the key is an entry of each, and refused there
                 if variant.options.is_empty() && js::OBJECT_PROTOTYPE_KEYS.contains(&&*variant.key)
                 {
                     let key = variant.key.clone();
-                    return Err((SchemaErrorKind::PrototypeKey { key }, id, Some(Step::Key)));
+                    return Err((
+                        SchemaBuildErrorKind::PrototypeKey { key },
+                        id,
+                        Some(Step::Key),
+                    ));
                 }
                 for (index, &option) in variant.options.iter().enumerate() {
                     let step = Some(Step::Option(index));
                     let Some(entries) = self.nodes[option.index()].entries() else {
                         let kind = self.kind(option);
-                        return Err((SchemaErrorKind::VariantOption { kind }, id, step));
+                        return Err((SchemaBuildErrorKind::VariantOption { kind }, id, step));
                     };
                     let literal = entries
                         .get(&variant.key)
-                        .is_some_and(|entry| self.kind(entry) == Kind::Literal);
+                        .is_some_and(|entry| self.kind(entry) == SchemaKind::Literal);
                     if !literal {
                         let key = variant.key.clone();
-                        return Err((SchemaErrorKind::VariantDiscriminator { key }, id, step));
+                        return Err((SchemaBuildErrorKind::VariantDiscriminator { key }, id, step));
                     }
                 }
             }
-            Node::Pipe(steps) => self.check_pipe(id, steps)?,
-            Node::String
-            | Node::Number
-            | Node::Boolean
-            | Node::Bigint
-            | Node::Unknown
-            | Node::Integer
-            | Node::SafeInteger
-            | Node::Finite => {}
+            SchemaNode::Pipe(steps) => self.check_pipe(id, steps)?,
+            SchemaNode::String
+            | SchemaNode::Number
+            | SchemaNode::Boolean
+            | SchemaNode::Bigint
+            | SchemaNode::Unknown
+            | SchemaNode::Integer
+            | SchemaNode::SafeInteger
+            | SchemaNode::Finite => {}
         }
         Ok(())
     }
 
     fn check_pipe(&self, id: NodeId, steps: &[NodeId]) -> Result<(), Refusal> {
         let Some((&head, actions)) = steps.split_first() else {
-            return Err((SchemaErrorKind::EmptyPipe, id, None));
+            return Err((SchemaBuildErrorKind::EmptyPipe, id, None));
         };
         let Some(value_type) = self.value_type(head) else {
             let kind = self.kind(head);
-            return Err((SchemaErrorKind::PipeHead { kind }, id, Some(Step::Index(0))));
+            return Err((
+                SchemaBuildErrorKind::PipeHead { kind },
+                id,
+                Some(Step::Index(0)),
+            ));
         };
         for (index, &action) in actions.iter().enumerate() {
             let kind = self.kind(action);
             let step = Some(Step::Index(index + 1));
             if !kind.is_action() {
-                return Err((SchemaErrorKind::PipeStep { kind }, id, step));
+                return Err((SchemaBuildErrorKind::PipeStep { kind }, id, step));
             }
             let fits = match kind {
-                Kind::MinLength | Kind::MaxLength => value_type != ValueType::Number,
+                SchemaKind::MinLength | SchemaKind::MaxLength => value_type != ValueType::Number,
                 _ => value_type == ValueType::Number,
             };
             if !fits {
-                return Err((SchemaErrorKind::ActionMismatch { kind }, id, step));
+                return Err((SchemaBuildErrorKind::ActionMismatch { kind }, id, step));
             }
         }
         Ok(())
@@ -694,12 +741,15 @@ impl<'a> Checker<'a> {
         // a pipe's first step was made before the pipe, so this ends
         loop {
             match &self.nodes[id.index()] {
-                Node::String => return Some(ValueType::String),
-                Node::Number | Node::Integer | Node::SafeInteger | Node::Finite => {
+                SchemaNode::String => return Some(ValueType::String),
+                SchemaNode::Number
+                | SchemaNode::Integer
+                | SchemaNode::SafeInteger
+                | SchemaNode::Finite => {
                     return Some(ValueType::Number);
                 }
-                Node::Array(_) => return Some(ValueType::Array),
-                Node::Pipe(steps) => id = *steps.first()?,
+                SchemaNode::Array(_) => return Some(ValueType::Array),
+                SchemaNode::Pipe(steps) => id = *steps.first()?,
                 _ => return None,
             }
         }
@@ -730,7 +780,9 @@ impl<'a> Checker<'a> {
                             state[child.index()] = OPEN;
                             stack.push((child, 0));
                         }
-                        OPEN => return Err((SchemaErrorKind::UnguardedRecursion, child, None)),
+                        OPEN => {
+                            return Err((SchemaBuildErrorKind::UnguardedRecursion, child, None));
+                        }
                         _ => {}
                     }
                 } else {
@@ -738,7 +790,7 @@ impl<'a> Checker<'a> {
                     depth[id.index()] = below.map_or(0, |below| below + 1);
                     if depth[id.index()] > MAX_NESTING {
                         let limit = MAX_NESTING;
-                        return Err((SchemaErrorKind::TooNested { limit }, id, None));
+                        return Err((SchemaBuildErrorKind::TooNested { limit }, id, None));
                     }
                     state[id.index()] = DONE;
                     stack.pop();
@@ -749,7 +801,12 @@ impl<'a> Checker<'a> {
     }
 
     /// An error at `node`, or at the child of `node` that `step` leads to.
-    fn error(&self, kind: SchemaErrorKind, node: NodeId, step: Option<Step>) -> SchemaError {
+    fn error(
+        &self,
+        kind: SchemaBuildErrorKind,
+        node: NodeId,
+        step: Option<Step>,
+    ) -> SchemaBuildError {
         let mut steps: Vec<(NodeId, Step)> = step.map(|step| (node, step)).into_iter().collect();
         let mut current = node;
         let root = loop {
@@ -785,47 +842,49 @@ impl<'a> Checker<'a> {
                 Step::Key => path.push_str("/def/key"),
             }
         }
-        SchemaError::new(kind, path)
+        SchemaBuildError::new(kind, path)
     }
 }
 
 /// Calls `visit` with every node `node` refers to and the step to it.
-fn for_each_child(node: &Node, mut visit: impl FnMut(Step, NodeId)) {
+fn for_each_child(node: &SchemaNode, mut visit: impl FnMut(Step, NodeId)) {
     match node {
-        Node::Optional(schema) | Node::Nullable(schema) => visit(Step::Schema, *schema),
-        Node::Default(default) => visit(Step::Schema, default.schema),
-        Node::Lazy(schema) | Node::Record(schema) | Node::Array(schema) => {
+        SchemaNode::Optional(schema) | SchemaNode::Nullable(schema) => visit(Step::Schema, *schema),
+        SchemaNode::WithDefault(default) => visit(Step::Schema, default.schema),
+        SchemaNode::Lazy(schema) | SchemaNode::Record(schema) | SchemaNode::Array(schema) => {
             visit(Step::Def, *schema);
         }
-        Node::Object(entries) | Node::LooseObject(entries) | Node::StripObject(entries) => {
+        SchemaNode::Object(entries)
+        | SchemaNode::LooseObject(entries)
+        | SchemaNode::StripObject(entries) => {
             for (position, &schema) in entries.schemas.iter().enumerate() {
                 visit(Step::Entry(position), schema);
             }
         }
-        Node::Union(schemas) | Node::Pipe(schemas) => {
+        SchemaNode::Union(schemas) | SchemaNode::Pipe(schemas) => {
             for (index, &schema) in schemas.iter().enumerate() {
                 visit(Step::Index(index), schema);
             }
         }
-        Node::Variant(variant) => {
+        SchemaNode::Variant(variant) => {
             for (index, &option) in variant.options.iter().enumerate() {
                 visit(Step::Option(index), option);
             }
         }
-        Node::String
-        | Node::Number
-        | Node::Boolean
-        | Node::Bigint
-        | Node::Unknown
-        | Node::Literal(_)
-        | Node::OneOf(_)
-        | Node::MinLength(_)
-        | Node::MaxLength(_)
-        | Node::MinValue(_)
-        | Node::MaxValue(_)
-        | Node::Integer
-        | Node::SafeInteger
-        | Node::Finite => {}
+        SchemaNode::String
+        | SchemaNode::Number
+        | SchemaNode::Boolean
+        | SchemaNode::Bigint
+        | SchemaNode::Unknown
+        | SchemaNode::Literal(_)
+        | SchemaNode::OneOf(_)
+        | SchemaNode::MinLength(_)
+        | SchemaNode::MaxLength(_)
+        | SchemaNode::MinValue(_)
+        | SchemaNode::MaxValue(_)
+        | SchemaNode::Integer
+        | SchemaNode::SafeInteger
+        | SchemaNode::Finite => {}
     }
 }
 
@@ -843,7 +902,7 @@ mod tests {
     /// Adds a schema around another.
     type Wrap = fn(&mut SchemaBuilder, NodeId) -> NodeId;
 
-    fn refusal(build: impl FnOnce(&mut SchemaBuilder) -> NodeId) -> (SchemaErrorKind, String) {
+    fn refusal(build: impl FnOnce(&mut SchemaBuilder) -> NodeId) -> (SchemaBuildErrorKind, String) {
         let mut builder = SchemaBuilder::new();
         let root = build(&mut builder);
         let error = builder.build(root).unwrap_err();
@@ -861,11 +920,17 @@ mod tests {
         for number in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             assert_eq!(
                 refusal(|b| b.literal(number)),
-                (SchemaErrorKind::NonFiniteNumber, "/schema/def".to_owned())
+                (
+                    SchemaBuildErrorKind::NonFiniteNumber,
+                    "/schema/def".to_owned()
+                )
             );
             assert_eq!(
                 refusal(|b| b.one_of([1.0, number])),
-                (SchemaErrorKind::NonFiniteNumber, "/schema/def/1".to_owned())
+                (
+                    SchemaBuildErrorKind::NonFiniteNumber,
+                    "/schema/def/1".to_owned()
+                )
             );
             assert_eq!(
                 refusal(|b| {
@@ -874,7 +939,7 @@ mod tests {
                     b.pipe([head, bound])
                 }),
                 (
-                    SchemaErrorKind::NonFiniteNumber,
+                    SchemaBuildErrorKind::NonFiniteNumber,
                     "/schema/def/1/def".to_owned()
                 )
             );
@@ -895,7 +960,10 @@ mod tests {
                     };
                     b.array(object)
                 });
-                assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
+                assert_eq!(
+                    error,
+                    SchemaBuildErrorKind::PrototypeKey { key: key.into() }
+                );
                 assert_eq!(path, format!("/schema/def/def/{key}"));
             }
             // a `variant` with no option reads its key off the input all the same
@@ -903,7 +971,10 @@ mod tests {
                 let variant = b.variant(key, []);
                 b.array(variant)
             });
-            assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
+            assert_eq!(
+                error,
+                SchemaBuildErrorKind::PrototypeKey { key: key.into() }
+            );
             assert_eq!(path, "/schema/def/def/key");
             // with options the key is an entry, and is refused as one
             let (error, path) = refusal(|b| {
@@ -911,7 +982,10 @@ mod tests {
                 let option = b.object([(key, literal)]);
                 b.variant(key, [option])
             });
-            assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
+            assert_eq!(
+                error,
+                SchemaBuildErrorKind::PrototypeKey { key: key.into() }
+            );
             assert_eq!(path, format!("/schema/def/options/0/def/{key}"));
         }
     }
@@ -924,7 +998,7 @@ mod tests {
                 b.object([("a", s), ("b", s), ("a", s)])
             }),
             (
-                SchemaErrorKind::DuplicateKey { key: "a".into() },
+                SchemaBuildErrorKind::DuplicateKey { key: "a".into() },
                 "/schema".to_owned()
             )
         );
@@ -934,25 +1008,25 @@ mod tests {
     fn pipes_are_checked() {
         assert_eq!(
             refusal(|b| b.pipe([])),
-            (SchemaErrorKind::EmptyPipe, "/schema".to_owned())
+            (SchemaBuildErrorKind::EmptyPipe, "/schema".to_owned())
         );
         for head in [
-            Kind::Unknown,
-            Kind::Boolean,
-            Kind::Nullable,
-            Kind::MinLength,
+            SchemaKind::Unknown,
+            SchemaKind::Boolean,
+            SchemaKind::Nullable,
+            SchemaKind::MinLength,
         ] {
             let (error, path) = refusal(|b| {
                 let string = b.string();
                 let head = match head {
-                    Kind::Unknown => b.unknown(),
-                    Kind::Boolean => b.boolean(),
-                    Kind::Nullable => b.nullable(string),
+                    SchemaKind::Unknown => b.unknown(),
+                    SchemaKind::Boolean => b.boolean(),
+                    SchemaKind::Nullable => b.nullable(string),
                     _ => b.min_length(1.0),
                 };
                 b.pipe([head])
             });
-            assert_eq!(error, SchemaErrorKind::PipeHead { kind: head });
+            assert_eq!(error, SchemaBuildErrorKind::PipeHead { kind: head });
             assert_eq!(path, "/schema/def/0");
         }
         assert_eq!(
@@ -962,22 +1036,32 @@ mod tests {
                 b.pipe([string, again])
             }),
             (
-                SchemaErrorKind::PipeStep { kind: Kind::String },
+                SchemaBuildErrorKind::PipeStep {
+                    kind: SchemaKind::String
+                },
                 "/schema/def/1".to_owned()
             )
         );
-        let mismatches: [(Make, Make, Kind); 6] = [
-            (SchemaBuilder::string, |b| b.min_value(0.0), Kind::MinValue),
-            (SchemaBuilder::string, SchemaBuilder::integer, Kind::Integer),
+        let mismatches: [(Make, Make, SchemaKind); 6] = [
+            (
+                SchemaBuilder::string,
+                |b| b.min_value(0.0),
+                SchemaKind::MinValue,
+            ),
+            (
+                SchemaBuilder::string,
+                SchemaBuilder::integer,
+                SchemaKind::Integer,
+            ),
             (
                 SchemaBuilder::number,
                 |b| b.max_length(1.0),
-                Kind::MaxLength,
+                SchemaKind::MaxLength,
             ),
             (
                 SchemaBuilder::integer,
                 |b| b.min_length(1.0),
-                Kind::MinLength,
+                SchemaKind::MinLength,
             ),
             (
                 |b| {
@@ -985,7 +1069,7 @@ mod tests {
                     b.array(item)
                 },
                 SchemaBuilder::finite,
-                Kind::Finite,
+                SchemaKind::Finite,
             ),
             (
                 |b| {
@@ -993,20 +1077,20 @@ mod tests {
                     b.array(item)
                 },
                 |b| b.max_value(1.0),
-                Kind::MaxValue,
+                SchemaKind::MaxValue,
             ),
         ];
         for (head, action, kind) in mismatches {
             let (error, path) = refusal(|b| {
                 let head = head(b);
                 let ok = match b.nodes[head.index()].kind() {
-                    Kind::String | Kind::Array => b.min_length(0.0),
+                    SchemaKind::String | SchemaKind::Array => b.min_length(0.0),
                     _ => b.finite(),
                 };
                 let action = action(b);
                 b.pipe([head, ok, action])
             });
-            assert_eq!(error, SchemaErrorKind::ActionMismatch { kind });
+            assert_eq!(error, SchemaBuildErrorKind::ActionMismatch { kind });
             assert_eq!(path, "/schema/def/2");
         }
     }
@@ -1033,14 +1117,14 @@ mod tests {
 
     #[test]
     fn bounds_outside_a_pipe_are_refused() {
-        let actions: [(Make, Kind); 4] = [
-            (|b| b.min_length(1.0), Kind::MinLength),
-            (|b| b.max_length(1.0), Kind::MaxLength),
-            (|b| b.min_value(1.0), Kind::MinValue),
-            (|b| b.max_value(1.0), Kind::MaxValue),
+        let actions: [(Make, SchemaKind); 4] = [
+            (|b| b.min_length(1.0), SchemaKind::MinLength),
+            (|b| b.max_length(1.0), SchemaKind::MaxLength),
+            (|b| b.min_value(1.0), SchemaKind::MinValue),
+            (|b| b.max_value(1.0), SchemaKind::MaxValue),
         ];
         for (action, kind) in actions {
-            let expected = SchemaErrorKind::ActionOutsidePipe { kind };
+            let expected = SchemaBuildErrorKind::ActionOutsidePipe { kind };
             assert_eq!(refusal(action), (expected.clone(), "/schema".to_owned()));
             let parents: [(Wrap, &str); 9] = [
                 (|b, a| b.optional(a), "/schema/def/schema"),
@@ -1088,7 +1172,9 @@ mod tests {
                 b.variant("k", [object, string])
             }),
             (
-                SchemaErrorKind::VariantOption { kind: Kind::String },
+                SchemaBuildErrorKind::VariantOption {
+                    kind: SchemaKind::String
+                },
                 "/schema/def/options/1".to_owned()
             )
         );
@@ -1115,7 +1201,7 @@ mod tests {
                     b.variant("k", [option])
                 }),
                 (
-                    SchemaErrorKind::VariantDiscriminator { key: "k".into() },
+                    SchemaBuildErrorKind::VariantDiscriminator { key: "k".into() },
                     "/schema/def/options/0".to_owned()
                 )
             );
@@ -1131,7 +1217,10 @@ mod tests {
                 let lazy = b.declare();
                 b.array(lazy)
             }),
-            (SchemaErrorKind::UndefinedLazy, "/schema/def".to_owned())
+            (
+                SchemaBuildErrorKind::UndefinedLazy,
+                "/schema/def".to_owned()
+            )
         );
         assert_eq!(
             refusal(|b| {
@@ -1141,7 +1230,7 @@ mod tests {
                 b.define(lazy, s);
                 lazy
             }),
-            (SchemaErrorKind::RedefinedLazy, String::new())
+            (SchemaBuildErrorKind::RedefinedLazy, String::new())
         );
         assert_eq!(
             refusal(|b| {
@@ -1149,7 +1238,7 @@ mod tests {
                 b.define(s, s);
                 s
             }),
-            (SchemaErrorKind::InvalidNode, String::new())
+            (SchemaBuildErrorKind::InvalidNode, String::new())
         );
         // a lazy never used and never defined is out of reach
         built(|b| {
@@ -1167,11 +1256,11 @@ mod tests {
         let foreign = other.string();
         assert_eq!(
             refusal(|_| foreign),
-            (SchemaErrorKind::InvalidNode, "/schema".to_owned())
+            (SchemaBuildErrorKind::InvalidNode, "/schema".to_owned())
         );
         assert_eq!(
             refusal(|b| b.array(foreign)),
-            (SchemaErrorKind::InvalidNode, "/schema/def".to_owned())
+            (SchemaBuildErrorKind::InvalidNode, "/schema/def".to_owned())
         );
         // in range, and not made before the node that uses it
         assert_eq!(
@@ -1182,7 +1271,7 @@ mod tests {
                 }
                 array
             }),
-            (SchemaErrorKind::InvalidNode, "/schema/def".to_owned())
+            (SchemaBuildErrorKind::InvalidNode, "/schema/def".to_owned())
         );
         assert_eq!(
             refusal(|b| {
@@ -1190,7 +1279,7 @@ mod tests {
                 b.define(lazy, foreign);
                 lazy
             }),
-            (SchemaErrorKind::InvalidNode, "/defs/$0".to_owned())
+            (SchemaBuildErrorKind::InvalidNode, "/defs/$0".to_owned())
         );
     }
 
@@ -1218,7 +1307,7 @@ mod tests {
                 b.define(lazy, target);
                 b.array(lazy)
             });
-            assert_eq!(error, SchemaErrorKind::UnguardedRecursion);
+            assert_eq!(error, SchemaBuildErrorKind::UnguardedRecursion);
         }
         assert_eq!(
             refusal(|b| {
@@ -1227,7 +1316,10 @@ mod tests {
                 b.define(lazy, optional);
                 lazy
             }),
-            (SchemaErrorKind::UnguardedRecursion, "/schema".to_owned())
+            (
+                SchemaBuildErrorKind::UnguardedRecursion,
+                "/schema".to_owned()
+            )
         );
     }
 
@@ -1251,7 +1343,7 @@ mod tests {
             built(|b| {
                 let lazy = b.declare();
                 let container = guard(b, lazy);
-                let null = b.literal(Literal::Null);
+                let null = b.literal(SchemaLiteral::Null);
                 let either = b.union([null, container]);
                 b.define(lazy, either);
                 lazy
@@ -1274,7 +1366,7 @@ mod tests {
         assert_eq!(
             refusal(nested(MAX_NESTING + 1)),
             (
-                SchemaErrorKind::TooNested { limit: MAX_NESTING },
+                SchemaBuildErrorKind::TooNested { limit: MAX_NESTING },
                 "/schema".to_owned()
             )
         );
@@ -1296,7 +1388,7 @@ mod tests {
                 b.array(lazy)
             }),
             (
-                SchemaErrorKind::TooNested { limit: MAX_NESTING },
+                SchemaBuildErrorKind::TooNested { limit: MAX_NESTING },
                 "/schema/def".to_owned()
             )
         );

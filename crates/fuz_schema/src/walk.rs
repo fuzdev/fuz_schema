@@ -8,15 +8,17 @@
 //!
 //! Failures go to a `Report`. `Probe` only wants the verdict, and evaluation
 //! returns at the first failure. `Collect` goes on and keeps each failure as
-//! an `Issue`, the one the TypeScript library's `parse` reports, in its order.
+//! a `SchemaIssue`, the one the TypeScript library's `parse` reports, in its order.
 //! A container that had a failure under it prefixes its key onto the paths of
 //! those issues, as the library does, so a value that matches builds no path.
 
 use crate::error::JsonError;
-use crate::issue::{Issue, IssueKind, PathSegment, Received};
+use crate::issue::{PathSegment, Received, SchemaIssue, SchemaIssueKind};
 use crate::js;
 use crate::json::{Json, Value};
-use crate::schema::{Entries, Literal, MAX_NESTING, Node, NodeId, Schema, VariantDef};
+use crate::schema::{
+    MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaLiteral, SchemaNode, VariantDef,
+};
 
 /// Where failures go.
 pub trait Report {
@@ -75,7 +77,7 @@ impl Report for Probe {
 pub struct Collect<'a> {
     schema: &'a Schema,
     /// The issues so far, each with its path innermost first.
-    issues: Vec<Issue>,
+    issues: Vec<SchemaIssue>,
 }
 
 impl<'a> Collect<'a> {
@@ -88,7 +90,7 @@ impl<'a> Collect<'a> {
 
     /// The issues, in the order the failures were met, each path now
     /// outermost first.
-    pub fn finish(mut self) -> Vec<Issue> {
+    pub fn finish(mut self) -> Vec<SchemaIssue> {
         for issue in &mut self.issues {
             issue.path.reverse();
         }
@@ -102,13 +104,13 @@ impl Report for Collect<'_> {
     fn fail(&mut self, node: NodeId, failure: Failure, received: Received) {
         let node = self.schema.at(node);
         let kind = match failure {
-            Failure::Schema | Failure::Discriminator => IssueKind::of(node.kind()),
-            Failure::UnknownKey => Some(IssueKind::UnknownKey),
+            Failure::Schema | Failure::Discriminator => SchemaIssueKind::of(node.kind()),
+            Failure::UnknownKey => Some(SchemaIssueKind::UnknownKey),
         };
         // the walker reports no failure of a kind that has no issue kind
         debug_assert!(kind.is_some(), "a `{}` failed", node.kind());
         if let Some(kind) = kind {
-            self.issues.push(Issue {
+            self.issues.push(SchemaIssue {
                 kind,
                 expected: expected(self.schema, node, failure),
                 received,
@@ -133,41 +135,45 @@ impl Report for Collect<'_> {
 
 /// The `expected` of the issue the TypeScript library reports for `failure`
 /// of `node`: the kind's name where the library gives `fail` no other text.
-fn expected(schema: &Schema, node: &Node, failure: Failure) -> String {
+fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
     match (failure, node) {
         (Failure::UnknownKey, _) => "no unknown keys".to_owned(),
         // the values of the options, in the order they first appear
-        (Failure::Discriminator, Node::Variant(variant)) => {
+        (Failure::Discriminator, SchemaNode::Variant(variant)) => {
             format_literals(variant.table.iter().map(|(literal, _)| literal))
         }
-        (_, Node::LooseObject(_) | Node::StripObject(_) | Node::Record(_) | Node::Variant(_)) => {
-            "object".to_owned()
-        }
-        (_, Node::Literal(literal)) => format_literals([literal]),
-        (_, Node::OneOf(literals)) => format_literals(literals.iter()),
-        (_, Node::Union(options)) => options
+        (
+            _,
+            SchemaNode::LooseObject(_)
+            | SchemaNode::StripObject(_)
+            | SchemaNode::Record(_)
+            | SchemaNode::Variant(_),
+        ) => "object".to_owned(),
+        (_, SchemaNode::Literal(literal)) => format_literals([literal]),
+        (_, SchemaNode::OneOf(literals)) => format_literals(literals.iter()),
+        (_, SchemaNode::Union(options)) => options
             .iter()
             .map(|&option| schema.at(option).kind().as_str())
             .collect::<Vec<_>>()
             .join(" | "),
-        (_, Node::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
-        (_, Node::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
-        (_, Node::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
-        (_, Node::MaxValue(max)) => format!("<= {}", js::number_to_string(*max)),
+        (_, SchemaNode::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
+        (_, SchemaNode::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
+        (_, SchemaNode::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
+        (_, SchemaNode::MaxValue(max)) => format!("<= {}", js::number_to_string(*max)),
         _ => node.kind().as_str().to_owned(),
     }
 }
 
 /// The library's `format_literals`: each value as JavaScript's `String`
 /// writes it, a string quoted as `JSON.stringify` quotes it, joined by ` | `.
-fn format_literals<'a>(literals: impl IntoIterator<Item = &'a Literal>) -> String {
+fn format_literals<'a>(literals: impl IntoIterator<Item = &'a SchemaLiteral>) -> String {
     literals
         .into_iter()
         .map(|literal| match literal {
-            Literal::Null => "null".to_owned(),
-            Literal::Boolean(value) => value.to_string(),
-            Literal::Number(value) => js::number_to_string(*value),
-            Literal::String(value) => js::quote(value),
+            SchemaLiteral::Null => "null".to_owned(),
+            SchemaLiteral::Boolean(value) => value.to_string(),
+            SchemaLiteral::Number(value) => js::number_to_string(*value),
+            SchemaLiteral::String(value) => js::quote(value),
         })
         .collect::<Vec<_>>()
         .join(" | ")
@@ -175,14 +181,14 @@ fn format_literals<'a>(literals: impl IntoIterator<Item = &'a Literal>) -> Strin
 
 /// Whether `text` is JSON that matches `schema`, by parsing all of it into a
 /// tree and walking the tree.
-pub fn is_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
+pub fn matches_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
     let json = Json::parse(text)?;
     Ok(run(schema, schema.root(), json.view(), &mut Probe))
 }
 
 /// The issues of `text` against `schema`, none when it matches, by parsing
 /// all of it into a tree and walking the tree.
-pub fn validate_json(schema: &Schema, text: &str) -> Result<Vec<Issue>, JsonError> {
+pub fn validate_json(schema: &Schema, text: &str) -> Result<Vec<SchemaIssue>, JsonError> {
     let json = Json::parse(text)?;
     let mut report = Collect::new(schema);
     let matched = run(schema, schema.root(), json.view(), &mut report);
@@ -203,26 +209,26 @@ pub fn validate_json(schema: &Schema, text: &str) -> Result<Vec<Issue>, JsonErro
 pub fn run<R: Report>(schema: &Schema, mut id: NodeId, value: Value<'_>, report: &mut R) -> bool {
     loop {
         match schema.at(id) {
-            Node::Optional(inner) => {
+            SchemaNode::Optional(inner) => {
                 if matches!(value, Value::Undefined) {
                     return true;
                 }
                 id = *inner;
             }
-            Node::Nullable(inner) => {
+            SchemaNode::Nullable(inner) => {
                 if matches!(value, Value::Null) {
                     return true;
                 }
                 id = *inner;
             }
-            Node::Default(default) => {
+            SchemaNode::WithDefault(default) => {
                 if matches!(value, Value::Undefined) {
                     return true;
                 }
                 id = default.schema();
             }
-            Node::Lazy(inner) => id = *inner,
-            Node::Union(options) => {
+            SchemaNode::Lazy(inner) => id = *inner,
+            SchemaNode::Union(options) => {
                 if union(schema, options, value) {
                     return true;
                 }
@@ -247,15 +253,15 @@ enum Rest {
 fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R) -> Rest {
     let node = schema.at(id);
     let matched = match node {
-        Node::Object(entries) => object(schema, id, entries, true, value, report),
-        Node::LooseObject(entries) | Node::StripObject(entries) => {
+        SchemaNode::Object(entries) => object(schema, id, entries, true, value, report),
+        SchemaNode::LooseObject(entries) | SchemaNode::StripObject(entries) => {
             object(schema, id, entries, false, value, report)
         }
-        Node::Record(inner) => record(schema, id, *inner, value, report),
-        Node::Array(inner) => array(schema, id, *inner, value, report),
+        SchemaNode::Record(inner) => record(schema, id, *inner, value, report),
+        SchemaNode::Array(inner) => array(schema, id, *inner, value, report),
         // each step reports its own failure, and the first one ends the pipe
-        Node::Pipe(steps) => pipe(schema, steps, value, report),
-        Node::Variant(variant) => match select(variant, value) {
+        SchemaNode::Pipe(steps) => pipe(schema, steps, value, report),
+        SchemaNode::Variant(variant) => match select(variant, value) {
             Selected::Option(option) => return Rest::Option(option),
             Selected::NotObject => fail(id, value, report),
             Selected::Unknown(discriminator) => fail_at(
@@ -324,7 +330,7 @@ fn pipe<'a, R: Report>(
         };
         *pipe = actions;
         count += 1;
-        if let Node::Pipe(inner) = schema.at(head) {
+        if let SchemaNode::Pipe(inner) = schema.at(head) {
             steps = inner;
         } else {
             if !run(schema, head, value, report) {
@@ -366,24 +372,26 @@ fn select<'a>(variant: &VariantDef, value: Value<'a>) -> Selected<'a> {
 
 /// Whether `value` matches a node that looks no further than the value
 /// itself. The kinds that do look further are `run`'s.
-fn scalar(node: &Node, value: Value<'_>) -> bool {
+fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
     match node {
-        Node::String => matches!(value, Value::String(_)),
+        SchemaNode::String => matches!(value, Value::String(_)),
         // JSON has no `NaN`, the one number `number` rejects
-        Node::Number => matches!(value, Value::Number(_)),
-        Node::Boolean => matches!(value, Value::Bool(_)),
-        Node::Unknown => true,
-        Node::Literal(literal) => literal.matches(value),
-        Node::OneOf(literals) => literals.iter().any(|literal| literal.matches(value)),
+        SchemaNode::Number => matches!(value, Value::Number(_)),
+        SchemaNode::Boolean => matches!(value, Value::Bool(_)),
+        SchemaNode::Unknown => true,
+        SchemaNode::Literal(literal) => literal.matches(value),
+        SchemaNode::OneOf(literals) => literals.iter().any(|literal| literal.matches(value)),
         // a length action follows a string or an array, and a number action
         // is never true of anything but a number
-        Node::MinLength(min) => length(value).is_some_and(|length| length >= *min),
-        Node::MaxLength(max) => length(value).is_some_and(|length| length <= *max),
-        Node::MinValue(min) => matches!(value, Value::Number(number) if number >= *min),
-        Node::MaxValue(max) => matches!(value, Value::Number(number) if number <= *max),
-        Node::Integer => matches!(value, Value::Number(number) if js::is_integer(number)),
-        Node::SafeInteger => matches!(value, Value::Number(number) if js::is_safe_integer(number)),
-        Node::Finite => matches!(value, Value::Number(number) if number.is_finite()),
+        SchemaNode::MinLength(min) => length(value).is_some_and(|length| length >= *min),
+        SchemaNode::MaxLength(max) => length(value).is_some_and(|length| length <= *max),
+        SchemaNode::MinValue(min) => matches!(value, Value::Number(number) if number >= *min),
+        SchemaNode::MaxValue(max) => matches!(value, Value::Number(number) if number <= *max),
+        SchemaNode::Integer => matches!(value, Value::Number(number) if js::is_integer(number)),
+        SchemaNode::SafeInteger => {
+            matches!(value, Value::Number(number) if js::is_safe_integer(number))
+        }
+        SchemaNode::Finite => matches!(value, Value::Number(number) if number.is_finite()),
         // JSON holds no bigint, and the rest are not scalars
         _ => false,
     }
@@ -403,7 +411,7 @@ fn length(value: Value<'_>) -> Option<f64> {
 fn object<R: Report>(
     schema: &Schema,
     id: NodeId,
-    entries: &Entries,
+    entries: &SchemaEntries,
     strict: bool,
     value: Value<'_>,
     report: &mut R,
@@ -504,7 +512,7 @@ fn array<R: Report>(
 pub mod tests {
     use super::*;
     use crate::builder::SchemaBuilder;
-    use crate::schema::{Kind, Literal};
+    use crate::schema::{SchemaKind, SchemaLiteral};
 
     /// A report that keeps the node of each failure.
     #[derive(Debug)]
@@ -525,9 +533,13 @@ pub mod tests {
     }
 
     /// Every issue of `text`, checked against the verdict of a probe.
-    fn issues(schema: &Schema, text: &str) -> Vec<Issue> {
+    fn issues(schema: &Schema, text: &str) -> Vec<SchemaIssue> {
         let issues = validate_json(schema, text).unwrap();
-        assert_eq!(issues.is_empty(), is_json(schema, text).unwrap(), "{text}");
+        assert_eq!(
+            issues.is_empty(),
+            matches_json(schema, text).unwrap(),
+            "{text}"
+        );
         issues
     }
 
@@ -571,10 +583,10 @@ pub mod tests {
 
     fn check(schema: &Schema, valid: &[&str], invalid: &[&str]) {
         for text in valid {
-            assert_eq!(is_json(schema, text), Ok(true), "{text}");
+            assert_eq!(matches_json(schema, text), Ok(true), "{text}");
         }
         for text in invalid {
-            assert_eq!(is_json(schema, text), Ok(false), "{text}");
+            assert_eq!(matches_json(schema, text), Ok(false), "{text}");
         }
     }
 
@@ -584,7 +596,11 @@ pub mod tests {
 
     fn check_types(schema: &Schema, valid: &[&str]) {
         for text in EVERY_TYPE {
-            assert_eq!(is_json(schema, text), Ok(valid.contains(&text)), "{text}");
+            assert_eq!(
+                matches_json(schema, text),
+                Ok(valid.contains(&text)),
+                "{text}"
+            );
         }
     }
 
@@ -621,7 +637,7 @@ pub mod tests {
             &["false", "1", r#""true""#],
         );
         check(
-            &build(|b| b.literal(Literal::Null)),
+            &build(|b| b.literal(SchemaLiteral::Null)),
             &["null"],
             &["0", "false", r#""null""#, "[]"],
         );
@@ -632,10 +648,10 @@ pub mod tests {
         );
         let one_of = build(|b| {
             b.one_of([
-                Literal::from("a"),
-                Literal::from(1),
-                Literal::Null,
-                Literal::from(false),
+                SchemaLiteral::from("a"),
+                SchemaLiteral::from(1),
+                SchemaLiteral::Null,
+                SchemaLiteral::from(false),
             ])
         });
         check(
@@ -643,7 +659,7 @@ pub mod tests {
             &[r#""a""#, "1", "1.0", "null", "false"],
             &[r#""b""#, "2", "true", "[]", "{}"],
         );
-        check_types(&build(|b| b.one_of::<Literal>([])), &[]);
+        check_types(&build(|b| b.one_of::<SchemaLiteral>([])), &[]);
     }
 
     #[test]
@@ -760,11 +776,11 @@ pub mod tests {
 
     #[test]
     fn loose_and_strip_ignore_unknown_keys() {
-        for kind in [Kind::LooseObject, Kind::StripObject] {
+        for kind in [SchemaKind::LooseObject, SchemaKind::StripObject] {
             let schema = build(|b| {
                 let number = b.number();
                 let entries = [("a", number)];
-                if kind == Kind::LooseObject {
+                if kind == SchemaKind::LooseObject {
                     b.loose_object(entries)
                 } else {
                     b.strip_object(entries)
@@ -865,7 +881,7 @@ pub mod tests {
             let square = b.literal("square");
             let number = b.number();
             let one = b.literal(1);
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let a = b.object([("kind", circle), ("r", number)]);
             let s = b.loose_object([("kind", square), ("side", number)]);
             let n = b.strip_object([("kind", one)]);
@@ -978,11 +994,19 @@ pub mod tests {
             (1.0, r#""\u00e9""#),
         ] {
             let schema = exactly(length);
-            assert_eq!(is_json(&schema, text), Ok(true), "{text}");
-            assert_eq!(crate::stream::is_json(&schema, text), Ok(true), "{text}");
+            assert_eq!(matches_json(&schema, text), Ok(true), "{text}");
+            assert_eq!(
+                crate::stream::matches_json(&schema, text),
+                Ok(true),
+                "{text}"
+            );
             let other = exactly(length + 1.0);
-            assert_eq!(is_json(&other, text), Ok(false), "{text}");
-            assert_eq!(crate::stream::is_json(&other, text), Ok(false), "{text}");
+            assert_eq!(matches_json(&other, text), Ok(false), "{text}");
+            assert_eq!(
+                crate::stream::matches_json(&other, text),
+                Ok(false),
+                "{text}"
+            );
         }
     }
 
@@ -1155,7 +1179,7 @@ pub mod tests {
     fn recursive_schemas() {
         let json = build(|b| {
             let json = b.declare();
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let boolean = b.boolean();
             let number = b.number();
             let string = b.string();
@@ -1269,15 +1293,18 @@ pub mod tests {
             ["0.30000000000000004"]
         );
         assert_eq!(expects(&build(|b| b.literal(true)), "1"), ["true"]);
-        assert_eq!(expects(&build(|b| b.literal(Literal::Null)), "1"), ["null"]);
+        assert_eq!(
+            expects(&build(|b| b.literal(SchemaLiteral::Null)), "1"),
+            ["null"]
+        );
         let one_of = build(|b| {
             b.one_of([
-                Literal::from("a"),
-                Literal::from(1),
-                Literal::Null,
-                Literal::from(false),
-                Literal::from("null"),
-                Literal::from(-1.5),
+                SchemaLiteral::from("a"),
+                SchemaLiteral::from(1),
+                SchemaLiteral::Null,
+                SchemaLiteral::from(false),
+                SchemaLiteral::from("null"),
+                SchemaLiteral::from(-1.5),
             ])
         });
         assert_eq!(
@@ -1285,7 +1312,10 @@ pub mod tests {
             [r#""a" | 1 | null | false | "null" | -1.5"#]
         );
         assert_eq!(failures(&one_of, "[]"), [": one_of received Array"]);
-        assert_eq!(expects(&build(|b| b.one_of::<Literal>([])), "1"), [""]);
+        assert_eq!(
+            expects(&build(|b| b.one_of::<SchemaLiteral>([])), "1"),
+            [""]
+        );
     }
 
     #[test]
@@ -1349,7 +1379,7 @@ pub mod tests {
             let a = b.literal("a");
             let zero = b.literal(0.0);
             let negative_zero = b.literal(-0.0);
-            let null = b.literal(Literal::Null);
+            let null = b.literal(SchemaLiteral::Null);
             let yes = b.literal(true);
             let number = b.number();
             let first = b.object([("k", a), ("n", number)]);
@@ -1389,7 +1419,7 @@ pub mod tests {
             b.array(fields)
         });
         let issues = issues(&schema, r#"[{"0":[1,null],"a":[[]],"b":1},2]"#);
-        let paths: Vec<&[PathSegment]> = issues.iter().map(Issue::path).collect();
+        let paths: Vec<&[PathSegment]> = issues.iter().map(SchemaIssue::path).collect();
         let key = |key: &str| PathSegment::Key(key.to_owned());
         assert_eq!(
             paths,
@@ -1400,14 +1430,14 @@ pub mod tests {
                 &[PathSegment::Index(1)],
             ]
         );
-        let kinds: Vec<IssueKind> = issues.iter().map(Issue::kind).collect();
+        let kinds: Vec<SchemaIssueKind> = issues.iter().map(SchemaIssue::kind).collect();
         assert_eq!(
             kinds,
             [
-                IssueKind::Number,
-                IssueKind::Number,
-                IssueKind::Array,
-                IssueKind::Record
+                SchemaIssueKind::Number,
+                SchemaIssueKind::Number,
+                SchemaIssueKind::Array,
+                SchemaIssueKind::Record
             ]
         );
     }
@@ -1455,18 +1485,22 @@ pub mod tests {
             "3: unknown_key received Number",
             "z: unknown_key received Number",
         ];
-        for kind in [Kind::Object, Kind::LooseObject, Kind::StripObject] {
+        for kind in [
+            SchemaKind::Object,
+            SchemaKind::LooseObject,
+            SchemaKind::StripObject,
+        ] {
             let schema = build(|b| {
                 let number = b.number();
                 let entries = keys.map(|key| (key, number));
                 match kind {
-                    Kind::Object => b.object(entries),
-                    Kind::LooseObject => b.loose_object(entries),
+                    SchemaKind::Object => b.object(entries),
+                    SchemaKind::LooseObject => b.loose_object(entries),
                     _ => b.strip_object(entries),
                 }
             });
             let mut expected = entries.to_vec();
-            if kind == Kind::Object {
+            if kind == SchemaKind::Object {
                 expected.extend(unknown);
             }
             assert_eq!(failures(&schema, r#"{"z":1,"3":1}"#), expected, "{kind}");
@@ -1497,7 +1531,7 @@ pub mod tests {
         for text in ["", "{", "1 2", "1e400", r#"{"a":1,}"#] {
             assert_eq!(
                 validate_json(&schema, text).map_err(|error| error.kind()),
-                Err(is_json(&schema, text).unwrap_err().kind()),
+                Err(matches_json(&schema, text).unwrap_err().kind()),
                 "{text}"
             );
         }
@@ -1594,8 +1628,8 @@ pub mod tests {
                     (&objects, &deepest_object),
                     (&records, &deepest_object),
                 ] {
-                    assert_eq!(is_json(schema, text), Ok(true));
-                    assert_eq!(crate::stream::is_json(schema, text), Ok(true));
+                    assert_eq!(matches_json(schema, text), Ok(true));
+                    assert_eq!(crate::stream::matches_json(schema, text), Ok(true));
                     assert_eq!(validate_json(schema, text), Ok(Vec::new()));
                 }
             });

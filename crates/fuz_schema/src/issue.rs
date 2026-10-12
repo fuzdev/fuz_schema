@@ -4,7 +4,7 @@
 use std::fmt;
 
 use crate::json::Value;
-use crate::schema::Kind;
+use crate::schema::SchemaKind;
 
 /// A validation failure, as the TypeScript library's `SchemaIssue` has it.
 ///
@@ -12,16 +12,16 @@ use crate::schema::Kind;
 /// path: the value that failed is described by `received` and not kept. Those
 /// keys are the input's, so treat them as untrusted text.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Issue {
-    pub(crate) kind: IssueKind,
+pub struct SchemaIssue {
+    pub(crate) kind: SchemaIssueKind,
     pub(crate) expected: String,
     pub(crate) received: Received,
     pub(crate) path: Vec<PathSegment>,
 }
 
-impl Issue {
+impl SchemaIssue {
     /// What failed: the kind of the schema or action, or `UnknownKey`.
-    pub const fn kind(&self) -> IssueKind {
+    pub const fn kind(&self) -> SchemaIssueKind {
         self.kind
     }
 
@@ -123,7 +123,7 @@ impl fmt::Display for Received {
 /// schema they hold.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum IssueKind {
+pub enum SchemaIssueKind {
     /// `string`.
     String,
     /// `number`.
@@ -168,7 +168,7 @@ pub enum IssueKind {
     UnknownKey,
 }
 
-impl IssueKind {
+impl SchemaIssueKind {
     /// Every issue kind.
     pub const ALL: &'static [Self] = &[
         Self::String,
@@ -223,40 +223,40 @@ impl IssueKind {
 
     /// The issue kind of a schema of `kind` that fails, or `None` for a kind
     /// that never fails itself.
-    pub const fn of(kind: Kind) -> Option<Self> {
+    pub const fn of(kind: SchemaKind) -> Option<Self> {
         // every kind is named, so that a new one is decided here
         match kind {
-            Kind::String => Some(Self::String),
-            Kind::Number => Some(Self::Number),
-            Kind::Boolean => Some(Self::Boolean),
-            Kind::Bigint => Some(Self::Bigint),
-            Kind::Literal => Some(Self::Literal),
-            Kind::OneOf => Some(Self::OneOf),
-            Kind::Object => Some(Self::Object),
-            Kind::LooseObject => Some(Self::LooseObject),
-            Kind::StripObject => Some(Self::StripObject),
-            Kind::Record => Some(Self::Record),
-            Kind::Array => Some(Self::Array),
-            Kind::Union => Some(Self::Union),
-            Kind::Variant => Some(Self::Variant),
-            Kind::MinLength => Some(Self::MinLength),
-            Kind::MaxLength => Some(Self::MaxLength),
-            Kind::MinValue => Some(Self::MinValue),
-            Kind::MaxValue => Some(Self::MaxValue),
-            Kind::Integer => Some(Self::Integer),
-            Kind::SafeInteger => Some(Self::SafeInteger),
-            Kind::Finite => Some(Self::Finite),
-            Kind::Unknown
-            | Kind::Optional
-            | Kind::Nullable
-            | Kind::Default
-            | Kind::Lazy
-            | Kind::Pipe => None,
+            SchemaKind::String => Some(Self::String),
+            SchemaKind::Number => Some(Self::Number),
+            SchemaKind::Boolean => Some(Self::Boolean),
+            SchemaKind::Bigint => Some(Self::Bigint),
+            SchemaKind::Literal => Some(Self::Literal),
+            SchemaKind::OneOf => Some(Self::OneOf),
+            SchemaKind::Object => Some(Self::Object),
+            SchemaKind::LooseObject => Some(Self::LooseObject),
+            SchemaKind::StripObject => Some(Self::StripObject),
+            SchemaKind::Record => Some(Self::Record),
+            SchemaKind::Array => Some(Self::Array),
+            SchemaKind::Union => Some(Self::Union),
+            SchemaKind::Variant => Some(Self::Variant),
+            SchemaKind::MinLength => Some(Self::MinLength),
+            SchemaKind::MaxLength => Some(Self::MaxLength),
+            SchemaKind::MinValue => Some(Self::MinValue),
+            SchemaKind::MaxValue => Some(Self::MaxValue),
+            SchemaKind::Integer => Some(Self::Integer),
+            SchemaKind::SafeInteger => Some(Self::SafeInteger),
+            SchemaKind::Finite => Some(Self::Finite),
+            SchemaKind::Unknown
+            | SchemaKind::Optional
+            | SchemaKind::Nullable
+            | SchemaKind::WithDefault
+            | SchemaKind::Lazy
+            | SchemaKind::Pipe => None,
         }
     }
 }
 
-impl fmt::Display for IssueKind {
+impl fmt::Display for SchemaIssueKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -268,67 +268,73 @@ mod tests {
 
     #[test]
     fn issue_kinds_have_distinct_names() {
-        let mut names: Vec<&str> = IssueKind::ALL.iter().map(|kind| kind.as_str()).collect();
+        let mut names: Vec<&str> = SchemaIssueKind::ALL
+            .iter()
+            .map(|kind| kind.as_str())
+            .collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), IssueKind::ALL.len());
-        for &kind in IssueKind::ALL {
+        assert_eq!(names.len(), SchemaIssueKind::ALL.len());
+        for &kind in SchemaIssueKind::ALL {
             assert_eq!(kind.to_string(), kind.as_str());
         }
     }
 
-    /// The place of each issue kind in `IssueKind::ALL`. Every one is named,
+    /// The place of each issue kind in `SchemaIssueKind::ALL`. Every one is named,
     /// so a new one does not compile until it is given a place here, which
     /// the test then asks `ALL` for.
-    const fn place(kind: IssueKind) -> usize {
+    const fn place(kind: SchemaIssueKind) -> usize {
         match kind {
-            IssueKind::String => 0,
-            IssueKind::Number => 1,
-            IssueKind::Boolean => 2,
-            IssueKind::Bigint => 3,
-            IssueKind::Literal => 4,
-            IssueKind::OneOf => 5,
-            IssueKind::Object => 6,
-            IssueKind::LooseObject => 7,
-            IssueKind::StripObject => 8,
-            IssueKind::Record => 9,
-            IssueKind::Array => 10,
-            IssueKind::Union => 11,
-            IssueKind::Variant => 12,
-            IssueKind::MinLength => 13,
-            IssueKind::MaxLength => 14,
-            IssueKind::MinValue => 15,
-            IssueKind::MaxValue => 16,
-            IssueKind::Integer => 17,
-            IssueKind::SafeInteger => 18,
-            IssueKind::Finite => 19,
-            IssueKind::UnknownKey => 20,
+            SchemaIssueKind::String => 0,
+            SchemaIssueKind::Number => 1,
+            SchemaIssueKind::Boolean => 2,
+            SchemaIssueKind::Bigint => 3,
+            SchemaIssueKind::Literal => 4,
+            SchemaIssueKind::OneOf => 5,
+            SchemaIssueKind::Object => 6,
+            SchemaIssueKind::LooseObject => 7,
+            SchemaIssueKind::StripObject => 8,
+            SchemaIssueKind::Record => 9,
+            SchemaIssueKind::Array => 10,
+            SchemaIssueKind::Union => 11,
+            SchemaIssueKind::Variant => 12,
+            SchemaIssueKind::MinLength => 13,
+            SchemaIssueKind::MaxLength => 14,
+            SchemaIssueKind::MinValue => 15,
+            SchemaIssueKind::MaxValue => 16,
+            SchemaIssueKind::Integer => 17,
+            SchemaIssueKind::SafeInteger => 18,
+            SchemaIssueKind::Finite => 19,
+            SchemaIssueKind::UnknownKey => 20,
         }
     }
 
     #[test]
     fn every_issue_kind_is_listed_at_its_place() {
-        for (index, &kind) in IssueKind::ALL.iter().enumerate() {
+        for (index, &kind) in SchemaIssueKind::ALL.iter().enumerate() {
             assert_eq!(place(kind), index, "{kind}");
         }
         // the last place is the last of the list, so none is past its end
-        assert_eq!(place(IssueKind::UnknownKey) + 1, IssueKind::ALL.len());
+        assert_eq!(
+            place(SchemaIssueKind::UnknownKey) + 1,
+            SchemaIssueKind::ALL.len()
+        );
     }
 
     #[test]
     fn a_kind_that_fails_has_the_issue_kind_of_its_name() {
         let mut found = Vec::new();
-        for &kind in Kind::ALL {
+        for &kind in SchemaKind::ALL {
             let never_fails = matches!(
                 kind,
-                Kind::Unknown
-                    | Kind::Optional
-                    | Kind::Nullable
-                    | Kind::Default
-                    | Kind::Lazy
-                    | Kind::Pipe
+                SchemaKind::Unknown
+                    | SchemaKind::Optional
+                    | SchemaKind::Nullable
+                    | SchemaKind::WithDefault
+                    | SchemaKind::Lazy
+                    | SchemaKind::Pipe
             );
-            match IssueKind::of(kind) {
+            match SchemaIssueKind::of(kind) {
                 Some(issue_kind) => {
                     assert!(!never_fails, "{kind}");
                     assert_eq!(issue_kind.as_str(), kind.as_str());
@@ -338,9 +344,12 @@ mod tests {
             }
         }
         // and the one issue kind that is of no schema
-        found.push(IssueKind::UnknownKey);
-        assert_eq!(found, IssueKind::ALL);
-        assert_eq!(Kind::from_name(IssueKind::UnknownKey.as_str()), None);
+        found.push(SchemaIssueKind::UnknownKey);
+        assert_eq!(found, SchemaIssueKind::ALL);
+        assert_eq!(
+            SchemaKind::from_name(SchemaIssueKind::UnknownKey.as_str()),
+            None
+        );
     }
 
     #[test]

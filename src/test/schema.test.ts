@@ -1003,7 +1003,7 @@ describe('def', () => {
 		one_of: s.one_of(values),
 		optional: s.optional(s.string),
 		nullable: s.nullable(s.string),
-		default: s.with_default(s.string, 'd'),
+		with_default: s.with_default(s.string, 'd'),
 		lazy: s.lazy(lazy_get),
 		object: s.object(entries),
 		loose_object: s.loose_object(entries),
@@ -1049,7 +1049,7 @@ describe('def', () => {
 			one_of: values,
 			optional: { schema: s.string },
 			nullable: { schema: s.string },
-			default: { schema: s.string, value: 'd' },
+			with_default: { schema: s.string, value: 'd' },
 			lazy: lazy_get,
 			object: entries,
 			loose_object: entries,
@@ -1085,12 +1085,12 @@ describe('def', () => {
 	});
 
 	test('a wrapper holds its schema under one key', () => {
-		for (const kind of ['optional', 'nullable', 'default'] as const) {
+		for (const kind of ['optional', 'nullable', 'with_default'] as const) {
 			assert.strictEqual(by_kind[kind].def.schema, s.string);
 		}
 		assert.deepEqual(Object.keys(by_kind.optional.def), ['schema']);
 		assert.deepEqual(Object.keys(by_kind.nullable.def), ['schema']);
-		assert.deepEqual(Object.keys(by_kind.default.def), ['schema', 'value']);
+		assert.deepEqual(Object.keys(by_kind.with_default.def), ['schema', 'value']);
 		// each wrapper has a def of its own
 		assert.notStrictEqual(s.optional(s.string).def, s.optional(s.string).def);
 	});
@@ -1131,7 +1131,7 @@ describe('def', () => {
 				switch (schema.kind) {
 					case 'optional':
 					case 'nullable':
-					case 'default':
+					case 'with_default':
 						return [schema.def.schema];
 					case 'lazy':
 						return [schema.def()];
@@ -1156,7 +1156,7 @@ describe('def', () => {
 		assert.deepEqual(kinds_of(s.array(s.optional(s.with_default(s.nullable(s.string), null)))), [
 			'array',
 			'optional',
-			'default',
+			'with_default',
 			'nullable',
 			'string'
 		]);
@@ -2100,8 +2100,8 @@ describe('types', () => {
 
 	test('kind narrows def to what the contract says', () => {
 		expectTypeOf<s.SchemaDef<'string'>>().toEqualTypeOf<undefined>();
-		expectTypeOf<s.SchemaDef<'literal'>>().toEqualTypeOf<s.Literal>();
-		expectTypeOf<s.SchemaDef<'default'>>().toEqualTypeOf<{
+		expectTypeOf<s.SchemaDef<'literal'>>().toEqualTypeOf<s.SchemaLiteral>();
+		expectTypeOf<s.SchemaDef<'with_default'>>().toEqualTypeOf<{
 			readonly schema: s.SchemaNode;
 			readonly value: unknown;
 		}>();
@@ -2125,16 +2125,16 @@ describe('types', () => {
 					expectTypeOf(schema.def).toEqualTypeOf<undefined>();
 					break;
 				case 'literal':
-					expectTypeOf(schema.def).toEqualTypeOf<s.Literal>();
+					expectTypeOf(schema.def).toEqualTypeOf<s.SchemaLiteral>();
 					break;
 				case 'one_of':
-					expectTypeOf(schema.def).toEqualTypeOf<ReadonlyArray<s.Literal>>();
+					expectTypeOf(schema.def).toEqualTypeOf<ReadonlyArray<s.SchemaLiteral>>();
 					break;
 				case 'optional':
 				case 'nullable':
 					expectTypeOf(schema.def).toEqualTypeOf<{ readonly schema: s.SchemaNode }>();
 					break;
-				case 'default':
+				case 'with_default':
 					expectTypeOf(schema.def.schema).toEqualTypeOf<s.SchemaNode>();
 					expectTypeOf(schema.def.value).toEqualTypeOf<unknown>();
 					break;

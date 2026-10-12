@@ -28,13 +28,13 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | the value given | `literal`, `one_of`, `min_length`, `max_length`, `min_value`, `max_value`, `regex` |
 | the function given | `check`, `transform`, `lazy` |
 | `{schema}` | `optional`, `nullable` |
-| `{schema, value}` | `default` |
+| `{schema, value}` | `with_default` |
 | the entries | `object`, `loose_object`, `strip_object` |
 | the schema of every value or item | `record`, `array` |
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
 
-- **`optional`, `nullable`, and `default` hold their schema under `schema`.**
+- **`optional`, `nullable`, and `with_default` hold their schema under `schema`.**
   Unwrapping any of the three is `kind` and that one key.
 - **`lazy` holds the function it was given**, not a schema. Nothing is held
   until it's called, and it is where a recursive schema comes back to itself,

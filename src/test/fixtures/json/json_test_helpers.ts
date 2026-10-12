@@ -22,13 +22,13 @@ import { join } from 'node:path';
 
 import * as s from '#lib/schema.ts';
 import {
-	OBJECT_PROTOTYPE_KEYS,
+	SCHEMA_JSON_REFUSED_KEYS,
 	SCHEMA_JSON_MAX_DEPTH,
 	SCHEMA_JSON_MAX_NESTING,
 	SCHEMA_JSON_UNSUPPORTED_KINDS,
 	to_schema_json,
 	type SchemaJson
-} from '../../schema_json.ts';
+} from '#lib/schema_json.ts';
 
 /** Every `JsonDivergence`. The Rust tests fail on a flag that isn't one of these. */
 export const JSON_DIVERGENCES = [
@@ -260,7 +260,7 @@ export interface JsonFixtureContract {
 export const generate_json_fixture_contract = (): JsonFixtureContract => ({
 	max_nesting: SCHEMA_JSON_MAX_NESTING,
 	max_depth: SCHEMA_JSON_MAX_DEPTH,
-	object_prototype_keys: OBJECT_PROTOTYPE_KEYS,
+	object_prototype_keys: SCHEMA_JSON_REFUSED_KEYS,
 	unsupported_kinds: SCHEMA_JSON_UNSUPPORTED_KINDS,
 	divergences: JSON_DIVERGENCES
 });
