@@ -8,11 +8,14 @@
  *
  * The cases come in tiers, by what one is for:
  *
- * - `real` is what a consumer has: an object, a list, a config, a form, an
- *   event stream, a union of shapes, and what svelte-docinfo validates, with
- *   its schemas and its output for a library. Speed is judged on these, so
- *   they are chosen as a set: each differs from the rest in the schema kinds
- *   it leans on or in the path it takes.
+ * - `real` is what a consumer has. Some are written for the purpose: an
+ *   object, a list, a config, a form, an event stream, a union of shapes.
+ *   The rest are harvested from consumers, their schemas rewritten for this
+ *   library and run over their own data: svelte-docinfo's analysis output,
+ *   fuz_repos's status report, fuz_util's `package.json`, and
+ *   syntax-highlighter-bench's results. Speed is judged on these, so they
+ *   are chosen as a set: each differs from the rest in the schema kinds it
+ *   leans on or in the path it takes.
  * - The other groups hold one case per code path, at one medium size. `each`
  *   runs a schema over a hundred items so its cost shows over the fixed cost
  *   of a parse, which `fixed` measures alone. The array's own loop is most of
@@ -38,6 +41,9 @@ import { readFileSync } from 'node:fs';
 
 import type * as schema_lib from '#lib/schema.ts';
 import { create_docinfo } from './docinfo/docinfo_fuz_schema.ts';
+import { create_repos_status } from './repos_status/repos_status_fuz_schema.ts';
+import { create_package_json } from './package_json/package_json_fuz_schema.ts';
+import { create_bench_results } from './bench_results/bench_results_fuz_schema.ts';
 
 export type SchemaLib = typeof schema_lib;
 
@@ -399,11 +405,35 @@ const real: CaseGroup = (s) => {
 	];
 };
 
+interface HarvestedDocument {
+	name: string;
+	value: unknown;
+}
+
+// the documents of a harvested set's data file, by its path from this directory
+// and the key it holds them under
+const read_harvest = (path: string, key: string): Array<HarvestedDocument> => {
+	const documents: unknown = JSON.parse(
+		readFileSync(new URL(`./${path}`, import.meta.url), 'utf8')
+	)[key];
+	if (!Array.isArray(documents)) throw new Error(`no ${key} in ${path}`);
+	return documents;
+};
+
+const to_document = (documents: Array<HarvestedDocument>, name: string): unknown => {
+	const found = documents.find((d) => d.name === name);
+	if (!found) throw new Error(`no document ${name}`);
+	return found.value;
+};
+
+// The cases below are harvested, not invented: each group runs a consumer's own
+// schemas, rewritten for this library, over that consumer's own data. They are
+// written with this library's current names, so a version from before one of
+// them loses the group.
+
 // What svelte-docinfo validates, with its own schemas (`docinfo/`) and its own
 // output for a whole library. A module is stored without the fields that have
 // their defaults, so parsing one fills them in and copies it all the way down.
-// The schemas are written with this library's current names, so a version from
-// before one of them loses the group.
 const real_docinfo: CaseGroup = (s) => {
 	const { ModuleJson, TypeJson } = create_docinfo(s);
 	const modules: Array<Record<string, unknown>> = JSON.parse(
@@ -454,41 +484,78 @@ const real_docinfo: CaseGroup = (s) => {
 	];
 };
 
-// a `real` case apart from the rest, so a library version from before
-// `loose_object` loses this one and not the group
-const real_loose: CaseGroup = (s) => {
-	// a file other tools write to as well: its own keys are checked and the rest kept
-	const Manifest = s.loose_object({
-		name: s.string,
-		version: s.pipe(s.string, s.regex(/^\d+\.\d+\.\d+$/)),
-		private: s.optional(s.boolean),
-		scripts: s.optional(s.record(s.string)),
-		dependencies: s.optional(s.record(s.string)),
-		devDependencies: s.optional(s.record(s.string))
-	});
+// What fuz_repos reads the output of its `repos status --json` through
+// (`repos_status/`): strict objects and discriminated unions nested several
+// deep, under a plain union of a report and an error.
+const real_repos_status: CaseGroup = (s) => {
+	const { ReposStatusDocument } = create_repos_status(s);
+	const documents = read_harvest('repos_status/repos_status_documents.json', 'documents');
+	const report = to_document(documents, 'status_report');
+	// a report from a newer tool than the schema mirrors: its last entry's
+	// presence is of a kind the mirror doesn't have, which the union's first
+	// option finds only after the rest of the document has matched
+	const drifted = to_json(report) as any;
+	drifted.entries.at(-1).presence = { kind: 'not_yet_known' };
+	return [
+		to_case(s, 'real/repos_status/valid', ReposStatusDocument, report, 'identity'),
+		// the union's second option, after its first has missed
+		to_case(
+			s,
+			'real/repos_status_error/valid',
+			ReposStatusDocument,
+			to_document(documents, 'error_report_registry_invalid'),
+			'identity'
+		),
+		to_case(s, 'real/repos_status_drifted/invalid', ReposStatusDocument, drifted, 'issues')
+	];
+};
+
+// What gro and fuz_repos read a `package.json` through (`package_json/`): a
+// loose object of optional keys, records, and unions with no discriminator.
+const real_package_json: CaseGroup = (s) => {
+	const { PackageJson } = create_package_json(s);
+	const manifests = read_harvest('package_json/package_json_manifests.json', 'manifests');
+	return [
+		// a published manifest, with no `glyph`: the check on one is the consumer's
+		// own code and would be most of the time
+		to_case(
+			s,
+			'real/package_json/valid',
+			PackageJson,
+			to_document(manifests, 'svelte@5.57.2'),
+			'identity'
+		),
+		// and one the schema doesn't take: `sideEffects` is `false`
+		to_case(
+			s,
+			'real/package_json_side_effects/invalid',
+			PackageJson,
+			to_document(manifests, 'vitest@5.0.0'),
+			'issues'
+		)
+	];
+};
+
+// What syntax-highlighter-bench reads a run's results through
+// (`bench_results/`): a large document of strict objects, records keyed by id,
+// and numbers each with its checks.
+const real_bench_results: CaseGroup = (s) => {
+	const { BenchResults } = create_bench_results(s);
+	const documents = read_harvest('bench_results/bench_results_documents.json', 'documents');
 	return [
 		to_case(
 			s,
-			'real/manifest/valid',
-			Manifest,
-			to_json({
-				name: 'example-app',
-				version: '1.4.2',
-				description: 'an example',
-				type: 'module',
-				license: 'MIT',
-				scripts: { dev: 'vite dev', build: 'vite build', test: 'vitest', check: 'tsc' },
-				dependencies: { hono: '^4.6.0', pg: '^8.13.0', zod: '^4.0.0' },
-				devDependencies: {
-					'@types/node': '^24.0.0',
-					'@types/pg': '^8.11.0',
-					eslint: '^9.0.0',
-					typescript: '^5.9.0',
-					vite: '^7.0.0',
-					vitest: '^4.0.0'
-				},
-				engines: { node: '>=24' }
-			}),
+			'real/bench_results/valid',
+			BenchResults,
+			to_document(documents, 'fixture_run'),
+			'identity'
+		),
+		// a published run: the same at a size too large for any cache but the last
+		to_case(
+			s,
+			'scale/bench_results_run/valid',
+			BenchResults,
+			to_document(documents, 'latest'),
 			'identity'
 		)
 	];
@@ -975,7 +1042,9 @@ const scale: CaseGroup = (s) => {
 export const CASE_GROUPS: Array<CaseGroup> = [
 	real,
 	real_docinfo,
-	real_loose,
+	real_repos_status,
+	real_package_json,
+	real_bench_results,
 	fixed,
 	each,
 	object,

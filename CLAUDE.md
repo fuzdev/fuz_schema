@@ -56,8 +56,10 @@ dev server.
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
   says and takes the path it names
-- `src/test/docinfo.test.ts` - the two ports of svelte-docinfo's schemas give
-  the same answers on its data
+- `src/test/docinfo.test.ts`, `src/test/harvest.test.ts` - a harvested set's
+  two forms, the consumer's and this library's, give the same answers on its
+  data: the first for the valibot set, the second for the zod ones, with its
+  helpers in `harvest_test_helpers.ts`
 - `src/test/schema_json.test.ts` - what `to_schema_json` writes and refuses
 - `src/test/fixtures/json/` - the fixtures shared with the Rust crate
   - `<group>/fixture.ts` - authored: a schema and named JSON texts
@@ -75,9 +77,10 @@ dev server.
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
-  - `docinfo/` - svelte-docinfo's schemas, in valibot and in this library,
-    with its fixtures and its output for a library: real schemas and data
-    for the cases, a snapshot that is not kept in step
+  - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/` - the
+    harvested sets: a consumer's schemas as it writes them (valibot or zod),
+    the same in this library, and its data, for the cases. Snapshots, not
+    kept in step, see `docs/benchmarks.md`
   - `wasm.ts` - the wasm build against the library, which also runs the JSON
     fixtures through the wasm
   - `docinfo.ts` - valibot against the library on the schemas and data in

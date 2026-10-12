@@ -23,11 +23,11 @@ Zod Mini, TypeBox, and ArkType.
   rest are synthetic. A test holds every library to the same answer on each.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
-  - `real` is what a consumer has: an object, a list, a config, a form, an
-    event stream, a union of shapes, and what
-    [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo) validates.
-    Speed is judged on these, so they are chosen as a set, each differing
-    from the rest in the schema kinds it leans on or the path it takes.
+  - `real` is what a consumer has. Some are written for the purpose: an
+    object, a list, a config, a form, an event stream, a union of shapes.
+    The rest are harvested from consumers, below. Speed is judged on these,
+    so they are chosen as a set, each differing from the rest in the schema
+    kinds it leans on or the path it takes.
   - The other groups hold one case per code path, at one medium size. `each`
     runs a schema over a hundred items, so its cost shows over the fixed cost
     of a parse, which `fixed` measures alone.
@@ -39,17 +39,31 @@ Zod Mini, TypeBox, and ArkType.
   `JSON.parse`, as a consumer's do: an object built key by key can be a
   different kind of object to the engine, and cost differently.
 
-The svelte-docinfo cases are harvested, not invented. `src/benchmarks/docinfo/`
-holds a snapshot of its schemas as it writes them for valibot, the same
-schemas in this library, some of its test fixtures, and its output for a whole
-library, each file naming the commit it came from. `src/test/docinfo.test.ts`
-holds the two libraries to the same outputs on that data and to issues at the
-same paths when it is broken. The snapshot is not kept in step with
-svelte-docinfo, which goes on using valibot. `npm run benchmark:docinfo`
-compares the two on it: the bundle of a module that parses one of its
-documents, and parse time and allocation over its output for a library, both
-as stored and with every default in place. It is the one comparison of a
-consumer's whole schema set; the scenarios are one small schema each.
+### Harvested sets
+
+A harvested set is a consumer's own schemas and its own data, copied in as a
+snapshot. Each has a directory under `src/benchmarks/` holding the schemas as
+the consumer writes them, the same schemas in this library, and the data, each
+file naming the commit it came from. The consumer is not changed and the
+snapshot is not kept in step with it.
+
+| Set | From | What it is |
+|---|---|---|
+| `docinfo/` | [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo), in Valibot | analysis output: strict objects with many defaults, variants, a recursive type; its fixtures and its output for a whole library |
+| `repos_status/` | [fuz_repos](https://github.com/fuzdev/fuz_repos), in Zod | a status report: strict objects and discriminated unions nested several deep, under a plain union; its test goldens |
+| `package_json/` | [fuz_util](https://github.com/fuzdev/fuz_util), in Zod | a `package.json`: a loose object, records, unions with no discriminator; manifests of this ecosystem's repos and of published packages |
+| `bench_results/` | [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench), in Zod | a results document, its structure without its refinements: records keyed by id, numbers each with its checks; a test fixture and a published run |
+
+`src/test/docinfo.test.ts` and `src/test/harvest.test.ts` hold each pair to the
+same verdict and output on the data, and on that data changed in one place at
+a time. Where a rewrite had to stand something in for what the consumer's
+library has built in, the header of the rewritten file says what.
+
+`npm run benchmark:docinfo` compares Valibot and this library on the first
+set: the bundle of a module that parses one of its documents, and parse time
+and allocation over its output for a library, both as stored and with every
+default in place. It is the one comparison of a consumer's whole schema set;
+the scenarios are one small schema each.
 
 ## Method
 
