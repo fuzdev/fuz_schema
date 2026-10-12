@@ -3,17 +3,17 @@ import { describe, test, assert, expectTypeOf } from 'vitest';
 import * as s from '#lib/schema.ts';
 
 const issues_of = (schema: s.AnySchema, value: unknown): Array<s.SchemaIssue> => {
-	const result = s.safe_parse(schema, value);
+	const result = s.parse(schema, value);
 	assert(!result.ok);
 	return result.issues;
 };
 
 describe('primitives', () => {
 	test('accept their type and reject others', () => {
-		assert.strictEqual(s.parse(s.string, 'a'), 'a');
-		assert.strictEqual(s.parse(s.number, 1), 1);
-		assert.strictEqual(s.parse(s.boolean, false), false);
-		assert.strictEqual(s.parse(s.bigint, 1n), 1n);
+		assert.strictEqual(s.parse_or_throw(s.string, 'a'), 'a');
+		assert.strictEqual(s.parse_or_throw(s.number, 1), 1);
+		assert.strictEqual(s.parse_or_throw(s.boolean, false), false);
+		assert.strictEqual(s.parse_or_throw(s.bigint, 1n), 1n);
 		assert(!s.is(s.string, 1));
 		assert(!s.is(s.number, '1'));
 		assert(!s.is(s.boolean, 0));
@@ -42,11 +42,11 @@ describe('primitives', () => {
 
 describe('wrappers', () => {
 	test('optional, nullable, with_default', () => {
-		assert.strictEqual(s.parse(s.optional(s.string), undefined), undefined);
-		assert.strictEqual(s.parse(s.nullable(s.string), null), null);
+		assert.strictEqual(s.parse_or_throw(s.optional(s.string), undefined), undefined);
+		assert.strictEqual(s.parse_or_throw(s.nullable(s.string), null), null);
 		assert(!s.is(s.optional(s.string), null));
-		assert.strictEqual(s.parse(s.with_default(s.string, 'x'), undefined), 'x');
-		assert.strictEqual(s.parse(s.with_default(s.string, 'x'), 'y'), 'y');
+		assert.strictEqual(s.parse_or_throw(s.with_default(s.string, 'x'), undefined), 'x');
+		assert.strictEqual(s.parse_or_throw(s.with_default(s.string, 'x'), 'y'), 'y');
 	});
 
 	test('lazy resolves once and recurses', () => {
@@ -82,18 +82,18 @@ describe('object', () => {
 
 	test('builds a new output and drops unknown keys', () => {
 		const input: unknown = { name: 'a', extra: 1 };
-		const output = s.parse(User, input);
+		const output = s.parse_or_throw(User, input);
 		assert.notStrictEqual(output, input);
 		assert.deepEqual(output, { name: 'a', role: 'user' });
 	});
 
 	test('keeps an explicit undefined and omits a missing optional', () => {
-		assert.deepEqual(Object.keys(s.parse(User, { name: 'a', age: undefined })), [
+		assert.deepEqual(Object.keys(s.parse_or_throw(User, { name: 'a', age: undefined })), [
 			'name',
 			'age',
 			'role'
 		]);
-		assert.deepEqual(Object.keys(s.parse(User, { name: 'a' })), ['name', 'role']);
+		assert.deepEqual(Object.keys(s.parse_or_throw(User, { name: 'a' })), ['name', 'role']);
 	});
 
 	test('collects every issue with its path', () => {
@@ -107,7 +107,7 @@ describe('object', () => {
 
 	test('strict_object fails on unknown keys', () => {
 		const Strict = s.strict_object({ a: s.string });
-		assert.deepEqual(s.parse(Strict, { a: 'x' }), { a: 'x' });
+		assert.deepEqual(s.parse_or_throw(Strict, { a: 'x' }), { a: 'x' });
 		assert.deepEqual(issues_of(Strict, { a: 'x', b: 1, toString: 2 }), [
 			{
 				kind: 'unknown_key',
@@ -128,9 +128,9 @@ describe('object', () => {
 
 	test('record validates values and ignores __proto__', () => {
 		const Counts = s.record(s.number);
-		assert.deepEqual(s.parse(Counts, { a: 1, b: 2 }), { a: 1, b: 2 });
+		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: 2 }), { a: 1, b: 2 });
 		assert.deepEqual(issues_of(Counts, { a: 1, b: 'x' })[0]!.path, ['b']);
-		const output = s.parse(Counts, JSON.parse('{"__proto__": 1, "a": 2}'));
+		const output = s.parse_or_throw(Counts, JSON.parse('{"__proto__": 1, "a": 2}'));
 		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
 		assert.deepEqual(Object.keys(output), ['a']);
 	});
@@ -154,21 +154,21 @@ describe('copy on write', () => {
 			counts: { a: 1 },
 			role: 'admin'
 		};
-		assert.strictEqual(s.parse(User, input), input);
+		assert.strictEqual(s.parse_or_throw(User, input), input);
 		const list = [input, input];
-		assert.strictEqual(s.parse(s.array(User), list), list);
+		assert.strictEqual(s.parse_or_throw(s.array(User), list), list);
 		const loose = { city: 'c' };
 		assert.strictEqual(
-			s.parse(s.object({ city: s.string, zip: s.optional(s.string) }), loose),
+			s.parse_or_throw(s.object({ city: s.string, zip: s.optional(s.string) }), loose),
 			loose
 		);
-		assert.strictEqual(s.parse(s.union([s.number, Address]), loose), loose);
+		assert.strictEqual(s.parse_or_throw(s.union([s.number, Address]), loose), loose);
 	});
 
 	test('copies only the changed path and never mutates the input', () => {
 		const input = { name: 'a', tags: ['x'], address: { city: 'c' }, counts: { a: 1 } };
 		const snapshot = structuredClone(input);
-		const output = s.parse(User, input);
+		const output = s.parse_or_throw(User, input);
 		assert(!Object.is(output, input));
 		assert.deepEqual(output, { ...snapshot, role: 'user' });
 		assert.deepEqual(input, snapshot);
@@ -182,7 +182,7 @@ describe('copy on write', () => {
 			items: s.array(s.object({ n: s.with_default(s.number, 0), keep: s.string }))
 		});
 		const input = { items: [{ n: 1, keep: 'a' }, { keep: 'b' }, { n: 3, keep: 'c' }] };
-		const output = s.parse(Tree, input);
+		const output = s.parse_or_throw(Tree, input);
 		assert.deepEqual(output, {
 			items: [
 				{ n: 1, keep: 'a' },
@@ -199,14 +199,17 @@ describe('copy on write', () => {
 	test('object still drops unknown keys, by copying', () => {
 		const O = s.object({ a: s.string });
 		const input = { a: 'x', secret: 1 };
-		const output = s.parse(O, input);
+		const output = s.parse_or_throw(O, input);
 		assert.deepEqual(output, { a: 'x' });
 		assert.deepEqual(input, { a: 'x', secret: 1 });
 		// including when a later entry changes
-		assert.deepEqual(s.parse(s.object({ a: s.string, b: s.with_default(s.number, 1) }), input), {
-			a: 'x',
-			b: 1
-		});
+		assert.deepEqual(
+			s.parse_or_throw(s.object({ a: s.string, b: s.with_default(s.number, 1) }), input),
+			{
+				a: 'x',
+				b: 1
+			}
+		);
 	});
 
 	test('transforms copy arrays from the first changed item', () => {
@@ -217,24 +220,24 @@ describe('copy on write', () => {
 			)
 		);
 		const input = ['A', 'b', 'C'];
-		const output = s.parse(Upper, input);
+		const output = s.parse_or_throw(Upper, input);
 		assert.deepEqual(output, ['A', 'B', 'C']);
 		assert.deepEqual(input, ['A', 'b', 'C']);
 		const same = ['A', 'B'];
-		assert.strictEqual(s.parse(Upper, same), same);
+		assert.strictEqual(s.parse_or_throw(Upper, same), same);
 	});
 
 	test('record copies when a value changes or a __proto__ key is present', () => {
 		const Counts = s.record(s.with_default(s.number, 0));
 		const same = { a: 1 };
-		assert.strictEqual(s.parse(Counts, same), same);
-		assert.deepEqual(s.parse(Counts, { a: 1, b: undefined, c: 3 }), { a: 1, b: 0, c: 3 });
+		assert.strictEqual(s.parse_or_throw(Counts, same), same);
+		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: undefined, c: 3 }), { a: 1, b: 0, c: 3 });
 	});
 });
 
 describe('array, union, variant', () => {
 	test('array prefixes the index', () => {
-		assert.deepEqual(s.parse(s.array(s.number), [1, 2]), [1, 2]);
+		assert.deepEqual(s.parse_or_throw(s.array(s.number), [1, 2]), [1, 2]);
 		assert.deepEqual(
 			issues_of(s.array(s.object({ a: s.number })), [{ a: 1 }, { a: 'x' }])[0]!.path,
 			[1, 'a']
@@ -244,7 +247,7 @@ describe('array, union, variant', () => {
 
 	test('union takes the first match and reports one issue', () => {
 		const U = s.union([s.string, s.number]);
-		assert.strictEqual(s.parse(U, 1), 1);
+		assert.strictEqual(s.parse_or_throw(U, 1), 1);
 		assert.deepEqual(issues_of(U, true), [
 			{ kind: 'union', expected: 'string | number', value: true, path: [], message: undefined }
 		]);
@@ -263,7 +266,10 @@ describe('array, union, variant', () => {
 			s.strict_object({ kind: s.literal('circle'), radius: s.number }),
 			s.strict_object({ kind: s.literal('square'), size: s.number })
 		]);
-		assert.deepEqual(s.parse(Shape, { kind: 'square', size: 2 }), { kind: 'square', size: 2 });
+		assert.deepEqual(s.parse_or_throw(Shape, { kind: 'square', size: 2 }), {
+			kind: 'square',
+			size: 2
+		});
 		assert.deepEqual(issues_of(Shape, { kind: 'circle', radius: 'x' })[0]!.path, ['radius']);
 		assert.deepEqual(issues_of(Shape, { kind: 'line' }), [
 			{
@@ -281,7 +287,7 @@ describe('array, union, variant', () => {
 describe('pipe and actions', () => {
 	test('runs actions in order and stops at the first failure', () => {
 		const Name = s.pipe(s.string, s.min_length(2), s.max_length(4));
-		assert.strictEqual(s.parse(Name, 'abc'), 'abc');
+		assert.strictEqual(s.parse_or_throw(Name, 'abc'), 'abc');
 		assert.deepEqual(
 			issues_of(Name, 'a').map((i) => i.kind),
 			['min_length']
@@ -313,11 +319,11 @@ describe('pipe and actions', () => {
 			s.string,
 			s.transform((v) => v.length)
 		);
-		assert.strictEqual(s.parse(Length, 'abc'), 3);
+		assert.strictEqual(s.parse_or_throw(Length, 'abc'), 3);
 	});
 
 	test('transform ignores the context argument', () => {
-		assert.strictEqual(s.parse(s.pipe(s.string, s.transform(parseInt)), '11'), 11);
+		assert.strictEqual(s.parse_or_throw(s.pipe(s.string, s.transform(parseInt)), '11'), 11);
 	});
 });
 
@@ -348,13 +354,13 @@ describe('message', () => {
 		);
 		assert.strictEqual(issues_of(Name, 'a')[0]!.message, 'too short: a');
 		assert.strictEqual(issues_of(Name, 1)[0]!.message, 'bad name');
-		assert.strictEqual(s.parse(Name, 'ab'), 'ab');
+		assert.strictEqual(s.parse_or_throw(Name, 'ab'), 'ab');
 	});
 
 	test('is transparent to introspection and optional keys', () => {
 		const O = s.object({ a: s.message(s.optional(s.string), 'x') });
 		assert.strictEqual(O.def.a.kind, 'optional');
-		assert.deepEqual(s.parse(O, {}), {});
+		assert.deepEqual(s.parse_or_throw(O, {}), {});
 		const V = s.variant('kind', [
 			s.message(s.strict_object({ kind: s.literal('a') }), 'x'),
 			s.strict_object({ kind: s.literal('b') })
@@ -384,12 +390,12 @@ describe('probe mode', () => {
 			assert.strictEqual(calls, 1, schema.kind);
 			// and without probe mode every child runs
 			calls = 0;
-			assert(!s.safe_parse(schema, value).ok);
+			assert(!s.parse(schema, value).ok);
 			assert(calls > 1, schema.kind);
 		}
 	});
 
-	test('is matches safe_parse on unknown keys, variants, and messages', () => {
+	test('is matches parse on unknown keys, variants, and messages', () => {
 		const Strict = s.strict_object({ a: s.string });
 		assert(s.is(Strict, { a: 'x' }));
 		assert(!s.is(Strict, { a: 'x', b: 1 }));
@@ -403,7 +409,7 @@ describe('probe mode', () => {
 			s.strict_object({ a: s.array(s.string) }),
 			s.strict_object({ b: s.union([s.number, s.literal('x')]) })
 		]);
-		assert.deepEqual(s.parse(Item, { b: 'x' }), { b: 'x' });
+		assert.deepEqual(s.parse_or_throw(Item, { b: 'x' }), { b: 'x' });
 		const List = s.object({ first: s.string, items: s.array(Item) });
 		assert.deepEqual(issues_of(List, { first: 1, items: [{ b: 1 }, { a: [1] }, { c: 1 }] }), [
 			{ kind: 'string', expected: 'string', value: 1, path: ['first'], message: undefined },
@@ -436,11 +442,11 @@ describe('probe mode', () => {
 	});
 });
 
-describe('parse', () => {
+describe('parse_or_throw', () => {
 	test('throws SchemaError listing every issue', () => {
 		const O = s.object({ a: s.string, b: s.array(s.number) });
 		try {
-			s.parse(O, { a: 1, b: [1, null] });
+			s.parse_or_throw(O, { a: 1, b: [1, null] });
 			assert.fail('expected a throw');
 		} catch (error) {
 			assert(error instanceof s.SchemaError);

@@ -170,10 +170,7 @@ const is_object = (value: unknown): value is Record<string, unknown> =>
 /**
  * Validates `value`, returning the output or every issue found.
  */
-export const safe_parse = <T extends AnySchema>(
-	schema: T,
-	value: unknown
-): SchemaResult<Infer<T>> => {
+export const parse = <T extends AnySchema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
 	const ctx: SchemaContext = { issues: [], fails: 0, probe: false };
 	const output = schema.run(value, ctx);
 	return ctx.fails ? { ok: false, issues: ctx.issues } : { ok: true, value: output };
@@ -184,7 +181,7 @@ export const safe_parse = <T extends AnySchema>(
  *
  * @throws SchemaError when `value` doesn't match
  */
-export const parse = <T extends AnySchema>(schema: T, value: unknown): Infer<T> => {
+export const parse_or_throw = <T extends AnySchema>(schema: T, value: unknown): Infer<T> => {
 	const ctx: SchemaContext = { issues: [], fails: 0, probe: false };
 	const output = schema.run(value, ctx);
 	if (ctx.fails) throw new SchemaError(ctx.issues);
@@ -216,7 +213,7 @@ export const format_issue = (issue: SchemaIssue): string =>
 	(issue.message ?? `expected ${issue.expected}, received ${to_type_name(issue.value)}`);
 
 /**
- * Thrown by `parse`. The message lists every issue, one per line.
+ * Thrown by `parse_or_throw`. The message lists every issue, one per line.
  */
 export class SchemaError extends Error {
 	issues: Array<SchemaIssue>;

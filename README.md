@@ -18,7 +18,7 @@ const User = s.strict_object({
 });
 type User = s.Infer<typeof User>;
 
-const result = s.safe_parse(User, input);
+const result = s.parse(User, input);
 if (result.ok) result.value;
 else result.issues; // [{kind, expected, value, path, message}]
 ```
@@ -86,6 +86,9 @@ and the input is never mutated.
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options' issues.
 - A missing object key and an `undefined` value are treated the same.
+- `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
+  Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
+  object instead, which TypeScript catches in typed code and nothing catches in untyped code.
 
 ## API
 
@@ -97,12 +100,12 @@ Everything is a named export of `schema.ts`, used through a namespace import.
 | wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
 | containers | `object`, `strict_object`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
-| entry points | `safe_parse`, `parse`, `is` |
+| entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `to_type_name`, `SchemaError`, `fail` |
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue` |
 
-`safe_parse` returns `{ok: true, value}` or `{ok: false, issues}`.
-`parse` returns the value or throws a `SchemaError` listing every issue.
+`parse` returns `{ok: true, value}` or `{ok: false, issues}`.
+`parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
 `is` answers yes or no without building issues.
 
 ```ts

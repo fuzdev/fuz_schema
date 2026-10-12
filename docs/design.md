@@ -71,3 +71,6 @@ a `~standard` property. Whether they should, natively, is undecided.
 - A missing key and an `undefined` value are the same.
 - `variant` dispatches by map; its options need a `literal` discriminator.
 - Output is copy-on-write.
+- `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
+  Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
+  object instead, which TypeScript catches in typed code and nothing catches in untyped code.

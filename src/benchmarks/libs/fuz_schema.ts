@@ -5,7 +5,7 @@ import type { ScenarioModule, ScenarioRunner } from '../scenarios.ts';
 const to_runner =
 	(schema: s.AnySchema): ScenarioRunner =>
 	(value) =>
-		s.safe_parse(schema, value).ok;
+		s.parse(schema, value).ok;
 
 export const scenario_string: ScenarioModule['scenario_string'] = () => to_runner(s.string);
 

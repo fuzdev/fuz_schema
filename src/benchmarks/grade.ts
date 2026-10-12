@@ -83,7 +83,7 @@ hold_benchmark_lock('fuz_schema grade');
 const NOISE_FLOOR = 0.1;
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 const CEILING_VS_VALIBOT = 2 / 3;
-// the scenario standing in for "what `safe_parse` plus an object schema reaches"
+// the scenario standing in for "what `parse` plus an object schema reaches"
 const CORE_SCENARIO = 'object_flat';
 // the scenarios cold start samples: one small schema, one large
 const COLDSTART_SCENARIOS = ['object_flat', 'type_json'];

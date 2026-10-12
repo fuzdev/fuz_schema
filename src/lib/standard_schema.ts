@@ -8,7 +8,7 @@
  * @module
  */
 
-import { format_issue, safe_parse, type AnySchema, type Infer, type InferInput } from './schema.ts';
+import { format_issue, parse, type AnySchema, type Infer, type InferInput } from './schema.ts';
 
 /**
  * The Standard Schema v1 interface, copied from the spec as it recommends
@@ -48,7 +48,7 @@ export const to_standard_schema = <T extends AnySchema>(
 		version: 1,
 		vendor: 'fuz_schema',
 		validate: (value) => {
-			const result = safe_parse(schema, value);
+			const result = parse(schema, value);
 			return result.ok
 				? { value: result.value }
 				: {

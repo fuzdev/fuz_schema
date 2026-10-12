@@ -22,6 +22,20 @@ import type * as schema_lib from '#lib/schema.ts';
 
 export type SchemaLib = typeof schema_lib;
 
+// these exist so a baseline from before the `parse` rename, where `safe_parse`
+// returned the result and `parse` threw, can still be graded
+type ParseResult = (
+	schema: schema_lib.AnySchema,
+	value: unknown
+) => schema_lib.SchemaResult<unknown>;
+type ParseThrowing = (schema: schema_lib.AnySchema, value: unknown) => unknown;
+
+const to_parse = (s: SchemaLib): ParseResult =>
+	'parse_or_throw' in s ? s.parse : (s as unknown as { safe_parse: ParseResult }).safe_parse;
+
+const to_parse_or_throw = (s: SchemaLib): ParseThrowing =>
+	'parse_or_throw' in s ? s.parse_or_throw : (s as unknown as { parse: ParseThrowing }).parse;
+
 export interface Case {
 	name: string;
 	group: string;
@@ -55,10 +69,10 @@ const to_case = (
 	valid,
 	input,
 	run: () => {
-		const result = s.safe_parse(schema, input);
+		const result = to_parse(s)(schema, input);
 		return result.ok ? result.value : undefined;
 	},
-	ok: () => s.safe_parse(schema, input).ok
+	ok: () => to_parse(s)(schema, input).ok
 });
 
 const range = (n: number): Array<number> => Array.from({ length: n }, (_, i) => i);
@@ -496,16 +510,16 @@ const api: CaseGroup = (s) => {
 		valid: ok,
 		input,
 		run,
-		ok: () => s.safe_parse(User, input).ok
+		ok: () => to_parse(s)(User, input).ok
 	});
 	return [
-		to_api_case('api/parse/valid', valid, true, () => s.parse(User, valid)),
+		to_api_case('api/parse_or_throw/valid', valid, true, () => to_parse_or_throw(s)(User, valid)),
 		to_api_case('api/is/valid', valid, true, () => (s.is(User, valid) ? valid : undefined)),
 		to_api_case('api/is/invalid', invalid, false, () =>
 			s.is(User, invalid) ? invalid : undefined
 		),
-		to_api_case('api/safe_parse/invalid', invalid, false, () => {
-			const result = s.safe_parse(User, invalid);
+		to_api_case('api/parse/invalid', invalid, false, () => {
+			const result = to_parse(s)(User, invalid);
 			return result.ok ? result.value : undefined;
 		})
 	];
