@@ -49,7 +49,7 @@ In order:
 
 Flexibility comes after all four.
 Where a feature not everyone needs would cost every user, it's a separate export
-that the core never reaches: custom messages, message formatting,
+that the core never reaches: custom messages, message formatting, metadata,
 and the Standard Schema adapter are all like this, and all bundle to nothing unused.
 
 ## What's different from Valibot
@@ -94,7 +94,8 @@ and the input is never mutated.
 
 ## API
 
-Everything is a named export of `schema.ts`, used through a namespace import.
+Everything here is a named export of `schema.ts`, used through a namespace import.
+[Metadata](#metadata) and the [Standard Schema](#standard-schema) adapter are modules of their own.
 
 | | |
 |---|---|
@@ -183,6 +184,47 @@ The narrowed type is for reading a schema as data: a schema typed with its kind 
 while one typed as a bare `Schema` or `AnySchema` (as recursive schemas usually are) reads as `SchemaNode`,
 whose output type is `unknown`.
 
+### Metadata
+
+`meta` attaches metadata to a schema and `get_meta` reads it back.
+They are a module of their own, backed by a `WeakMap`, so a schema stays `{kind, def, run}`
+and a bundle that attaches no metadata carries none of it.
+
+```ts
+import {meta, get_meta} from '@fuzdev/fuz_schema/meta.ts';
+
+const Port = meta(s.number, {description: 'the port to listen on'});
+
+get_meta(Port); // {description: 'the port to listen on'}
+get_meta(s.number); // undefined
+```
+
+`meta` returns a copy of the schema with the same `kind`, `def`, and `run`, and leaves the one given alone:
+`s.number` is a constant every use shares.
+The copy has the schema's type and parses as it does, so it goes anywhere a schema goes,
+and as an object entry `meta(s.optional(...), ...)` still makes the key optional.
+
+- Calling `meta` on a schema that has metadata merges the two, the new keys winning.
+- `get_meta` reads the object it is given and nothing inside it.
+  For `s.optional(Port)` that is `undefined`, and `get_meta(schema.def.schema)` finds it:
+  metadata on a nested schema is reached by [walking](#introspection).
+- `flavor` and `brand` return the schema itself, so its metadata is still there.
+  `message` builds a new schema, so attach metadata last: `meta(s.message(...), ...)`.
+
+`description` is built in. Other keys are added to the `SchemaMeta` interface by declaration merging,
+from a module, naming the module as it is imported:
+
+```ts
+declare module '@fuzdev/fuz_schema/meta.ts' {
+	interface SchemaMeta {
+		aliases?: Array<string>;
+	}
+}
+```
+
+The package exports every module under both a `.ts` and a `.js` path.
+Either names the same declarations, so an augmentation through one is seen through both.
+
 ### Standard Schema
 
 A schema is not itself a [Standard Schema](https://standardschema.dev/);
@@ -209,10 +251,10 @@ is an open question.
 - [x] the schemas and actions in the table above, with output and input type inference
 - [x] custom messages, as an opt-in wrapper
 - [x] Standard Schema v1, as an opt-in adapter
+- [x] metadata, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
 - [ ] nested issues for a failed `union`
-- [ ] `meta`
 - [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
 - [ ] abort-early as a caller option
 - [x] a published package
@@ -302,7 +344,7 @@ it is an empty crate today.
 ## Docs
 
 - [`docs/design.md`](docs/design.md) — the internals and why: the one shape,
-  probe mode, copy-on-write and what it gives up, issues and messages
+  probe mode, copy-on-write and what it gives up, issues and messages, metadata
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and what isn't measured
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by

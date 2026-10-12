@@ -1,6 +1,6 @@
 # Design
 
-The internals of `src/lib/schema.ts`. The strategy is
+The internals of `src/lib/schema.ts` and the modules beside it. The strategy is
 [Valibot](https://valibot.dev/)'s: one tree-shakeable export per schema and
 action, schemas as plain data, `pipe` for refinement. This is where it differs.
 
@@ -136,10 +136,28 @@ itself reports. It copies `kind` and `def`, so it's invisible to introspection.
 itself. They add no wrapper and no second shape, so `kind` and `def` are the
 wrapped schema's and nothing is stored at runtime.
 
+## Metadata
+
+`meta(schema, data)` is in `src/lib/meta.ts`, a module of its own that holds a
+`WeakMap` from schema object to metadata. A fourth field would give schemas a
+second hidden class and put bytes in every bundle. A registry costs a bundle
+nothing until it imports the module.
+
+- **`meta` copies the schema.** One with no options is a shared constant, so
+  the copy, not the original, is what gets registered. The copy is
+  `{kind, def, run}` in that order, with the original's values.
+- **Metadata belongs to one object.** `flavor` and `brand` return that object.
+  `message`, the wrappers, and the containers build a new one, which has none.
+  A wrapper holds its schema as `def.schema`, so a walk reaches it.
+- **Attaching again merges**, key by key, onto a new copy.
+- **`SchemaMeta` is an interface**, with `description`, that consumers extend
+  by declaration merging. The library names no application's keys.
+- The registry holds its keys weakly: metadata lives as long as its schema.
+
 ## Costs are opt-in
 
 A feature not every consumer needs is a separate export or module the core
-never reaches: `message`, `format_issue`, `to_standard_schema`. Factories are
+never reaches: `message`, `format_issue`, `meta`, `to_standard_schema`. Factories are
 marked `// @__NO_SIDE_EFFECTS__` so an unused definition is dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry

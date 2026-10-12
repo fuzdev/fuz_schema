@@ -41,7 +41,10 @@ dev server.
   (`import * as s from '#lib/schema.ts'`)
 - `src/lib/standard_schema.ts` - `to_standard_schema`, the Standard Schema
   adapter, separate so core schemas never carry a `~standard` property
-- `src/test/schema.test.ts`, `standard_schema.test.ts` - behavior and type inference
+- `src/lib/meta.ts` - `meta` and `get_meta`, metadata in a `WeakMap` beside
+  the schemas, separate so a schema keeps its three fields
+- `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
+  behavior and type inference
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
@@ -63,7 +66,8 @@ dev server.
 
 - `README.md` - what the library is, its API, status, and what's been measured
 - `docs/design.md` - the internals and why: the one shape, the context and
-  probe mode, copy-on-write and what it gives up, issues and messages
+  probe mode, copy-on-write and what it gives up, issues and messages,
+  metadata
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
