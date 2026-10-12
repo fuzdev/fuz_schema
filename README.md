@@ -379,7 +379,7 @@ Caveats:
 - The scenarios are few and small.
   One is a real recursive schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
   the rest are synthetic.
-- Timings come from a shared workstation, not a quiet machine. Byte counts are exact.
+- Timings come from a shared workstation, not a quiet machine. Bundle sizes are exact; allocation repeats closely, not exactly.
 - It's V8 only. The one-shape design is tuned to V8's hidden classes.
 - It isn't like-for-like. Valibot does more, and TypeBox's check doesn't build an output.
 - A test holds every library to the same answer on every scenario's valid and invalid input,

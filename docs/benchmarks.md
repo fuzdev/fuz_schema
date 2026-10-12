@@ -12,7 +12,7 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:heap` | memory still held after building and parsing |
 | `npm run benchmark:types` | cost to the TypeScript checker |
 | `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
-| `npm run benchmark:docinfo` | svelte-docinfo's schemas in Valibot against this library: bundle, parse time, allocation |
+| `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 
 ## Scenarios and cases
@@ -59,19 +59,78 @@ same verdict and output on the data, and on that data changed in one place at
 a time. Where a rewrite had to stand something in for what the consumer's
 library has built in, the header of the rewritten file says what.
 
-`npm run benchmark:docinfo` compares Valibot and this library on the first
-set: the bundle of a module that parses one of its documents, and parse time
-and allocation over its output for a library, both as stored and with every
-default in place. It is the one comparison of a consumer's whole schema set;
-the scenarios are one small schema each.
+### Head to head
+
+`npm run benchmark:harvest` compares each set's own library with this one, on
+that set's schemas and data: the bundle of a module that parses one document,
+then parse time and allocation over rows that are documents of the set. They
+are the comparisons of a consumer's whole schema set; the scenarios are one
+small schema each. `--set` names the sets to run, and may be given more than
+once.
+
+- **A set is a process.** Each is measured in a process of its own, so what
+  one set's schemas teach the engine about a library's shared code is not
+  there when the next is timed, and a set reads the same run alone.
+- **Agreement comes first.** Every row is run by each side, and must give the
+  verdict the row names and outputs that are deeply and strictly equal, before
+  anything is timed. A row that fails stops the run. The ways the rewrites
+  differ are all on input this data doesn't have, or in the issues of a
+  document that doesn't match, which are not compared.
+- **The rows** are a typical document, the collection where the consumer reads
+  one, a document that doesn't match, and one through a guard. A document
+  `cases.ts` takes from a set unchanged is a row here too.
+- **Timing** runs a row on every side for at least a set time and count, then
+  times the sides in turns, each round starting one later, and takes medians.
+  A timing is long enough that a collection of the young generation is a small
+  part of it. It is taken in the process the bytes are, under the flags the
+  bytes need. Those are not the flags a consumer runs under, and a side's time
+  moves with them, by set and not always the same way.
+- **Bytes** are sampled with no collection forced, a row run until two medians
+  in a row agree. A sample is a small share of the young generation the npm
+  script asks for, or one parse where a parse is more than that, so a
+  collection falls in few and the median is of the rest. The same parse in two
+  rows reads within about a percent. A figure is of the code the engine has
+  made for a set's rows together: a document parsed alone in a process can
+  allocate less.
+- **Zod is two columns.** It compiles a parser for each object schema with
+  `new Function` on that schema's first parse, where the environment lets it,
+  and otherwise interprets: under `z.config({jitless: true})`, or a content
+  security policy that refuses eval. `zod jitless` is the interpreter, asked
+  for a parse at a time on the same schemas, and the run checks that those
+  parses compiled nothing, and that the others compiled some.
+- **Zod's bundle** is the consumer's module as it is written, on classic `zod`
+  and not `zod/mini`, which the consumer would have to be rewritten for.
+- **Zod has no guard**, so its side of a guard row is `safeParse` read for
+  `success`.
+
+It isn't like-for-like, in ways that differ by set and are printed under each:
+
+- Valibot and Zod return a fresh copy of what they read. This library returns
+  its input wherever nothing changed, which is every matching row of the Zod
+  sets and the `full` rows of `docinfo`: those compare a copy with a check.
+  Zod's strict objects strip nothing, and its loose ones copy the keys the
+  schema doesn't name.
+- `package_json` is partly the consumer's own code. Nearly every manifest of
+  this ecosystem has a `glyph`, checked with a new `Intl.Segmenter` in both
+  schema modules, and a row has one such manifest with its `glyph` taken out,
+  to show what the check is of a parse. The rows named `published` have no
+  `glyph` and compare the libraries more nearly. A URL is Zod's `z.url()` on one side and
+  the rewrite's own code around `URL.canParse` on the other, which is timed
+  alone under the tables.
+- `bench_results` is structure only: its refinements are in neither side, and
+  the cross-references they make are a share of the consumer's real parse. Its
+  records with checked keys are Zod's own on one side and a `record` between
+  two checks on the other.
 
 ## Method
 
 - **Parse time**: fuz_util's `Benchmark`, a batch of parses per timing.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped.
-- **Allocation**: growth of V8's used heap across a batch, per call. Needs
-  `--expose-gc` and a large young generation, which the npm scripts pass.
+- **Allocation**: growth of V8's used heap across a batch, per call, after a
+  forced collection. Needs `--expose-gc` and a large young generation, which
+  the npm scripts pass. `benchmark:harvest` samples its own way,
+  [above](#head-to-head).
 - **Cold start**: one fresh Node process per sample, in three stages that
   build on each other, against a bare process. Bundled and unbundled entries.
   Compile cache off, rounds interleaved, medians.
@@ -87,7 +146,13 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
 
 ## Reading the numbers
 
-- Bundle size and allocation are exact. Retained heap repeats to about a kilobyte.
+- Bundle size is exact. Allocation is exact only for the code the engine is
+  running when it is sampled, and that changes. `grade` and
+  `benchmark:allocations` force a collection before each round, which throws
+  away optimized code that the round then runs without, and a figure of
+  `benchmark:allocations` can differ by over a tenth from one run to the next.
+  `benchmark:harvest` forces none and repeats to about a percent. Retained
+  heap repeats to about a kilobyte.
 - Time is not exact. Trust group means and realistic cases over one fast case,
   and quiet the machine before recording a result.
 - It isn't like-for-like: TypeBox's check builds no output, ArkType keeps

@@ -33,6 +33,14 @@ export interface BuildScenarioBundleOptions {
 }
 
 /**
+ * Measures the code of a bundle.
+ */
+export const to_bundle_size = (code: string): BundleSize => ({
+	minified: Buffer.byteLength(code),
+	gzip: gzipSync(code, { level: 9 }).length
+});
+
+/**
  * Bundles and minifies an entry that imports the named scenario factories
  * from one library module, so the bundle holds the schemas' definitions plus
  * whatever library code they reach after tree shaking.
@@ -81,6 +89,5 @@ export const measure_bundle_size = async (
 	scenario_names: Array<string>,
 	options: Pick<BuildScenarioBundleOptions, 'schema_path' | 'lib_path'> = {}
 ): Promise<BundleSize> => {
-	const code = await build_scenario_bundle(lib, scenario_names, options);
-	return { minified: Buffer.byteLength(code), gzip: gzipSync(code, { level: 9 }).length };
+	return to_bundle_size(await build_scenario_bundle(lib, scenario_names, options));
 };

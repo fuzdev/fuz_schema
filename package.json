@@ -32,7 +32,7 @@
     "benchmark:coldstart": "gro run src/benchmarks/run_coldstart.ts",
     "benchmark:heap": "gro run src/benchmarks/run_heap.ts",
     "benchmark:wasm": "node src/benchmarks/wasm.ts",
-    "benchmark:docinfo": "node --expose-gc --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/docinfo.ts",
+    "benchmark:harvest": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/harvest.ts",
     "build:wasm": "wasm-pack build crates/fuz_schema_wasm --target web --release --out-dir ../../target/fuz_schema_wasm",
     "grade": "node --expose-gc --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/grade.ts"
   },

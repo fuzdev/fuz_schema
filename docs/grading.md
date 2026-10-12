@@ -34,7 +34,8 @@ remove the context. A change can win one and lose the other.
 1. **Judge speed on the realistic cases**, valid input first, and read it
    by path: one figure can hide a path that got slower.
 2. **A time difference under about 10% is noise** until reproduced on a quiet
-   machine. Bytes and allocations are exact.
+   machine. Bundle bytes are exact, and allocations nearly: see
+   [benchmarks.md](benchmarks.md#reading-the-numbers).
 3. **Opt-in bytes only have to pay for themselves.**
 4. **Bytes every user pays need a return**: roughly a 10% speedup on the
    realistic cases per 50 gzipped bytes of core. Under 5% for any bytes is a no.
