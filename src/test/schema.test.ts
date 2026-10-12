@@ -621,9 +621,8 @@ describe('object keys', () => {
 		assert(!s.is(s.object(entries), inherits));
 	});
 
-	test('a key the input adds while it is parsed is seen only when its keys are looked at again', () => {
-		// each adds a key from the getter of `a`
-		const create_ordered = (): Record<string, unknown> => {
+	test('a key the input adds while it is parsed is still dropped or rejected', () => {
+		const create_input = (): Record<string, unknown> => {
 			const input: Record<string, unknown> = {
 				get a() {
 					input.added = 1;
@@ -633,42 +632,15 @@ describe('object keys', () => {
 			};
 			return input;
 		};
-		const create_unordered = (): Record<string, unknown> => {
-			const input: Record<string, unknown> = {
-				b: 'y',
-				get a() {
-					input.added = 1;
-					return 'x';
-				}
-			};
-			return input;
-		};
-		const entries = { a: s.string, b: s.string };
-		// keys out of the schema's order are looked for after every entry has run
-		assert.deepEqual(keys_of(s.parse_or_throw(s.strip_object(entries), create_unordered())), [
-			'a',
-			'b'
-		]);
+		const output: object = s.parse_or_throw(
+			s.strip_object({ a: s.string, b: s.string }),
+			create_input()
+		);
+		assert.deepEqual(keys_of(output), ['a', 'b']);
 		assert.deepEqual(
-			issues_of(s.object(entries), create_unordered()).map((i) => i.path),
+			issues_of(s.object({ a: s.string, b: s.string }), create_input()).map((i) => i.path),
 			[['added']]
 		);
-		// keys in the schema's order are enumerated once, as they are read, and the
-		// enumeration began before the key was there
-		const input = create_ordered();
-		assert.strictEqual(s.parse_or_throw(s.strip_object(entries), input), input);
-		assert(s.is(s.object(entries), create_ordered()));
-		// the same from a `transform` that holds the input
-		let held: Record<string, unknown> = {};
-		const adds = s.pipe(
-			s.string,
-			s.transform((v) => {
-				held.added = 1;
-				return v;
-			})
-		);
-		assert(s.is(s.object({ a: adds, b: s.string }), (held = { a: 'x', b: 'y' })));
-		assert(!s.is(s.object({ a: adds, b: s.string }), (held = { b: 'y', a: 'x' })));
 	});
 
 	test('an entry that is an object schema leaves the unknown keys around it found', () => {
@@ -677,7 +649,7 @@ describe('object keys', () => {
 			['object', s.object(child)],
 			['strip_object', s.strip_object(child)]
 		] as const) {
-			// `child` is run after `z` has put the keys out of order, and its own are in order
+			// `z` comes before `child`, whose own keys are all the schema's
 			const input = { a: 'x', z: 1, child: { x: 'y' } };
 			assert.deepEqual(
 				issues_of(s.object({ a: s.string, child: inner }), input).map((i) => i.path),
@@ -735,7 +707,7 @@ describe('object keys', () => {
 		}
 	});
 
-	test('a copy begun while keys are in order leaves out a key the input lacks', () => {
+	test('a copy begun at a key the input has leaves out a later key it lacks', () => {
 		for (const factory of factories) {
 			const O = factory({
 				a: s.with_default(s.string, 'd'),
@@ -746,7 +718,7 @@ describe('object keys', () => {
 				c: s.optional(s.string),
 				d: s.with_default(s.string, 'd')
 			});
-			// `b` changes while its key is enumerated, `c` and `d` are run by name after
+			// `b` changes, and `c` is absent after the copy has begun
 			const output: object = s.parse_or_throw(O, { a: 'x', b: 'y' });
 			assert.deepEqual(keys_of(output), ['a', 'b', 'd']);
 			assert.deepEqual(output, { a: 'x', b: 'y!', d: 'd' });
@@ -1528,18 +1500,16 @@ describe('probe mode', () => {
 					}
 				}
 			);
-		// a failed entry, so the keys are enumerated once, to read them, and not again
+		// a failed entry, so the keys are never enumerated
 		assert(!s.is(s.object({ a: s.string }), create_input()));
-		assert.strictEqual(scans, 1);
 		assert(!s.is(s.strip_object({ a: s.string }), create_input()));
-		assert.strictEqual(scans, 2);
+		assert.strictEqual(scans, 0);
 		// and without probe mode `object` goes on to report the unknown key
-		scans = 0;
 		assert.deepEqual(
 			issues_of(s.object({ a: s.string }), create_input()).map((i) => i.path),
 			[['a'], ['z']]
 		);
-		assert.strictEqual(scans, 2);
+		assert.strictEqual(scans, 1);
 		// the first unknown key is the last one looked at
 		let reads = 0;
 		const input = {
