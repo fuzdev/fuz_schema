@@ -1,212 +1,260 @@
-# @fuzdev/fuz_template ❄
+# fuz_schema
 
-[<img src="/static/logo.svg" alt="a friendly pixelated spider facing you" align="right" width="192" height="192">](https://template.fuz.dev/)
+> a performance-focused Standard Schema library for JS - [schema.fuz.dev](https://schema.fuz.dev/)
 
-> a web app template with TypeScript + SvelteKit + optional Rust for the fuz-stack
+fuz_schema is a schema validation library for TypeScript and JS.
+It takes [Valibot](https://valibot.dev/)'s strategy —
+one tree-shakeable function per schema, schemas as plain data, `pipe` for refinement —
+and asks how far that can be pushed on bundle size, speed, and memory
+with simpler internals.
 
-[**template.fuz.dev**](https://template.fuz.dev/)
+```ts
+import * as s from '@fuzdev/fuz_schema/schema.ts';
 
-## contents
+const User = s.strict_object({
+	name: s.pipe(s.string, s.min_length(1)),
+	age: s.optional(s.number),
+	role: s.with_default(s.picklist(['user', 'admin']), 'user')
+});
+type User = s.Infer<typeof User>;
 
-- [SvelteKit](https://github.com/sveltejs/kit) with [Svelte](https://github.com/sveltejs/svelte) and
-  [Vite](https://github.com/vitejs/vite) and optional [Rust](https://rust-lang.org/)
-- [fuz_css](https://github.com/fuzdev/fuz_css): semantic-first CSS framework and design system
-- [fuz_ui](https://github.com/fuzdev/fuz_ui):
-  - Svelte UI library - [ui.fuz.dev](https://ui.fuz.dev/)
-  - optional: `npm uninstall @fuzdev/fuz_ui` and delete the imports to remove it
-- [Gro](https://github.com/fuzdev/gro):
-  - extends [SvelteKit](https://github.com/sveltejs/kit) and
-    [Vite](https://github.com/vitejs/vite)
-  - integrated [TypeScript](https://github.com/microsoft/TypeScript)
-    with [Svelte](https://github.com/sveltejs/svelte) and
-    [svelte-check](https://github.com/sveltejs/language-tools/tree/master/packages/svelte-check)
-  - testing with [Vitest](https://github.com/vitest-dev/vitest)
-  - formatting with [tsv](https://github.com/fuzdev/tsv)
-  - linting with [ESLint](https://github.com/eslint/eslint)
-    and [`@ryanatkn/eslint-config`](https://github.com/ryanatkn/eslint-config)
-  - also has [a task system](https://github.com/fuzdev/gro/blob/main/src/docs/task.md)
-    with [builtins](https://github.com/fuzdev/gro/blob/main/src/docs/tasks.md),
-    [codegen](https://github.com/fuzdev/gro/blob/main/src/docs/gen.md),
-    and [other things](https://github.com/fuzdev/gro/tree/main/src/lib/docs)
-- optional [utilities library `@fuzdev/fuz_util`](https://github.com/fuzdev/fuz_util)
+const result = s.safe_parse(User, input);
+if (result.ok) result.value;
+else result.issues; // [{kind, expected, value, path, message}]
+```
 
-## usage
+**It's an experiment, and "use Valibot" is a valid outcome.**
+The question is whether the gap is worth owning a validation library for.
+So far, on this repo's benchmarks, it is about 0.6x Valibot's size gzipped,
+faster on every scenario measured, and allocates nothing for a valid value
+beyond a fixed cost per parse.
+Those numbers come from one shared workstation and a small set of scenarios,
+and Valibot's bytes pay for features this doesn't have.
+See [Measurements](#measurements) for what backs each claim and how to rerun it.
 
-This project uses [SvelteKit](https://kit.svelte.dev/) with the static adapter
-and [Vite](https://vitejs.dev/),
-so the normal commands like `vite dev` work as expected.
-It also uses [Gro](https://github.com/fuzdev/gro)
-for tasks like deploying and more.
+fuz_schema is not published, has no stable API, and is missing a lot.
 
-If you're logged into GitHub, click "Use this template" above, or clone directly:
+AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code)
+using Claude Opus 5.5, with a human steering the design.
+
+## Priorities
+
+In order:
+
+1. correctness — a schema accepts what it says and nothing else
+2. speed and size together — some bytes are worth paying for a significant speedup,
+   judged by [written rules](#grading-a-change), not taste
+3. memory — per parse, per schema held, and at startup
+4. simplicity of the internals
+
+Flexibility comes after all four.
+Where a feature not everyone needs would cost every user, it's a separate export
+that the core never reaches: custom messages, message formatting,
+and the Standard Schema adapter are all like this, and all bundle to nothing unused.
+
+## What's different from Valibot
+
+- **One shape.** Every schema and action is the same `{kind, def, run}` object.
+  There's no separate action type, `pipe` is a loop,
+  and every schema shares one hidden class in V8.
+- **Constants where there are no options.** `s.string`, not `s.string()`.
+- **Output is copy-on-write.** A valid value that needs no defaults, transforms,
+  or stripped keys comes back as the same object, with nothing allocated for it.
+  A change copies only the path to it.
+- **Failures are counted, issues are built late.** Valid input never builds a path,
+  a `union` tries its options without allocating, and `s.is` stops at the first failure.
+- **Issues are data.** `{kind, expected, value, path, message}`.
+  Text is derived by `format_issue`, which is only bundled if used. No i18n registry.
+- **`variant` dispatches by map**, not by scanning its options.
+
+### What copy-on-write gives up
+
+This is deliberate, for speed, and it's the main thing to know before using it.
+**Output is not a fresh copy.**
+
+- Output may alias the input, wholly or in part. Mutating one mutates the other.
+- Validation is not a snapshot. A value that can change between reads
+  (a getter, a proxy, an object someone else holds) can pass and then differ.
+  Parsed JSON can't do this; objects from untrusted in-process code can.
+- A class instance that matches comes back as that instance, not a plain object.
+
+What it doesn't give up: `object` still drops unknown keys, by copying when there are any,
+and the input is never mutated.
+
+### Other differences in behavior
+
+- `pipe` stops at its first failing step.
+- A failed `union` reports one issue, not its options' issues.
+- A missing object key and an `undefined` value are treated the same.
+
+## API
+
+Everything is a named export of `schema.ts`, used through a namespace import.
+
+| | |
+|---|---|
+| primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `picklist` |
+| wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
+| containers | `object`, `strict_object`, `record`, `array`, `union`, `variant` |
+| refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
+| entry points | `safe_parse`, `parse`, `is` |
+| issues | `format_issue`, `to_type_name`, `SchemaError`, `fail` |
+| types | `Infer`, `InferInput`, `Schema`, `SchemaIssue` |
+
+`safe_parse` returns `{ok: true, value}` or `{ok: false, issues}`.
+`parse` returns the value or throws a `SchemaError` listing every issue.
+`is` answers yes or no without building issues.
+
+```ts
+// a discriminated union, recursive through `lazy`
+interface Tree {
+	kind: 'leaf' | 'branch';
+	// ...
+}
+const Tree: s.Schema<Tree> = s.variant('kind', [
+	s.strict_object({kind: s.literal('leaf'), value: s.number}),
+	s.strict_object({kind: s.literal('branch'), children: s.array(s.lazy(() => Tree))})
+]);
+
+// custom text, on a schema or on one step of a pipe
+const Name = s.pipe(s.string, s.message(s.min_length(1), 'name is required'));
+```
+
+### Standard Schema
+
+A schema is not itself a [Standard Schema](https://standardschema.dev/);
+wrap it where a library asks for one:
+
+```ts
+import {to_standard_schema} from '@fuzdev/fuz_schema/standard_schema.ts';
+
+const standard = to_standard_schema(User); // {'~standard': {version: 1, vendor, validate}}
+```
+
+It's an adapter so that schemas don't each carry a `~standard` property.
+Whether schemas should be Standard Schemas natively, at a flat cost to every bundle,
+is an open question.
+
+## Status
+
+> **status**: early experiment — unpublished, unstable, incomplete
+
+- [x] the schemas and actions in the table above, with output and input type inference
+- [x] custom messages, as an opt-in wrapper
+- [x] Standard Schema v1, as an opt-in adapter
+- [x] copy-on-write output
+- [ ] nested issues for a failed `union`
+- [ ] `meta` and `brand`
+- [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
+- [ ] abort-early as a caller option
+- [ ] a published package
+- [ ] the Rust side
+
+Not designed yet: JSON Schema output, async validation, i18n.
+
+Known regressions to fix: `object` got slower when it has unknown keys to drop,
+and when a default applies late in a wide object.
+Both came with copy-on-write and share a cause.
+
+## Measurements
+
+Every claim above comes from a benchmark in `src/benchmarks/`,
+run against Valibot, Zod, Zod Mini, TypeBox, and ArkType.
 
 ```bash
-git clone https://github.com/fuzdev/fuz_template.git cooltoy
-cd cooltoy
+npm run benchmark             # parse time, every library on every scenario
+npm run benchmark:bundle      # bundle size per scenario, minified and gzipped
+npm run benchmark:allocations # heap bytes per parse and per schema built
+npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
+npm run benchmark:heap        # memory still held after building and parsing
+npm run benchmark:types       # what each library costs the TypeScript checker
+```
+
+What they've shown so far, read with the caveats below:
+
+- **Size:** about 0.6x Valibot gzipped across the scenarios, and far below the rest.
+  Most of the gap is fixed cost, a bit over a kilobyte, which is small in absolute terms.
+- **Warm speed:** faster than Valibot on every scenario,
+  by about 2x on flat objects and more on recursive and union-heavy ones.
+  Not the fastest: Zod's generated object parser wins on flat objects,
+  and TypeBox and ArkType, which compile validators, win flat shapes by a wide margin.
+- **Allocation:** a valid parse allocates a small fixed amount whatever the size of the value.
+- **Cold start:** under a millisecond to import, build a schema, and parse once, bundled.
+  The libraries that compile validators pay here, by one to two orders of magnitude.
+- **Retained memory and type-checking cost:** the lowest or near it of the six.
+
+Caveats:
+
+- The scenarios are few and small.
+  One is a real recursive schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
+  the rest are synthetic.
+- Timings come from a shared workstation, not a quiet machine. Byte counts are exact.
+- It's V8 only. The one-shape design is tuned to V8's hidden classes.
+- It isn't like-for-like. Valibot does more, and TypeBox's check doesn't build an output.
+- A test holds every library to the same answer on every scenario's valid and invalid input,
+  so the benchmarks at least compare the same work.
+
+### Grading a change
+
+```bash
+npm run grade                       # the working tree against HEAD
+npm run grade -- --against HEAD~2 --filter union
+```
+
+`grade` loads two versions of the library into one process and compares them
+over a matrix of small cases, each isolating one behavior:
+time, heap bytes allocated, and whether the output is the input itself.
+It then compares bundle size, retained heap, and cold start,
+and checks the result against the rules a change is accepted by:
+
+- speed is judged on the realistic cases, valid input first
+- a time difference under about 10% is noise until reproduced on a quiet machine
+- bytes that tree-shake away unless imported only have to pay for themselves
+- bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
+- the whole stays under about two thirds of Valibot's size
+- the valid path is never slowed to speed up the invalid one
+- anything that generates code at runtime is opt-in, because of CSP
+
+[`docs/grading.md`](docs/grading.md) has the rules in full,
+and [`docs/benchmarks.md`](docs/benchmarks.md) the method behind every number.
+
+## Develop
+
+```bash
 npm i
-# then
-vite dev
-# or
-npm run dev
-# or
-gro dev # npm i -g @fuzdev/gro
-gro sync # called by `gro dev`, refreshes generated files and calls `svelte-kit sync`
-```
-
-> learn more about [SvelteKit](https://github.com/sveltejs/kit),
-> [Vite](https://github.com/vitejs/vite), [Gro](https://github.com/fuzdev/gro),
-> and [fuz_ui](https://github.com/fuzdev/fuz_ui)
-
-> [Windows will not be supported](https://github.com/fuzdev/fuz_template/issues/4) because
-> it depends on sh, [WSL](https://docs.microsoft.com/en-us/windows/wsl/about) is recommended
-
-The template includes
-[`@sveltejs/adapter-static`](https://github.com/sveltejs/kit/tree/master/packages/adapter-static)
-so it can [deploy](https://github.com/fuzdev/gro/blob/main/src/docs/deploy.md)
-with no further configuration.
-To learn how to swap it out for another deployment target, see
-[the SvelteKit adapter docs](https://svelte.dev/docs/kit/adapters).
-SvelteKit's config lives in [`vite.config.ts`](vite.config.ts),
-passed to the `sveltekit({...})` plugin.
-
-To make it your own, run the molt wizard (it requires a clean git tree):
-
-```bash
-npm run molt # or `cargo molt` — twin implementations, identical results
-```
-
-It renames the project, strips the demo components, and deletes itself — see
-[molt](#molt) below.
-
-To do the same by hand, change `@fuzdev/fuz_template`
-and `template.fuz.dev` to your project name in the following files:
-
-- [`package.json`](package.json) — also remove or replace the `glyph`,
-  `logo`, and `logo_alt` fields
-- [`src/routes/+layout.svelte`](src/routes/+layout.svelte)
-- [`src/routes/+page.svelte`](src/routes/+page.svelte)
-- [`src/routes/about/+page.svelte`](src/routes/about/+page.svelte)
-- update or delete [`static/CNAME`](static/CNAME),
-  ./.github/FUNDING.yml, and ./.github/ISSUE_TEMPLATE/
-
-To remove the Rust workspace, delete `Cargo.toml`, `Cargo.lock`, `crates/`,
-`.cargo/`, `rust-toolchain.toml`, `clippy.toml`, and the `rust` job in
-[`.github/workflows/check.yml`](.github/workflows/check.yml).
-
-To remove the docs system, delete `src/routes/docs/` and
-[`src/routes/library.ts`](src/routes/library.ts), remove the docs link in
-[`src/routes/+page.svelte`](src/routes/+page.svelte), and drop the
-`svelte-docinfo` devDependency along with its wiring in
-[`vite.config.ts`](vite.config.ts) and [`src/app.d.ts`](src/app.d.ts).
-
-Then run `npm i` to update `package-lock.json`.
-
-The template is MIT-licensed ([`LICENSE`](LICENSE), plus `license` fields in
-`package.json` and `Cargo.toml`), copyright fuz.dev — to keep MIT for your
-project, replace the copyright holder with your own; or swap in
-[another license](https://choosealicense.com/).
-
-## molt
-
-molt is a wizard that transforms this clone into your own project, then
-deletes itself. It ships as twin implementations at full behavior parity —
-same flags, same prompts, byte-identical results — so either toolchain
-suffices: `src/lib/molt.ts` runs on Node, and the `molt` crate comes with
-the template's Rust workspace.
-
-```bash
-npm run molt          # interactive wizard: prompts, prints the full plan, confirms
-npm run molt -- check # verify molt's file anchors still match the template
-cargo molt            # the Rust twin — same flags and behavior
-cargo molt check
-```
-
-The plan, from the prompts or the equivalent flags:
-
-- renames the project everywhere (`package.json`, page titles, headings)
-- updates or removes `static/CNAME`, `homepage`, and `repository`
-- deletes the demo components and writes a minimal starting page (plus a
-  starter `src/lib/example.ts` when docs are kept — the API docs need a
-  module to document)
-- regenerates `README.md` and `CLAUDE.md` for the new project
-- deletes the template's MIT `LICENSE` and `license` fields — the new project
-  chooses its own license
-- keeps or strips each optional feature, by prompt or by `--keep`/`--strip`
-  lists (e.g. `--strip rust` or `--keep github-extras --strip docs`):
-  - `rust` — the whole workspace
-  - `cli` — the starter crate at [`crates/app_cli`](crates/app_cli), renamed
-    to the project name; it rides with `rust`, and stripping `cli` alone is
-    rejected because a kept workspace needs a crate
-  - `docs` — the docs system; keeping it needs a repository url (the API
-    docs link to source) from `--repo` or a git origin that isn't the
-    template's, and the wizard asks when there's none
-  - `github-extras` — funding + issue templates, personalized when kept;
-    stripped by default
-- deletes both of its own implementations (the crate, the script, and its tests)
-
-`--repo` takes an https, http, or ssh git url, normalizes it to its web url
-with any credentials stripped, and refuses anything else with exit 2.
-
-It refuses to run without a clean git tree, so an applied plan can be undone
-with `git reset --hard && git clean -fd` (the tree was clean, so `git clean`
-removes only files molt created). `--force` lets a dirty tree through for
-_planning_, but applying to a dirty tree always requires an interactive
-confirmation — without a terminal it refuses (exit 2), since there is no
-clean undo point. Flags replace the prompts for non-interactive use
-(`npm run molt -- --help` or `cargo molt --help`); in that mode nothing is
-written without `--wetrun`. A terminal always confirms before applying, so
-the only ungated write path is `--wetrun` on a clean tree without a terminal.
-
-## build
-
-```bash
-npm run build
-# or
-gro build
-```
-
-See [Gro's build docs](https://github.com/fuzdev/gro/blob/main/src/docs/build.md) for more.
-
-## test
-
-```bash
-npm test
-# or
+gro check  # typecheck, test, format check, lint
 gro test
-gro test filepattern1 filepatternB
-gro test -- --forwarded-args 'to vitest'
 ```
 
-See [Vitest](https://github.com/vitest-dev/vitest),
-[`src/test/example.test.ts`](src/test/example.test.ts),
-and [Gro's test docs](https://github.com/fuzdev/gro/blob/main/src/docs/test.md) for more.
+The repo is also a Rust workspace. `crates/fuz_schema` is where the Rust side
+of the library will go, to be measured against the JS through wasm;
+it is an empty crate today.
 
-## deploy
+## Docs
 
-[Deploy](https://github.com/fuzdev/gro/blob/main/src/docs/deploy.md)
-(build, commit, and push) to the `deploy` branch, e.g. for GitHub Pages:
+- [`docs/design.md`](docs/design.md) — the internals and why: the one shape,
+  probe mode, copy-on-write and what it gives up, issues and messages
+- [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
+  how far to trust each number, and what isn't measured
+- [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
+- `CLAUDE.md` — layout, commands, and invariants (also the context file for AI agents)
 
-```bash
-npm run deploy
-# or
-gro deploy
-```
+## Credits
 
-## credits 🐢<sub>🐢</sub><sub><sub>🐢</sub></sub>
+[Valibot](https://valibot.dev/) for the strategy this builds on.
+The process-per-sample cold-start and retained-heap methods follow
+[syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench),
+which generalizes [Twinkleplop](https://github.com/pngwn/twinkleplop)'s cold-start harness.
 
-[Svelte](https://github.com/sveltejs/svelte) ∙
-[SvelteKit](https://github.com/sveltejs/kit) ∙
-[Vite](https://github.com/vitejs/vite) ∙
-[esbuild](https://github.com/evanw/esbuild) ∙
-[Vitest](https://github.com/vitest-dev/vitest) ∙
-[TypeScript](https://github.com/microsoft/TypeScript) ∙
-[ESLint](https://github.com/eslint/eslint) ∙
-[tsv](https://github.com/fuzdev/tsv) ∙
-[fuz_css](https://github.com/fuzdev/fuz_css) ∙
-[Fuz](https://github.com/fuzdev/fuz_ui) ∙
-[Gro](https://github.com/fuzdev/gro) ∙
-[@fuzdev/fuz_util](https://github.com/fuzdev/fuz_util) ∙
-[Zod](https://github.com/colinhacks/zod) ∙
-& [more](package.json)
+fuz_schema was written with [Claude Code](https://claude.com/claude-code) using Claude Opus 5.5:
+the library, tests, benchmarks, and docs.
+Valibot's source was not consulted while writing it; the comparison libraries are used only
+through their public APIs, as benchmark baselines.
 
-## [🐦](https://wikipedia.org/wiki/Free_and_open-source_software)
+## Contributing
+
+[fuz.dev/contributing](https://www.fuz.dev/contributing)
+
+## License [🐦](https://wikipedia.org/wiki/Free_and_open-source_software)
+
+[MIT](LICENSE)
