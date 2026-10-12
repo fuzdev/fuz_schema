@@ -1,0 +1,22 @@
+[package]
+name = "fuz_schema_wasm"
+description = "fuz_schema's verdict on a JSON text, compiled to wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# wasm-opt rejects what it isn't told of: the first two features are in what
+# the pinned toolchain emits by default, the last two in the target's baseline
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O3", "--enable-bulk-memory", "--enable-nontrapping-float-to-int", "--enable-sign-ext", "--enable-mutable-globals"]
+
+[dependencies]
+fuz_schema.workspace = true
+wasm-bindgen.workspace = true
+
+[lints]
+workspace = true

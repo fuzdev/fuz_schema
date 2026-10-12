@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/fuz_schema"]
+members = ["crates/fuz_schema", "crates/fuz_schema_wasm"]
 
 [workspace.package]
 version = "0.0.1"
@@ -9,10 +9,13 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
+fuz_schema = { path = "crates/fuz_schema" }
 # no derive: the crate implements its visitors by hand
 serde = { version = "1", default-features = false, features = ["std"] }
 # float_roundtrip parses a decimal to the nearest double, as JS does
 serde_json = { version = "1", features = ["float_roundtrip"] }
+# exact, because the wasm-bindgen CLI that wasm-pack runs must be this version
+wasm-bindgen = "=0.2.126"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -5,7 +5,8 @@ question of it: does this JSON text match? The TypeScript library is the
 reference for the answer. It validates what `JSON.parse` returns, so the
 semantics are JavaScript's.
 
-Issues, output, and a wasm build are not built.
+Issues and output are not built. `crates/fuz_schema_wasm` is the crate
+compiled to wasm, [below](#the-wasm-build).
 
 ## The model
 
@@ -198,3 +199,53 @@ in the TypeScript library.
 - The generated issues are not read by the crate yet.
 - A text must be well-formed Unicode, because it is written into a JSON
   file. So must every key in an issue's path.
+
+## The wasm build
+
+`crates/fuz_schema_wasm` compiles the crate to wasm with wasm-bindgen, to
+measure it against the library. It isn't published, and the library doesn't
+use it.
+
+```bash
+npm run build:wasm     # wasm-pack, into target/fuz_schema_wasm
+npm run benchmark:wasm # against the library, see benchmarks.md
+```
+
+It exports one class. `new CompiledSchema(schema_json)` loads a schema from
+its interchange form, and throws an `Error` with the `SchemaError`'s message.
+The handle answers with a boolean, and everything `is_json` reports as an
+error is `false`.
+
+| Entry point | How the text gets into the module's memory |
+|---|---|
+| `is_json(text)` | The glue allocates, writes the string a code unit at a time while it is ASCII, and from the first unit that isn't, grows the allocation and calls `encodeInto`. The whole string is transcoded on every call. |
+| `is_json_bytes(bytes)` | The glue allocates and copies the bytes in with one `set`. |
+| `input_ptr(len)`, then `is_json_input(len)` | The handle keeps a buffer and `input_ptr` returns its address. The caller makes a `Uint8Array` over the module's memory there and writes into it. Nothing is allocated per call, and a source that writes into the view is never copied. |
+
+- **The two byte entry points validate UTF-8 first**, in full. `is_json`
+  doesn't: what the glue wrote is UTF-8.
+- **The view is made after `input_ptr` returns.** A view over the memory
+  holds only until the memory grows, which any call into the module can
+  cause. The address holds until the next `input_ptr`.
+- **`input_ptr` returns `0` when the memory can't hold a buffer of `len` bytes**,
+  and leaves the buffer as it was. The buffer never shrinks, and is freed
+  with the handle.
+- **A handle is released with `free()`.**
+- **A lone surrogate in a string becomes U+FFFD.** A JavaScript string can
+  hold half a surrogate pair and UTF-8 can't, so `encodeInto` writes U+FFFD
+  for it. `is_json` then reads the text as though U+FFFD were written, and
+  can accept what the library rejects. This is the one place a verdict of the
+  wasm build is looser than the library. `new CompiledSchema` reads a
+  schema text with a raw lone surrogate the same way, and `to_schema_json`
+  never writes such a text. It is of a raw surrogate, not a `\u` escape
+  of one, which is `lone_surrogate` above.
+- **`wasm-bindgen` is pinned to an exact version**, because the CLI that
+  wasm-pack runs must be the version in `Cargo.lock`.
+- **There is no `unsafe`**, and no dependency but wasm-bindgen. The crate
+  compiles natively, so the three cargo commands cover it.
+- **Its behavior is asserted from JavaScript**, by the pre-checks of
+  `npm run benchmark:wasm`: every fixture through every entry point against
+  the streaming column of the table above, the lone surrogate, and an
+  `input_ptr` the memory can't hold. The crate has no Rust tests.
+- The output is under `target/`, so it is git-ignored and nothing of
+  `gro check` reads it.

@@ -11,6 +11,7 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
 | `npm run benchmark:heap` | memory still held after building and parsing |
 | `npm run benchmark:types` | cost to the TypeScript checker |
+| `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 
 ## Scenarios and cases
@@ -36,6 +37,8 @@ Zod Mini, TypeBox, and ArkType.
 - **Retained heap**: a fresh process builds the schema, parses once, and
   collects until the heap settles. Read for one schema and for many.
 - **Type-checking**: `tsc` over one library's scenario module.
+- **wasm**: rows timed a round at a time, each round starting a row later,
+  medians. See [below](#wasm).
 
 The process benchmarks follow
 [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench).
@@ -53,6 +56,50 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   zero inside the bare process's own spread.
 - Peak memory is `VmHWM`, not `maxRSS`, which a child inherits from its parent.
 - Heap figures are for one Node version and architecture. V8 only throughout.
+
+## wasm
+
+`npm run benchmark:wasm` needs `npm run build:wasm` first. When the wasm is
+missing or older than a Rust source, a manifest, `Cargo.lock`,
+`rust-toolchain.toml`, or `package.json`, it prints NOT RUN and exits with 1,
+and never a table.
+
+- **The schema** is an array of the `strict_nested` scenario's object, given
+  to the wasm through `to_schema_json`.
+- **The payloads** are generated: one item, about 10 KB, and about 4 MB, each
+  valid, with a bad first element, and with a bad last element, though the
+  one item has no last. The large size is run again with strings that are
+  mostly not ASCII, because the glue transcodes ASCII and everything after
+  the first unit that isn't by different routes.
+- **A pair is of one holding**, and a ratio never crosses them:
+
+  | Holding | JS | wasm |
+  |---|---|---|
+  | a string | `JSON.parse`, `is` | `is_json(text)`, or `encodeInto` the handle's buffer then `is_json_input` |
+  | bytes | the faster of `TextDecoder` and `Buffer.toString`, then `JSON.parse`, `is` | `is_json_bytes(bytes)`, or `set` into the handle's buffer then `is_json_input`, or `is_json_input` alone with the bytes already in place |
+
+- **The reference rows** are `JSON.parse` alone, `is` alone on the parsed
+  value, and for a valid payload the wasm verdict followed by `JSON.parse`,
+  which is the cost when the value is wanted after all.
+- **`is_json_input` alone** is what a source that writes into the module's
+  memory would pay. The gap between it and the row with `set` is what the
+  copy costs.
+- **The `encodeInto` row validates as UTF-8 what the encoder just wrote**,
+  because `is_json_input` is a byte entry point. `is_json(text)` does not.
+- **Before any timing**, every row's verdict is asserted, and every fixture
+  is run through every wasm entry point. See [rust.md](rust.md#the-wasm-build).
+- **The last lines are the summary**, each figure a wasm row's time over the
+  JS of its holding, all of the large payloads:
+  - **The stop signal** is the payload with a bad first element, ASCII and
+    then not. These rows measure early exit: the wasm stops validating at
+    the bad element, though a string is transcoded whole before that, and the
+    JS parses the whole text before it looks.
+  - **The equal-work figures** are the rows that hold bytes, on the valid
+    payloads and those with a bad last element, ASCII and not. Both sides
+    read the whole text there.
+  - Then the size of the `.wasm`, raw and gzipped.
+
+  By [grading.md](grading.md), a difference under 10% is not a win.
 
 ## Extending
 

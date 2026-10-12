@@ -316,7 +316,7 @@ is an open question.
 - [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
 - [ ] abort-early as a caller option
 - [x] a published package
-- [ ] the Rust side: the schema model and whether a JSON text matches are built, issues and a wasm build are not
+- [ ] the Rust side: the schema model, whether a JSON text matches, and a wasm build to measure are built, issues are not
 
 Not designed yet: JSON Schema output, async validation, i18n.
 
@@ -398,11 +398,14 @@ gro test
 The repo is also a Rust workspace. `crates/fuz_schema` is the Rust side of the
 library: the same schema model, loaded from a schema serialized in TypeScript,
 and whether a JSON text matches it, tested against this library on shared
-fixtures. It isn't published, and a wasm build to measure against the JS is
-still to come. Run it with cargo:
+fixtures. `crates/fuz_schema_wasm` compiles it to wasm, to measure against
+this library. Neither is published. Run them with cargo, and the measurement
+with npm:
 
 ```bash
 cargo test --workspace
+npm run build:wasm      # needs wasm-pack
+npm run benchmark:wasm
 ```
 
 ## Docs
@@ -413,7 +416,8 @@ cargo test --workspace
   how far to trust each number, and what isn't measured
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
 - [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the interchange form,
-  the two evaluators, where they differ from this library, and what is refused
+  the two evaluators, where they differ from this library, what is refused, and
+  the wasm build
 - `CLAUDE.md` — layout, commands, and invariants (also the context file for AI agents)
 
 ## Credits
