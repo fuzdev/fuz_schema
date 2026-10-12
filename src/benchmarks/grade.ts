@@ -69,7 +69,10 @@ const Args = z.strictObject({
 		.optional()
 		.meta({ description: "the baseline's scenario module, with --against-file" }),
 	filter: z.string().optional().meta({ description: 'only run cases whose name includes this' }),
-	duration: z.number().default(200).meta({ description: 'measurement ms per case per version' }),
+	duration: z
+		.number()
+		.default(200)
+		.meta({ description: 'measurement ms per timing, of which a case has five' }),
 	bundle: z.boolean().default(true).meta({ description: 'also measure bundle sizes' }),
 	'no-bundle': z.boolean().default(false).meta({ description: 'opt out of bundle' }),
 	process: z
@@ -178,11 +181,26 @@ for (const [i, c] of cases.entries()) {
 	}
 	// size batches so one timing is tens of microseconds, well above timer resolution
 	const batch = Math.max(1, Math.min(10_000, Math.round(0.05 / measure_ms(c.run, 200, 3))));
-	const tasks = [{ name: `${c.name} [new]`, fn: to_task(c.run, batch) }];
-	if (base) tasks.push({ name: `${c.name} [base]`, fn: to_task(base.run, batch) });
-	// alternate which version goes first so neither always follows the other
-	if (i % 2) tasks.reverse();
-	for (const task of tasks) bench.add(task);
+	// Each version is timed twice, the second pair in the reverse order of the
+	// first, so each goes both first and last and a cost of position is shared
+	// between them: an unchanged library timed once each way round reads up to
+	// 1.3x apart. Which version leads alternates case by case.
+	const fns = { new: to_task(c.run, batch), base: base && to_task(base.run, batch) };
+	const first = i % 2 ? 'base' : 'new';
+	const second = first === 'new' ? 'base' : 'new';
+	// whatever is timed first in a case is slow whichever version it is, so the
+	// first is timed once more ahead of the rest and that timing thrown away,
+	// which also has each version follow itself once and the other once
+	if (base) bench.add({ name: `${c.name} [lead]`, fn: fns[first]! });
+	for (const [version, round] of [
+		[first, 1],
+		[second, 1],
+		[second, 2],
+		[first, 2]
+	] as const) {
+		const fn = fns[version];
+		if (fn && (base || round === 1)) bench.add({ name: `${c.name} [${version} ${round}]`, fn });
+	}
 	measured.push({
 		c,
 		base,
@@ -201,15 +219,24 @@ console.log(`grading the working tree against ${baseline_label}, ${cases.length}
 const results = new Map((await bench.run()).map((r) => [r.name, r]));
 
 for (const m of measured) {
-	const result = results.get(`${m.c.name} [new]`)!;
+	const result = results.get(`${m.c.name} [new 1]`)!;
 	m.ns = result.stats.p50_ns / m.batch;
 	m.bytes = measure_bytes(m.c.run, undefined, 5);
 	if (m.base) {
-		const base_result = results.get(`${m.c.name} [base]`)!;
-		m.base_ns = base_result.stats.p50_ns / m.batch;
-		m.significant = benchmark_stats_compare(base_result.stats, result.stats, {
+		const result_2 = results.get(`${m.c.name} [new 2]`)!;
+		const base_result = results.get(`${m.c.name} [base 1]`)!;
+		const base_result_2 = results.get(`${m.c.name} [base 2]`)!;
+		m.ns = (result.stats.p50_ns + result_2.stats.p50_ns) / 2 / m.batch;
+		m.base_ns = (base_result.stats.p50_ns + base_result_2.stats.p50_ns) / 2 / m.batch;
+		// significant when it is in both pairs, the same way
+		const compared_1 = benchmark_stats_compare(base_result.stats, result.stats, {
 			min_percent_difference: NOISE_FLOOR
-		}).significant;
+		});
+		const compared_2 = benchmark_stats_compare(base_result_2.stats, result_2.stats, {
+			min_percent_difference: NOISE_FLOOR
+		});
+		m.significant =
+			compared_1.significant && compared_2.significant && compared_1.faster === compared_2.faster;
 		m.base_bytes = measure_bytes(m.base.run, undefined, 5);
 	}
 }
@@ -228,8 +255,8 @@ const format_same = (same: boolean | undefined): string =>
 	same === undefined ? '-' : same ? 'input' : 'copy';
 
 console.log(
-	'\ncases: time is median ns per parse, alloc is heap bytes per parse, ' +
-		`out is whether the output is the input itself\n* marks a time change past the ${NOISE_FLOOR * 100}% noise floor that is statistically significant\n`
+	'\ncases: time is median ns per parse over two timings, alloc is heap bytes per parse, ' +
+		`out is whether the output is the input itself\n* marks a time change past the ${NOISE_FLOOR * 100}% noise floor that is statistically significant in both\n`
 );
 console.log(
 	format_table([

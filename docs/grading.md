@@ -10,14 +10,22 @@ npm run grade -- --no-process                   # skip retained heap and cold st
 `grade` loads the working tree's `schema.ts` and a baseline version into one
 process and reports, per [case](benchmarks.md#scenarios-and-cases):
 
-- median time per parse, the two versions timed back to back
+- median time per parse, the two versions timed back to back, twice, the
+  second pair in the reverse order of the first, after a timing that is thrown
+  away: whatever is timed first in a case reads slow
 - heap bytes allocated per parse
 - whether the output is the input itself or a copy
 
 then bundle size, retained heap, and cold start, and a verdict against the rules.
 
-A starred time change is past the noise floor and statistically significant.
-When a change targets a path no case isolates, add the case first.
+A starred time change is past the noise floor and statistically significant
+in both pairs. When a change targets a path no case isolates, add the case
+first.
+
+Grade a change to the core twice over: the whole matrix, where every call
+site has seen many schemas, and each case it touches alone
+(`--filter <its full name>`), where the engine inlines the parse and can
+remove the context. A change can win one and lose the other.
 
 ## Rules
 
