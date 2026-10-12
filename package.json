@@ -5,7 +5,6 @@
   "logo": "logo.svg",
   "logo_alt": "a friendly pixelated spider facing you",
   "license": "MIT",
-  "private": true,
   "homepage": "https://schema.fuz.dev/",
   "author": {
     "name": "Ryan Atkinson",
