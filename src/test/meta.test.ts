@@ -17,6 +17,13 @@ const issues_of = (schema: s.AnySchema, value: unknown): Array<s.SchemaIssue> =>
 };
 
 describe('meta', () => {
+	test('a copy of unknown needs its key as an entry, as unknown does', () => {
+		const O = s.object({ a: meta(s.unknown, { description: 'anything' }) });
+		assert(s.is(O, { a: undefined }));
+		assert(!s.is(O, {}));
+		assert.deepEqual(issues_of(O, {})[0]!.kind, 'missing_key');
+	});
+
 	test('returns a fresh schema each time and leaves the original alone', () => {
 		const before = Object.entries(s.string);
 		const a = meta(s.string, { description: 'a' });

@@ -866,6 +866,438 @@ describe('object keys', () => {
 	});
 });
 
+describe('missing keys', () => {
+	const factories = [s.object, s.strip_object, s.loose_object] as const;
+
+	const MISSING_KEY: s.SchemaIssue = {
+		kind: 'missing_key',
+		expected: 'a required key',
+		received: 'undefined',
+		path: ['a'],
+		message: undefined
+	};
+
+	// each entry with whether its key may be missing, whether it accepts
+	// `undefined`, and the output's value at the key when it was missing
+	const cases: Array<
+		[name: string, entry: s.AnySchema, missing: boolean, undefined_value: boolean, filled?: unknown]
+	> = [
+		['string', s.string, false, false],
+		['nullable', s.nullable(s.string), false, false],
+		// `unknown` is handed the object and looks for its key
+		['unknown', s.unknown, false, true],
+		// as it is where it is the schema itself
+		['flavor unknown', s.flavor(s.unknown, 'F'), false, true],
+		['brand unknown', s.brand(s.unknown, 'B'), false, true],
+		['optional', s.optional(s.string), true, true],
+		['optional unknown', s.optional(s.unknown), true, true],
+		['with_default', s.with_default(s.string, 'd'), true, true, 'd'],
+		['with_default unknown', s.with_default(s.unknown, 'd'), true, true, 'd'],
+		['message optional', s.message(s.optional(s.unknown), 'm'), true, true],
+		['brand with_default', s.brand(s.with_default(s.string, 'd'), 'B'), true, true, 'd'],
+		// every other schema calls what it holds with the value alone, so a
+		// missing key is the `undefined` it reads as
+		['nullable unknown', s.nullable(s.unknown), true, true],
+		['nullable optional', s.nullable(s.optional(s.string)), true, true],
+		['lazy unknown', s.lazy(() => s.unknown), true, true],
+		['lazy optional', s.lazy(() => s.optional(s.string)), true, true],
+		['union with unknown', s.union([s.string, s.unknown]), true, true],
+		['union with an optional', s.union([s.number, s.optional(s.string)]), true, true],
+		[
+			'pipe of an optional',
+			s.pipe(
+				s.optional(s.string),
+				s.transform((v) => v)
+			),
+			true,
+			true
+		],
+		[
+			'pipe of unknown',
+			s.pipe(
+				s.unknown,
+				s.check(() => true)
+			),
+			true,
+			true
+		],
+		// and these accept `undefined` without looking for the key
+		['undefined literal', s.literal(undefined), true, true],
+		['one_of with undefined', s.one_of(['x', undefined]), true, true],
+		['check', s.check(() => true), true, true],
+		['transform', s.transform((v) => v), true, true]
+	];
+
+	test('a key may be missing where its entry accepts undefined, but for unknown', () => {
+		for (const factory of factories) {
+			for (const [name, entry, missing, undefined_value, filled] of cases) {
+				const O = factory({ a: entry });
+				const V = s.variant('kind', [factory({ kind: s.literal('k'), a: entry })]);
+				const inputs: Array<[schema: s.AnySchema, input: Record<string, unknown>]> = [
+					[O, {}],
+					[V, { kind: 'k' }]
+				];
+				for (const [schema, input] of inputs) {
+					const at = `${schema.kind} ${O.kind}: ${name}`;
+					const absent = s.parse(schema, input);
+					assert.strictEqual(absent.ok, missing, at);
+					assert.strictEqual(s.is(schema, input), missing, at);
+					const present = s.parse(schema, { ...input, a: undefined });
+					assert.strictEqual(present.ok, undefined_value, at);
+					assert.strictEqual(s.is(schema, { ...input, a: undefined }), undefined_value, at);
+					if (absent.ok) {
+						// a key left out stays out, unless a default fills it
+						assert.deepEqual(
+							absent.value,
+							filled === undefined ? input : { ...input, a: filled },
+							at
+						);
+						assert.strictEqual('a' in absent.value, filled !== undefined, at);
+					} else if (undefined_value) {
+						assert.deepEqual(absent.issues, [MISSING_KEY], at);
+					} else {
+						// the schema's own issue, as for an `undefined` value
+						assert(!present.ok);
+						assert.strictEqual(absent.issues.length, 1, at);
+						assert.notStrictEqual(absent.issues[0]!.kind, 'missing_key', at);
+						assert.deepEqual(absent.issues, present.issues, at);
+					}
+				}
+			}
+		}
+	});
+
+	test('unknown leaves the output the input itself, with its key or with it undefined', () => {
+		for (const factory of factories) {
+			const O = factory({ a: s.optional(s.string), b: s.unknown, c: s.optional(s.unknown) });
+			for (const input of [{ b: undefined }, { b: 1 }, { a: 'a', b: null, c: undefined }]) {
+				assert.strictEqual(s.parse_or_throw(O, input), input, O.kind);
+			}
+		}
+	});
+
+	test('an inherited or a non-enumerable key is there', () => {
+		for (const factory of factories) {
+			const O = factory({ a: s.unknown });
+			for (const input of [
+				Object.create({ a: undefined }),
+				Object.defineProperty({}, 'a', { value: undefined, enumerable: false }),
+				new (class {
+					a = undefined;
+				})(),
+				new (class {
+					get a(): undefined {
+						return undefined;
+					}
+				})()
+			]) {
+				assert(s.is(O, input), O.kind);
+				assert(s.parse(O, input).ok, O.kind);
+			}
+			// an object with no prototype has only its own
+			assert(!s.is(O, Object.create(null)), O.kind);
+			assert.deepEqual(issues_of(O, Object.create(null)), [MISSING_KEY], O.kind);
+			// and a key named like a member of `Object.prototype` is inherited
+			assert(s.is(factory({ toString: s.unknown }), {}), O.kind);
+		}
+	});
+
+	test('unknown outside an object accepts undefined', () => {
+		const schemas: Array<[schema: s.AnySchema, input: unknown]> = [
+			[s.unknown, undefined],
+			[s.array(s.unknown), [undefined]],
+			// a hole, which is no key of the array
+			[s.array(s.unknown), new Array(1)],
+			[s.record(s.unknown), { a: undefined }],
+			[s.union([s.string, s.unknown]), undefined],
+			[
+				s.pipe(
+					s.unknown,
+					s.check(() => true)
+				),
+				undefined
+			],
+			[s.message(s.unknown, 'm'), undefined],
+			[s.optional(s.unknown), undefined],
+			[s.nullable(s.unknown), undefined],
+			[s.lazy(() => s.unknown), undefined]
+		];
+		for (const [schema, input] of schemas) {
+			assert(s.is(schema, input), schema.kind);
+			const result = s.parse(schema, input);
+			assert(result.ok, schema.kind);
+			assert.strictEqual(result.value, input, schema.kind);
+		}
+		// and called as anything but an object schema calls it
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+		assert.strictEqual(s.unknown.run(undefined, ctx), undefined);
+		assert.strictEqual(ctx.fails, 0);
+	});
+
+	test('a missing key is reported in the order of the entries, before unknown keys', () => {
+		const O = s.object({
+			a: s.number,
+			b: s.unknown,
+			c: s.object({ d: s.unknown, e: s.string }),
+			f: s.optional(s.unknown),
+			g: s.unknown
+		});
+		const input = { z: 1, c: { y: 2 }, a: 'x' };
+		const issues = issues_of(O, input);
+		assert.deepEqual(
+			issues.map((issue) => [issue.kind, issue.path]),
+			[
+				['number', ['a']],
+				['missing_key', ['b']],
+				['missing_key', ['c', 'd']],
+				['string', ['c', 'e']],
+				['unknown_key', ['c', 'y']],
+				['missing_key', ['g']],
+				['unknown_key', ['z']]
+			]
+		);
+		assert.deepEqual(issues[2], { ...MISSING_KEY, path: ['c', 'd'] });
+		assert.deepEqual(issues.map(s.format_issue), [
+			'a: expected number, received string',
+			'b: expected a required key, received undefined',
+			'c.d: expected a required key, received undefined',
+			'c.e: expected string, received undefined',
+			'c.y: expected no unknown keys, received number',
+			'g: expected a required key, received undefined',
+			'z: expected no unknown keys, received number'
+		]);
+		// the value of each is found in the input, a missing key's as `undefined`
+		assert.deepEqual(
+			issues.map((issue) => s.get_issue_value(issue, input)),
+			[
+				{ ok: true, value: 'x' },
+				{ ok: true, value: undefined },
+				{ ok: true, value: undefined },
+				{ ok: true, value: undefined },
+				{ ok: true, value: 2 },
+				{ ok: true, value: undefined },
+				{ ok: true, value: 1 }
+			]
+		);
+		// and `loose_object` and `strip_object` report the same of their entries
+		for (const factory of [s.loose_object, s.strip_object]) {
+			const L = factory({ a: s.number, b: s.unknown, c: s.string });
+			assert.deepEqual(
+				issues_of(L, { a: 'x', z: 1 }).map((issue) => [issue.kind, issue.path]),
+				[
+					['number', ['a']],
+					['missing_key', ['b']],
+					['string', ['c']]
+				]
+			);
+		}
+		// an array's and a record's keys prefix it as they do any issue
+		assert.deepEqual(issues_of(s.array(s.record(O)), [{ k: { a: 1, c: { d: 1, e: '' }, g: 1 } }]), [
+			{ ...MISSING_KEY, path: [0, 'k', 'b'] }
+		]);
+	});
+
+	test('a message around the object does not label the issue', () => {
+		// it labels only what has no path
+		assert.deepEqual(issues_of(s.message(s.object({ a: s.unknown }), 'object'), {}), [MISSING_KEY]);
+	});
+
+	test('unknown under a message needs its key, and the message labels the issue', () => {
+		const calls: Array<[issue: s.SchemaIssue, value: unknown]> = [];
+		const entries: Array<[name: string, entry: s.AnySchema, text: string]> = [
+			['string', s.message(s.unknown, 'm'), 'm'],
+			[
+				'function',
+				s.message(s.unknown, (issue, value) => {
+					calls.push([issue, value]);
+					return `no ${issue.kind}`;
+				}),
+				'no missing_key'
+			],
+			// the innermost wins, and the outer one passes the object on to it
+			['nested', s.message(s.message(s.unknown, 'inner'), 'outer'), 'inner'],
+			['flavor', s.message(s.flavor(s.unknown, 'F'), 'm'), 'm'],
+			['brand', s.brand(s.message(s.unknown, 'm'), 'B'), 'm']
+		];
+		for (const factory of factories) {
+			for (const [name, entry, text] of entries) {
+				const O = factory({ a: entry });
+				const at = `${O.kind}: ${name}`;
+				assert(!s.is(O, {}), at);
+				assert(s.is(O, { a: undefined }), at);
+				const input = { a: undefined };
+				assert.strictEqual(s.parse_or_throw(O, input), input, at);
+				calls.length = 0;
+				assert.deepEqual(issues_of(O, {}), [{ ...MISSING_KEY, message: text }], at);
+				if (name === 'function') {
+					// the issue before its path is prefixed, and the value the entry was given
+					assert.strictEqual(calls.length, 1, at);
+					assert.strictEqual(calls[0]![1], undefined, at);
+					assert.strictEqual(calls[0]![0].kind, 'missing_key', at);
+				}
+				assert.strictEqual(s.format_issue(issues_of(O, {})[0]!), `a: ${text}`, at);
+			}
+		}
+	});
+
+	test('a message takes the object and the key only around a schema that does', () => {
+		assert.strictEqual(s.unknown.run.length, 4);
+		assert.strictEqual(s.message(s.unknown, 'm').run.length, 4);
+		assert.strictEqual(s.message(s.message(s.unknown, 'a'), 'b').run.length, 4);
+		// around anything else it is called as it was, with the value alone
+		for (const schema of [
+			s.string,
+			s.optional(s.unknown),
+			s.nullable(s.unknown),
+			s.lazy(() => s.unknown),
+			s.object({ a: s.unknown }),
+			s.min_length(1)
+		]) {
+			assert.strictEqual(s.message(schema, 'm').run.length, 2, schema.kind);
+		}
+		// a consumer's schema that declares them is handed them
+		const seen: Array<unknown> = [];
+		const Own: s.Schema<unknown, unknown, 'own', undefined> = {
+			kind: 'own',
+			def: undefined,
+			run: (value, _ctx, parent, key) => {
+				seen.push(parent, key);
+				return value;
+			}
+		};
+		const input = { a: 1 };
+		s.parse_or_throw(s.object({ a: s.message(Own, 'm') }), input);
+		assert.deepEqual(seen, [input, 'a']);
+		assert.strictEqual(seen[0], input);
+		// one that declares the object alone is handed it, and a function gets
+		// the value that schema was given, not what it returned
+		const values: Array<unknown> = [];
+		const Refuses: s.Schema<unknown, unknown, 'refuses', undefined> = {
+			kind: 'refuses',
+			def: undefined,
+			run: (value, ctx, parent) => {
+				if (parent) s.fail(ctx, 'refuses', value);
+				return null;
+			}
+		};
+		assert.strictEqual(Refuses.run.length, 3);
+		const Labeled = s.message(Refuses, (_issue, value) => {
+			values.push(value);
+			return 'm';
+		});
+		assert.strictEqual(Labeled.run.length, 4);
+		assert(s.is(Labeled, 1));
+		assert.deepEqual(issues_of(s.object({ a: Labeled }), input), [
+			{ kind: 'refuses', expected: 'refuses', received: 'number', path: ['a'], message: 'm' }
+		]);
+		assert.deepEqual(values, [1]);
+	});
+
+	test('a probe counts a missing key and builds nothing', () => {
+		let calls = 0;
+		const Counted = s.pipe(
+			s.unknown,
+			s.check(() => {
+				calls++;
+				return true;
+			})
+		);
+		for (const factory of factories) {
+			const O = factory({ a: s.unknown, b: Counted });
+			const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+			calls = 0;
+			O.run({ b: 1 }, ctx);
+			assert.strictEqual(ctx.fails, 1, O.kind);
+			assert.strictEqual(ctx.issues, undefined, O.kind);
+			// and it is the first failure, where the probe stops
+			assert.strictEqual(calls, 0, O.kind);
+			// outside a probe every entry runs, and the count is the number of issues
+			const collect: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+			O.run({}, collect);
+			assert.strictEqual(calls, 1, O.kind);
+			assert.strictEqual(collect.fails, 1, O.kind);
+			assert.strictEqual(collect.issues?.length, 1, O.kind);
+			// a union probes its options and reports itself
+			const U = s.union([O, s.string]);
+			assert(!s.is(U, { b: 1 }));
+			assert.deepEqual(issues_of(U, { b: 1 }), [
+				{
+					kind: 'union',
+					expected: `${O.kind} | string`,
+					received: 'object',
+					path: [],
+					message: undefined
+				}
+			]);
+			assert(s.is(U, { a: undefined, b: 1 }));
+		}
+	});
+
+	test('an entry is handed the object and its key, and need not take them', () => {
+		const seen: Array<Array<unknown>> = [];
+		const Spy: s.Schema = {
+			kind: 'spy',
+			def: undefined,
+			run: (...args) => {
+				seen.push(args);
+				return args[0];
+			}
+		};
+		// a schema written against the first two parameters only
+		const Two: s.Schema<string> = {
+			kind: 'two',
+			def: undefined,
+			run: (value, ctx) => (typeof value === 'string' ? value : s.fail(ctx, 'two', value))
+		};
+		for (const factory of factories) {
+			seen.length = 0;
+			const O = factory({ a: Spy, b: Two });
+			const input = { a: 1, b: 'b' };
+			assert.strictEqual(s.parse_or_throw(O, input), input);
+			assert.strictEqual(seen.length, 1);
+			assert.strictEqual(seen[0]!.length, 4);
+			assert.strictEqual(seen[0]![2], input);
+			assert.strictEqual(seen[0]![3], 'a');
+			assert(!s.is(O, { a: 1 }));
+			assert.deepEqual(
+				issues_of(O, { a: 1 }).map((issue) => [issue.kind, issue.received, issue.path]),
+				[['two', 'undefined', ['b']]]
+			);
+		}
+		// nothing hands them on
+		for (const schema of [
+			s.array(Spy),
+			s.record(Spy),
+			s.union([Spy]),
+			s.optional(Spy),
+			s.nullable(Spy),
+			s.with_default(Spy, 1),
+			s.lazy(() => Spy),
+			s.message(Spy, 'm'),
+			s.pipe(
+				Spy,
+				s.check(() => true)
+			)
+		]) {
+			for (const factory of factories) {
+				seen.length = 0;
+				s.parse(factory({ a: schema }), { a: schema.kind === 'record' ? { k: 1 } : [1] });
+				assert.strictEqual(seen.length, 1, schema.kind);
+				assert.strictEqual(seen[0]!.length, 2, schema.kind);
+			}
+		}
+	});
+
+	test('the input is not changed, and a failed parse has no output to copy', () => {
+		for (const factory of factories) {
+			const O = factory({ a: s.with_default(s.string, 'd'), b: s.unknown });
+			const input = Object.freeze({});
+			assert(!s.parse(O, input).ok);
+			assert.deepEqual(Object.keys(input), []);
+		}
+	});
+});
+
 describe('context', () => {
 	test('a context has no issues until something fails', () => {
 		const seen: Array<unknown> = [];
@@ -1958,6 +2390,11 @@ describe('get_issue_value', () => {
 		assert.strictEqual(issues_of(O, {})[0]!.received, 'undefined');
 		assert.deepEqual(value_of(O, {}), { ok: true, value: undefined });
 		assert.deepEqual(value_of(O, { name: undefined }), { ok: true, value: undefined });
+		// and one an `unknown` entry needs, whose issue is a `missing_key`
+		const U = s.object({ a: s.object({ name: s.unknown }) });
+		assert.strictEqual(issues_of(U, { a: {} })[0]!.kind, 'missing_key');
+		assert.deepEqual(issues_of(U, { a: {} })[0]!.path, ['a', 'name']);
+		assert.deepEqual(value_of(U, { a: {} }), { ok: true, value: undefined });
 		const V = s.variant('kind', [s.object({ kind: s.literal('a') })]);
 		assert.deepEqual(issues_of(V, {})[0]!.path, ['kind']);
 		assert.deepEqual(value_of(V, {}), { ok: true, value: undefined });
@@ -2459,6 +2896,32 @@ describe('types', () => {
 		assert.throws(() => s.variant('kind', [s.optional(Circle)]));
 		// @ts-expect-error nor is it when the key is the one a wrapper has
 		s.variant('schema', [s.nullable(s.literal('a'))]);
+	});
+
+	test('the object and key of run are optional, and a key is optional only by its kind', () => {
+		expectTypeOf<Parameters<s.Schema['run']>>().toEqualTypeOf<
+			[value: any, ctx: s.SchemaContext, parent?: Record<PropertyKey, unknown>, key?: PropertyKey]
+		>();
+		// a `run` of two parameters is a schema's, and one is called with two arguments
+		const Two: s.Schema<number> = { kind: 'two', def: undefined, run: (value, _ctx) => value };
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+		assert.strictEqual(Two.run(1, ctx), 1);
+		assert.strictEqual(Two.run(1, ctx, { a: 1 }, 'a'), 1);
+		const _O = s.object({
+			unknown: s.unknown,
+			held: s.nullable(s.unknown),
+			optional: s.optional(s.unknown),
+			defaulted: s.with_default(s.unknown, 'd'),
+			flavored: s.flavor(s.unknown, 'F')
+		});
+		// `held` lets its key be missing at run time, which the types don't say
+		expectTypeOf<s.InferInput<typeof _O>>().toEqualTypeOf<{
+			unknown: unknown;
+			held: unknown;
+			flavored: unknown;
+			optional?: unknown;
+			defaulted?: unknown;
+		}>();
 	});
 
 	test('rejects an action for the wrong type', () => {

@@ -120,7 +120,8 @@ impl<'a> NodeSeed<'a> {
                 map.next_value::<IgnoredAny>()?;
             }
         }
-        // an entry not seen had a missing key, which only some accept
+        // an entry not seen had a missing key, which only some accept, and an
+        // `unknown` entry does not
         self.context.verdict(seen.is_superset(entries.required()))
     }
 

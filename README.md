@@ -86,7 +86,10 @@ and the input is never mutated.
 
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options' issues.
-- A missing object key and an `undefined` value are treated the same.
+- A missing object key is the `undefined` it reads as, except to an `unknown` entry, which needs its key.
+  Valibot and Zod also need the key of other entries that accept `undefined`,
+  such as `literal(undefined)`, `nullable(unknown)`, and `union([string, unknown])`,
+  and here those accept a missing key. [`docs/design.md`](docs/design.md#missing-keys) lists them.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
@@ -114,6 +117,12 @@ The three object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest,
 `strip_object` drops them and pays for a copy when there are any.
 None of them accepts an array, and neither do `record` and `variant`.
+
+A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
+`optional` and `with_default` do, which is how a key is made optional.
+`unknown` accepts `undefined` and still needs its key, own or inherited:
+`{}` doesn't match `s.object({a: s.unknown})` and `{a: undefined}` does.
+Write `s.optional(s.unknown)` for a key that may be missing.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
@@ -150,11 +159,11 @@ the name ships as a string at the call site and is otherwise unused.
 
 An issue is `{kind, expected, received, path, message}`:
 
-- `kind` is the kind of the schema or action that failed, or `unknown_key`
+- `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`
 - `expected` says what was expected
 - `received` is the type of the value that failed: `'null'`, `'array'`, or its `typeof`
 - `path` is the keys from the root to that value, outermost first.
-  For an unknown key the last one is the key.
+  For an unknown or a missing key the last one is the key.
 - `message` is the text set by `message`, or `undefined`
 
 **An issue never holds the value that failed.**
@@ -197,6 +206,10 @@ when the path leads through something that isn't an object or array,
 and when what it finds isn't of the type in `issue.received`.
 It reads own keys only, so it never returns an inherited value,
 and a missing key is found as `undefined`, which is what the schema saw.
+
+A key an `unknown` entry lacks is a `missing_key`, which reads
+`a: expected a required key, received undefined`.
+A missing key whose schema refuses `undefined` has that schema's issue.
 
 Its limit: it compares types, not values.
 When an earlier step of a `pipe` replaced the value with another of the same type —

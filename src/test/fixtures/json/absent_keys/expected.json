@@ -291,6 +291,34 @@
 			"name": "unknown_entries_absent",
 			"text": "{\"unknown_entries\":{\"l\":{},\"t\":{}}}",
 			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"unknown_entries",
+						"l",
+						"a"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"unknown_entries",
+						"t",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "unknown_entries_present",
+			"text": "{\"unknown_entries\":{\"l\":{\"a\":null},\"t\":{\"a\":0}}}",
+			"json": true,
 			"valid": true,
 			"issues": []
 		},

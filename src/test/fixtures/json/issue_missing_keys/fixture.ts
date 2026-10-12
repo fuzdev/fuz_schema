@@ -25,8 +25,9 @@ const entries = {
 	short_array: s.pipe(s.array(s.unknown), s.max_length(1)),
 	nullable: s.nullable(s.string),
 	lazy: s.lazy(() => s.string),
-	// the entries a missing key does not fail
+	// accepts `undefined`, and as the entry itself needs its key
 	unknown: s.unknown,
+	// the entries a missing key does not fail
 	optional: s.optional(s.string),
 	with_default: s.with_default(s.string, 'x'),
 	nullable_optional: s.nullable(s.optional(s.string)),
@@ -38,10 +39,11 @@ const all =
 	'"string":"","number":0,"boolean":false,"literal":"a","literal_null":null,"one_of":1,"object":{},' +
 	'"loose_object":{},"strip_object":{},"record":{},"array":[],"union":null,"variant":{"k":"a"},' +
 	'"integer":0,"safe_integer":0,"finite":0,"long_string":"a","bounded_number":0,"bounded_integer":0,' +
-	'"short_array":[],"nullable":null,"lazy":""';
+	'"short_array":[],"nullable":null,"lazy":"","unknown":null';
 
 // a key that is not there is `undefined` to its entry, which reports having
-// received that. Only a `bigint` entry keeps these from matching.
+// received that, an `unknown` as a `missing_key`. Only a `bigint` entry keeps
+// these from matching.
 export const fixture: JsonFixture = {
 	schema: s.object({
 		strict: s.optional(s.object(entries)),

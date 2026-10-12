@@ -21,6 +21,11 @@ at.
   is `Send + Sync`.
 - **Entries are in JavaScript's key order**: array indices first, ascending,
   then the order given. That is the order the TypeScript library runs them in.
+- **An entry that is an `unknown` needs its key**, as in the library. JSON
+  has no `undefined`, so a key is there or it isn't: the entry matches any
+  value at its key and no object without the key. Every other entry is given
+  a missing key as `undefined`, which an `optional`, a `with_default`, and an
+  `unknown` held by another schema accept.
 - **Numbers are `f64`**, lengths and bounds included.
 - **`bigint` is a kind** that no JSON value matches.
 
@@ -79,7 +84,9 @@ module of its own, which the core never reaches. It throws on everything the
 loader refuses, and on what the crate's parser does not read of a document: a string that is not well-formed Unicode, and nesting
 past `MAX_DEPTH`. So a schema that serializes loads. It also refuses a schema
 more than `MAX_DEPTH` schemas deep counting through every `lazy`, which the
-crate would load.
+crate would load. It reads a schema by its `kind` and `def` and never its
+`run`, so a hand-written schema with one of the library's kinds and a `run` of
+its own is written as that kind and behaves as the library's in the crate.
 
 ## Two evaluators
 
@@ -125,7 +132,7 @@ the same order. A `SchemaIssue` owns what it holds:
 
 | | |
 |---|---|
-| `kind()` | a `SchemaIssueKind`: the kind of the schema or action that failed, or `UnknownKey` |
+| `kind()` | a `SchemaIssueKind`: the kind of the schema or action that failed, or `UnknownKey` or `MissingKey` |
 | `expected()` | the library's text, character for character |
 | `received()` | a `Received`: the type of the value, `Undefined` for a missing key |
 | `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
@@ -133,6 +140,10 @@ the same order. A `SchemaIssue` owns what it holds:
 - **The order is the library's**: an object's entries in its order, then for
   an `object` its unknown keys in the input's, and each container's issues
   before what follows it. A `pipe` stops at its first failed step.
+- **A missing key is one issue**, at the key, having received `undefined`:
+  the `MissingKey` of an `unknown` entry, expecting `a required key`, and
+  otherwise the issue of the entry's schema. It is at the entry's place in
+  the order.
 - **A failed `union` is one issue**, at the union's value, expecting the kinds
   of its options.
 - **A `variant` reports at its discriminator** when no option has the value
@@ -146,8 +157,8 @@ the same order. A `SchemaIssue` owns what it holds:
   and `received`.
 - **There is no streaming form.** Issues need every failure, so nothing is
   skipped and nothing stops early.
-- `unknown`, the wrappers, `lazy`, and `pipe` never fail themselves, and have
-  no `SchemaIssueKind`.
+- `unknown`, the wrappers, `lazy`, and `pipe` never fail a value, and have no
+  `SchemaIssueKind` of their name.
 
 ## Declared divergences
 

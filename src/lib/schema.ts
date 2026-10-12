@@ -38,7 +38,10 @@
  * the input.
  */
 export interface SchemaIssue {
-	/** The `kind` of the schema or check that failed. */
+	/**
+	 * The `kind` of the schema or check that failed, or `unknown_key` or
+	 * `missing_key` for a failure about a key of an object.
+	 */
 	kind: string;
 	/** Describes what was expected. */
 	expected: string;
@@ -83,6 +86,11 @@ export interface SchemaContext {
  *
  * All schemas share this exact shape so `run` call sites stay monomorphic;
  * kind-specific data goes in `def`.
+ *
+ * The object schemas call an entry's `run` with two more arguments, the object
+ * being read and the entry's key, so a schema that accepts `undefined` can tell
+ * a key that is missing from one that is there. Every other call gives the
+ * first two only, and a `run` that takes only those works as an entry.
  */
 export interface Schema<
 	TOutput = unknown,
@@ -92,7 +100,22 @@ export interface Schema<
 > {
 	readonly kind: TKind;
 	readonly def: TDef;
-	readonly run: (value: any, ctx: SchemaContext) => TOutput;
+	/**
+	 * A schema that reads `parent` and `key` declares them as plain parameters,
+	 * with no default and not as a rest: `message` passes them on only to a
+	 * `run` whose `length` says it takes them.
+	 *
+	 * @param value - the value to validate
+	 * @param ctx - the state of the parse, where a failure is reported with `fail`
+	 * @param parent - the object `value` was read from, when an object schema is running an entry
+	 * @param key - the entry's key in `parent`, given with it
+	 */
+	readonly run: (
+		value: any,
+		ctx: SchemaContext,
+		parent?: Record<PropertyKey, unknown>,
+		key?: PropertyKey
+	) => TOutput;
 	/** Type-only, never set at runtime. */
 	readonly '~types'?: { readonly input: TInput };
 }
@@ -452,11 +475,26 @@ export const bigint: Schema<bigint, bigint, 'bigint', undefined> = {
 	run: (value, ctx) => (typeof value === 'bigint' ? value : fail(ctx, 'bigint', value))
 };
 
-/** Accepts anything. */
+/**
+ * Accepts anything.
+ *
+ * As an object entry it needs its key: `undefined` at a key the object has,
+ * own or inherited, is accepted, and a key that is missing fails as a
+ * `missing_key`. Write `optional(unknown)` to let the key be missing.
+ *
+ * It tells the two apart by the object and key the object schema hands it, so
+ * it does only when it is the entry itself, which it is through a `flavor`, a
+ * `brand`, or a `message`. Held by anything else, such as a `nullable` or a
+ * `union`, it accepts a missing key as it does `undefined` anywhere.
+ */
 export const unknown: Schema<unknown, unknown, 'unknown', undefined> = {
 	kind: 'unknown',
 	def: undefined,
-	run: (value) => value
+	run: (value, ctx, parent, key) =>
+		// the key comes with the object
+		value === undefined && parent && !((key as string) in parent)
+			? fail(ctx, 'missing_key', value, 'a required key')
+			: value
 };
 
 // describes literals for an issue's `expected`, quoting strings
@@ -509,7 +547,8 @@ export interface SchemaWrapperDef<T extends AnySchema> {
 }
 
 /**
- * Accepts `undefined`. As an object entry it makes the key optional.
+ * Accepts `undefined`. As an object entry it makes the key optional: the
+ * input may leave it out, and a key left out stays out of the output.
  */
 // @__NO_SIDE_EFFECTS__
 export const optional = <T extends AnySchema>(
@@ -564,10 +603,28 @@ export const lazy = <T extends AnySchema>(
 	};
 };
 
+// sets `message` on the issues from `count` on that a schema reported itself
+const label_issues = (
+	issues: Array<SchemaIssue>,
+	count: number,
+	message: string | ((issue: SchemaIssue, value: unknown) => string),
+	value: unknown
+): void => {
+	for (let i = count; i < issues.length; i++) {
+		const issue = issues[i]!;
+		// a child's issues already have their path prefixed
+		if (!issue.path.length) {
+			issue.message ??= typeof message === 'string' ? message : message(issue, value);
+		}
+	}
+};
+
 /**
  * Sets custom text on the issues `schema` itself reports, leaving those of
  * its children alone. Works on actions too, and the innermost `message` wins.
- * The result is otherwise indistinguishable from `schema`.
+ * The result is otherwise indistinguishable from `schema`: as an object entry
+ * it hands `schema` the object and the key when `schema` takes them, so an
+ * `unknown` under a `message` still needs its key.
  *
  * A function is called with the issue and with the value `schema` was given
  * to validate. Around an action that is the action's input, so the output of
@@ -585,21 +642,24 @@ export const message = <T extends AnySchema>(
 	({
 		kind: schema.kind,
 		def: schema.def,
-		run: (value, ctx) => {
-			const count = ctx.fails;
-			const output = schema.run(value, ctx);
-			const { issues } = ctx;
-			if (issues && !ctx.probe) {
-				for (let i = count; i < issues.length; i++) {
-					const issue = issues[i]!;
-					// a child's issues already have their path prefixed
-					if (!issue.path.length) {
-						issue.message ??= typeof message === 'string' ? message : message(issue, value);
+		// two closures that differ only in what they pass on, chosen once here:
+		// handing the object and the key to a `run` that doesn't take them
+		// measured slower on valid input, and so did choosing on every call
+		// and sharing the body below as one call
+		run:
+			schema.run.length > 2
+				? (value, ctx, parent, key) => {
+						const count = ctx.fails;
+						const output = schema.run(value, ctx, parent, key);
+						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						return output;
 					}
-				}
-			}
-			return output;
-		}
+				: (value, ctx) => {
+						const count = ctx.fails;
+						const output = schema.run(value, ctx);
+						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						return output;
+					}
 	}) as AnySchema as T;
 
 //
@@ -683,7 +743,8 @@ export const brand: <T extends AnySchema, const TName extends string>(
 
 // runs every entry and returns the output, or `undefined` when a probe failed,
 // the output being `value` itself until an entry's output differs from its input,
-// which copies the entries before it
+// which copies the entries before it. An entry is handed `value` and its key
+// too, for a schema that accepts `undefined` and still needs its key to be there
 const run_entries = (
 	keys: Array<string>,
 	schemas: Array<AnySchema>,
@@ -695,7 +756,7 @@ const run_entries = (
 		const key = keys[i]!;
 		const input = value[key];
 		const count = ctx.fails;
-		const v = schemas[i]!.run(input, ctx);
+		const v = schemas[i]!.run(input, ctx, value, key);
 		if (ctx.fails > count) {
 			if (ctx.probe) return;
 			prefix_path(ctx.issues!, count, key);
@@ -719,6 +780,11 @@ const run_entries = (
 /**
  * Matches an object with `entries`, failing on unknown keys.
  * The output is the input itself when no entry changed.
+ *
+ * A key the input lacks reads as `undefined`, so it fails unless its entry
+ * accepts that. `unknown` accepts `undefined` and still needs its key, failing
+ * as a `missing_key` without it. This holds for `loose_object` and
+ * `strip_object` too.
  */
 // @__NO_SIDE_EFFECTS__
 export const object = <T extends SchemaEntries>(
@@ -776,7 +842,8 @@ export const loose_object = <T extends SchemaEntries>(
 				const key = keys[i]!;
 				const input = value[key];
 				const count = ctx.fails;
-				const v = schemas[i]!.run(input, ctx);
+				// the object and the key too, as in `run_entries`
+				const v = schemas[i]!.run(input, ctx, value, key);
 				if (ctx.fails > count) {
 					if (ctx.probe) return undefined;
 					prefix_path(ctx.issues!, count, key);

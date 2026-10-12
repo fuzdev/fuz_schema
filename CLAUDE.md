@@ -132,6 +132,14 @@ Things that are easy to break without a test noticing:
   their first failed child.
 - **The input is never mutated**, `object` never accepts an input with unknown
   keys, and `strip_object` never returns one.
+- **The object loops hand an entry the object and its key**, as the third and
+  fourth argument of `run`, and leave whether a missing key fails to it. A schema
+  that accepts `undefined` and should refuse a missing key checks the object
+  itself, as `unknown` does. A schema that calls what it holds with two
+  arguments, as every one but `message` does, lets a missing key through to
+  it as `undefined`. `message` passes them on only to a `run` whose `length`
+  is past two, read once when it is made, so a `run` that reads them declares
+  them as plain parameters.
 - **`loose_object` has its own loop.** Folding it into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
@@ -215,6 +223,11 @@ Things that are easy to break without a test noticing:
 - **Issues are the library's, in its order.** `validate_json` reports what
   `parse` does: each kind, `expected` text, received type, and path. A change
   to what a `run` passes `fail` in `schema.ts` is a change to `walk.rs`.
+- **Which entries need their key is the library's.** `walk.rs` fails an
+  `unknown` entry whose key is missing, and the builder's `required` is those
+  entries and the ones a missing key fails as `undefined`. Both ask
+  `SchemaNode::needs_key`, which a schema that starts to read the object
+  `run` is handed changes.
 - **A difference is declared, not skipped.** It is a flag on a fixture case,
   and `tests/fixtures.rs` asserts the declared behavior.
 - **Refuse, don't guess.** What the crate can't carry across is a

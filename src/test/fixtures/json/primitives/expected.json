@@ -36,7 +36,12 @@
 					}
 				},
 				"unknown": {
-					"kind": "unknown"
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "unknown"
+						}
+					}
 				}
 			}
 		}

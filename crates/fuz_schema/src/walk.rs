@@ -26,7 +26,8 @@ pub trait Report {
     /// failure.
     const PROBE: bool;
 
-    /// A value failed `node`, or was a key `node` does not have.
+    /// A value failed `node`, was at a key `node` does not have, or was not
+    /// at the key the entry `node` needs.
     fn fail(&mut self, node: NodeId, failure: Failure, received: Received);
 
     /// How many failures there have been, to hand back to `prefix`.
@@ -47,6 +48,9 @@ pub enum Failure {
     Discriminator,
     /// The value is at a key the `object` node has no entry for.
     UnknownKey,
+    /// The node is an `unknown` entry of an object schema, and the value has
+    /// no key for it.
+    MissingKey,
 }
 
 /// A step from a container to a value in it.
@@ -106,6 +110,7 @@ impl Report for Collect<'_> {
         let kind = match failure {
             Failure::Schema | Failure::Discriminator => SchemaIssueKind::of(node.kind()),
             Failure::UnknownKey => Some(SchemaIssueKind::UnknownKey),
+            Failure::MissingKey => Some(SchemaIssueKind::MissingKey),
         };
         // the walker reports no failure of a kind that has no issue kind
         debug_assert!(kind.is_some(), "a `{}` failed", node.kind());
@@ -138,6 +143,7 @@ impl Report for Collect<'_> {
 fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
     match (failure, node) {
         (Failure::UnknownKey, _) => "no unknown keys".to_owned(),
+        (Failure::MissingKey, _) => "a required key".to_owned(),
         // the values of the options, in the order they first appear
         (Failure::Discriminator, SchemaNode::Variant(variant)) => {
             format_literals(variant.table.iter().map(|(literal, _)| literal))
@@ -408,6 +414,10 @@ fn length(value: Value<'_>) -> Option<f64> {
 
 /// The three object schemas: the entries in the schema's order, each reading
 /// a missing key as `undefined`, then for a `strict` one the input's keys.
+///
+/// An entry that is an `unknown` needs its key, as the library's does, which
+/// is handed the object and looks. That is of the entry itself: an `unknown`
+/// held by another schema is handed no object, and takes the `undefined`.
 fn object<R: Report>(
     schema: &Schema,
     id: NodeId,
@@ -422,9 +432,20 @@ fn object<R: Report>(
     };
     let mut matched = true;
     for (key, entry) in entries.iter() {
-        let field = fields.get(key).map_or(Value::Undefined, Json::view);
+        let field = fields.get(key);
         let count = report.count();
-        if !run(schema, entry, field, report) {
+        let entry_matched = if field.is_none() && schema.at(entry).needs_key() {
+            report.fail(entry, Failure::MissingKey, Received::of(Value::Undefined));
+            false
+        } else {
+            run(
+                schema,
+                entry,
+                field.map_or(Value::Undefined, Json::view),
+                report,
+            )
+        };
+        if !entry_matched {
             if R::PROBE {
                 return false;
             }
@@ -695,39 +716,83 @@ pub mod tests {
             let optional = b.optional(string);
             let nullable = b.nullable(string);
             let default = b.with_default(string, Json::Null);
+            let held = b.nullable(unknown);
+            let either = b.union([string, unknown]);
             b.object([
                 ("string", string),
                 ("unknown", unknown),
                 ("optional", optional),
                 ("nullable", nullable),
                 ("default", default),
+                ("held", held),
+                ("either", either),
             ])
         });
         check(
             &schema,
             &[
-                r#"{"string":"a","nullable":null}"#,
-                r#"{"string":"a","nullable":"b","optional":"c","default":"d","unknown":[1]}"#,
-                r#"{"nullable":null,"string":""}"#,
+                r#"{"string":"a","unknown":null,"nullable":null}"#,
+                r#"{"string":"a","nullable":"b","optional":"c","default":"d","unknown":[1],"held":1,"either":2}"#,
+                r#"{"nullable":null,"unknown":0,"string":""}"#,
             ],
             &[
                 "{}",
-                r#"{"string":"a"}"#,
-                r#"{"nullable":null}"#,
-                r#"{"string":"a","nullable":null,"optional":null}"#,
-                r#"{"string":"a","nullable":null,"default":null}"#,
-                r#"{"string":"a","nullable":null,"default":1}"#,
-                r#"{"string":"a","nullable":null,"extra":1}"#,
-                r#"{"string":null,"nullable":null}"#,
+                r#"{"string":"a","unknown":1}"#,
+                r#"{"nullable":null,"unknown":1}"#,
+                // an `unknown` entry accepts any value and needs its key
+                r#"{"string":"a","nullable":null}"#,
+                r#"{"string":"a","unknown":1,"nullable":null,"optional":null}"#,
+                r#"{"string":"a","unknown":1,"nullable":null,"default":null}"#,
+                r#"{"string":"a","unknown":1,"nullable":null,"default":1}"#,
+                r#"{"string":"a","unknown":1,"nullable":null,"extra":1}"#,
+                r#"{"string":null,"unknown":1,"nullable":null}"#,
             ],
         );
+        // in the order of the entries, and not of an `unknown` another schema
+        // holds
         assert_eq!(
             failures(&schema, "{}"),
             [
                 "string: string received Undefined",
+                "unknown: missing_key received Undefined",
                 "nullable: string received Undefined"
             ]
         );
+        assert_eq!(
+            expects(&schema, r#"{"string":"a","nullable":null}"#),
+            ["a required key"]
+        );
+        // and before the unknown keys
+        assert_eq!(
+            failures(&schema, r#"{"z":1,"string":"a","nullable":1}"#),
+            [
+                "unknown: missing_key received Undefined",
+                "nullable: string received Number",
+                "z: unknown_key received Number"
+            ]
+        );
+        for kind in [SchemaKind::LooseObject, SchemaKind::StripObject] {
+            let schema = build(|b| {
+                let unknown = b.unknown();
+                let optional = b.optional(unknown);
+                let entries = [("a", unknown), ("b", optional)];
+                if kind == SchemaKind::LooseObject {
+                    b.loose_object(entries)
+                } else {
+                    b.strip_object(entries)
+                }
+            });
+            check(
+                &schema,
+                &[r#"{"a":null}"#, r#"{"z":1,"a":1}"#],
+                &["{}", r#"{"b":1}"#],
+            );
+            assert_eq!(
+                failures(&schema, r#"{"z":1}"#),
+                ["a: missing_key received Undefined"],
+                "{kind}"
+            );
+        }
     }
 
     #[test]

@@ -978,6 +978,15 @@
 						"strict",
 						"lazy"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"unknown"
+					]
 				}
 			]
 		},
@@ -1192,6 +1201,15 @@
 					"path": [
 						"loose",
 						"lazy"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"unknown"
 					]
 				}
 			]
@@ -1408,12 +1426,21 @@
 						"strip",
 						"lazy"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"unknown"
+					]
 				}
 			]
 		},
 		{
 			"name": "strict_all_but_bigint",
-			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\"}}",
+			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1430,7 +1457,7 @@
 		},
 		{
 			"name": "loose_all_but_bigint",
-			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"other\":1}}",
+			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"other\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1889,6 +1916,15 @@
 					"path": [
 						"strict",
 						"lazy"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"unknown"
 					]
 				},
 				{

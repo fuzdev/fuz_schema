@@ -4,7 +4,25 @@
 			"kind": "object",
 			"def": {
 				"any": {
-					"kind": "unknown"
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "unknown"
+						}
+					}
+				},
+				"needed": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"u": {
+									"kind": "unknown"
+								}
+							}
+						}
+					}
 				},
 				"items": {
 					"kind": "optional",
@@ -226,6 +244,47 @@
 			"valid": true,
 			"issues": [],
 			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "needed_overflow",
+			"text": "{\"needed\":{\"u\":1e400}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "needed_lone_surrogate",
+			"text": "{\"needed\":{\"u\":\"\\ud800\"}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "lone_surrogate_unread"
+		},
+		{
+			"name": "needed_deep",
+			"text": "{\"needed\":{\"u\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit_unread"
+		},
+		{
+			"name": "needed_missing",
+			"text": "{\"needed\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"needed",
+						"u"
+					]
+				}
+			]
 		},
 		{
 			"name": "any_trailing_comma",

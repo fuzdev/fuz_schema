@@ -20,7 +20,8 @@ pub struct SchemaIssue {
 }
 
 impl SchemaIssue {
-    /// What failed: the kind of the schema or action, or `UnknownKey`.
+    /// What failed: the kind of the schema or action, or `UnknownKey` or
+    /// `MissingKey`.
     pub const fn kind(&self) -> SchemaIssueKind {
         self.kind
     }
@@ -115,11 +116,12 @@ impl fmt::Display for Received {
     }
 }
 
-/// What an issue is of: the kind of the schema or action that failed, or a
-/// key an `object` has no entry for.
+/// What an issue is of: the kind of the schema or action that failed, a key
+/// an `object` has no entry for, or a key an `unknown` entry needs and the
+/// value does not have.
 ///
-/// The kinds that never fail themselves have none: `unknown` accepts
-/// everything, the wrappers, `lazy`, and `pipe` leave the failure to the
+/// The kinds that never fail a value have none: `unknown` accepts every
+/// value, and the wrappers, `lazy`, and `pipe` leave the failure to the
 /// schema they hold.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -166,6 +168,9 @@ pub enum SchemaIssueKind {
     Finite,
     /// `unknown_key`: the value is at a key an `object` has no entry for.
     UnknownKey,
+    /// `missing_key`: the value has no key for an `unknown` entry of an object
+    /// schema, which accepts anything at its key and still needs the key.
+    MissingKey,
 }
 
 impl SchemaIssueKind {
@@ -192,6 +197,7 @@ impl SchemaIssueKind {
         Self::SafeInteger,
         Self::Finite,
         Self::UnknownKey,
+        Self::MissingKey,
     ];
 
     /// The kind's name, the `kind` of the TypeScript issue.
@@ -218,6 +224,7 @@ impl SchemaIssueKind {
             Self::SafeInteger => "safe_integer",
             Self::Finite => "finite",
             Self::UnknownKey => "unknown_key",
+            Self::MissingKey => "missing_key",
         }
     }
 
@@ -306,6 +313,7 @@ mod tests {
             SchemaIssueKind::SafeInteger => 18,
             SchemaIssueKind::Finite => 19,
             SchemaIssueKind::UnknownKey => 20,
+            SchemaIssueKind::MissingKey => 21,
         }
     }
 
@@ -316,7 +324,7 @@ mod tests {
         }
         // the last place is the last of the list, so none is past its end
         assert_eq!(
-            place(SchemaIssueKind::UnknownKey) + 1,
+            place(SchemaIssueKind::MissingKey) + 1,
             SchemaIssueKind::ALL.len()
         );
     }
@@ -343,13 +351,12 @@ mod tests {
                 None => assert!(never_fails, "{kind}"),
             }
         }
-        // and the one issue kind that is of no schema
-        found.push(SchemaIssueKind::UnknownKey);
+        // and the issue kinds that are of no schema
+        for kind in [SchemaIssueKind::UnknownKey, SchemaIssueKind::MissingKey] {
+            found.push(kind);
+            assert_eq!(SchemaKind::from_name(kind.as_str()), None);
+        }
         assert_eq!(found, SchemaIssueKind::ALL);
-        assert_eq!(
-            SchemaKind::from_name(SchemaIssueKind::UnknownKey.as_str()),
-            None
-        );
     }
 
     #[test]

@@ -7,7 +7,7 @@ const entries = {
 	number: s.optional(s.number),
 	boolean: s.optional(s.boolean),
 	bigint: s.optional(s.bigint),
-	unknown: s.unknown
+	unknown: s.optional(s.unknown)
 };
 
 const values: Record<string, string> = {

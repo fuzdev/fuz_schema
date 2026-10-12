@@ -7,7 +7,9 @@ const deep = `${'['.repeat(200)}${']'.repeat(200)}`;
 // skips without reading
 export const fixture: JsonFixture = {
 	schema: s.object({
-		any: s.unknown,
+		any: s.optional(s.unknown),
+		// an `unknown` that is the entry itself, which needs its key
+		needed: s.optional(s.object({ u: s.unknown })),
 		items: s.optional(s.array(s.unknown)),
 		map: s.optional(s.record(s.nullable(s.optional(s.unknown)))),
 		loose: s.optional(s.loose_object({ a: s.number })),
@@ -44,6 +46,13 @@ export const fixture: JsonFixture = {
 		},
 		either_overflow: { text: '{"either":1e400}', diverges: 'number_overflow_unread' },
 		either_deep: { text: `{"either":${deep}}`, diverges: 'depth_limit_unread' },
+		needed_overflow: { text: '{"needed":{"u":1e400}}', diverges: 'number_overflow_unread' },
+		needed_lone_surrogate: {
+			text: String.raw`{"needed":{"u":"\ud800"}}`,
+			diverges: 'lone_surrogate_unread'
+		},
+		needed_deep: { text: `{"needed":{"u":${deep}}}`, diverges: 'depth_limit_unread' },
+		needed_missing: '{"needed":{}}',
 		// skipped is still JSON or not
 		any_trailing_comma: '{"any":[1,]}',
 		any_leading_zero: '{"any":01}',

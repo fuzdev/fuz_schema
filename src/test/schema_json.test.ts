@@ -15,6 +15,22 @@ const STRING = { kind: 'string' };
 const NUMBER = { kind: 'number' };
 
 describe('to_schema_json', () => {
+	test('a message around an unknown entry is written as the unknown it behaves as', () => {
+		// the form has no `message`, so what is written must give the verdicts of what was given
+		for (const factory of [s.object, s.strip_object, s.loose_object]) {
+			const Given = factory({ a: s.message(s.unknown, 'm') });
+			const Written = factory({ a: s.unknown });
+			assert.deepEqual(to_schema_json(Given), to_schema_json(Written), Given.kind);
+			assert.deepEqual(node(Given).def, { a: { kind: 'unknown' } }, Given.kind);
+			for (const input of [{}, { a: undefined }, { a: null }, Object.create({ a: undefined })]) {
+				assert.strictEqual(s.is(Given, input), s.is(Written, input), Given.kind);
+				assert.strictEqual(s.parse(Given, input).ok, s.parse(Written, input).ok, Given.kind);
+			}
+			assert(!s.is(Given, {}), Given.kind);
+			assert(s.is(Given, { a: undefined }), Given.kind);
+		}
+	});
+
 	test('writes a kind with no def as its kind alone', () => {
 		for (const schema of [
 			s.string,
