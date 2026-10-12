@@ -194,6 +194,10 @@ import {to_standard_schema} from '@fuzdev/fuz_schema/standard_schema.ts';
 const standard = to_standard_schema(User); // {'~standard': {version: 1, vendor, validate}}
 ```
 
+The types follow version 1.1 of the spec and are copied from it, so there's no dependency on it.
+`validate` is synchronous and ignores the spec's options argument,
+and the input and output types are carried by the result's type, for the spec's own inference to read.
+
 It's an adapter so that schemas don't each carry a `~standard` property.
 Whether schemas should be Standard Schemas natively, at a flat cost to every bundle,
 is an open question.
