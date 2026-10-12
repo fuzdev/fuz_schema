@@ -1007,6 +1007,16 @@ mod tests {
                 "/schema/def/__proto__",
             ),
             (
+                r#"{"schema":{"kind":"variant","def":{"key":"toString","options":[]}}}"#.to_owned(),
+                SchemaErrorKind::PrototypeKey { key: "toString".into() },
+                "/schema/def/key",
+            ),
+            (
+                r#"{"schema":{"kind":"variant","def":{"key":"toString","options":[{"kind":"object","def":{"toString":{"kind":"literal","def":"a"}}}]}}}"#.to_owned(),
+                SchemaErrorKind::PrototypeKey { key: "toString".into() },
+                "/schema/def/options/0/def/toString",
+            ),
+            (
                 r#"{"schema":{"kind":"pipe","def":[]}}"#.to_owned(),
                 SchemaErrorKind::EmptyPipe,
                 "/schema",

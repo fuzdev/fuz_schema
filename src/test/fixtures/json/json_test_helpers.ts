@@ -249,7 +249,7 @@ export interface JsonFixtureContract {
 	max_nesting: number;
 	/** The deepest that arrays and objects can be nested in a text the crate reads. */
 	max_depth: number;
-	/** The entry names both sides refuse. */
+	/** The names both sides refuse of an entry, and of the key of a `variant`. */
 	object_prototype_keys: ReadonlyArray<string>;
 	/** The kinds neither side carries across. */
 	unsupported_kinds: ReadonlyArray<string>;

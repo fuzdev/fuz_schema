@@ -179,10 +179,11 @@ pub enum SchemaErrorKind {
     UnsupportedLiteral,
     /// A number that is not finite, as a literal or a bound.
     NonFiniteNumber,
-    /// An entry named like a member of `Object.prototype`, which the
-    /// TypeScript library reads through the prototype.
+    /// An entry, or the key of a `variant`, named like a member of
+    /// `Object.prototype`, which the TypeScript library reads through the
+    /// prototype.
     PrototypeKey {
-        /// The entry's key.
+        /// The key.
         key: Box<str>,
     },
     /// Two entries of one object schema with the same key.
@@ -271,7 +272,7 @@ impl fmt::Display for SchemaErrorKind {
             Self::NonFiniteNumber => f.write_str("a number that is not finite"),
             Self::PrototypeKey { key } => write!(
                 f,
-                "the entry {key:?} is named like a member of Object.prototype"
+                "the key {key:?} is named like a member of Object.prototype"
             ),
             Self::DuplicateKey { key } => write!(f, "the entry {key:?} is given twice"),
             Self::EmptyPipe => f.write_str("a pipe with no schema"),

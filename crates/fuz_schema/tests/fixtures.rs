@@ -3,20 +3,22 @@
 //!
 //! Each group's `expected.json` holds a schema in the interchange form and
 //! what the TypeScript library makes of a list of JSON texts: whether
-//! `JSON.parse` reads each, and whether what it read matches. Both evaluators
-//! must say the same, except where a case declares how the crate diverges,
-//! and then they must do exactly what is declared.
+//! `JSON.parse` reads each, whether what it read matches, and the issues of
+//! what does not. Both evaluators must say the same, except where a case
+//! declares how the crate diverges, and then they must do exactly what is
+//! declared. Wherever the tree evaluator gives a verdict, `validate_json`
+//! must give the library's issues, each one whole and in its order.
 
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use fuz_schema::{
-    Json, JsonError, JsonErrorKind, Kind, MAX_DEPTH, MAX_NESTING, Node, Schema, SchemaBuilder,
-    SchemaErrorKind,
+    Issue, IssueKind, Json, JsonError, JsonErrorKind, Kind, MAX_DEPTH, MAX_NESTING, Node,
+    PathSegment, Received, Schema, SchemaBuilder, SchemaErrorKind,
 };
 use serde::de::IgnoredAny;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 /// What an evaluator does with a text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,6 +85,9 @@ struct Case {
     text: String,
     /// The library's verdict, or `None` for a text `JSON.parse` throws on.
     oracle: Option<bool>,
+    /// The library's issues, as generated: empty for a text that matches,
+    /// and `None` with no verdict.
+    issues: Option<Value>,
     diverges: Option<String>,
 }
 
@@ -192,6 +197,17 @@ fn load_group(dir: &Path, name: String) -> Result<Group, String> {
         } else {
             None
         };
+        let issues = match (oracle, case.get("issues")) {
+            (Some(valid), Some(Value::Array(issues))) if valid == issues.is_empty() => {
+                Some(Value::Array(issues.clone()))
+            }
+            (None, None) => None,
+            (_, other) => {
+                return Err(format!(
+                    "{what}: oracle {oracle:?} does not go with issues {other:?}"
+                ));
+            }
+        };
         let diverges = match case.get("diverges") {
             Some(_) => Some(string(case, "diverges", &what)?),
             None => None,
@@ -199,6 +215,7 @@ fn load_group(dir: &Path, name: String) -> Result<Group, String> {
         cases.push(Case {
             text: string(case, "text", &what)?,
             oracle,
+            issues,
             diverges,
             name: case_name,
         });
@@ -224,6 +241,25 @@ fn check(expect: Expect, actual: &Result<bool, JsonError>, oracle: Option<bool>)
         (Expect::Refused(kind), _) => actual.as_ref().map_err(JsonError::kind) == Err(kind),
     };
     (!met).then(|| format!("expected {expect:?} of oracle {oracle:?}, got {actual:?}"))
+}
+
+/// An issue as `expected.json` holds one: the library's, without `message`.
+/// A key of the path is a string and an index a number, as they are there.
+fn issue_json(issue: &Issue) -> Value {
+    let path: Vec<Value> = issue
+        .path()
+        .iter()
+        .map(|segment| match segment {
+            PathSegment::Key(key) => json!(key),
+            PathSegment::Index(index) => json!(index),
+        })
+        .collect();
+    json!({
+        "kind": issue.kind().as_str(),
+        "expected": issue.expected(),
+        "received": issue.received().as_str(),
+        "path": path,
+    })
 }
 
 fn declared(flag: &str) -> Option<(Expect, Expect)> {
@@ -311,6 +347,89 @@ fn both_evaluators_match_the_oracle_or_the_declared_divergence() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// `validate_json` is the tree evaluator: it errs where `is_json_exact` errs,
+/// has no issues where that is `true`, and where that gives the library's
+/// verdict its issues are the library's.
+#[test]
+fn validate_json_reports_the_issues_of_the_oracle() {
+    let mut failures = Vec::new();
+    let mut compared = 0;
+    for group in load_groups().unwrap() {
+        for case in &group.cases {
+            let at = format!("{}/{}", group.name, case.name);
+            let exact = group.schema.is_json_exact(&case.text);
+            let issues = group.schema.validate_json(&case.text);
+            let verdict = issues.as_ref().map(Vec::is_empty).map_err(Clone::clone);
+            if verdict != exact {
+                failures.push(format!(
+                    "{at}: validate_json {issues:?}, is_json_exact {exact:?}"
+                ));
+            }
+            let bytes = group.schema.validate_json_bytes(case.text.as_bytes());
+            if bytes != issues {
+                failures.push(format!(
+                    "{at}: validate_json_bytes {bytes:?}, validate_json {issues:?}"
+                ));
+            }
+            // a flag whose tree column is not the oracle's is an error above
+            let oracle = case
+                .diverges
+                .as_deref()
+                .is_none_or(|flag| matches!(declared(flag), Some((_, Expect::Oracle))));
+            let (true, Some(expected), Ok(issues)) = (oracle, &case.issues, &issues) else {
+                continue;
+            };
+            compared += 1;
+            let actual = Value::Array(issues.iter().map(issue_json).collect());
+            if actual != *expected {
+                failures.push(format!("{at}: issues {actual}, the oracle's {expected}"));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    assert!(compared >= MIN_CASES / 2, "{compared} cases compared");
+}
+
+/// Every kind of issue, and every received type, is one some case's issues
+/// have, so that none is only ever compared as absent.
+#[test]
+fn every_issue_kind_and_received_type_is_reported_by_a_case() {
+    let groups = load_groups().unwrap();
+    let issues: Vec<Issue> = groups
+        .iter()
+        .flat_map(|group| {
+            group
+                .cases
+                .iter()
+                .filter_map(|case| group.schema.validate_json(&case.text).ok())
+        })
+        .flatten()
+        .collect();
+    for &kind in IssueKind::ALL {
+        assert!(
+            issues.iter().any(|issue| issue.kind() == kind),
+            "no case has a `{kind}` issue"
+        );
+    }
+    for &received in Received::ALL {
+        assert!(
+            issues.iter().any(|issue| issue.received() == received),
+            "no case has an issue that received `{received}`"
+        );
+    }
+    // a path of each kind of step, and the root's, which has none
+    let has =
+        |find: fn(&PathSegment) -> bool| issues.iter().any(|issue| issue.path().iter().any(find));
+    assert!(has(|segment| matches!(segment, PathSegment::Key(_))));
+    assert!(has(|segment| matches!(segment, PathSegment::Index(_))));
+    assert!(issues.iter().any(|issue| issue.path().is_empty()));
 }
 
 #[test]

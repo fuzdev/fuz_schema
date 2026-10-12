@@ -1,0 +1,1795 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"kinds": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "literal",
+									"def": 1
+								},
+								{
+									"kind": "one_of",
+									"def": [
+										"a",
+										2
+									]
+								},
+								{
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "boolean"
+										}
+									}
+								},
+								{
+									"kind": "lazy",
+									"def": "$0"
+								},
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "integer"
+										},
+										{
+											"kind": "min_value",
+											"def": 10
+										}
+									]
+								},
+								{
+									"kind": "object",
+									"def": {
+										"a": {
+											"kind": "number"
+										}
+									}
+								},
+								{
+									"kind": "strip_object",
+									"def": {
+										"b": {
+											"kind": "string"
+										}
+									}
+								},
+								{
+									"kind": "loose_object",
+									"def": {
+										"c": {
+											"kind": "string"
+										}
+									}
+								},
+								{
+									"kind": "record",
+									"def": {
+										"kind": "boolean"
+									}
+								},
+								{
+									"kind": "variant",
+									"def": {
+										"key": "k",
+										"options": [
+											{
+												"kind": "object",
+												"def": {
+													"k": {
+														"kind": "literal",
+														"def": "x"
+													}
+												}
+											}
+										]
+									}
+								},
+								{
+									"kind": "union",
+									"def": [
+										{
+											"kind": "bigint"
+										}
+									]
+								},
+								{
+									"kind": "bigint"
+								},
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "min_length",
+											"def": 3
+										}
+									]
+								},
+								{
+									"kind": "safe_integer"
+								}
+							]
+						}
+					}
+				},
+				"none": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": []
+						}
+					}
+				},
+				"one": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "finite"
+								}
+							]
+						}
+					}
+				},
+				"nested": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "union",
+								"def": [
+									{
+										"kind": "string"
+									},
+									{
+										"kind": "array",
+										"def": {
+											"kind": "union",
+											"def": [
+												{
+													"kind": "number"
+												},
+												{
+													"kind": "object",
+													"def": {
+														"n": {
+															"kind": "union",
+															"def": [
+																{
+																	"kind": "boolean"
+																},
+																{
+																	"kind": "literal",
+																	"def": null
+																}
+															]
+														}
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"entries": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "object",
+							"def": {
+								"x": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "string"
+										}
+									]
+								},
+								"y": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"z": {
+									"kind": "number"
+								}
+							}
+						}
+					}
+				},
+				"with_default": {
+					"kind": "default",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "number"
+								}
+							]
+						},
+						"value": 0
+					}
+				},
+				"shape": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "variant",
+							"def": {
+								"key": "type",
+								"options": [
+									{
+										"kind": "object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": "a"
+											},
+											"n": {
+												"kind": "number"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": 1.5
+											},
+											"u": {
+												"kind": "union",
+												"def": [
+													{
+														"kind": "string"
+													},
+													{
+														"kind": "number"
+													}
+												]
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": 0
+											}
+										}
+									},
+									{
+										"kind": "strip_object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": null
+											},
+											"deep": {
+												"kind": "optional",
+												"def": {
+													"schema": {
+														"kind": "variant",
+														"def": {
+															"key": "t",
+															"options": [
+																{
+																	"kind": "object",
+																	"def": {
+																		"t": {
+																			"kind": "literal",
+																			"def": true
+																		}
+																	}
+																},
+																{
+																	"kind": "object",
+																	"def": {
+																		"t": {
+																			"kind": "literal",
+																			"def": false
+																		},
+																		"x": {
+																			"kind": "string"
+																		}
+																	}
+																}
+															]
+														}
+													}
+												}
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": "a\"b"
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": 1e+21
+											}
+										}
+									},
+									{
+										"kind": "object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": "a"
+											},
+											"n": {
+												"kind": "number"
+											},
+											"m": {
+												"kind": "optional",
+												"def": {
+													"schema": {
+														"kind": "number"
+													}
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"shapes": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "record",
+							"def": {
+								"kind": "array",
+								"def": {
+									"kind": "variant",
+									"def": {
+										"key": "type",
+										"options": [
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a"
+													},
+													"n": {
+														"kind": "number"
+													}
+												}
+											},
+											{
+												"kind": "loose_object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 1.5
+													},
+													"u": {
+														"kind": "union",
+														"def": [
+															{
+																"kind": "string"
+															},
+															{
+																"kind": "number"
+															}
+														]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 0
+													}
+												}
+											},
+											{
+												"kind": "strip_object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": null
+													},
+													"deep": {
+														"kind": "optional",
+														"def": {
+															"schema": {
+																"kind": "variant",
+																"def": {
+																	"key": "t",
+																	"options": [
+																		{
+																			"kind": "object",
+																			"def": {
+																				"t": {
+																					"kind": "literal",
+																					"def": true
+																				}
+																			}
+																		},
+																		{
+																			"kind": "object",
+																			"def": {
+																				"t": {
+																					"kind": "literal",
+																					"def": false
+																				},
+																				"x": {
+																					"kind": "string"
+																				}
+																			}
+																		}
+																	]
+																}
+															}
+														}
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a\"b"
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 1e+21
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a"
+													},
+													"n": {
+														"kind": "number"
+													},
+													"m": {
+														"kind": "optional",
+														"def": {
+															"schema": {
+																"kind": "number"
+															}
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				},
+				"no_options": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "variant",
+							"def": {
+								"key": "k",
+								"options": []
+							}
+						}
+					}
+				},
+				"either": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "variant",
+									"def": {
+										"key": "type",
+										"options": [
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a"
+													},
+													"n": {
+														"kind": "number"
+													}
+												}
+											},
+											{
+												"kind": "loose_object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 1.5
+													},
+													"u": {
+														"kind": "union",
+														"def": [
+															{
+																"kind": "string"
+															},
+															{
+																"kind": "number"
+															}
+														]
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 0
+													}
+												}
+											},
+											{
+												"kind": "strip_object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": null
+													},
+													"deep": {
+														"kind": "optional",
+														"def": {
+															"schema": {
+																"kind": "variant",
+																"def": {
+																	"key": "t",
+																	"options": [
+																		{
+																			"kind": "object",
+																			"def": {
+																				"t": {
+																					"kind": "literal",
+																					"def": true
+																				}
+																			}
+																		},
+																		{
+																			"kind": "object",
+																			"def": {
+																				"t": {
+																					"kind": "literal",
+																					"def": false
+																				},
+																				"x": {
+																					"kind": "string"
+																				}
+																			}
+																		}
+																	]
+																}
+															}
+														}
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a\"b"
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": 1e+21
+													}
+												}
+											},
+											{
+												"kind": "object",
+												"def": {
+													"type": {
+														"kind": "literal",
+														"def": "a"
+													},
+													"n": {
+														"kind": "number"
+													},
+													"m": {
+														"kind": "optional",
+														"def": {
+															"schema": {
+																"kind": "number"
+															}
+														}
+													}
+												}
+											}
+										]
+									}
+								},
+								{
+									"kind": "string"
+								}
+							]
+						}
+					}
+				},
+				"index": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "variant",
+							"def": {
+								"key": "0",
+								"options": [
+									{
+										"kind": "object",
+										"def": {
+											"0": {
+												"kind": "literal",
+												"def": 0
+											},
+											"1": {
+												"kind": "number"
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "array",
+				"def": {
+					"kind": "number"
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "nothing",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_fraction",
+			"text": "{\"kinds\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "number",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "kinds_small_integer",
+			"text": "{\"kinds\":3}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_large_integer",
+			"text": "{\"kinds\":12}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_unsafe_fraction",
+			"text": "{\"kinds\":9007199254740993.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_string",
+			"text": "{\"kinds\":\"b\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "string",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "kinds_short_string",
+			"text": "{\"kinds\":\"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "string",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "kinds_long_string",
+			"text": "{\"kinds\":\"abc\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_null",
+			"text": "{\"kinds\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_array",
+			"text": "{\"kinds\":[\"x\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "array",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "kinds_object",
+			"text": "{\"kinds\":{\"z\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "object",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "kinds_empty_object",
+			"text": "{\"kinds\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_variant",
+			"text": "{\"kinds\":{\"k\":\"x\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "kinds_variant_unknown",
+			"text": "{\"kinds\":{\"k\":\"y\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | one_of | nullable | lazy | pipe | object | strip_object | loose_object | record | variant | union | bigint | pipe | safe_integer",
+					"received": "object",
+					"path": [
+						"kinds"
+					]
+				}
+			]
+		},
+		{
+			"name": "none_null",
+			"text": "{\"none\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "null",
+					"path": [
+						"none"
+					]
+				}
+			]
+		},
+		{
+			"name": "none_object",
+			"text": "{\"none\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "object",
+					"path": [
+						"none"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_string",
+			"text": "{\"one\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "finite",
+					"received": "string",
+					"path": [
+						"one"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_number",
+			"text": "{\"one\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested_valid",
+			"text": "{\"nested\":[\"a\",[1,{\"n\":true},{\"n\":null}]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested_outer",
+			"text": "{\"nested\":[1,null,{},\"a\",true]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "number",
+					"path": [
+						"nested",
+						0
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "null",
+					"path": [
+						"nested",
+						1
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "object",
+					"path": [
+						"nested",
+						2
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "boolean",
+					"path": [
+						"nested",
+						4
+					]
+				}
+			]
+		},
+		{
+			"name": "nested_inner",
+			"text": "{\"nested\":[[1,\"a\",{\"n\":1},{},[],{\"n\":null,\"m\":1}],\"a\",[null]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "array",
+					"path": [
+						"nested",
+						0
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "array",
+					"path": [
+						"nested",
+						2
+					]
+				}
+			]
+		},
+		{
+			"name": "nested_not_array",
+			"text": "{\"nested\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"nested"
+					]
+				}
+			]
+		},
+		{
+			"name": "entries_all",
+			"text": "{\"entries\":{\"x\":null,\"y\":null,\"z\":null}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | string",
+					"received": "null",
+					"path": [
+						"entries",
+						"x"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"entries",
+						"z"
+					]
+				}
+			]
+		},
+		{
+			"name": "entries_missing",
+			"text": "{\"entries\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | string",
+					"received": "undefined",
+					"path": [
+						"entries",
+						"x"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"entries",
+						"z"
+					]
+				}
+			]
+		},
+		{
+			"name": "entries_unknown_key",
+			"text": "{\"entries\":{\"z\":1,\"x\":[],\"w\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | string",
+					"received": "array",
+					"path": [
+						"entries",
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"entries",
+						"w"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_wrong",
+			"text": "{\"with_default\":\"x\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "with_default_null",
+			"text": "{\"with_default\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"with_default"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_first",
+			"text": "{\"shape\":{\"type\":\"a\",\"n\":1,\"m\":2}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "shape_array",
+			"text": "{\"shape\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"shape"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_null",
+			"text": "{\"shape\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"shape"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_string",
+			"text": "{\"shape\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"shape"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_number",
+			"text": "{\"shape\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"shape"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_empty",
+			"text": "{\"shape\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "undefined",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_unknown",
+			"text": "{\"shape\":{\"type\":\"b\",\"n\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "string",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_unknown_array",
+			"text": "{\"shape\":{\"type\":[\"a\"]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "array",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_unknown_object",
+			"text": "{\"shape\":{\"n\":1,\"type\":{\"type\":\"a\"}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "object",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_unknown_true",
+			"text": "{\"shape\":{\"type\":true}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "boolean",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_unknown_number",
+			"text": "{\"shape\":{\"type\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "number",
+					"path": [
+						"shape",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_selected_wrong",
+			"text": "{\"shape\":{\"type\":\"a\",\"n\":\"1\",\"m\":\"2\",\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"shape",
+						"n"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"shape",
+						"m"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shape",
+						"other"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_selected_missing",
+			"text": "{\"shape\":{\"type\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"shape",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_loose_union",
+			"text": "{\"shape\":{\"type\":1.5,\"u\":null,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number",
+					"received": "null",
+					"path": [
+						"shape",
+						"u"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_zero_unknown_key",
+			"text": "{\"shape\":{\"type\":0,\"n\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shape",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_negative_zero",
+			"text": "{\"shape\":{\"type\":-0}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "shape_quoted",
+			"text": "{\"shape\":{\"type\":\"a\\\"b\",\"n\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shape",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_large",
+			"text": "{\"shape\":{\"type\":1000000000000000000000,\"n\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shape",
+						"n"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_deep_missing",
+			"text": "{\"shape\":{\"type\":null,\"deep\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "true | false",
+					"received": "undefined",
+					"path": [
+						"shape",
+						"deep",
+						"t"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_deep_unknown",
+			"text": "{\"shape\":{\"type\":null,\"deep\":{\"t\":\"true\"}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "true | false",
+					"received": "string",
+					"path": [
+						"shape",
+						"deep",
+						"t"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_deep_not_object",
+			"text": "{\"shape\":{\"type\":null,\"deep\":[true]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"shape",
+						"deep"
+					]
+				}
+			]
+		},
+		{
+			"name": "shape_deep_selected",
+			"text": "{\"shape\":{\"type\":null,\"deep\":{\"t\":false,\"y\":1}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"shape",
+						"deep",
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shape",
+						"deep",
+						"y"
+					]
+				}
+			]
+		},
+		{
+			"name": "shapes",
+			"text": "{\"shapes\":{\"b\":[{\"type\":\"a\",\"n\":1},{\"type\":\"c\"},[],{\"type\":0,\"x\":1}],\"a\":{},\"1\":[null]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"shapes",
+						"1",
+						0
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "string",
+					"path": [
+						"shapes",
+						"b",
+						1,
+						"type"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"shapes",
+						"b",
+						2
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"shapes",
+						"b",
+						3,
+						"x"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"shapes",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_options_object",
+			"text": "{\"no_options\":{\"k\":\"x\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "",
+					"received": "string",
+					"path": [
+						"no_options",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_options_empty",
+			"text": "{\"no_options\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "",
+					"received": "undefined",
+					"path": [
+						"no_options",
+						"k"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_options_array",
+			"text": "{\"no_options\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"no_options"
+					]
+				}
+			]
+		},
+		{
+			"name": "either_string",
+			"text": "{\"either\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "either_shape",
+			"text": "{\"either\":{\"type\":\"a\",\"n\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "either_wrong_shape",
+			"text": "{\"either\":{\"type\":\"a\",\"n\":\"1\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "variant | string",
+					"received": "object",
+					"path": [
+						"either"
+					]
+				}
+			]
+		},
+		{
+			"name": "either_unknown_shape",
+			"text": "{\"either\":{\"type\":\"z\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "variant | string",
+					"received": "object",
+					"path": [
+						"either"
+					]
+				}
+			]
+		},
+		{
+			"name": "either_number",
+			"text": "{\"either\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "variant | string",
+					"received": "number",
+					"path": [
+						"either"
+					]
+				}
+			]
+		},
+		{
+			"name": "index_valid",
+			"text": "{\"index\":{\"1\":1,\"0\":0}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "index_missing",
+			"text": "{\"index\":{\"1\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"index",
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "index_wrong",
+			"text": "{\"index\":{\"1\":\"x\",\"0\":0,\"2\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"index",
+						"1"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"index",
+						"2"
+					]
+				}
+			]
+		},
+		{
+			"name": "index_array",
+			"text": "{\"index\":[0,1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"index"
+					]
+				}
+			]
+		},
+		{
+			"name": "several",
+			"text": "{\"kinds\":[],\"none\":0,\"one\":\"x\",\"nested\":[0],\"shape\":{\"type\":\"z\"},\"no_options\":{},\"either\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "",
+					"received": "number",
+					"path": [
+						"none"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "finite",
+					"received": "string",
+					"path": [
+						"one"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | array",
+					"received": "number",
+					"path": [
+						"nested",
+						0
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "\"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21",
+					"received": "string",
+					"path": [
+						"shape",
+						"type"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "",
+					"received": "undefined",
+					"path": [
+						"no_options",
+						"k"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "variant | string",
+					"received": "array",
+					"path": [
+						"either"
+					]
+				}
+			]
+		}
+	]
+}

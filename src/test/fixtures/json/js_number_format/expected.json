@@ -1,0 +1,3980 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"any_of": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "one_of",
+							"def": [
+								1,
+								-1.5,
+								0,
+								0.1,
+								0.30000000000000004,
+								0.3333333333333333,
+								100,
+								9007199254740991,
+								9007199254740994,
+								1000000000000000.5,
+								100000000000000000000,
+								999999999999999900000,
+								123456789012345680000,
+								590295810358705700000,
+								1.1805916207174113e+21,
+								1e+21,
+								-1e+21,
+								1.2345678901234568e+21,
+								1e+100,
+								1e+300,
+								1.7976931348623157e+308,
+								-1.7976931348623157e+308,
+								0.000001,
+								0.0000015,
+								9.5e-7,
+								1e-7,
+								1.234e-7,
+								-1e-7,
+								2.2250738585072014e-308,
+								5e-324,
+								-5e-324,
+								703.2810668945312,
+								936.5509643554688,
+								-19.037551879882812,
+								232.10000610351562
+							]
+						}
+					}
+				},
+				"longer": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "min_length",
+									"def": 1e+21
+								}
+							]
+						}
+					}
+				},
+				"shorter": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "max_length",
+									"def": -1e-7
+								}
+							]
+						}
+					}
+				},
+				"between": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "array",
+									"def": {
+										"kind": "unknown"
+									}
+								},
+								{
+									"kind": "min_length",
+									"def": 0.5
+								},
+								{
+									"kind": "max_length",
+									"def": 1.5
+								}
+							]
+						}
+					}
+				},
+				"min_one": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1
+								}
+							]
+						}
+					}
+				},
+				"max_one": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1
+								}
+							]
+						}
+					}
+				},
+				"literal_one": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1
+						}
+					}
+				},
+				"min_negative": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -1.5
+								}
+							]
+						}
+					}
+				},
+				"max_negative": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -1.5
+								}
+							]
+						}
+					}
+				},
+				"literal_negative": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -1.5
+						}
+					}
+				},
+				"min_negative_zero": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0
+								}
+							]
+						}
+					}
+				},
+				"max_negative_zero": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_zero": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0
+						}
+					}
+				},
+				"min_tenth": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.1
+								}
+							]
+						}
+					}
+				},
+				"max_tenth": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0.1
+								}
+							]
+						}
+					}
+				},
+				"literal_tenth": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0.1
+						}
+					}
+				},
+				"min_sum": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.30000000000000004
+								}
+							]
+						}
+					}
+				},
+				"max_sum": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0.30000000000000004
+								}
+							]
+						}
+					}
+				},
+				"literal_sum": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0.30000000000000004
+						}
+					}
+				},
+				"min_third": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.3333333333333333
+								}
+							]
+						}
+					}
+				},
+				"max_third": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0.3333333333333333
+								}
+							]
+						}
+					}
+				},
+				"literal_third": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0.3333333333333333
+						}
+					}
+				},
+				"min_hundred": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 100
+								}
+							]
+						}
+					}
+				},
+				"max_hundred": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 100
+								}
+							]
+						}
+					}
+				},
+				"literal_hundred": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 100
+						}
+					}
+				},
+				"min_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 9007199254740991
+								}
+							]
+						}
+					}
+				},
+				"max_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 9007199254740991
+								}
+							]
+						}
+					}
+				},
+				"literal_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 9007199254740991
+						}
+					}
+				},
+				"min_past_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 9007199254740994
+								}
+							]
+						}
+					}
+				},
+				"max_past_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 9007199254740994
+								}
+							]
+						}
+					}
+				},
+				"literal_past_safe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 9007199254740994
+						}
+					}
+				},
+				"min_e15_and_a_half": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1000000000000000.5
+								}
+							]
+						}
+					}
+				},
+				"max_e15_and_a_half": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1000000000000000.5
+								}
+							]
+						}
+					}
+				},
+				"literal_e15_and_a_half": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1000000000000000.5
+						}
+					}
+				},
+				"min_e20": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 100000000000000000000
+								}
+							]
+						}
+					}
+				},
+				"max_e20": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 100000000000000000000
+								}
+							]
+						}
+					}
+				},
+				"literal_e20": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 100000000000000000000
+						}
+					}
+				},
+				"min_below_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 999999999999999900000
+								}
+							]
+						}
+					}
+				},
+				"max_below_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 999999999999999900000
+								}
+							]
+						}
+					}
+				},
+				"literal_below_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 999999999999999900000
+						}
+					}
+				},
+				"min_rounded": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 123456789012345680000
+								}
+							]
+						}
+					}
+				},
+				"max_rounded": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 123456789012345680000
+								}
+							]
+						}
+					}
+				},
+				"literal_rounded": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 123456789012345680000
+						}
+					}
+				},
+				"min_two_to_69": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 590295810358705700000
+								}
+							]
+						}
+					}
+				},
+				"max_two_to_69": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 590295810358705700000
+								}
+							]
+						}
+					}
+				},
+				"literal_two_to_69": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 590295810358705700000
+						}
+					}
+				},
+				"min_two_to_70": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1.1805916207174113e+21
+								}
+							]
+						}
+					}
+				},
+				"max_two_to_70": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1.1805916207174113e+21
+								}
+							]
+						}
+					}
+				},
+				"literal_two_to_70": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1.1805916207174113e+21
+						}
+					}
+				},
+				"min_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1e+21
+								}
+							]
+						}
+					}
+				},
+				"max_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1e+21
+								}
+							]
+						}
+					}
+				},
+				"literal_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1e+21
+						}
+					}
+				},
+				"min_negative_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -1e+21
+								}
+							]
+						}
+					}
+				},
+				"max_negative_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -1e+21
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -1e+21
+						}
+					}
+				},
+				"min_past_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1.2345678901234568e+21
+								}
+							]
+						}
+					}
+				},
+				"max_past_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1.2345678901234568e+21
+								}
+							]
+						}
+					}
+				},
+				"literal_past_e21": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1.2345678901234568e+21
+						}
+					}
+				},
+				"min_e100": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1e+100
+								}
+							]
+						}
+					}
+				},
+				"max_e100": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1e+100
+								}
+							]
+						}
+					}
+				},
+				"literal_e100": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1e+100
+						}
+					}
+				},
+				"min_e300": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1e+300
+								}
+							]
+						}
+					}
+				},
+				"max_e300": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1e+300
+								}
+							]
+						}
+					}
+				},
+				"literal_e300": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1e+300
+						}
+					}
+				},
+				"min_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1.7976931348623157e+308
+								}
+							]
+						}
+					}
+				},
+				"max_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1.7976931348623157e+308
+								}
+							]
+						}
+					}
+				},
+				"literal_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1.7976931348623157e+308
+						}
+					}
+				},
+				"min_negative_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -1.7976931348623157e+308
+								}
+							]
+						}
+					}
+				},
+				"max_negative_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -1.7976931348623157e+308
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_max": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -1.7976931348623157e+308
+						}
+					}
+				},
+				"min_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.000001
+								}
+							]
+						}
+					}
+				},
+				"max_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0.000001
+								}
+							]
+						}
+					}
+				},
+				"literal_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0.000001
+						}
+					}
+				},
+				"min_e_6_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 0.0000015
+								}
+							]
+						}
+					}
+				},
+				"max_e_6_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 0.0000015
+								}
+							]
+						}
+					}
+				},
+				"literal_e_6_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 0.0000015
+						}
+					}
+				},
+				"min_below_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 9.5e-7
+								}
+							]
+						}
+					}
+				},
+				"max_below_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 9.5e-7
+								}
+							]
+						}
+					}
+				},
+				"literal_below_e_6": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 9.5e-7
+						}
+					}
+				},
+				"min_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1e-7
+								}
+							]
+						}
+					}
+				},
+				"max_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1e-7
+								}
+							]
+						}
+					}
+				},
+				"literal_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1e-7
+						}
+					}
+				},
+				"min_e_7_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 1.234e-7
+								}
+							]
+						}
+					}
+				},
+				"max_e_7_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 1.234e-7
+								}
+							]
+						}
+					}
+				},
+				"literal_e_7_digits": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 1.234e-7
+						}
+					}
+				},
+				"min_negative_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -1e-7
+								}
+							]
+						}
+					}
+				},
+				"max_negative_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -1e-7
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_e_7": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -1e-7
+						}
+					}
+				},
+				"min_min_normal": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 2.2250738585072014e-308
+								}
+							]
+						}
+					}
+				},
+				"max_min_normal": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 2.2250738585072014e-308
+								}
+							]
+						}
+					}
+				},
+				"literal_min_normal": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 2.2250738585072014e-308
+						}
+					}
+				},
+				"min_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 5e-324
+								}
+							]
+						}
+					}
+				},
+				"max_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 5e-324
+								}
+							]
+						}
+					}
+				},
+				"literal_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 5e-324
+						}
+					}
+				},
+				"min_negative_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -5e-324
+								}
+							]
+						}
+					}
+				},
+				"max_negative_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -5e-324
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_min": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -5e-324
+						}
+					}
+				},
+				"min_tie_lower": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 703.2810668945312
+								}
+							]
+						}
+					}
+				},
+				"max_tie_lower": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 703.2810668945312
+								}
+							]
+						}
+					}
+				},
+				"literal_tie_lower": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 703.2810668945312
+						}
+					}
+				},
+				"min_tie_higher": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 936.5509643554688
+								}
+							]
+						}
+					}
+				},
+				"max_tie_higher": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 936.5509643554688
+								}
+							]
+						}
+					}
+				},
+				"literal_tie_higher": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 936.5509643554688
+						}
+					}
+				},
+				"min_negative_tie": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": -19.037551879882812
+								}
+							]
+						}
+					}
+				},
+				"max_negative_tie": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": -19.037551879882812
+								}
+							]
+						}
+					}
+				},
+				"literal_negative_tie": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": -19.037551879882812
+						}
+					}
+				},
+				"min_tie_single": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "min_value",
+									"def": 232.10000610351562
+								}
+							]
+						}
+					}
+				},
+				"max_tie_single": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "number"
+								},
+								{
+									"kind": "max_value",
+									"def": 232.10000610351562
+								}
+							]
+						}
+					}
+				},
+				"literal_tie_single": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": 232.10000610351562
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "none",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "any_of_other",
+			"text": "{\"any_of\":2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "1 | -1.5 | 0 | 0.1 | 0.30000000000000004 | 0.3333333333333333 | 100 | 9007199254740991 | 9007199254740994 | 1000000000000000.5 | 100000000000000000000 | 999999999999999900000 | 123456789012345680000 | 590295810358705700000 | 1.1805916207174113e+21 | 1e+21 | -1e+21 | 1.2345678901234568e+21 | 1e+100 | 1e+300 | 1.7976931348623157e+308 | -1.7976931348623157e+308 | 0.000001 | 0.0000015 | 9.5e-7 | 1e-7 | 1.234e-7 | -1e-7 | 2.2250738585072014e-308 | 5e-324 | -5e-324 | 703.2810668945312 | 936.5509643554688 | -19.037551879882812 | 232.10000610351562",
+					"received": "number",
+					"path": [
+						"any_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "any_of_string",
+			"text": "{\"any_of\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "1 | -1.5 | 0 | 0.1 | 0.30000000000000004 | 0.3333333333333333 | 100 | 9007199254740991 | 9007199254740994 | 1000000000000000.5 | 100000000000000000000 | 999999999999999900000 | 123456789012345680000 | 590295810358705700000 | 1.1805916207174113e+21 | 1e+21 | -1e+21 | 1.2345678901234568e+21 | 1e+100 | 1e+300 | 1.7976931348623157e+308 | -1.7976931348623157e+308 | 0.000001 | 0.0000015 | 9.5e-7 | 1e-7 | 1.234e-7 | -1e-7 | 2.2250738585072014e-308 | 5e-324 | -5e-324 | 703.2810668945312 | 936.5509643554688 | -19.037551879882812 | 232.10000610351562",
+					"received": "string",
+					"path": [
+						"any_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "longer_string",
+			"text": "{\"longer\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 1e+21",
+					"received": "string",
+					"path": [
+						"longer"
+					]
+				}
+			]
+		},
+		{
+			"name": "shorter_empty",
+			"text": "{\"shorter\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= -1e-7",
+					"received": "string",
+					"path": [
+						"shorter"
+					]
+				}
+			]
+		},
+		{
+			"name": "between_empty",
+			"text": "{\"between\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 0.5",
+					"received": "array",
+					"path": [
+						"between"
+					]
+				}
+			]
+		},
+		{
+			"name": "between_one",
+			"text": "{\"between\":[1]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "between_two",
+			"text": "{\"between\":[1,2]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1.5",
+					"received": "array",
+					"path": [
+						"between"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_equal",
+			"text": "{\"min_one\":1,\"max_one\":1,\"literal_one\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "one_outside",
+			"text": "{\"min_one\":-1.7976931348623157e+308,\"max_one\":1.7976931348623157e+308,\"literal_one\":\"1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1",
+					"received": "number",
+					"path": [
+						"min_one"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1",
+					"received": "number",
+					"path": [
+						"max_one"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1",
+					"received": "string",
+					"path": [
+						"literal_one"
+					]
+				}
+			]
+		},
+		{
+			"name": "one_not_number",
+			"text": "{\"min_one\":\"1\",\"max_one\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_one"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_one"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_equal",
+			"text": "{\"min_negative\":-1.5,\"max_negative\":-1.5,\"literal_negative\":-1.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_outside",
+			"text": "{\"min_negative\":-1.7976931348623157e+308,\"max_negative\":1.7976931348623157e+308,\"literal_negative\":\"-1.5\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= -1.5",
+					"received": "number",
+					"path": [
+						"min_negative"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= -1.5",
+					"received": "number",
+					"path": [
+						"max_negative"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-1.5",
+					"received": "string",
+					"path": [
+						"literal_negative"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_not_number",
+			"text": "{\"min_negative\":\"-1.5\",\"max_negative\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_zero_equal",
+			"text": "{\"min_negative_zero\":0,\"max_negative_zero\":0,\"literal_negative_zero\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero_outside",
+			"text": "{\"min_negative_zero\":-1.7976931348623157e+308,\"max_negative_zero\":1.7976931348623157e+308,\"literal_negative_zero\":\"0\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"min_negative_zero"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0",
+					"received": "number",
+					"path": [
+						"max_negative_zero"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "string",
+					"path": [
+						"literal_negative_zero"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_zero_not_number",
+			"text": "{\"min_negative_zero\":\"0\",\"max_negative_zero\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_zero"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_zero"
+					]
+				}
+			]
+		},
+		{
+			"name": "tenth_equal",
+			"text": "{\"min_tenth\":0.1,\"max_tenth\":0.1,\"literal_tenth\":0.1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "tenth_outside",
+			"text": "{\"min_tenth\":-1.7976931348623157e+308,\"max_tenth\":1.7976931348623157e+308,\"literal_tenth\":\"0.1\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.1",
+					"received": "number",
+					"path": [
+						"min_tenth"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0.1",
+					"received": "number",
+					"path": [
+						"max_tenth"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0.1",
+					"received": "string",
+					"path": [
+						"literal_tenth"
+					]
+				}
+			]
+		},
+		{
+			"name": "tenth_not_number",
+			"text": "{\"min_tenth\":\"0.1\",\"max_tenth\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_tenth"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_tenth"
+					]
+				}
+			]
+		},
+		{
+			"name": "sum_equal",
+			"text": "{\"min_sum\":0.30000000000000004,\"max_sum\":0.30000000000000004,\"literal_sum\":0.30000000000000004}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "sum_outside",
+			"text": "{\"min_sum\":-1.7976931348623157e+308,\"max_sum\":1.7976931348623157e+308,\"literal_sum\":\"0.30000000000000004\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.30000000000000004",
+					"received": "number",
+					"path": [
+						"min_sum"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0.30000000000000004",
+					"received": "number",
+					"path": [
+						"max_sum"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0.30000000000000004",
+					"received": "string",
+					"path": [
+						"literal_sum"
+					]
+				}
+			]
+		},
+		{
+			"name": "sum_not_number",
+			"text": "{\"min_sum\":\"0.30000000000000004\",\"max_sum\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_sum"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_sum"
+					]
+				}
+			]
+		},
+		{
+			"name": "third_equal",
+			"text": "{\"min_third\":0.3333333333333333,\"max_third\":0.3333333333333333,\"literal_third\":0.3333333333333333}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "third_outside",
+			"text": "{\"min_third\":-1.7976931348623157e+308,\"max_third\":1.7976931348623157e+308,\"literal_third\":\"0.3333333333333333\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.3333333333333333",
+					"received": "number",
+					"path": [
+						"min_third"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0.3333333333333333",
+					"received": "number",
+					"path": [
+						"max_third"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0.3333333333333333",
+					"received": "string",
+					"path": [
+						"literal_third"
+					]
+				}
+			]
+		},
+		{
+			"name": "third_not_number",
+			"text": "{\"min_third\":\"0.3333333333333333\",\"max_third\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_third"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_third"
+					]
+				}
+			]
+		},
+		{
+			"name": "hundred_equal",
+			"text": "{\"min_hundred\":100,\"max_hundred\":100,\"literal_hundred\":100}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "hundred_outside",
+			"text": "{\"min_hundred\":-1.7976931348623157e+308,\"max_hundred\":1.7976931348623157e+308,\"literal_hundred\":\"100\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 100",
+					"received": "number",
+					"path": [
+						"min_hundred"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 100",
+					"received": "number",
+					"path": [
+						"max_hundred"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "100",
+					"received": "string",
+					"path": [
+						"literal_hundred"
+					]
+				}
+			]
+		},
+		{
+			"name": "hundred_not_number",
+			"text": "{\"min_hundred\":\"100\",\"max_hundred\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_hundred"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_hundred"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_equal",
+			"text": "{\"min_safe\":9007199254740991,\"max_safe\":9007199254740991,\"literal_safe\":9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "safe_outside",
+			"text": "{\"min_safe\":-1.7976931348623157e+308,\"max_safe\":1.7976931348623157e+308,\"literal_safe\":\"9007199254740991\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 9007199254740991",
+					"received": "number",
+					"path": [
+						"min_safe"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 9007199254740991",
+					"received": "number",
+					"path": [
+						"max_safe"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "9007199254740991",
+					"received": "string",
+					"path": [
+						"literal_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "safe_not_number",
+			"text": "{\"min_safe\":\"9007199254740991\",\"max_safe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_safe"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "past_safe_equal",
+			"text": "{\"min_past_safe\":9007199254740994,\"max_past_safe\":9007199254740994,\"literal_past_safe\":9007199254740994}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "past_safe_outside",
+			"text": "{\"min_past_safe\":-1.7976931348623157e+308,\"max_past_safe\":1.7976931348623157e+308,\"literal_past_safe\":\"9007199254740994\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 9007199254740994",
+					"received": "number",
+					"path": [
+						"min_past_safe"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 9007199254740994",
+					"received": "number",
+					"path": [
+						"max_past_safe"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "9007199254740994",
+					"received": "string",
+					"path": [
+						"literal_past_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "past_safe_not_number",
+			"text": "{\"min_past_safe\":\"9007199254740994\",\"max_past_safe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_past_safe"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_past_safe"
+					]
+				}
+			]
+		},
+		{
+			"name": "e15_and_a_half_equal",
+			"text": "{\"min_e15_and_a_half\":1000000000000000.5,\"max_e15_and_a_half\":1000000000000000.5,\"literal_e15_and_a_half\":1000000000000000.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e15_and_a_half_outside",
+			"text": "{\"min_e15_and_a_half\":-1.7976931348623157e+308,\"max_e15_and_a_half\":1.7976931348623157e+308,\"literal_e15_and_a_half\":\"1000000000000000.5\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1000000000000000.5",
+					"received": "number",
+					"path": [
+						"min_e15_and_a_half"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1000000000000000.5",
+					"received": "number",
+					"path": [
+						"max_e15_and_a_half"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1000000000000000.5",
+					"received": "string",
+					"path": [
+						"literal_e15_and_a_half"
+					]
+				}
+			]
+		},
+		{
+			"name": "e15_and_a_half_not_number",
+			"text": "{\"min_e15_and_a_half\":\"1000000000000000.5\",\"max_e15_and_a_half\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e15_and_a_half"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e15_and_a_half"
+					]
+				}
+			]
+		},
+		{
+			"name": "e20_equal",
+			"text": "{\"min_e20\":100000000000000000000,\"max_e20\":100000000000000000000,\"literal_e20\":100000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e20_outside",
+			"text": "{\"min_e20\":-1.7976931348623157e+308,\"max_e20\":1.7976931348623157e+308,\"literal_e20\":\"100000000000000000000\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 100000000000000000000",
+					"received": "number",
+					"path": [
+						"min_e20"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 100000000000000000000",
+					"received": "number",
+					"path": [
+						"max_e20"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "100000000000000000000",
+					"received": "string",
+					"path": [
+						"literal_e20"
+					]
+				}
+			]
+		},
+		{
+			"name": "e20_not_number",
+			"text": "{\"min_e20\":\"100000000000000000000\",\"max_e20\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e20"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e20"
+					]
+				}
+			]
+		},
+		{
+			"name": "below_e21_equal",
+			"text": "{\"min_below_e21\":999999999999999900000,\"max_below_e21\":999999999999999900000,\"literal_below_e21\":999999999999999900000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "below_e21_outside",
+			"text": "{\"min_below_e21\":-1.7976931348623157e+308,\"max_below_e21\":1.7976931348623157e+308,\"literal_below_e21\":\"999999999999999900000\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 999999999999999900000",
+					"received": "number",
+					"path": [
+						"min_below_e21"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 999999999999999900000",
+					"received": "number",
+					"path": [
+						"max_below_e21"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "999999999999999900000",
+					"received": "string",
+					"path": [
+						"literal_below_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "below_e21_not_number",
+			"text": "{\"min_below_e21\":\"999999999999999900000\",\"max_below_e21\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_below_e21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_below_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "rounded_equal",
+			"text": "{\"min_rounded\":123456789012345680000,\"max_rounded\":123456789012345680000,\"literal_rounded\":123456789012345680000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "rounded_outside",
+			"text": "{\"min_rounded\":-1.7976931348623157e+308,\"max_rounded\":1.7976931348623157e+308,\"literal_rounded\":\"123456789012345680000\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 123456789012345680000",
+					"received": "number",
+					"path": [
+						"min_rounded"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 123456789012345680000",
+					"received": "number",
+					"path": [
+						"max_rounded"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "123456789012345680000",
+					"received": "string",
+					"path": [
+						"literal_rounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "rounded_not_number",
+			"text": "{\"min_rounded\":\"123456789012345680000\",\"max_rounded\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_rounded"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_rounded"
+					]
+				}
+			]
+		},
+		{
+			"name": "two_to_69_equal",
+			"text": "{\"min_two_to_69\":590295810358705700000,\"max_two_to_69\":590295810358705700000,\"literal_two_to_69\":590295810358705700000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_to_69_outside",
+			"text": "{\"min_two_to_69\":-1.7976931348623157e+308,\"max_two_to_69\":1.7976931348623157e+308,\"literal_two_to_69\":\"590295810358705700000\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 590295810358705700000",
+					"received": "number",
+					"path": [
+						"min_two_to_69"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 590295810358705700000",
+					"received": "number",
+					"path": [
+						"max_two_to_69"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "590295810358705700000",
+					"received": "string",
+					"path": [
+						"literal_two_to_69"
+					]
+				}
+			]
+		},
+		{
+			"name": "two_to_69_not_number",
+			"text": "{\"min_two_to_69\":\"590295810358705700000\",\"max_two_to_69\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_two_to_69"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_two_to_69"
+					]
+				}
+			]
+		},
+		{
+			"name": "two_to_70_equal",
+			"text": "{\"min_two_to_70\":1.1805916207174113e+21,\"max_two_to_70\":1.1805916207174113e+21,\"literal_two_to_70\":1.1805916207174113e+21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_to_70_outside",
+			"text": "{\"min_two_to_70\":-1.7976931348623157e+308,\"max_two_to_70\":1.7976931348623157e+308,\"literal_two_to_70\":\"1.1805916207174113e+21\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1.1805916207174113e+21",
+					"received": "number",
+					"path": [
+						"min_two_to_70"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1.1805916207174113e+21",
+					"received": "number",
+					"path": [
+						"max_two_to_70"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1.1805916207174113e+21",
+					"received": "string",
+					"path": [
+						"literal_two_to_70"
+					]
+				}
+			]
+		},
+		{
+			"name": "two_to_70_not_number",
+			"text": "{\"min_two_to_70\":\"1.1805916207174113e+21\",\"max_two_to_70\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_two_to_70"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_two_to_70"
+					]
+				}
+			]
+		},
+		{
+			"name": "e21_equal",
+			"text": "{\"min_e21\":1e+21,\"max_e21\":1e+21,\"literal_e21\":1e+21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e21_outside",
+			"text": "{\"min_e21\":-1.7976931348623157e+308,\"max_e21\":1.7976931348623157e+308,\"literal_e21\":\"1e+21\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+21",
+					"received": "number",
+					"path": [
+						"min_e21"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"max_e21"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1e+21",
+					"received": "string",
+					"path": [
+						"literal_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "e21_not_number",
+			"text": "{\"min_e21\":\"1e+21\",\"max_e21\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_e21_equal",
+			"text": "{\"min_negative_e21\":-1e+21,\"max_negative_e21\":-1e+21,\"literal_negative_e21\":-1e+21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_e21_outside",
+			"text": "{\"min_negative_e21\":-1.7976931348623157e+308,\"max_negative_e21\":1.7976931348623157e+308,\"literal_negative_e21\":\"-1e+21\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= -1e+21",
+					"received": "number",
+					"path": [
+						"min_negative_e21"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= -1e+21",
+					"received": "number",
+					"path": [
+						"max_negative_e21"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-1e+21",
+					"received": "string",
+					"path": [
+						"literal_negative_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_e21_not_number",
+			"text": "{\"min_negative_e21\":\"-1e+21\",\"max_negative_e21\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_e21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "past_e21_equal",
+			"text": "{\"min_past_e21\":1.2345678901234568e+21,\"max_past_e21\":1.2345678901234568e+21,\"literal_past_e21\":1.2345678901234568e+21}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "past_e21_outside",
+			"text": "{\"min_past_e21\":-1.7976931348623157e+308,\"max_past_e21\":1.7976931348623157e+308,\"literal_past_e21\":\"1.2345678901234568e+21\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1.2345678901234568e+21",
+					"received": "number",
+					"path": [
+						"min_past_e21"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1.2345678901234568e+21",
+					"received": "number",
+					"path": [
+						"max_past_e21"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1.2345678901234568e+21",
+					"received": "string",
+					"path": [
+						"literal_past_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "past_e21_not_number",
+			"text": "{\"min_past_e21\":\"1.2345678901234568e+21\",\"max_past_e21\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_past_e21"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_past_e21"
+					]
+				}
+			]
+		},
+		{
+			"name": "e100_equal",
+			"text": "{\"min_e100\":1e+100,\"max_e100\":1e+100,\"literal_e100\":1e+100}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e100_outside",
+			"text": "{\"min_e100\":-1.7976931348623157e+308,\"max_e100\":1.7976931348623157e+308,\"literal_e100\":\"1e+100\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+100",
+					"received": "number",
+					"path": [
+						"min_e100"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+100",
+					"received": "number",
+					"path": [
+						"max_e100"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1e+100",
+					"received": "string",
+					"path": [
+						"literal_e100"
+					]
+				}
+			]
+		},
+		{
+			"name": "e100_not_number",
+			"text": "{\"min_e100\":\"1e+100\",\"max_e100\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e100"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e100"
+					]
+				}
+			]
+		},
+		{
+			"name": "e300_equal",
+			"text": "{\"min_e300\":1e+300,\"max_e300\":1e+300,\"literal_e300\":1e+300}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e300_outside",
+			"text": "{\"min_e300\":-1.7976931348623157e+308,\"max_e300\":1.7976931348623157e+308,\"literal_e300\":\"1e+300\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e+300",
+					"received": "number",
+					"path": [
+						"min_e300"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+300",
+					"received": "number",
+					"path": [
+						"max_e300"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1e+300",
+					"received": "string",
+					"path": [
+						"literal_e300"
+					]
+				}
+			]
+		},
+		{
+			"name": "e300_not_number",
+			"text": "{\"min_e300\":\"1e+300\",\"max_e300\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e300"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e300"
+					]
+				}
+			]
+		},
+		{
+			"name": "max_equal",
+			"text": "{\"min_max\":1.7976931348623157e+308,\"max_max\":1.7976931348623157e+308,\"literal_max\":1.7976931348623157e+308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "max_outside",
+			"text": "{\"min_max\":-1.7976931348623157e+308,\"max_max\":1.7976931348623157e+308,\"literal_max\":\"1.7976931348623157e+308\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"min_max"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1.7976931348623157e+308",
+					"received": "string",
+					"path": [
+						"literal_max"
+					]
+				}
+			]
+		},
+		{
+			"name": "max_not_number",
+			"text": "{\"min_max\":\"1.7976931348623157e+308\",\"max_max\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_max"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_max"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_max_equal",
+			"text": "{\"min_negative_max\":-1.7976931348623157e+308,\"max_negative_max\":-1.7976931348623157e+308,\"literal_negative_max\":-1.7976931348623157e+308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_max_outside",
+			"text": "{\"min_negative_max\":-1.7976931348623157e+308,\"max_negative_max\":1.7976931348623157e+308,\"literal_negative_max\":\"-1.7976931348623157e+308\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= -1.7976931348623157e+308",
+					"received": "number",
+					"path": [
+						"max_negative_max"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-1.7976931348623157e+308",
+					"received": "string",
+					"path": [
+						"literal_negative_max"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_max_not_number",
+			"text": "{\"min_negative_max\":\"-1.7976931348623157e+308\",\"max_negative_max\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_max"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_max"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_6_equal",
+			"text": "{\"min_e_6\":0.000001,\"max_e_6\":0.000001,\"literal_e_6\":0.000001}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e_6_outside",
+			"text": "{\"min_e_6\":-1.7976931348623157e+308,\"max_e_6\":1.7976931348623157e+308,\"literal_e_6\":\"0.000001\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.000001",
+					"received": "number",
+					"path": [
+						"min_e_6"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0.000001",
+					"received": "number",
+					"path": [
+						"max_e_6"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0.000001",
+					"received": "string",
+					"path": [
+						"literal_e_6"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_6_not_number",
+			"text": "{\"min_e_6\":\"0.000001\",\"max_e_6\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e_6"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e_6"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_6_digits_equal",
+			"text": "{\"min_e_6_digits\":0.0000015,\"max_e_6_digits\":0.0000015,\"literal_e_6_digits\":0.0000015}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e_6_digits_outside",
+			"text": "{\"min_e_6_digits\":-1.7976931348623157e+308,\"max_e_6_digits\":1.7976931348623157e+308,\"literal_e_6_digits\":\"0.0000015\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0.0000015",
+					"received": "number",
+					"path": [
+						"min_e_6_digits"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0.0000015",
+					"received": "number",
+					"path": [
+						"max_e_6_digits"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "0.0000015",
+					"received": "string",
+					"path": [
+						"literal_e_6_digits"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_6_digits_not_number",
+			"text": "{\"min_e_6_digits\":\"0.0000015\",\"max_e_6_digits\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e_6_digits"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e_6_digits"
+					]
+				}
+			]
+		},
+		{
+			"name": "below_e_6_equal",
+			"text": "{\"min_below_e_6\":9.5e-7,\"max_below_e_6\":9.5e-7,\"literal_below_e_6\":9.5e-7}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "below_e_6_outside",
+			"text": "{\"min_below_e_6\":-1.7976931348623157e+308,\"max_below_e_6\":1.7976931348623157e+308,\"literal_below_e_6\":\"9.5e-7\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 9.5e-7",
+					"received": "number",
+					"path": [
+						"min_below_e_6"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 9.5e-7",
+					"received": "number",
+					"path": [
+						"max_below_e_6"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "9.5e-7",
+					"received": "string",
+					"path": [
+						"literal_below_e_6"
+					]
+				}
+			]
+		},
+		{
+			"name": "below_e_6_not_number",
+			"text": "{\"min_below_e_6\":\"9.5e-7\",\"max_below_e_6\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_below_e_6"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_below_e_6"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_7_equal",
+			"text": "{\"min_e_7\":1e-7,\"max_e_7\":1e-7,\"literal_e_7\":1e-7}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e_7_outside",
+			"text": "{\"min_e_7\":-1.7976931348623157e+308,\"max_e_7\":1.7976931348623157e+308,\"literal_e_7\":\"1e-7\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1e-7",
+					"received": "number",
+					"path": [
+						"min_e_7"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1e-7",
+					"received": "number",
+					"path": [
+						"max_e_7"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1e-7",
+					"received": "string",
+					"path": [
+						"literal_e_7"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_7_not_number",
+			"text": "{\"min_e_7\":\"1e-7\",\"max_e_7\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e_7"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e_7"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_7_digits_equal",
+			"text": "{\"min_e_7_digits\":1.234e-7,\"max_e_7_digits\":1.234e-7,\"literal_e_7_digits\":1.234e-7}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e_7_digits_outside",
+			"text": "{\"min_e_7_digits\":-1.7976931348623157e+308,\"max_e_7_digits\":1.7976931348623157e+308,\"literal_e_7_digits\":\"1.234e-7\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 1.234e-7",
+					"received": "number",
+					"path": [
+						"min_e_7_digits"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 1.234e-7",
+					"received": "number",
+					"path": [
+						"max_e_7_digits"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1.234e-7",
+					"received": "string",
+					"path": [
+						"literal_e_7_digits"
+					]
+				}
+			]
+		},
+		{
+			"name": "e_7_digits_not_number",
+			"text": "{\"min_e_7_digits\":\"1.234e-7\",\"max_e_7_digits\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_e_7_digits"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_e_7_digits"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_e_7_equal",
+			"text": "{\"min_negative_e_7\":-1e-7,\"max_negative_e_7\":-1e-7,\"literal_negative_e_7\":-1e-7}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_e_7_outside",
+			"text": "{\"min_negative_e_7\":-1.7976931348623157e+308,\"max_negative_e_7\":1.7976931348623157e+308,\"literal_negative_e_7\":\"-1e-7\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= -1e-7",
+					"received": "number",
+					"path": [
+						"min_negative_e_7"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= -1e-7",
+					"received": "number",
+					"path": [
+						"max_negative_e_7"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-1e-7",
+					"received": "string",
+					"path": [
+						"literal_negative_e_7"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_e_7_not_number",
+			"text": "{\"min_negative_e_7\":\"-1e-7\",\"max_negative_e_7\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_e_7"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_e_7"
+					]
+				}
+			]
+		},
+		{
+			"name": "min_normal_equal",
+			"text": "{\"min_min_normal\":2.2250738585072014e-308,\"max_min_normal\":2.2250738585072014e-308,\"literal_min_normal\":2.2250738585072014e-308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "min_normal_outside",
+			"text": "{\"min_min_normal\":-1.7976931348623157e+308,\"max_min_normal\":1.7976931348623157e+308,\"literal_min_normal\":\"2.2250738585072014e-308\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 2.2250738585072014e-308",
+					"received": "number",
+					"path": [
+						"min_min_normal"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 2.2250738585072014e-308",
+					"received": "number",
+					"path": [
+						"max_min_normal"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "2.2250738585072014e-308",
+					"received": "string",
+					"path": [
+						"literal_min_normal"
+					]
+				}
+			]
+		},
+		{
+			"name": "min_normal_not_number",
+			"text": "{\"min_min_normal\":\"2.2250738585072014e-308\",\"max_min_normal\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_min_normal"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_min_normal"
+					]
+				}
+			]
+		},
+		{
+			"name": "min_equal",
+			"text": "{\"min_min\":5e-324,\"max_min\":5e-324,\"literal_min\":5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "min_outside",
+			"text": "{\"min_min\":-1.7976931348623157e+308,\"max_min\":1.7976931348623157e+308,\"literal_min\":\"5e-324\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 5e-324",
+					"received": "number",
+					"path": [
+						"min_min"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 5e-324",
+					"received": "number",
+					"path": [
+						"max_min"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "5e-324",
+					"received": "string",
+					"path": [
+						"literal_min"
+					]
+				}
+			]
+		},
+		{
+			"name": "min_not_number",
+			"text": "{\"min_min\":\"5e-324\",\"max_min\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_min"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_min"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_min_equal",
+			"text": "{\"min_negative_min\":-5e-324,\"max_negative_min\":-5e-324,\"literal_negative_min\":-5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_min_outside",
+			"text": "{\"min_negative_min\":-1.7976931348623157e+308,\"max_negative_min\":1.7976931348623157e+308,\"literal_negative_min\":\"-5e-324\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= -5e-324",
+					"received": "number",
+					"path": [
+						"min_negative_min"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= -5e-324",
+					"received": "number",
+					"path": [
+						"max_negative_min"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-5e-324",
+					"received": "string",
+					"path": [
+						"literal_negative_min"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_min_not_number",
+			"text": "{\"min_negative_min\":\"-5e-324\",\"max_negative_min\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_min"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_min"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_lower_equal",
+			"text": "{\"min_tie_lower\":703.2810668945312,\"max_tie_lower\":703.2810668945312,\"literal_tie_lower\":703.2810668945312}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "tie_lower_outside",
+			"text": "{\"min_tie_lower\":-1.7976931348623157e+308,\"max_tie_lower\":1.7976931348623157e+308,\"literal_tie_lower\":\"703.2810668945312\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 703.2810668945312",
+					"received": "number",
+					"path": [
+						"min_tie_lower"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 703.2810668945312",
+					"received": "number",
+					"path": [
+						"max_tie_lower"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "703.2810668945312",
+					"received": "string",
+					"path": [
+						"literal_tie_lower"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_lower_not_number",
+			"text": "{\"min_tie_lower\":\"703.2810668945312\",\"max_tie_lower\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_tie_lower"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_tie_lower"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_higher_equal",
+			"text": "{\"min_tie_higher\":936.5509643554688,\"max_tie_higher\":936.5509643554688,\"literal_tie_higher\":936.5509643554688}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "tie_higher_outside",
+			"text": "{\"min_tie_higher\":-1.7976931348623157e+308,\"max_tie_higher\":1.7976931348623157e+308,\"literal_tie_higher\":\"936.5509643554688\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 936.5509643554688",
+					"received": "number",
+					"path": [
+						"min_tie_higher"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 936.5509643554688",
+					"received": "number",
+					"path": [
+						"max_tie_higher"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "936.5509643554688",
+					"received": "string",
+					"path": [
+						"literal_tie_higher"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_higher_not_number",
+			"text": "{\"min_tie_higher\":\"936.5509643554688\",\"max_tie_higher\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_tie_higher"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_tie_higher"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_tie_equal",
+			"text": "{\"min_negative_tie\":-19.037551879882812,\"max_negative_tie\":-19.037551879882812,\"literal_negative_tie\":-19.037551879882812}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_tie_outside",
+			"text": "{\"min_negative_tie\":-1.7976931348623157e+308,\"max_negative_tie\":1.7976931348623157e+308,\"literal_negative_tie\":\"-19.037551879882812\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= -19.037551879882812",
+					"received": "number",
+					"path": [
+						"min_negative_tie"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= -19.037551879882812",
+					"received": "number",
+					"path": [
+						"max_negative_tie"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "-19.037551879882812",
+					"received": "string",
+					"path": [
+						"literal_negative_tie"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_tie_not_number",
+			"text": "{\"min_negative_tie\":\"-19.037551879882812\",\"max_negative_tie\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_negative_tie"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_negative_tie"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_single_equal",
+			"text": "{\"min_tie_single\":232.10000610351562,\"max_tie_single\":232.10000610351562,\"literal_tie_single\":232.10000610351562}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "tie_single_outside",
+			"text": "{\"min_tie_single\":-1.7976931348623157e+308,\"max_tie_single\":1.7976931348623157e+308,\"literal_tie_single\":\"232.10000610351562\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 232.10000610351562",
+					"received": "number",
+					"path": [
+						"min_tie_single"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 232.10000610351562",
+					"received": "number",
+					"path": [
+						"max_tie_single"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "232.10000610351562",
+					"received": "string",
+					"path": [
+						"literal_tie_single"
+					]
+				}
+			]
+		},
+		{
+			"name": "tie_single_not_number",
+			"text": "{\"min_tie_single\":\"232.10000610351562\",\"max_tie_single\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"min_tie_single"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"max_tie_single"
+					]
+				}
+			]
+		},
+		{
+			"name": "negative_zero_written",
+			"text": "{\"min_negative_zero\":-0.0,\"max_negative_zero\":-0e0,\"literal_negative_zero\":-0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "negative_zero_below",
+			"text": "{\"min_negative_zero\":-5e-324,\"max_negative_zero\":5e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 0",
+					"received": "number",
+					"path": [
+						"min_negative_zero"
+					]
+				},
+				{
+					"kind": "max_value",
+					"expected": "<= 0",
+					"received": "number",
+					"path": [
+						"max_negative_zero"
+					]
+				}
+			]
+		},
+		{
+			"name": "e21_written_plainly",
+			"text": "{\"literal_e21\":1000000000000000000000,\"max_e21\":1000000000000000000001}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "e21_next",
+			"text": "{\"literal_e21\":1000000000000000100000,\"max_e21\":1000000000000000100000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_value",
+					"expected": "<= 1e+21",
+					"received": "number",
+					"path": [
+						"max_e21"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "1e+21",
+					"received": "number",
+					"path": [
+						"literal_e21"
+					]
+				}
+			]
+		}
+	]
+}

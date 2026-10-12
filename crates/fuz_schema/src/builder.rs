@@ -443,6 +443,8 @@ enum Step {
     Index(usize),
     /// `def.options[index]`, of a `variant`.
     Option(usize),
+    /// `def.key`, of a `variant`.
+    Key,
 }
 
 /// Where a reachable node was first reached from.
@@ -628,6 +630,12 @@ impl<'a> Checker<'a> {
                 }
             }
             Node::Variant(variant) => {
+                // with options the key is an entry of each, and refused there
+                if variant.options.is_empty() && js::OBJECT_PROTOTYPE_KEYS.contains(&&*variant.key)
+                {
+                    let key = variant.key.clone();
+                    return Err((SchemaErrorKind::PrototypeKey { key }, id, Some(Step::Key)));
+                }
                 for (index, &option) in variant.options.iter().enumerate() {
                     let step = Some(Step::Option(index));
                     let Some(entries) = self.nodes[option.index()].entries() else {
@@ -774,6 +782,7 @@ impl<'a> Checker<'a> {
                     path.push_str("/def/options/");
                     path.push_str(&index.to_string());
                 }
+                Step::Key => path.push_str("/def/key"),
             }
         }
         SchemaError::new(kind, path)
@@ -889,6 +898,21 @@ mod tests {
                 assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
                 assert_eq!(path, format!("/schema/def/def/{key}"));
             }
+            // a `variant` with no option reads its key off the input all the same
+            let (error, path) = refusal(|b| {
+                let variant = b.variant(key, []);
+                b.array(variant)
+            });
+            assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
+            assert_eq!(path, "/schema/def/def/key");
+            // with options the key is an entry, and is refused as one
+            let (error, path) = refusal(|b| {
+                let literal = b.literal("a");
+                let option = b.object([(key, literal)]);
+                b.variant(key, [option])
+            });
+            assert_eq!(error, SchemaErrorKind::PrototypeKey { key: key.into() });
+            assert_eq!(path, format!("/schema/def/options/0/def/{key}"));
         }
     }
 

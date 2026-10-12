@@ -51,7 +51,8 @@ export const SCHEMA_JSON_MAX_DEPTH = 127;
 /**
  * The names of the members of `Object.prototype`. The library reads an
  * object's entries through the prototype, so an entry with one of these names
- * sees the member when the input lacks the key, and is refused.
+ * sees the member when the input lacks the key, and is refused. So is a
+ * `variant` whose key is one.
  */
 export const OBJECT_PROTOTYPE_KEYS: ReadonlyArray<string> = [
 	'__defineGetter__',
@@ -348,6 +349,10 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 					return refuse(kind, path, 'its def is not a key and options');
 				}
 				if (!key.isWellFormed()) refuse(kind, `${path}/def/key`, `its key is ${ILL_FORMED}`);
+				// with options the key is an entry of each, and refused there
+				if (!options.length && OBJECT_PROTOTYPE_KEYS.includes(key)) {
+					refuse(kind, `${path}/def/key`, 'the key is named like a member of Object.prototype');
+				}
 				return {
 					kind,
 					def: {

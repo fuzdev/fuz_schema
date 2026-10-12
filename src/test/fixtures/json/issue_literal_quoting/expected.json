@@ -1,0 +1,2862 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"any_of": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "one_of",
+							"def": [
+								"a",
+								"",
+								" ",
+								"a\"b",
+								"\"",
+								"a\\b",
+								"\\\"",
+								"\\n",
+								"\\u0041",
+								"a/b",
+								"it's",
+								"</script>",
+								"\u0000",
+								"\u0001",
+								"\b",
+								"\t",
+								"\n",
+								"\u000b",
+								"\f",
+								"\r",
+								"\u001b",
+								"\u001f",
+								"",
+								"",
+								" ",
+								"é",
+								" ",
+								" ",
+								"﻿",
+								"￿",
+								"😀",
+								"􏿿",
+								"a\"b\\c\n  é😀\t\u0001",
+								"null",
+								"true",
+								"1",
+								"a | b",
+								1,
+								null,
+								true
+							]
+						}
+					}
+				},
+				"tagged": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "variant",
+							"def": {
+								"key": "tag",
+								"options": [
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": ""
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": " "
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a\"b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\""
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a\\b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\\\""
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\\n"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\\u0041"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a/b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "it's"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "</script>"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\u0000"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\u0001"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\t"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\n"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\u000b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\f"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\r"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\u001b"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "\u001f"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": ""
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": ""
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": " "
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "é"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": " "
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": " "
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "﻿"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "￿"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "😀"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "􏿿"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a\"b\\c\n  é😀\t\u0001"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "null"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "true"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "1"
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"tag": {
+												"kind": "literal",
+												"def": "a | b"
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"plain": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a"
+						}
+					}
+				},
+				"empty": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": ""
+						}
+					}
+				},
+				"space": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": " "
+						}
+					}
+				},
+				"quote": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a\"b"
+						}
+					}
+				},
+				"only_quote": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\""
+						}
+					}
+				},
+				"backslash": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a\\b"
+						}
+					}
+				},
+				"backslash_quote": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\\\""
+						}
+					}
+				},
+				"backslash_n": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\\n"
+						}
+					}
+				},
+				"backslash_u": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\\u0041"
+						}
+					}
+				},
+				"slash": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a/b"
+						}
+					}
+				},
+				"apostrophe": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "it's"
+						}
+					}
+				},
+				"angle": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "</script>"
+						}
+					}
+				},
+				"null_character": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\u0000"
+						}
+					}
+				},
+				"start_of_heading": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\u0001"
+						}
+					}
+				},
+				"backspace": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\b"
+						}
+					}
+				},
+				"tab": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\t"
+						}
+					}
+				},
+				"newline": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\n"
+						}
+					}
+				},
+				"vertical_tab": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\u000b"
+						}
+					}
+				},
+				"form_feed": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\f"
+						}
+					}
+				},
+				"carriage_return": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\r"
+						}
+					}
+				},
+				"escape": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\u001b"
+						}
+					}
+				},
+				"unit_separator": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "\u001f"
+						}
+					}
+				},
+				"delete": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": ""
+						}
+					}
+				},
+				"c1_control": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": ""
+						}
+					}
+				},
+				"no_break_space": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": " "
+						}
+					}
+				},
+				"accented": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "é"
+						}
+					}
+				},
+				"line_separator": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": " "
+						}
+					}
+				},
+				"paragraph_separator": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": " "
+						}
+					}
+				},
+				"byte_order_mark": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "﻿"
+						}
+					}
+				},
+				"last_of_the_plane": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "￿"
+						}
+					}
+				},
+				"astral": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "😀"
+						}
+					}
+				},
+				"last_code_point": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "􏿿"
+						}
+					}
+				},
+				"mixed": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a\"b\\c\n  é😀\t\u0001"
+						}
+					}
+				},
+				"like_null": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "null"
+						}
+					}
+				},
+				"like_true": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "true"
+						}
+					}
+				},
+				"like_number": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "1"
+						}
+					}
+				},
+				"like_joined": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "literal",
+							"def": "a | b"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "none",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "any_of_other",
+			"text": "{\"any_of\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "\"a\" | \"\" | \" \" | \"a\\\"b\" | \"\\\"\" | \"a\\\\b\" | \"\\\\\\\"\" | \"\\\\n\" | \"\\\\u0041\" | \"a/b\" | \"it's\" | \"</script>\" | \"\\u0000\" | \"\\u0001\" | \"\\b\" | \"\\t\" | \"\\n\" | \"\\u000b\" | \"\\f\" | \"\\r\" | \"\\u001b\" | \"\\u001f\" | \"\" | \"\" | \" \" | \"é\" | \" \" | \" \" | \"﻿\" | \"￿\" | \"😀\" | \"􏿿\" | \"a\\\"b\\\\c\\n  é😀\\t\\u0001\" | \"null\" | \"true\" | \"1\" | \"a | b\" | 1 | null | true",
+					"received": "string",
+					"path": [
+						"any_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "any_of_array",
+			"text": "{\"any_of\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "one_of",
+					"expected": "\"a\" | \"\" | \" \" | \"a\\\"b\" | \"\\\"\" | \"a\\\\b\" | \"\\\\\\\"\" | \"\\\\n\" | \"\\\\u0041\" | \"a/b\" | \"it's\" | \"</script>\" | \"\\u0000\" | \"\\u0001\" | \"\\b\" | \"\\t\" | \"\\n\" | \"\\u000b\" | \"\\f\" | \"\\r\" | \"\\u001b\" | \"\\u001f\" | \"\" | \"\" | \" \" | \"é\" | \" \" | \" \" | \"﻿\" | \"￿\" | \"😀\" | \"􏿿\" | \"a\\\"b\\\\c\\n  é😀\\t\\u0001\" | \"null\" | \"true\" | \"1\" | \"a | b\" | 1 | null | true",
+					"received": "array",
+					"path": [
+						"any_of"
+					]
+				}
+			]
+		},
+		{
+			"name": "tagged_other",
+			"text": "{\"tagged\":{\"tag\":\"other\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | \"\" | \" \" | \"a\\\"b\" | \"\\\"\" | \"a\\\\b\" | \"\\\\\\\"\" | \"\\\\n\" | \"\\\\u0041\" | \"a/b\" | \"it's\" | \"</script>\" | \"\\u0000\" | \"\\u0001\" | \"\\b\" | \"\\t\" | \"\\n\" | \"\\u000b\" | \"\\f\" | \"\\r\" | \"\\u001b\" | \"\\u001f\" | \"\" | \"\" | \" \" | \"é\" | \" \" | \" \" | \"﻿\" | \"￿\" | \"😀\" | \"􏿿\" | \"a\\\"b\\\\c\\n  é😀\\t\\u0001\" | \"null\" | \"true\" | \"1\" | \"a | b\"",
+					"received": "string",
+					"path": [
+						"tagged",
+						"tag"
+					]
+				}
+			]
+		},
+		{
+			"name": "tagged_missing",
+			"text": "{\"tagged\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"a\" | \"\" | \" \" | \"a\\\"b\" | \"\\\"\" | \"a\\\\b\" | \"\\\\\\\"\" | \"\\\\n\" | \"\\\\u0041\" | \"a/b\" | \"it's\" | \"</script>\" | \"\\u0000\" | \"\\u0001\" | \"\\b\" | \"\\t\" | \"\\n\" | \"\\u000b\" | \"\\f\" | \"\\r\" | \"\\u001b\" | \"\\u001f\" | \"\" | \"\" | \" \" | \"é\" | \" \" | \" \" | \"﻿\" | \"￿\" | \"😀\" | \"􏿿\" | \"a\\\"b\\\\c\\n  é😀\\t\\u0001\" | \"null\" | \"true\" | \"1\" | \"a | b\"",
+					"received": "undefined",
+					"path": [
+						"tagged",
+						"tag"
+					]
+				}
+			]
+		},
+		{
+			"name": "plain_equal",
+			"text": "{\"plain\":\"a\",\"any_of\":\"a\",\"tagged\":{\"tag\":\"a\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "plain_other",
+			"text": "{\"plain\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\"",
+					"received": "string",
+					"path": [
+						"plain"
+					]
+				}
+			]
+		},
+		{
+			"name": "plain_not_string",
+			"text": "{\"plain\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\"",
+					"received": "null",
+					"path": [
+						"plain"
+					]
+				}
+			]
+		},
+		{
+			"name": "plain_quoted_twice",
+			"text": "{\"plain\":\"\\\"a\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\"",
+					"received": "string",
+					"path": [
+						"plain"
+					]
+				}
+			]
+		},
+		{
+			"name": "empty_equal",
+			"text": "{\"empty\":\"\",\"any_of\":\"\",\"tagged\":{\"tag\":\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty_other",
+			"text": "{\"empty\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"empty"
+					]
+				}
+			]
+		},
+		{
+			"name": "empty_not_string",
+			"text": "{\"empty\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "null",
+					"path": [
+						"empty"
+					]
+				}
+			]
+		},
+		{
+			"name": "empty_quoted_twice",
+			"text": "{\"empty\":\"\\\"\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"empty"
+					]
+				}
+			]
+		},
+		{
+			"name": "space_equal",
+			"text": "{\"space\":\" \",\"any_of\":\" \",\"tagged\":{\"tag\":\" \"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "space_other",
+			"text": "{\"space\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"space"
+					]
+				}
+			]
+		},
+		{
+			"name": "space_not_string",
+			"text": "{\"space\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "null",
+					"path": [
+						"space"
+					]
+				}
+			]
+		},
+		{
+			"name": "space_quoted_twice",
+			"text": "{\"space\":\"\\\" \\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"space"
+					]
+				}
+			]
+		},
+		{
+			"name": "quote_equal",
+			"text": "{\"quote\":\"a\\\"b\",\"any_of\":\"a\\\"b\",\"tagged\":{\"tag\":\"a\\\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "quote_other",
+			"text": "{\"quote\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\"",
+					"received": "string",
+					"path": [
+						"quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "quote_not_string",
+			"text": "{\"quote\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\"",
+					"received": "null",
+					"path": [
+						"quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "quote_quoted_twice",
+			"text": "{\"quote\":\"\\\"a\\\\\\\"b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\"",
+					"received": "string",
+					"path": [
+						"quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "only_quote_equal",
+			"text": "{\"only_quote\":\"\\\"\",\"any_of\":\"\\\"\",\"tagged\":{\"tag\":\"\\\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "only_quote_other",
+			"text": "{\"only_quote\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\"\"",
+					"received": "string",
+					"path": [
+						"only_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "only_quote_not_string",
+			"text": "{\"only_quote\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\"\"",
+					"received": "null",
+					"path": [
+						"only_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "only_quote_quoted_twice",
+			"text": "{\"only_quote\":\"\\\"\\\\\\\"\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\"\"",
+					"received": "string",
+					"path": [
+						"only_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_equal",
+			"text": "{\"backslash\":\"a\\\\b\",\"any_of\":\"a\\\\b\",\"tagged\":{\"tag\":\"a\\\\b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "backslash_other",
+			"text": "{\"backslash\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\\b\"",
+					"received": "string",
+					"path": [
+						"backslash"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_not_string",
+			"text": "{\"backslash\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\\b\"",
+					"received": "null",
+					"path": [
+						"backslash"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_quoted_twice",
+			"text": "{\"backslash\":\"\\\"a\\\\\\\\b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\\b\"",
+					"received": "string",
+					"path": [
+						"backslash"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_quote_equal",
+			"text": "{\"backslash_quote\":\"\\\\\\\"\",\"any_of\":\"\\\\\\\"\",\"tagged\":{\"tag\":\"\\\\\\\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "backslash_quote_other",
+			"text": "{\"backslash_quote\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\\\\"\"",
+					"received": "string",
+					"path": [
+						"backslash_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_quote_not_string",
+			"text": "{\"backslash_quote\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\\\\"\"",
+					"received": "null",
+					"path": [
+						"backslash_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_quote_quoted_twice",
+			"text": "{\"backslash_quote\":\"\\\"\\\\\\\\\\\\\\\"\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\\\\"\"",
+					"received": "string",
+					"path": [
+						"backslash_quote"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_n_equal",
+			"text": "{\"backslash_n\":\"\\\\n\",\"any_of\":\"\\\\n\",\"tagged\":{\"tag\":\"\\\\n\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "backslash_n_other",
+			"text": "{\"backslash_n\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\n\"",
+					"received": "string",
+					"path": [
+						"backslash_n"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_n_not_string",
+			"text": "{\"backslash_n\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\n\"",
+					"received": "null",
+					"path": [
+						"backslash_n"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_n_quoted_twice",
+			"text": "{\"backslash_n\":\"\\\"\\\\\\\\n\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\n\"",
+					"received": "string",
+					"path": [
+						"backslash_n"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_u_equal",
+			"text": "{\"backslash_u\":\"\\\\u0041\",\"any_of\":\"\\\\u0041\",\"tagged\":{\"tag\":\"\\\\u0041\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "backslash_u_other",
+			"text": "{\"backslash_u\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\u0041\"",
+					"received": "string",
+					"path": [
+						"backslash_u"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_u_not_string",
+			"text": "{\"backslash_u\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\u0041\"",
+					"received": "null",
+					"path": [
+						"backslash_u"
+					]
+				}
+			]
+		},
+		{
+			"name": "backslash_u_quoted_twice",
+			"text": "{\"backslash_u\":\"\\\"\\\\\\\\u0041\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\\\u0041\"",
+					"received": "string",
+					"path": [
+						"backslash_u"
+					]
+				}
+			]
+		},
+		{
+			"name": "slash_equal",
+			"text": "{\"slash\":\"a/b\",\"any_of\":\"a/b\",\"tagged\":{\"tag\":\"a/b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "slash_other",
+			"text": "{\"slash\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a/b\"",
+					"received": "string",
+					"path": [
+						"slash"
+					]
+				}
+			]
+		},
+		{
+			"name": "slash_not_string",
+			"text": "{\"slash\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a/b\"",
+					"received": "null",
+					"path": [
+						"slash"
+					]
+				}
+			]
+		},
+		{
+			"name": "slash_quoted_twice",
+			"text": "{\"slash\":\"\\\"a/b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a/b\"",
+					"received": "string",
+					"path": [
+						"slash"
+					]
+				}
+			]
+		},
+		{
+			"name": "apostrophe_equal",
+			"text": "{\"apostrophe\":\"it's\",\"any_of\":\"it's\",\"tagged\":{\"tag\":\"it's\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "apostrophe_other",
+			"text": "{\"apostrophe\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"it's\"",
+					"received": "string",
+					"path": [
+						"apostrophe"
+					]
+				}
+			]
+		},
+		{
+			"name": "apostrophe_not_string",
+			"text": "{\"apostrophe\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"it's\"",
+					"received": "null",
+					"path": [
+						"apostrophe"
+					]
+				}
+			]
+		},
+		{
+			"name": "apostrophe_quoted_twice",
+			"text": "{\"apostrophe\":\"\\\"it's\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"it's\"",
+					"received": "string",
+					"path": [
+						"apostrophe"
+					]
+				}
+			]
+		},
+		{
+			"name": "angle_equal",
+			"text": "{\"angle\":\"</script>\",\"any_of\":\"</script>\",\"tagged\":{\"tag\":\"</script>\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "angle_other",
+			"text": "{\"angle\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"</script>\"",
+					"received": "string",
+					"path": [
+						"angle"
+					]
+				}
+			]
+		},
+		{
+			"name": "angle_not_string",
+			"text": "{\"angle\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"</script>\"",
+					"received": "null",
+					"path": [
+						"angle"
+					]
+				}
+			]
+		},
+		{
+			"name": "angle_quoted_twice",
+			"text": "{\"angle\":\"\\\"</script>\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"</script>\"",
+					"received": "string",
+					"path": [
+						"angle"
+					]
+				}
+			]
+		},
+		{
+			"name": "null_character_equal",
+			"text": "{\"null_character\":\"\\u0000\",\"any_of\":\"\\u0000\",\"tagged\":{\"tag\":\"\\u0000\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null_character_other",
+			"text": "{\"null_character\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0000\"",
+					"received": "string",
+					"path": [
+						"null_character"
+					]
+				}
+			]
+		},
+		{
+			"name": "null_character_not_string",
+			"text": "{\"null_character\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0000\"",
+					"received": "null",
+					"path": [
+						"null_character"
+					]
+				}
+			]
+		},
+		{
+			"name": "null_character_quoted_twice",
+			"text": "{\"null_character\":\"\\\"\\\\u0000\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0000\"",
+					"received": "string",
+					"path": [
+						"null_character"
+					]
+				}
+			]
+		},
+		{
+			"name": "start_of_heading_equal",
+			"text": "{\"start_of_heading\":\"\\u0001\",\"any_of\":\"\\u0001\",\"tagged\":{\"tag\":\"\\u0001\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "start_of_heading_other",
+			"text": "{\"start_of_heading\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0001\"",
+					"received": "string",
+					"path": [
+						"start_of_heading"
+					]
+				}
+			]
+		},
+		{
+			"name": "start_of_heading_not_string",
+			"text": "{\"start_of_heading\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0001\"",
+					"received": "null",
+					"path": [
+						"start_of_heading"
+					]
+				}
+			]
+		},
+		{
+			"name": "start_of_heading_quoted_twice",
+			"text": "{\"start_of_heading\":\"\\\"\\\\u0001\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u0001\"",
+					"received": "string",
+					"path": [
+						"start_of_heading"
+					]
+				}
+			]
+		},
+		{
+			"name": "backspace_equal",
+			"text": "{\"backspace\":\"\\b\",\"any_of\":\"\\b\",\"tagged\":{\"tag\":\"\\b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "backspace_other",
+			"text": "{\"backspace\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\b\"",
+					"received": "string",
+					"path": [
+						"backspace"
+					]
+				}
+			]
+		},
+		{
+			"name": "backspace_not_string",
+			"text": "{\"backspace\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\b\"",
+					"received": "null",
+					"path": [
+						"backspace"
+					]
+				}
+			]
+		},
+		{
+			"name": "backspace_quoted_twice",
+			"text": "{\"backspace\":\"\\\"\\\\b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\b\"",
+					"received": "string",
+					"path": [
+						"backspace"
+					]
+				}
+			]
+		},
+		{
+			"name": "tab_equal",
+			"text": "{\"tab\":\"\\t\",\"any_of\":\"\\t\",\"tagged\":{\"tag\":\"\\t\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "tab_other",
+			"text": "{\"tab\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\t\"",
+					"received": "string",
+					"path": [
+						"tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "tab_not_string",
+			"text": "{\"tab\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\t\"",
+					"received": "null",
+					"path": [
+						"tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "tab_quoted_twice",
+			"text": "{\"tab\":\"\\\"\\\\t\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\t\"",
+					"received": "string",
+					"path": [
+						"tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "newline_equal",
+			"text": "{\"newline\":\"\\n\",\"any_of\":\"\\n\",\"tagged\":{\"tag\":\"\\n\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "newline_other",
+			"text": "{\"newline\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\n\"",
+					"received": "string",
+					"path": [
+						"newline"
+					]
+				}
+			]
+		},
+		{
+			"name": "newline_not_string",
+			"text": "{\"newline\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\n\"",
+					"received": "null",
+					"path": [
+						"newline"
+					]
+				}
+			]
+		},
+		{
+			"name": "newline_quoted_twice",
+			"text": "{\"newline\":\"\\\"\\\\n\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\n\"",
+					"received": "string",
+					"path": [
+						"newline"
+					]
+				}
+			]
+		},
+		{
+			"name": "vertical_tab_equal",
+			"text": "{\"vertical_tab\":\"\\u000b\",\"any_of\":\"\\u000b\",\"tagged\":{\"tag\":\"\\u000b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "vertical_tab_other",
+			"text": "{\"vertical_tab\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u000b\"",
+					"received": "string",
+					"path": [
+						"vertical_tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "vertical_tab_not_string",
+			"text": "{\"vertical_tab\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u000b\"",
+					"received": "null",
+					"path": [
+						"vertical_tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "vertical_tab_quoted_twice",
+			"text": "{\"vertical_tab\":\"\\\"\\\\u000b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u000b\"",
+					"received": "string",
+					"path": [
+						"vertical_tab"
+					]
+				}
+			]
+		},
+		{
+			"name": "form_feed_equal",
+			"text": "{\"form_feed\":\"\\f\",\"any_of\":\"\\f\",\"tagged\":{\"tag\":\"\\f\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "form_feed_other",
+			"text": "{\"form_feed\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\f\"",
+					"received": "string",
+					"path": [
+						"form_feed"
+					]
+				}
+			]
+		},
+		{
+			"name": "form_feed_not_string",
+			"text": "{\"form_feed\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\f\"",
+					"received": "null",
+					"path": [
+						"form_feed"
+					]
+				}
+			]
+		},
+		{
+			"name": "form_feed_quoted_twice",
+			"text": "{\"form_feed\":\"\\\"\\\\f\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\f\"",
+					"received": "string",
+					"path": [
+						"form_feed"
+					]
+				}
+			]
+		},
+		{
+			"name": "carriage_return_equal",
+			"text": "{\"carriage_return\":\"\\r\",\"any_of\":\"\\r\",\"tagged\":{\"tag\":\"\\r\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "carriage_return_other",
+			"text": "{\"carriage_return\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\r\"",
+					"received": "string",
+					"path": [
+						"carriage_return"
+					]
+				}
+			]
+		},
+		{
+			"name": "carriage_return_not_string",
+			"text": "{\"carriage_return\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\r\"",
+					"received": "null",
+					"path": [
+						"carriage_return"
+					]
+				}
+			]
+		},
+		{
+			"name": "carriage_return_quoted_twice",
+			"text": "{\"carriage_return\":\"\\\"\\\\r\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\r\"",
+					"received": "string",
+					"path": [
+						"carriage_return"
+					]
+				}
+			]
+		},
+		{
+			"name": "escape_equal",
+			"text": "{\"escape\":\"\\u001b\",\"any_of\":\"\\u001b\",\"tagged\":{\"tag\":\"\\u001b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escape_other",
+			"text": "{\"escape\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001b\"",
+					"received": "string",
+					"path": [
+						"escape"
+					]
+				}
+			]
+		},
+		{
+			"name": "escape_not_string",
+			"text": "{\"escape\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001b\"",
+					"received": "null",
+					"path": [
+						"escape"
+					]
+				}
+			]
+		},
+		{
+			"name": "escape_quoted_twice",
+			"text": "{\"escape\":\"\\\"\\\\u001b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001b\"",
+					"received": "string",
+					"path": [
+						"escape"
+					]
+				}
+			]
+		},
+		{
+			"name": "unit_separator_equal",
+			"text": "{\"unit_separator\":\"\\u001f\",\"any_of\":\"\\u001f\",\"tagged\":{\"tag\":\"\\u001f\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unit_separator_other",
+			"text": "{\"unit_separator\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001f\"",
+					"received": "string",
+					"path": [
+						"unit_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "unit_separator_not_string",
+			"text": "{\"unit_separator\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001f\"",
+					"received": "null",
+					"path": [
+						"unit_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "unit_separator_quoted_twice",
+			"text": "{\"unit_separator\":\"\\\"\\\\u001f\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\\u001f\"",
+					"received": "string",
+					"path": [
+						"unit_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "delete_equal",
+			"text": "{\"delete\":\"\",\"any_of\":\"\",\"tagged\":{\"tag\":\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "delete_other",
+			"text": "{\"delete\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"delete"
+					]
+				}
+			]
+		},
+		{
+			"name": "delete_not_string",
+			"text": "{\"delete\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "null",
+					"path": [
+						"delete"
+					]
+				}
+			]
+		},
+		{
+			"name": "delete_quoted_twice",
+			"text": "{\"delete\":\"\\\"\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"delete"
+					]
+				}
+			]
+		},
+		{
+			"name": "c1_control_equal",
+			"text": "{\"c1_control\":\"\",\"any_of\":\"\",\"tagged\":{\"tag\":\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "c1_control_other",
+			"text": "{\"c1_control\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"c1_control"
+					]
+				}
+			]
+		},
+		{
+			"name": "c1_control_not_string",
+			"text": "{\"c1_control\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "null",
+					"path": [
+						"c1_control"
+					]
+				}
+			]
+		},
+		{
+			"name": "c1_control_quoted_twice",
+			"text": "{\"c1_control\":\"\\\"\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"\"",
+					"received": "string",
+					"path": [
+						"c1_control"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_break_space_equal",
+			"text": "{\"no_break_space\":\" \",\"any_of\":\" \",\"tagged\":{\"tag\":\" \"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "no_break_space_other",
+			"text": "{\"no_break_space\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"no_break_space"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_break_space_not_string",
+			"text": "{\"no_break_space\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "null",
+					"path": [
+						"no_break_space"
+					]
+				}
+			]
+		},
+		{
+			"name": "no_break_space_quoted_twice",
+			"text": "{\"no_break_space\":\"\\\" \\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"no_break_space"
+					]
+				}
+			]
+		},
+		{
+			"name": "accented_equal",
+			"text": "{\"accented\":\"é\",\"any_of\":\"é\",\"tagged\":{\"tag\":\"é\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "accented_other",
+			"text": "{\"accented\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "string",
+					"path": [
+						"accented"
+					]
+				}
+			]
+		},
+		{
+			"name": "accented_not_string",
+			"text": "{\"accented\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "null",
+					"path": [
+						"accented"
+					]
+				}
+			]
+		},
+		{
+			"name": "accented_quoted_twice",
+			"text": "{\"accented\":\"\\\"é\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "string",
+					"path": [
+						"accented"
+					]
+				}
+			]
+		},
+		{
+			"name": "line_separator_equal",
+			"text": "{\"line_separator\":\" \",\"any_of\":\" \",\"tagged\":{\"tag\":\" \"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "line_separator_other",
+			"text": "{\"line_separator\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"line_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "line_separator_not_string",
+			"text": "{\"line_separator\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "null",
+					"path": [
+						"line_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "line_separator_quoted_twice",
+			"text": "{\"line_separator\":\"\\\" \\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"line_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "paragraph_separator_equal",
+			"text": "{\"paragraph_separator\":\" \",\"any_of\":\" \",\"tagged\":{\"tag\":\" \"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "paragraph_separator_other",
+			"text": "{\"paragraph_separator\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"paragraph_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "paragraph_separator_not_string",
+			"text": "{\"paragraph_separator\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "null",
+					"path": [
+						"paragraph_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "paragraph_separator_quoted_twice",
+			"text": "{\"paragraph_separator\":\"\\\" \\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\" \"",
+					"received": "string",
+					"path": [
+						"paragraph_separator"
+					]
+				}
+			]
+		},
+		{
+			"name": "byte_order_mark_equal",
+			"text": "{\"byte_order_mark\":\"﻿\",\"any_of\":\"﻿\",\"tagged\":{\"tag\":\"﻿\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "byte_order_mark_other",
+			"text": "{\"byte_order_mark\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"﻿\"",
+					"received": "string",
+					"path": [
+						"byte_order_mark"
+					]
+				}
+			]
+		},
+		{
+			"name": "byte_order_mark_not_string",
+			"text": "{\"byte_order_mark\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"﻿\"",
+					"received": "null",
+					"path": [
+						"byte_order_mark"
+					]
+				}
+			]
+		},
+		{
+			"name": "byte_order_mark_quoted_twice",
+			"text": "{\"byte_order_mark\":\"\\\"﻿\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"﻿\"",
+					"received": "string",
+					"path": [
+						"byte_order_mark"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_of_the_plane_equal",
+			"text": "{\"last_of_the_plane\":\"￿\",\"any_of\":\"￿\",\"tagged\":{\"tag\":\"￿\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "last_of_the_plane_other",
+			"text": "{\"last_of_the_plane\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"￿\"",
+					"received": "string",
+					"path": [
+						"last_of_the_plane"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_of_the_plane_not_string",
+			"text": "{\"last_of_the_plane\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"￿\"",
+					"received": "null",
+					"path": [
+						"last_of_the_plane"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_of_the_plane_quoted_twice",
+			"text": "{\"last_of_the_plane\":\"\\\"￿\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"￿\"",
+					"received": "string",
+					"path": [
+						"last_of_the_plane"
+					]
+				}
+			]
+		},
+		{
+			"name": "astral_equal",
+			"text": "{\"astral\":\"😀\",\"any_of\":\"😀\",\"tagged\":{\"tag\":\"😀\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "astral_other",
+			"text": "{\"astral\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"😀\"",
+					"received": "string",
+					"path": [
+						"astral"
+					]
+				}
+			]
+		},
+		{
+			"name": "astral_not_string",
+			"text": "{\"astral\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"😀\"",
+					"received": "null",
+					"path": [
+						"astral"
+					]
+				}
+			]
+		},
+		{
+			"name": "astral_quoted_twice",
+			"text": "{\"astral\":\"\\\"😀\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"😀\"",
+					"received": "string",
+					"path": [
+						"astral"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_code_point_equal",
+			"text": "{\"last_code_point\":\"􏿿\",\"any_of\":\"􏿿\",\"tagged\":{\"tag\":\"􏿿\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "last_code_point_other",
+			"text": "{\"last_code_point\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"􏿿\"",
+					"received": "string",
+					"path": [
+						"last_code_point"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_code_point_not_string",
+			"text": "{\"last_code_point\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"􏿿\"",
+					"received": "null",
+					"path": [
+						"last_code_point"
+					]
+				}
+			]
+		},
+		{
+			"name": "last_code_point_quoted_twice",
+			"text": "{\"last_code_point\":\"\\\"􏿿\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"􏿿\"",
+					"received": "string",
+					"path": [
+						"last_code_point"
+					]
+				}
+			]
+		},
+		{
+			"name": "mixed_equal",
+			"text": "{\"mixed\":\"a\\\"b\\\\c\\n  é😀\\t\\u0001\",\"any_of\":\"a\\\"b\\\\c\\n  é😀\\t\\u0001\",\"tagged\":{\"tag\":\"a\\\"b\\\\c\\n  é😀\\t\\u0001\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "mixed_other",
+			"text": "{\"mixed\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\\\\c\\n  é😀\\t\\u0001\"",
+					"received": "string",
+					"path": [
+						"mixed"
+					]
+				}
+			]
+		},
+		{
+			"name": "mixed_not_string",
+			"text": "{\"mixed\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\\\\c\\n  é😀\\t\\u0001\"",
+					"received": "null",
+					"path": [
+						"mixed"
+					]
+				}
+			]
+		},
+		{
+			"name": "mixed_quoted_twice",
+			"text": "{\"mixed\":\"\\\"a\\\\\\\"b\\\\\\\\c\\\\n  é😀\\\\t\\\\u0001\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a\\\"b\\\\c\\n  é😀\\t\\u0001\"",
+					"received": "string",
+					"path": [
+						"mixed"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_null_equal",
+			"text": "{\"like_null\":\"null\",\"any_of\":\"null\",\"tagged\":{\"tag\":\"null\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "like_null_other",
+			"text": "{\"like_null\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"null\"",
+					"received": "string",
+					"path": [
+						"like_null"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_null_not_string",
+			"text": "{\"like_null\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"null\"",
+					"received": "null",
+					"path": [
+						"like_null"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_null_quoted_twice",
+			"text": "{\"like_null\":\"\\\"null\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"null\"",
+					"received": "string",
+					"path": [
+						"like_null"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_true_equal",
+			"text": "{\"like_true\":\"true\",\"any_of\":\"true\",\"tagged\":{\"tag\":\"true\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "like_true_other",
+			"text": "{\"like_true\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"true\"",
+					"received": "string",
+					"path": [
+						"like_true"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_true_not_string",
+			"text": "{\"like_true\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"true\"",
+					"received": "null",
+					"path": [
+						"like_true"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_true_quoted_twice",
+			"text": "{\"like_true\":\"\\\"true\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"true\"",
+					"received": "string",
+					"path": [
+						"like_true"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_number_equal",
+			"text": "{\"like_number\":\"1\",\"any_of\":\"1\",\"tagged\":{\"tag\":\"1\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "like_number_other",
+			"text": "{\"like_number\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"1\"",
+					"received": "string",
+					"path": [
+						"like_number"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_number_not_string",
+			"text": "{\"like_number\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"1\"",
+					"received": "null",
+					"path": [
+						"like_number"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_number_quoted_twice",
+			"text": "{\"like_number\":\"\\\"1\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"1\"",
+					"received": "string",
+					"path": [
+						"like_number"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_joined_equal",
+			"text": "{\"like_joined\":\"a | b\",\"any_of\":\"a | b\",\"tagged\":{\"tag\":\"a | b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "like_joined_other",
+			"text": "{\"like_joined\":\"other\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a | b\"",
+					"received": "string",
+					"path": [
+						"like_joined"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_joined_not_string",
+			"text": "{\"like_joined\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a | b\"",
+					"received": "null",
+					"path": [
+						"like_joined"
+					]
+				}
+			]
+		},
+		{
+			"name": "like_joined_quoted_twice",
+			"text": "{\"like_joined\":\"\\\"a | b\\\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"a | b\"",
+					"received": "string",
+					"path": [
+						"like_joined"
+					]
+				}
+			]
+		},
+		{
+			"name": "unescaped",
+			"text": "{\"delete\":\"\",\"line_separator\":\" \",\"astral\":\"😀\",\"last_code_point\":\"􏿿\",\"slash\":\"a/b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "slash_escaped",
+			"text": "{\"slash\":\"a\\/b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

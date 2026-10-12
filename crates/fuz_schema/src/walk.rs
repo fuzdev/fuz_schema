@@ -7,13 +7,16 @@
 //! each kind.
 //!
 //! Failures go to a `Report`. `Probe` only wants the verdict, and evaluation
-//! returns at the first failure. A report that collects goes on, and is told
-//! where each failure is.
+//! returns at the first failure. `Collect` goes on and keeps each failure as
+//! an `Issue`, the one the TypeScript library's `parse` reports, in its order.
+//! A container that had a failure under it prefixes its key onto the paths of
+//! those issues, as the library does, so a value that matches builds no path.
 
 use crate::error::JsonError;
+use crate::issue::{Issue, IssueKind, PathSegment, Received};
 use crate::js;
 use crate::json::{Json, Value};
-use crate::schema::{Entries, MAX_NESTING, Node, NodeId, Schema, VariantDef};
+use crate::schema::{Entries, Literal, MAX_NESTING, Node, NodeId, Schema, VariantDef};
 
 /// Where failures go.
 pub trait Report {
@@ -24,11 +27,12 @@ pub trait Report {
     /// A value failed `node`, or was a key `node` does not have.
     fn fail(&mut self, node: NodeId, failure: Failure, received: Received);
 
-    /// What follows is about the value at `segment` of the current one.
-    fn enter(&mut self, segment: Segment<'_>);
+    /// How many failures there have been, to hand back to `prefix`.
+    fn count(&self) -> usize;
 
-    /// Ends the last `enter`.
-    fn leave(&mut self);
+    /// The failures since there were `from` of them are of values under
+    /// `segment` of the current one.
+    fn prefix(&mut self, from: usize, segment: Segment<'_>);
 }
 
 /// What failed.
@@ -36,6 +40,9 @@ pub trait Report {
 pub enum Failure {
     /// The value did not match the node.
     Schema,
+    /// The value is at the discriminator of the `variant` node, and no option
+    /// has it.
+    Discriminator,
     /// The value is at a key the `object` node has no entry for.
     UnknownKey,
 }
@@ -47,32 +54,6 @@ pub enum Segment<'a> {
     Index(usize),
 }
 
-/// The type of a value that failed, as the TypeScript library names it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Received {
-    Undefined,
-    Null,
-    Boolean,
-    Number,
-    String,
-    Array,
-    Object,
-}
-
-impl Received {
-    const fn of(value: Value<'_>) -> Self {
-        match value {
-            Value::Undefined => Self::Undefined,
-            Value::Null => Self::Null,
-            Value::Bool(_) => Self::Boolean,
-            Value::Number(_) => Self::Number,
-            Value::String(_) => Self::String,
-            Value::Array(_) => Self::Array,
-            Value::Object(_) => Self::Object,
-        }
-    }
-}
-
 /// The report that only wants the verdict.
 #[derive(Debug)]
 pub struct Probe;
@@ -82,9 +63,114 @@ impl Report for Probe {
 
     fn fail(&mut self, _: NodeId, _: Failure, _: Received) {}
 
-    fn enter(&mut self, _: Segment<'_>) {}
+    fn count(&self) -> usize {
+        0
+    }
 
-    fn leave(&mut self) {}
+    fn prefix(&mut self, _: usize, _: Segment<'_>) {}
+}
+
+/// The report that keeps every failure as an issue.
+#[derive(Debug)]
+pub struct Collect<'a> {
+    schema: &'a Schema,
+    /// The issues so far, each with its path innermost first.
+    issues: Vec<Issue>,
+}
+
+impl<'a> Collect<'a> {
+    pub const fn new(schema: &'a Schema) -> Self {
+        Self {
+            schema,
+            issues: Vec::new(),
+        }
+    }
+
+    /// The issues, in the order the failures were met, each path now
+    /// outermost first.
+    pub fn finish(mut self) -> Vec<Issue> {
+        for issue in &mut self.issues {
+            issue.path.reverse();
+        }
+        self.issues
+    }
+}
+
+impl Report for Collect<'_> {
+    const PROBE: bool = false;
+
+    fn fail(&mut self, node: NodeId, failure: Failure, received: Received) {
+        let node = self.schema.at(node);
+        let kind = match failure {
+            Failure::Schema | Failure::Discriminator => IssueKind::of(node.kind()),
+            Failure::UnknownKey => Some(IssueKind::UnknownKey),
+        };
+        // the walker reports no failure of a kind that has no issue kind
+        debug_assert!(kind.is_some(), "a `{}` failed", node.kind());
+        if let Some(kind) = kind {
+            self.issues.push(Issue {
+                kind,
+                expected: expected(self.schema, node, failure),
+                received,
+                path: Vec::new(),
+            });
+        }
+    }
+
+    fn count(&self) -> usize {
+        self.issues.len()
+    }
+
+    fn prefix(&mut self, from: usize, segment: Segment<'_>) {
+        for issue in self.issues.iter_mut().skip(from) {
+            issue.path.push(match segment {
+                Segment::Key(key) => PathSegment::Key(key.to_owned()),
+                Segment::Index(index) => PathSegment::Index(index),
+            });
+        }
+    }
+}
+
+/// The `expected` of the issue the TypeScript library reports for `failure`
+/// of `node`: the kind's name where the library gives `fail` no other text.
+fn expected(schema: &Schema, node: &Node, failure: Failure) -> String {
+    match (failure, node) {
+        (Failure::UnknownKey, _) => "no unknown keys".to_owned(),
+        // the values of the options, in the order they first appear
+        (Failure::Discriminator, Node::Variant(variant)) => {
+            format_literals(variant.table.iter().map(|(literal, _)| literal))
+        }
+        (_, Node::LooseObject(_) | Node::StripObject(_) | Node::Record(_) | Node::Variant(_)) => {
+            "object".to_owned()
+        }
+        (_, Node::Literal(literal)) => format_literals([literal]),
+        (_, Node::OneOf(literals)) => format_literals(literals.iter()),
+        (_, Node::Union(options)) => options
+            .iter()
+            .map(|&option| schema.at(option).kind().as_str())
+            .collect::<Vec<_>>()
+            .join(" | "),
+        (_, Node::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
+        (_, Node::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
+        (_, Node::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
+        (_, Node::MaxValue(max)) => format!("<= {}", js::number_to_string(*max)),
+        _ => node.kind().as_str().to_owned(),
+    }
+}
+
+/// The library's `format_literals`: each value as JavaScript's `String`
+/// writes it, a string quoted as `JSON.stringify` quotes it, joined by ` | `.
+fn format_literals<'a>(literals: impl IntoIterator<Item = &'a Literal>) -> String {
+    literals
+        .into_iter()
+        .map(|literal| match literal {
+            Literal::Null => "null".to_owned(),
+            Literal::Boolean(value) => value.to_string(),
+            Literal::Number(value) => js::number_to_string(*value),
+            Literal::String(value) => js::quote(value),
+        })
+        .collect::<Vec<_>>()
+        .join(" | ")
 }
 
 /// Whether `text` is JSON that matches `schema`, by parsing all of it into a
@@ -92,6 +178,19 @@ impl Report for Probe {
 pub fn is_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
     let json = Json::parse(text)?;
     Ok(run(schema, schema.root(), json.view(), &mut Probe))
+}
+
+/// The issues of `text` against `schema`, none when it matches, by parsing
+/// all of it into a tree and walking the tree.
+pub fn validate_json(schema: &Schema, text: &str) -> Result<Vec<Issue>, JsonError> {
+    let json = Json::parse(text)?;
+    let mut report = Collect::new(schema);
+    let matched = run(schema, schema.root(), json.view(), &mut report);
+    let issues = report.finish();
+    // every failure the walker reports is of a kind that has an issue kind,
+    // so this holds by construction: a text that fails has an issue
+    assert_eq!(matched, issues.is_empty(), "a failure that built no issue");
+    Ok(issues)
 }
 
 /// Whether `value` matches the node `id`, reporting what does not.
@@ -159,12 +258,13 @@ fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R
         Node::Variant(variant) => match select(variant, value) {
             Selected::Option(option) => return Rest::Option(option),
             Selected::NotObject => fail(id, value, report),
-            Selected::Unknown(discriminator) => {
-                report.enter(Segment::Key(variant.key()));
-                report.fail(id, Failure::Schema, Received::of(discriminator));
-                report.leave();
-                false
-            }
+            Selected::Unknown(discriminator) => fail_at(
+                id,
+                Failure::Discriminator,
+                discriminator,
+                Segment::Key(variant.key()),
+                report,
+            ),
         },
         _ => scalar(node, value) || fail(id, value, report),
     };
@@ -174,6 +274,20 @@ fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R
 /// Reports that `value` does not match the node `id`.
 fn fail<R: Report>(id: NodeId, value: Value<'_>, report: &mut R) -> bool {
     report.fail(id, Failure::Schema, Received::of(value));
+    false
+}
+
+/// Reports a failure of `node` about the value at `segment` of the current one.
+fn fail_at<R: Report>(
+    node: NodeId,
+    failure: Failure,
+    value: Value<'_>,
+    segment: Segment<'_>,
+    report: &mut R,
+) -> bool {
+    let count = report.count();
+    report.fail(node, failure, Received::of(value));
+    report.prefix(count, segment);
     false
 }
 
@@ -301,13 +415,12 @@ fn object<R: Report>(
     let mut matched = true;
     for (key, entry) in entries.iter() {
         let field = fields.get(key).map_or(Value::Undefined, Json::view);
-        report.enter(Segment::Key(key));
-        let entry_matched = run(schema, entry, field, report);
-        report.leave();
-        if !entry_matched {
+        let count = report.count();
+        if !run(schema, entry, field, report) {
             if R::PROBE {
                 return false;
             }
+            report.prefix(count, Segment::Key(key));
             matched = false;
         }
     }
@@ -320,9 +433,13 @@ fn object<R: Report>(
                     hint += 1;
                 }
             } else {
-                report.enter(Segment::Key(key));
-                report.fail(id, Failure::UnknownKey, Received::of(field.view()));
-                report.leave();
+                fail_at(
+                    id,
+                    Failure::UnknownKey,
+                    field.view(),
+                    Segment::Key(key),
+                    report,
+                );
                 if R::PROBE {
                     return false;
                 }
@@ -346,13 +463,12 @@ fn record<R: Report>(
     };
     let mut matched = true;
     for (key, field) in fields.iter() {
-        report.enter(Segment::Key(key));
-        let field_matched = run(schema, inner, field.view(), report);
-        report.leave();
-        if !field_matched {
+        let count = report.count();
+        if !run(schema, inner, field.view(), report) {
             if R::PROBE {
                 return false;
             }
+            report.prefix(count, Segment::Key(key));
             matched = false;
         }
     }
@@ -372,13 +488,12 @@ fn array<R: Report>(
     };
     let mut matched = true;
     for (index, item) in items.iter().enumerate() {
-        report.enter(Segment::Index(index));
-        let item_matched = run(schema, inner, item.view(), report);
-        report.leave();
-        if !item_matched {
+        let count = report.count();
+        if !run(schema, inner, item.view(), report) {
             if R::PROBE {
                 return false;
             }
+            report.prefix(count, Segment::Index(index));
             matched = false;
         }
     }
@@ -391,42 +506,6 @@ pub mod tests {
     use crate::builder::SchemaBuilder;
     use crate::schema::{Kind, Literal};
 
-    /// A report that goes on past the first failure and keeps each one as
-    /// the path to it, the kind that failed, and the type that was there:
-    /// what the TypeScript library's issues say.
-    #[derive(Debug)]
-    struct Collect<'a> {
-        schema: &'a Schema,
-        path: Vec<String>,
-        failures: Vec<String>,
-    }
-
-    impl Report for Collect<'_> {
-        const PROBE: bool = false;
-
-        fn fail(&mut self, node: NodeId, failure: Failure, received: Received) {
-            let kind = match failure {
-                Failure::Schema => self.schema.at(node).kind().as_str(),
-                Failure::UnknownKey => "unknown_key",
-            };
-            self.failures.push(format!(
-                "{}: {kind} received {received:?}",
-                self.path.join(".")
-            ));
-        }
-
-        fn enter(&mut self, segment: Segment<'_>) {
-            self.path.push(match segment {
-                Segment::Key(key) => key.to_owned(),
-                Segment::Index(index) => index.to_string(),
-            });
-        }
-
-        fn leave(&mut self) {
-            self.path.pop();
-        }
-    }
-
     /// A report that keeps the node of each failure.
     #[derive(Debug)]
     struct Ids(Vec<NodeId>);
@@ -438,24 +517,50 @@ pub mod tests {
             self.0.push(node);
         }
 
-        fn enter(&mut self, _: Segment<'_>) {}
+        fn count(&self) -> usize {
+            self.0.len()
+        }
 
-        fn leave(&mut self) {}
+        fn prefix(&mut self, _: usize, _: Segment<'_>) {}
     }
 
-    /// Every failure of `text`, checked against the verdict of a probe.
+    /// Every issue of `text`, checked against the verdict of a probe.
+    fn issues(schema: &Schema, text: &str) -> Vec<Issue> {
+        let issues = validate_json(schema, text).unwrap();
+        assert_eq!(issues.is_empty(), is_json(schema, text).unwrap(), "{text}");
+        issues
+    }
+
+    /// Every issue of `text` as its path, its kind, and the type that was
+    /// there.
     fn failures(schema: &Schema, text: &str) -> Vec<String> {
-        let json = Json::parse(text).unwrap();
-        let mut report = Collect {
-            schema,
-            path: Vec::new(),
-            failures: Vec::new(),
-        };
-        let matched = run(schema, schema.root(), json.view(), &mut report);
-        assert_eq!(matched, report.failures.is_empty(), "{text}");
-        assert_eq!(matched, is_json(schema, text).unwrap(), "{text}");
-        assert!(report.path.is_empty(), "{text}");
-        report.failures
+        issues(schema, text)
+            .iter()
+            .map(|issue| {
+                let path: Vec<String> = issue
+                    .path()
+                    .iter()
+                    .map(|segment| match segment {
+                        PathSegment::Key(key) => key.clone(),
+                        PathSegment::Index(index) => index.to_string(),
+                    })
+                    .collect();
+                format!(
+                    "{}: {} received {:?}",
+                    path.join("."),
+                    issue.kind(),
+                    issue.received()
+                )
+            })
+            .collect()
+    }
+
+    /// Every issue of `text` as its `expected`.
+    fn expects(schema: &Schema, text: &str) -> Vec<String> {
+        issues(schema, text)
+            .iter()
+            .map(|issue| issue.expected().to_owned())
+            .collect()
     }
 
     pub fn build(build: impl FnOnce(&mut SchemaBuilder) -> NodeId) -> Schema {
@@ -1091,6 +1196,313 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn issues_say_what_was_expected() {
+        // the kind's own name
+        type Make = fn(&mut SchemaBuilder) -> NodeId;
+        let kinds: [(Make, &str); 7] = [
+            (SchemaBuilder::string, "string"),
+            (SchemaBuilder::number, "number"),
+            (SchemaBuilder::boolean, "boolean"),
+            (SchemaBuilder::bigint, "bigint"),
+            (SchemaBuilder::integer, "integer"),
+            (SchemaBuilder::safe_integer, "safe_integer"),
+            (SchemaBuilder::finite, "finite"),
+        ];
+        for (make, kind) in kinds {
+            let schema = build(make);
+            assert_eq!(expects(&schema, "null"), [kind]);
+            assert_eq!(
+                failures(&schema, "null"),
+                [format!(": {kind} received Null")]
+            );
+        }
+        // `object` and `array` name themselves, the other object schemas `object`
+        let number = |b: &mut SchemaBuilder| b.number();
+        assert_eq!(expects(&build(|b| b.object::<&str>([])), "[]"), ["object"]);
+        assert_eq!(
+            expects(&build(|b| b.loose_object::<&str>([])), "1"),
+            ["object"]
+        );
+        assert_eq!(
+            expects(&build(|b| b.strip_object::<&str>([])), "null"),
+            ["object"]
+        );
+        assert_eq!(
+            expects(
+                &build(|b| {
+                    let number = number(b);
+                    b.record(number)
+                }),
+                "[]"
+            ),
+            ["object"]
+        );
+        assert_eq!(
+            expects(
+                &build(|b| {
+                    let number = number(b);
+                    b.array(number)
+                }),
+                "{}"
+            ),
+            ["array"]
+        );
+        assert_eq!(
+            expects(&build(|b| b.object::<&str>([])), r#"{"a":1,"b":[]}"#),
+            ["no unknown keys", "no unknown keys"]
+        );
+    }
+
+    #[test]
+    fn literals_are_written_as_javascript_writes_them() {
+        assert_eq!(expects(&build(|b| b.literal("a")), "1"), [r#""a""#]);
+        assert_eq!(
+            expects(&build(|b| b.literal("a\"b\nc")), "1"),
+            [r#""a\"b\nc""#]
+        );
+        assert_eq!(expects(&build(|b| b.literal(-0.0)), "1"), ["0"]);
+        assert_eq!(expects(&build(|b| b.literal(1e21)), "1"), ["1e+21"]);
+        assert_eq!(expects(&build(|b| b.literal(1e-7)), "1"), ["1e-7"]);
+        assert_eq!(
+            expects(&build(|b| b.literal(0.1 + 0.2)), "1"),
+            ["0.30000000000000004"]
+        );
+        assert_eq!(expects(&build(|b| b.literal(true)), "1"), ["true"]);
+        assert_eq!(expects(&build(|b| b.literal(Literal::Null)), "1"), ["null"]);
+        let one_of = build(|b| {
+            b.one_of([
+                Literal::from("a"),
+                Literal::from(1),
+                Literal::Null,
+                Literal::from(false),
+                Literal::from("null"),
+                Literal::from(-1.5),
+            ])
+        });
+        assert_eq!(
+            expects(&one_of, "[]"),
+            [r#""a" | 1 | null | false | "null" | -1.5"#]
+        );
+        assert_eq!(failures(&one_of, "[]"), [": one_of received Array"]);
+        assert_eq!(expects(&build(|b| b.one_of::<Literal>([])), "1"), [""]);
+    }
+
+    #[test]
+    fn bounds_are_written_as_javascript_writes_them() {
+        let schema = build(|b| {
+            let number = b.number();
+            let min = b.min_value(-0.0);
+            let max = b.max_value(1e21);
+            let bounded = b.pipe([number, min, max]);
+            let string = b.string();
+            let longer = b.min_length(1.5);
+            let shorter = b.max_length(1e21);
+            let text = b.pipe([string, longer, shorter]);
+            let none = b.max_length(-1.0);
+            let never = b.pipe([string, none]);
+            b.loose_object([("n", bounded), ("s", text), ("x", never)])
+        });
+        assert_eq!(
+            expects(&schema, r#"{"n":-1,"s":"a","x":""}"#),
+            [">= 0", "length >= 1.5", "length <= -1"]
+        );
+        assert_eq!(
+            failures(&schema, r#"{"n":1e22,"s":"a","x":""}"#),
+            [
+                "n: max_value received Number",
+                "s: min_length received String",
+                "x: max_length received String"
+            ]
+        );
+        assert_eq!(
+            expects(&schema, r#"{"n":1e22,"s":"ab","x":""}"#),
+            ["<= 1e+21", "length <= -1"]
+        );
+    }
+
+    #[test]
+    fn a_union_expects_the_kinds_of_its_options() {
+        let schema = build(|b| {
+            let string = b.string();
+            let one = b.literal(1);
+            let optional = b.optional(string);
+            let integer = b.integer();
+            let min = b.min_value(0.0);
+            let piped = b.pipe([integer, min]);
+            let loose = b.loose_object([("a", string)]);
+            let lazy = b.declare();
+            b.define(lazy, loose);
+            let inner = b.union([string]);
+            b.union([string, one, optional, piped, loose, lazy, inner])
+        });
+        assert_eq!(
+            expects(&schema, "null"),
+            ["string | literal | optional | pipe | loose_object | lazy | union"]
+        );
+        assert_eq!(expects(&build(|b| b.union([])), "null"), [""]);
+    }
+
+    #[test]
+    fn a_variant_expects_an_object_then_the_values_of_its_options() {
+        let schema = build(|b| {
+            let a = b.literal("a");
+            let zero = b.literal(0.0);
+            let negative_zero = b.literal(-0.0);
+            let null = b.literal(Literal::Null);
+            let yes = b.literal(true);
+            let number = b.number();
+            let first = b.object([("k", a), ("n", number)]);
+            let second = b.object([("k", zero)]);
+            let third = b.loose_object([("k", a)]);
+            let fourth = b.object([("k", negative_zero)]);
+            let fifth = b.object([("k", null)]);
+            let sixth = b.object([("k", yes)]);
+            b.variant("k", [first, second, third, fourth, fifth, sixth])
+        });
+        assert_eq!(expects(&schema, "[]"), ["object"]);
+        assert_eq!(expects(&schema, "null"), ["object"]);
+        // each value once, where it first appears
+        let values = r#""a" | 0 | null | true"#;
+        assert_eq!(expects(&schema, "{}"), [values]);
+        assert_eq!(expects(&schema, r#"{"k":[]}"#), [values]);
+        assert_eq!(
+            failures(&schema, r#"{"k":{}}"#),
+            ["k: variant received Object"]
+        );
+        assert_eq!(failures(&schema, "[]"), [": variant received Array"]);
+        // the option a value given twice selects is the later one
+        assert_eq!(expects(&schema, r#"{"k":"a","n":"x"}"#), [""; 0]);
+        assert_eq!(
+            failures(&schema, r#"{"k":0,"n":1}"#),
+            ["n: unknown_key received Number"]
+        );
+        assert_eq!(expects(&build(|b| b.variant("k", [])), "{}"), [""]);
+    }
+
+    #[test]
+    fn paths_tell_a_key_from_an_index() {
+        let schema = build(|b| {
+            let number = b.number();
+            let items = b.array(number);
+            let fields = b.record(items);
+            b.array(fields)
+        });
+        let issues = issues(&schema, r#"[{"0":[1,null],"a":[[]],"b":1},2]"#);
+        let paths: Vec<&[PathSegment]> = issues.iter().map(Issue::path).collect();
+        let key = |key: &str| PathSegment::Key(key.to_owned());
+        assert_eq!(
+            paths,
+            [
+                &[PathSegment::Index(0), key("0"), PathSegment::Index(1)][..],
+                &[PathSegment::Index(0), key("a"), PathSegment::Index(0)],
+                &[PathSegment::Index(0), key("b")],
+                &[PathSegment::Index(1)],
+            ]
+        );
+        let kinds: Vec<IssueKind> = issues.iter().map(Issue::kind).collect();
+        assert_eq!(
+            kinds,
+            [
+                IssueKind::Number,
+                IssueKind::Number,
+                IssueKind::Array,
+                IssueKind::Record
+            ]
+        );
+    }
+
+    /// The interchange form a TypeScript schema serializes to has its
+    /// entries in JavaScript's order already. One written by hand need not,
+    /// and reports in that order all the same.
+    #[test]
+    fn a_schema_loaded_out_of_key_order_reports_in_javascript_order() {
+        let number = r#"{"kind":"number"}"#;
+        let schema = Schema::from_json(&format!(
+            r#"{{"schema":{{"kind":"object","def":{{"b":{number},"10":{number},"a":{number},"2":{number},"01":{number}}}}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(
+            failures(&schema, r#"{"z":1,"3":1}"#),
+            [
+                "2: number received Undefined",
+                "10: number received Undefined",
+                "b: number received Undefined",
+                "a: number received Undefined",
+                "01: number received Undefined",
+                "3: unknown_key received Number",
+                "z: unknown_key received Number"
+            ]
+        );
+    }
+
+    /// The entries of a schema built out of JavaScript's key order run in
+    /// it all the same, whichever object schema they are of: what
+    /// `Object.keys` gives of the same entries.
+    #[test]
+    fn a_schema_built_out_of_key_order_reports_in_javascript_order() {
+        let keys = ["b", "10", "a", "2", "01", "4294967295", "0"];
+        let entries = [
+            "0: number received Undefined",
+            "2: number received Undefined",
+            "10: number received Undefined",
+            "b: number received Undefined",
+            "a: number received Undefined",
+            "01: number received Undefined",
+            "4294967295: number received Undefined",
+        ];
+        let unknown = [
+            "3: unknown_key received Number",
+            "z: unknown_key received Number",
+        ];
+        for kind in [Kind::Object, Kind::LooseObject, Kind::StripObject] {
+            let schema = build(|b| {
+                let number = b.number();
+                let entries = keys.map(|key| (key, number));
+                match kind {
+                    Kind::Object => b.object(entries),
+                    Kind::LooseObject => b.loose_object(entries),
+                    _ => b.strip_object(entries),
+                }
+            });
+            let mut expected = entries.to_vec();
+            if kind == Kind::Object {
+                expected.extend(unknown);
+            }
+            assert_eq!(failures(&schema, r#"{"z":1,"3":1}"#), expected, "{kind}");
+        }
+        // and the entries of the option a `variant` selects
+        let schema = build(|b| {
+            let number = b.number();
+            let x = b.literal("x");
+            let option = b.object([("b", number), ("10", number), ("k", x), ("2", number)]);
+            b.variant("k", [option])
+        });
+        assert_eq!(
+            failures(&schema, r#"{"k":"x","z":1,"3":1}"#),
+            [
+                "2: number received Undefined",
+                "10: number received Undefined",
+                "b: number received Undefined",
+                "3: unknown_key received Number",
+                "z: unknown_key received Number",
+            ]
+        );
+    }
+
+    #[test]
+    fn validate_json_reports_what_is_not_json() {
+        let schema = build(SchemaBuilder::number);
+        assert_eq!(validate_json(&schema, "1"), Ok(Vec::new()));
+        for text in ["", "{", "1 2", "1e400", r#"{"a":1,}"#] {
+            assert_eq!(
+                validate_json(&schema, text).map_err(|error| error.kind()),
+                Err(is_json(&schema, text).unwrap_err().kind()),
+                "{text}"
+            );
+        }
+    }
+
     /// The deepest input the parser reads, against the most nesting a schema
     /// may have at every level, on a small stack: what the limit on nesting
     /// is for. A debug build, as the tests are, has the largest frames.
@@ -1184,6 +1596,7 @@ pub mod tests {
                 ] {
                     assert_eq!(is_json(schema, text), Ok(true));
                     assert_eq!(crate::stream::is_json(schema, text), Ok(true));
+                    assert_eq!(validate_json(schema, text), Ok(Vec::new()));
                 }
             });
         thread.unwrap().join().unwrap();

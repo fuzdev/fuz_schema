@@ -479,6 +479,16 @@ describe('to_schema_json refuses', () => {
 					`cannot serialize \`${schema.kind}\` at /schema/def/def/${key}: the entry is named like a member of Object.prototype`
 				);
 			}
+			// a `variant` with no option reads its key off the input all the same
+			refuses(
+				() => s.array(s.variant(key, [])),
+				'cannot serialize `variant` at /schema/def/def/key: the key is named like a member of Object.prototype'
+			);
+			// with options the key is an entry, and is refused as one
+			refuses(
+				() => s.variant(key, [s.object({ [key]: s.literal('a') })]),
+				`cannot serialize \`object\` at /schema/def/options/0/def/${key}: the entry is named like a member of Object.prototype`
+			);
 		}
 	});
 

@@ -1,0 +1,1426 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"2": {
+					"kind": "boolean"
+				},
+				"10": {
+					"kind": "number"
+				},
+				"4294967294": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				},
+				"b": {
+					"kind": "string"
+				},
+				"a": {
+					"kind": "object",
+					"def": {
+						"0": {
+							"kind": "optional",
+							"def": {
+								"schema": {
+									"kind": "boolean"
+								}
+							}
+						},
+						"1": {
+							"kind": "string"
+						},
+						"z": {
+							"kind": "number"
+						},
+						"y": {
+							"kind": "array",
+							"def": {
+								"kind": "object",
+								"def": {
+									"2": {
+										"kind": "boolean"
+									},
+									"x": {
+										"kind": "number"
+									}
+								}
+							}
+						}
+					}
+				},
+				"r": {
+					"kind": "record",
+					"def": {
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "number"
+							},
+							{
+								"kind": "integer"
+							}
+						]
+					}
+				},
+				"01": {
+					"kind": "number"
+				},
+				"l": {
+					"kind": "loose_object",
+					"def": {
+						"3": {
+							"kind": "string"
+						},
+						"5": {
+							"kind": "string"
+						},
+						"c": {
+							"kind": "string"
+						}
+					}
+				},
+				"t": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "array",
+								"def": {
+									"kind": "number"
+								}
+							}
+						}
+					}
+				},
+				"4294967295": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "number"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "{\"b\":\"x\",\"10\":1,\"a\":{\"z\":1,\"1\":\"x\",\"y\":[{\"x\":1,\"2\":true}]},\"2\":true,\"r\":{\"k\":1},\"01\":1,\"l\":{\"5\":\"\",\"c\":\"\",\"3\":\"\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				}
+			]
+		},
+		{
+			"name": "every_entry_wrong",
+			"text": "{\"b\":1,\"10\":\"x\",\"a\":[],\"2\":2,\"r\":null,\"01\":\"x\",\"l\":\"l\",\"t\":{},\"4294967295\":\"x\",\"4294967294\":\"x\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967294"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"l"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"t"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967295"
+					]
+				}
+			]
+		},
+		{
+			"name": "every_entry_wrong_reversed",
+			"text": "{\"4294967294\":\"x\",\"4294967295\":\"x\",\"t\":{},\"l\":\"l\",\"01\":\"x\",\"r\":null,\"2\":2,\"a\":[],\"10\":\"x\",\"b\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967294"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": [
+						"l"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"t"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"4294967295"
+					]
+				}
+			]
+		},
+		{
+			"name": "entries_then_unknown_keys",
+			"text": "{\"zz\":1,\"7\":null,\"b\":1,\"10\":\"x\",\"a\":{\"z\":1,\"1\":\"x\",\"y\":[]},\"2\":2,\"r\":{},\"01\":\"x\",\"-1\":{},\"l\":{\"5\":\"\",\"c\":\"\",\"3\":\"\"},\"4294967296\":1,\"3\":[],\"00\":true,\"1e3\":\"x\",\"\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "array",
+					"path": [
+						"3"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "null",
+					"path": [
+						"7"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"zz"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"-1"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"4294967296"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"00"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"1e3"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "only_unknown_keys",
+			"text": "{\"z\":1,\"y\":\"x\",\"100\":null,\"x\":[],\"9\":{},\"w\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"9"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "null",
+					"path": [
+						"100"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"z"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"y"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "array",
+					"path": [
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"w"
+					]
+				}
+			]
+		},
+		{
+			"name": "nested",
+			"text": "{\"b\":\"x\",\"10\":1,\"a\":{\"q\":1,\"0\":[],\"y\":[{\"x\":\"1\",\"2\":1,\"9\":0},3,{\"w\":1},{\"2\":true,\"x\":1}],\"z\":\"z\",\"8\":null},\"2\":true,\"r\":{},\"01\":1,\"l\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "array",
+					"path": [
+						"a",
+						"0"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"a",
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"z"
+					]
+				},
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"a",
+						"y",
+						0,
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"y",
+						0,
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a",
+						"y",
+						0,
+						"9"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"a",
+						"y",
+						1
+					]
+				},
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"a",
+						"y",
+						2,
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"a",
+						"y",
+						2,
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a",
+						"y",
+						2,
+						"w"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "null",
+					"path": [
+						"a",
+						"8"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a",
+						"q"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"3"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"5"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"c"
+					]
+				}
+			]
+		},
+		{
+			"name": "record_in_key_order",
+			"text": "{\"b\":\"x\",\"10\":1,\"a\":{\"z\":1,\"1\":\"x\",\"y\":[]},\"2\":true,\"r\":{\"k\":1.5,\"3\":\"x\",\"j\":null,\"1\":2,\"0\":0.5,\"-1\":[],\"i\":3},\"01\":1,\"l\":{\"5\":\"\",\"c\":\"\",\"3\":\"\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"r",
+						"0"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"r",
+						"3"
+					]
+				},
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"r",
+						"k"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"r",
+						"j"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"r",
+						"-1"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_entries",
+			"text": "{\"l\":{\"c\":1,\"extra\":1,\"3\":null,\"0\":[]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"l",
+						"3"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"5"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"l",
+						"c"
+					]
+				}
+			]
+		},
+		{
+			"name": "arrays",
+			"text": "{\"t\":[[1,\"a\"],\"b\",[null,2,[]],[],{\"0\":1},[3]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"t",
+						0,
+						1
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "string",
+					"path": [
+						"t",
+						1
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"t",
+						2,
+						0
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"t",
+						2,
+						2
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"t",
+						4
+					]
+				}
+			]
+		},
+		{
+			"name": "everything",
+			"text": "{\"zz\":1,\"t\":[[\"a\"],1],\"l\":{\"3\":3},\"01\":null,\"r\":{\"b\":\"x\",\"a\":1.5,\"1\":[]},\"2\":\"2\",\"a\":{\"y\":[{},[]],\"1\":1,\"z\":\"z\",\"k\":0},\"10\":[],\"b\":{},\"0\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "string",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"a",
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"z"
+					]
+				},
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"a",
+						"y",
+						0,
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"a",
+						"y",
+						0,
+						"x"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a",
+						"y",
+						1
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a",
+						"k"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"r",
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"r",
+						"b"
+					]
+				},
+				{
+					"kind": "integer",
+					"expected": "integer",
+					"received": "number",
+					"path": [
+						"r",
+						"a"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"l",
+						"3"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"5"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"l",
+						"c"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"t",
+						0,
+						0
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"t",
+						1
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"0"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"zz"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_unknown_keys",
+			"text": "{\"y\":1,\"x\":2,\"y\":[],\"5\":\"a\",\"x\":null,\"5\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"5"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "array",
+					"path": [
+						"y"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "null",
+					"path": [
+						"x"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_entries",
+			"text": "{\"b\":\"x\",\"2\":\"x\",\"b\":1,\"10\":1,\"2\":null,\"10\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "null",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				}
+			]
+		},
+		{
+			"name": "duplicate_nested",
+			"text": "{\"a\":{\"y\":[1],\"z\":\"z\",\"y\":[{\"x\":1,\"2\":1,\"x\":\"x\"}],\"q\":1,\"q\":\"q\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "undefined",
+					"path": [
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"10"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"a",
+						"1"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"z"
+					]
+				},
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"a",
+						"y",
+						0,
+						"2"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "string",
+					"path": [
+						"a",
+						"y",
+						0,
+						"x"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"a",
+						"q"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"r"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"01"
+					]
+				},
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"l"
+					]
+				}
+			]
+		}
+	]
+}

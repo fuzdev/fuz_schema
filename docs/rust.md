@@ -1,12 +1,12 @@
 # The Rust side
 
-`crates/fuz_schema` holds the library's schema model in Rust and answers one
-question of it: does this JSON text match? The TypeScript library is the
-reference for the answer. It validates what `JSON.parse` returns, so the
-semantics are JavaScript's.
+`crates/fuz_schema` holds the library's schema model in Rust and answers two
+questions of it: does this JSON text match, and if not, what are its issues?
+The TypeScript library is the reference for both answers. It validates what
+`JSON.parse` returns, so the semantics are JavaScript's.
 
-Issues and output are not built. `crates/fuz_schema_wasm` is the crate
-compiled to wasm, [below](#the-wasm-build).
+Output is not built. `crates/fuz_schema_wasm` is the crate compiled to wasm,
+[below](#the-wasm-build), and answers only the first question.
 
 ## The model
 
@@ -110,8 +110,44 @@ crate would load.
   UTF-16 code units, the integer tests on the value and not the token, `===`
   on doubles, and key order.
 - **`is_json_bytes` validates UTF-8 first**, in full, then reads the text.
-- The walker reports failures to a `Report`. `Probe` wants only the verdict.
-  A report that collects is what issues will be built on.
+- The walker reports failures to a `Report`. `Probe` wants only the verdict,
+  and `Collect` keeps every failure as an issue.
+
+## Issues
+
+`validate_json` and `validate_json_bytes` return the issues of a text, and
+none when it matches. They parse the whole text and walk the tree, as
+`is_json_exact` does, with the same errors, and the issues are empty exactly
+when it is `true`.
+
+The issues are the ones `parse` reports of `JSON.parse` of the same text, in
+the same order. An `Issue` owns what it holds:
+
+| | |
+|---|---|
+| `kind()` | an `IssueKind`: the kind of the schema or action that failed, or `UnknownKey` |
+| `expected()` | the library's text, character for character |
+| `received()` | a `Received`: the type of the value, `Undefined` for a missing key |
+| `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
+
+- **The order is the library's**: an object's entries in its order, then for
+  an `object` its unknown keys in the input's, and each container's issues
+  before what follows it. A `pipe` stops at its first failed step.
+- **A failed `union` is one issue**, at the union's value, expecting the kinds
+  of its options.
+- **A `variant` reports at its discriminator** when no option has the value
+  there, expecting the options' values, and otherwise leaves the report to
+  the option selected.
+- **A number in `expected` is written as JavaScript's `String` writes it**,
+  and a string as `JSON.stringify` quotes it. Both are in `js.rs`.
+- **There is no `message`.** The interchange form holds none, so a schema
+  loaded from it reports as one without any. The crate writes no text for an
+  issue: the library's `format_issue` derives one from `path`, `expected`,
+  and `received`.
+- **There is no streaming form.** Issues need every failure, so nothing is
+  skipped and nothing stops early.
+- `unknown`, the wrappers, `lazy`, and `pipe` never fail themselves, and have
+  no `IssueKind`.
 
 ## Declared divergences
 
@@ -150,7 +186,7 @@ it in the interchange form. Nothing is guessed at.
 | a kind that isn't the library's | `UnknownKind` |
 | an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
 | a literal or bound that isn't finite | `NonFiniteNumber` |
-| an entry named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
+| an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
 | a `pipe` that is empty, or starts with a schema that doesn't fix its value's type | `EmptyPipe`, `PipeHead` |
 | a step after a pipe's first that isn't an action, or is for another type | `PipeStep`, `ActionMismatch` |
 | a length or bound outside a `pipe`, where the library coerces or throws | `ActionOutsidePipe` |
@@ -188,15 +224,19 @@ in the TypeScript library.
   declares an overflow, a lone surrogate, or the depth limit exactly when the
   value read has one. The file is never edited by hand.
 - It also generates `contract.json`, the constants both sides hold: the
-  nesting limit, the parser's depth, the refused entry names and kinds, and
+  nesting limit, the parser's depth, the refused key names and kinds, and
   the flags.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
-  evaluators against the oracle or the declared divergence. It also fails on
-  an unknown flag, a flag no case declares, a kind no fixture schema has, too
-  few groups or cases, and a constant that differs from `contract.json`. It
-  reads the generated files with serde_json's tree and not the crate's.
-- The generated issues are not read by the crate yet.
+  evaluators against the oracle or the declared divergence, and the issues
+  of `validate_json` against the oracle's wherever the tree evaluator gives
+  the oracle's verdict. It also fails on an unknown flag, a flag no case
+  declares, a kind no fixture schema has, a kind of issue or received type no
+  case reports, too few groups or cases, and a constant that differs from
+  `contract.json`. It reads the generated files with serde_json's tree and
+  not the crate's.
+- An issue's path is written as the library has it: a key as a string and an
+  index as a number.
 - A text must be well-formed Unicode, because it is written into a JSON
   file. So must every key in an issue's path.
 

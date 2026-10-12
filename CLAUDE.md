@@ -89,8 +89,8 @@ dev server.
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
 - `docs/rust.md` - the Rust side: the model, the interchange form, the two
-  evaluators, the declared divergences, what is refused, the fixtures, and
-  the wasm build
+  evaluators, the issues, the declared divergences, what is refused, the
+  fixtures, and the wasm build
 
 Keep them in step with the code. They describe what is, and stay short.
 
@@ -162,8 +162,9 @@ cargo fmt --check
 
 CI runs these in the `rust` job of `.github/workflows/check.yml`.
 
-`crates/fuz_schema` is the Rust side of the library: its schema model, and
-whether a JSON text matches a schema. `docs/rust.md` describes it.
+`crates/fuz_schema` is the Rust side of the library: its schema model,
+whether a JSON text matches a schema, and the issues of one that doesn't.
+`docs/rust.md` describes it.
 
 - `schema.rs`, `builder.rs` - the model, an arena of nodes, and
   `SchemaBuilder`, whose `build` refuses what isn't portable
@@ -172,10 +173,13 @@ whether a JSON text matches a schema. `docs/rust.md` describes it.
 - `json.rs` - `Json`, the crate's tree, which holds an object as `JSON.parse`
   would
 - `js.rs` - the JavaScript semantics both evaluators share
-- `walk.rs` - the tree evaluator behind `is_json_exact`, the reference
+- `walk.rs` - the tree evaluator behind `is_json_exact` and `validate_json`,
+  the reference
+- `issue.rs` - `Issue` and what it holds
 - `stream.rs` - the streaming evaluator behind `is_json`
 - `error.rs` - `JsonError` and `SchemaError`
-- `tests/fixtures.rs` - both evaluators against `src/test/fixtures/json/`
+- `tests/fixtures.rs` - both evaluators and the issues against
+  `src/test/fixtures/json/`
 
 `crates/fuz_schema_wasm` is that crate behind wasm-bindgen: one class,
 `CompiledSchema`, whose verdicts are booleans. It isn't published and the
@@ -189,6 +193,9 @@ Things that are easy to break without a test noticing:
 - **The TypeScript library is the oracle.** `is_json_exact` gives its verdict
   on every text the crate's parser reads. `is_json` may be stricter and is
   never looser.
+- **Issues are the library's, in its order.** `validate_json` reports what
+  `parse` does: each kind, `expected` text, received type, and path. A change
+  to what a `run` passes `fail` in `schema.ts` is a change to `walk.rs`.
 - **A difference is declared, not skipped.** It is a flag on a fixture case,
   and `tests/fixtures.rs` asserts the declared behavior.
 - **Refuse, don't guess.** What the crate can't carry across is a
@@ -208,9 +215,10 @@ Things that are easy to break without a test noticing:
 - **`wasm-bindgen` is pinned to an exact version**, the one the wasm-bindgen
   CLI that wasm-pack runs has. It is the wasm crate's only dependency beyond
   the Rust side.
-- **A new kind** needs a `Node` variant, a `Kind`, both evaluators, the
-  builder's reading of which kinds could match an array or an object, the
-  loader, `to_schema_json`, and a fixture schema that has it.
+- **A new kind** needs a `Node` variant, a `Kind`, both evaluators, its
+  `IssueKind` and `expected` text when it can fail, the builder's reading of
+  which kinds could match an array or an object, the loader,
+  `to_schema_json`, and a fixture schema that has it.
 
 ## Project standards
 

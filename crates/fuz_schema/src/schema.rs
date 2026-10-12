@@ -612,6 +612,49 @@ mod tests {
         }
     }
 
+    /// The place of each kind in `Kind::ALL`. Every one is named, so a new
+    /// one does not compile until it is given a place here, which the test
+    /// then asks `ALL` for.
+    const fn place(kind: Kind) -> usize {
+        match kind {
+            Kind::String => 0,
+            Kind::Number => 1,
+            Kind::Boolean => 2,
+            Kind::Bigint => 3,
+            Kind::Unknown => 4,
+            Kind::Literal => 5,
+            Kind::OneOf => 6,
+            Kind::Optional => 7,
+            Kind::Nullable => 8,
+            Kind::Default => 9,
+            Kind::Lazy => 10,
+            Kind::Object => 11,
+            Kind::LooseObject => 12,
+            Kind::StripObject => 13,
+            Kind::Record => 14,
+            Kind::Array => 15,
+            Kind::Union => 16,
+            Kind::Variant => 17,
+            Kind::Pipe => 18,
+            Kind::MinLength => 19,
+            Kind::MaxLength => 20,
+            Kind::MinValue => 21,
+            Kind::MaxValue => 22,
+            Kind::Integer => 23,
+            Kind::SafeInteger => 24,
+            Kind::Finite => 25,
+        }
+    }
+
+    #[test]
+    fn every_kind_is_listed_at_its_place() {
+        for (index, &kind) in Kind::ALL.iter().enumerate() {
+            assert_eq!(place(kind), index, "{kind}");
+        }
+        // the last place is the last of the list, so none is past its end
+        assert_eq!(place(Kind::Finite) + 1, Kind::ALL.len());
+    }
+
     #[test]
     fn a_schema_is_shared_between_threads() {
         const fn shared<T: Send + Sync>() {}
