@@ -12,6 +12,7 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:heap` | memory still held after building and parsing |
 | `npm run benchmark:types` | cost to the TypeScript checker |
 | `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
+| `npm run benchmark:docinfo` | svelte-docinfo's schemas in Valibot against this library: bundle, parse time, allocation |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 
 ## Scenarios and cases
@@ -22,10 +23,11 @@ Zod Mini, TypeBox, and ArkType.
   rest are synthetic. A test holds every library to the same answer on each.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
-  - `real` is what a consumer has: an object, a list, a config, a form, a
-    recursive tree, an event stream, a union of shapes. Speed is judged on
-    these, so they are chosen as a set, each differing from the rest in the
-    schema kinds it leans on or the path it takes.
+  - `real` is what a consumer has: an object, a list, a config, a form, an
+    event stream, a union of shapes, and what
+    [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo) validates.
+    Speed is judged on these, so they are chosen as a set, each differing
+    from the rest in the schema kinds it leans on or the path it takes.
   - The other groups hold one case per code path, at one medium size. `each`
     runs a schema over a hundred items, so its cost shows over the fixed cost
     of a parse, which `fixed` measures alone.
@@ -36,6 +38,18 @@ Zod Mini, TypeBox, and ArkType.
   through `is`. Schemas are written as literals and inputs come from
   `JSON.parse`, as a consumer's do: an object built key by key can be a
   different kind of object to the engine, and cost differently.
+
+The svelte-docinfo cases are harvested, not invented. `src/benchmarks/docinfo/`
+holds a snapshot of its schemas as it writes them for valibot, the same
+schemas in this library, some of its test fixtures, and its output for a whole
+library, each file naming the commit it came from. `src/test/docinfo.test.ts`
+holds the two libraries to the same outputs on that data and to issues at the
+same paths when it is broken. The snapshot is not kept in step with
+svelte-docinfo, which goes on using valibot. `npm run benchmark:docinfo`
+compares the two on it: the bundle of a module that parses one of its
+documents, and parse time and allocation over its output for a library, both
+as stored and with every default in place. It is the one comparison of a
+consumer's whole schema set; the scenarios are one small schema each.
 
 ## Method
 

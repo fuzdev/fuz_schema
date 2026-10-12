@@ -8,10 +8,11 @@
  *
  * The cases come in tiers, by what one is for:
  *
- * - `real` is what a consumer has: an object, a list, a config, a form, a
- *   recursive tree, an event stream, a union of shapes. Speed is judged on
- *   these, so they are chosen as a set: each differs from the rest in the
- *   schema kinds it leans on or in the path it takes.
+ * - `real` is what a consumer has: an object, a list, a config, a form, an
+ *   event stream, a union of shapes, and what svelte-docinfo validates, with
+ *   its schemas and its output for a library. Speed is judged on these, so
+ *   they are chosen as a set: each differs from the rest in the schema kinds
+ *   it leans on or in the path it takes.
  * - The other groups hold one case per code path, at one medium size. `each`
  *   runs a schema over a hundred items so its cost shows over the fixed cost
  *   of a parse, which `fixed` measures alone. The array's own loop is most of
@@ -33,7 +34,10 @@
  * @module
  */
 
+import { readFileSync } from 'node:fs';
+
 import type * as schema_lib from '#lib/schema.ts';
+import { create_docinfo } from './docinfo/docinfo_fuz_schema.ts';
 
 export type SchemaLib = typeof schema_lib;
 
@@ -235,72 +239,6 @@ const create_name = (s: SchemaLib): schema_lib.AnySchema =>
 const create_age = (s: SchemaLib): schema_lib.AnySchema =>
 	s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150));
 
-// svelte-docinfo's recursive `TypeJson`, as in `libs/fuz_schema.ts`
-const create_type_json = (s: SchemaLib): schema_lib.AnySchema => {
-	const TypeJson: schema_lib.Schema = s.variant('kind', [
-		to_object(s)({ kind: s.literal('intrinsic'), text: s.string }),
-		to_object(s)({
-			kind: s.literal('literal'),
-			value: s.union([s.string, s.pipe(s.number, s.finite), s.boolean]),
-			text: s.string
-		}),
-		to_object(s)({
-			kind: s.literal('reference'),
-			name: s.string,
-			module: s.optional(s.string),
-			typeArgs: s.optional(s.array(s.lazy(() => TypeJson)))
-		}),
-		to_object(s)({
-			kind: s.literal('array'),
-			element: s.lazy(() => TypeJson),
-			readonly: s.optional(s.boolean)
-		}),
-		to_object(s)({
-			kind: s.literal('tuple'),
-			elements: s.optional(s.array(s.lazy(() => TupleElementJson))),
-			readonly: s.optional(s.boolean)
-		}),
-		to_object(s)({
-			kind: s.literal('union'),
-			alias: s.optional(s.string),
-			members: s.array(s.lazy(() => TypeJson))
-		}),
-		to_object(s)({
-			kind: s.literal('intersection'),
-			alias: s.optional(s.string),
-			members: s.array(s.lazy(() => TypeJson))
-		}),
-		to_object(s)({ kind: s.literal('function'), text: s.string }),
-		to_object(s)({ kind: s.literal('object'), text: s.string }),
-		to_object(s)({ kind: s.literal('other'), text: s.string })
-	]);
-	const TupleElementJson: schema_lib.Schema = to_object(s)({
-		name: s.optional(s.string),
-		type: TypeJson,
-		optional: s.optional(s.boolean),
-		rest: s.optional(s.boolean)
-	});
-	return TypeJson;
-};
-
-// a `TypeJson` tree `depth` levels deep with `width` members per union,
-// the first `branch` of which go a level deeper
-const to_type_json = (depth: number, width: number, leaf: unknown, branch = 1): unknown =>
-	depth === 0
-		? leaf
-		: {
-				kind: 'union',
-				members: range(width).map((i) =>
-					i < branch
-						? to_type_json(depth - 1, width, leaf, branch)
-						: i % 3 === 0
-							? { kind: 'reference', name: 'T', typeArgs: [{ kind: 'intrinsic', text: 'string' }] }
-							: i % 3 === 1
-								? { kind: 'literal', value: i, text: String(i) }
-								: { kind: 'array', element: { kind: 'intrinsic', text: 'number' } }
-				)
-			};
-
 //
 // Realistic
 //
@@ -369,7 +307,6 @@ const real: CaseGroup = (s) => {
 		LOG_LEVEL: s.with_default(to_one_of(s)(['debug', 'info', 'warn', 'error']), 'info'),
 		DEBUG: s.optional(s.string)
 	});
-	const TypeJson = create_type_json(s);
 	return [
 		to_case(s, 'real/user/valid', User, to_json(to_user(1)), 'identity'),
 		to_case(s, 'real/posts_100/valid', Posts, to_json(posts), 'identity'),
@@ -396,13 +333,6 @@ const real: CaseGroup = (s) => {
 			Form,
 			to_json({ csrf: 'f3a9', ...form, submit: 'Save' }),
 			'copy'
-		),
-		to_case(
-			s,
-			'real/type_json/valid',
-			TypeJson,
-			to_json(to_type_json(5, 6, { kind: 'intrinsic', text: 'boolean' })),
-			'identity'
 		),
 		to_case(
 			s,
@@ -465,14 +395,62 @@ const real: CaseGroup = (s) => {
 				)
 			),
 			'issues'
-		),
-		to_case(
-			s,
-			'real/type_json_leaf_bad/invalid',
-			TypeJson,
-			to_json(to_type_json(5, 6, { kind: 'bogus' })),
-			'issues'
 		)
+	];
+};
+
+// What svelte-docinfo validates, with its own schemas (`docinfo/`) and its own
+// output for a whole library. A module is stored without the fields that have
+// their defaults, so parsing one fills them in and copies it all the way down.
+// The schemas are written with this library's current names, so a version from
+// before one of them loses the group.
+const real_docinfo: CaseGroup = (s) => {
+	const { ModuleJson, TypeJson } = create_docinfo(s);
+	const modules: Array<Record<string, unknown>> = JSON.parse(
+		readFileSync(new URL('./docinfo/docinfo_fuz_ui.json', import.meta.url), 'utf8')
+	).modules;
+	const to_module = (path: string): Record<string, unknown> => {
+		const found = modules.find((m) => m.path === path);
+		if (!found) throw new Error(`no module ${path}`);
+		return found;
+	};
+	const component = to_module('Dialog.svelte');
+	const parsed = to_parse(s)(ModuleJson, component);
+	if (!parsed.ok) throw new Error('Dialog.svelte does not match');
+	// every type the library's declarations carry, each a tree of its own
+	const types: Array<unknown> = [];
+	const collect = (value: unknown): void => {
+		if (value === null || typeof value !== 'object') return;
+		for (const [key, child] of Object.entries(value)) {
+			if (key === 'typeInfo' || key === 'returnTypeInfo') types.push(child);
+			else collect(child);
+		}
+	};
+	collect(modules);
+	// a class's module with one value wrong, as far down a type as its types go
+	const broken = to_json(to_module('module.svelte.ts'));
+	let deepest: { node: Record<string, unknown>; depth: number } | undefined;
+	const descend = (value: unknown, depth: number, in_type: boolean): void => {
+		if (value === null || typeof value !== 'object') return;
+		if (in_type && !Array.isArray(value) && 'kind' in value && depth > (deepest?.depth ?? 0)) {
+			deepest = { node: value, depth };
+		}
+		for (const [key, child] of Object.entries(value)) {
+			descend(child, depth + 1, in_type || key === 'typeInfo' || key === 'returnTypeInfo');
+		}
+	};
+	descend(broken, 0, false);
+	if (!deepest) throw new Error('module.svelte.ts has no types');
+	deepest.node.kind = 'bogus';
+	return [
+		to_case(s, 'real/docinfo_module/valid', ModuleJson, component, 'copy'),
+		// the same as it is once read, with nothing left to fill in
+		to_case(s, 'real/docinfo_module_full/valid', ModuleJson, to_json(parsed.value), 'identity'),
+		to_case(s, 'real/docinfo_types/valid', s.array(TypeJson), types, 'identity'),
+		to_case(s, 'real/docinfo_module_bad/invalid', ModuleJson, broken, 'issues'),
+		// the whole library: the module case again at a size too large to stay in the
+		// nearest cache, so it is a case at scale and not one speed is judged on
+		to_case(s, 'scale/docinfo_library/valid', s.array(ModuleJson), modules, 'copy')
 	];
 };
 
@@ -986,14 +964,6 @@ const scale: CaseGroup = (s) => {
 			s.union(range(10).map((i) => to_object(s)({ [`k${i}`]: s.string }))),
 			to_json({ k9: 'x' }),
 			'identity'
-		),
-		// a document too large to stay in the nearest cache
-		to_case(
-			s,
-			'scale/type_json_huge/valid',
-			create_type_json(s),
-			to_json(to_type_json(6, 6, { kind: 'intrinsic', text: 'boolean' }, 3)),
-			'identity'
 		)
 	];
 };
@@ -1004,6 +974,7 @@ const scale: CaseGroup = (s) => {
  */
 export const CASE_GROUPS: Array<CaseGroup> = [
 	real,
+	real_docinfo,
 	real_loose,
 	fixed,
 	each,
