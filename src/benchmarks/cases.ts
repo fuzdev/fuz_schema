@@ -419,10 +419,26 @@ const union: CaseGroup = (s) => {
 		to_case(s, 'union/3_primitives_first/valid', primitives, 'x', true),
 		to_case(s, 'union/3_primitives_last/valid', primitives, true, true),
 		to_case(s, 'union/3_primitives/invalid', primitives, null, false),
-		// each miss builds the literal's `expected` text before failing
+		// each miss is a literal that fails in probe mode
 		to_case(s, 'union/4_literals_last/valid', literals, 'd', true),
 		to_case(s, 'union/3_objects_last/valid', objects, { c: 'x', d: [1, 2] }, true),
-		to_case(s, 'union/3_objects/invalid', objects, { c: 'x', d: [1, 'x'] }, false)
+		to_case(s, 'union/3_objects/invalid', objects, { c: 'x', d: [1, 'x'] }, false),
+		// an inner union that misses, inside an outer one that matches
+		to_case(
+			s,
+			'union/nested_inner_miss/valid',
+			s.union([s.union([s.string, s.number]), s.boolean]),
+			true,
+			true
+		),
+		// an option that misses at an action, which describes what it expected
+		to_case(
+			s,
+			'union/2_pipes_first_action_miss/valid',
+			s.union([s.pipe(s.string, s.max_length(3)), s.pipe(s.string, s.min_length(1))]),
+			'hello',
+			true
+		)
 	];
 };
 
@@ -453,7 +469,17 @@ const pipe: CaseGroup = (s) => {
 			{ name: 'ada lovelace', age: 36 },
 			true,
 			true
-		)
+		),
+		// an action failing where no issue is built
+		{
+			name: 'pipe/is_first_action_bad/invalid',
+			group: 'pipe',
+			realistic: false,
+			valid: false,
+			input: '',
+			run: () => (s.is(Name, '') ? '' : undefined),
+			ok: () => to_parse(s)(Name, '').ok
+		}
 	];
 };
 

@@ -906,26 +906,31 @@ export const array = <T extends AnySchema>(
 // @__NO_SIDE_EFFECTS__
 export const union = <const T extends ReadonlyArray<AnySchema>>(
 	options: T
-): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => ({
-	kind: 'union',
-	def: options,
-	run: (value, ctx) => {
-		const { probe } = ctx;
-		const count = ctx.fails;
-		// options are only probed, so a failed one costs no allocation
-		ctx.probe = true;
-		for (let i = 0; i < options.length; i++) {
-			const output = options[i]!.run(value, ctx);
-			if (ctx.fails === count) {
-				ctx.probe = probe;
-				return output;
+): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
+	// built on first failure and kept, as in `literal`: a union that misses
+	// inside another that matches describes itself once
+	let expected: string | undefined;
+	return {
+		kind: 'union',
+		def: options,
+		run: (value, ctx) => {
+			const { probe } = ctx;
+			const count = ctx.fails;
+			// options are only probed, so a failed one costs no allocation
+			ctx.probe = true;
+			for (let i = 0; i < options.length; i++) {
+				const output = options[i]!.run(value, ctx);
+				if (ctx.fails === count) {
+					ctx.probe = probe;
+					return output;
+				}
+				ctx.fails = count;
 			}
-			ctx.fails = count;
+			ctx.probe = probe;
+			return fail(ctx, 'union', value, (expected ??= options.map((o) => o.kind).join(' | ')));
 		}
-		ctx.probe = probe;
-		return fail(ctx, 'union', value, options.map((o) => o.kind).join(' | '));
-	}
-});
+	};
+};
 
 /**
  * Matches the object schema in `options` whose `key` literal equals the value's,
@@ -1017,36 +1022,54 @@ export const pipe: SchemaPipeFactory = (
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
-): Schema<T, T, 'min_length', number> => ({
-	kind: 'min_length',
-	def: min,
-	run: (value, ctx) =>
-		value.length >= min ? value : fail(ctx, 'min_length', value, `length >= ${min}`)
-});
+): Schema<T, T, 'min_length', number> => {
+	let expected: string | undefined;
+	return {
+		kind: 'min_length',
+		def: min,
+		run: (value, ctx) =>
+			value.length >= min
+				? value
+				: fail(ctx, 'min_length', value, (expected ??= `length >= ${min}`))
+	};
+};
 
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
-): Schema<T, T, 'max_length', number> => ({
-	kind: 'max_length',
-	def: max,
-	run: (value, ctx) =>
-		value.length <= max ? value : fail(ctx, 'max_length', value, `length <= ${max}`)
-});
+): Schema<T, T, 'max_length', number> => {
+	let expected: string | undefined;
+	return {
+		kind: 'max_length',
+		def: max,
+		run: (value, ctx) =>
+			value.length <= max
+				? value
+				: fail(ctx, 'max_length', value, (expected ??= `length <= ${max}`))
+	};
+};
 
 // @__NO_SIDE_EFFECTS__
-export const min_value = <T extends number | bigint>(min: T): Schema<T, T, 'min_value', T> => ({
-	kind: 'min_value',
-	def: min,
-	run: (value, ctx) => (value >= min ? value : fail(ctx, 'min_value', value, `>= ${min}`))
-});
+export const min_value = <T extends number | bigint>(min: T): Schema<T, T, 'min_value', T> => {
+	let expected: string | undefined;
+	return {
+		kind: 'min_value',
+		def: min,
+		run: (value, ctx) =>
+			value >= min ? value : fail(ctx, 'min_value', value, (expected ??= `>= ${min}`))
+	};
+};
 
 // @__NO_SIDE_EFFECTS__
-export const max_value = <T extends number | bigint>(max: T): Schema<T, T, 'max_value', T> => ({
-	kind: 'max_value',
-	def: max,
-	run: (value, ctx) => (value <= max ? value : fail(ctx, 'max_value', value, `<= ${max}`))
-});
+export const max_value = <T extends number | bigint>(max: T): Schema<T, T, 'max_value', T> => {
+	let expected: string | undefined;
+	return {
+		kind: 'max_value',
+		def: max,
+		run: (value, ctx) =>
+			value <= max ? value : fail(ctx, 'max_value', value, (expected ??= `<= ${max}`))
+	};
+};
 
 export const integer: Schema<number, number, 'integer', undefined> = {
 	kind: 'integer',

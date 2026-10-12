@@ -882,6 +882,32 @@ describe('pipe and actions', () => {
 		assert(!s.is(s.pipe(s.number, s.safe_integer), 2 ** 53));
 	});
 
+	test('the expected text is the same on every failure, and each schema has its own', () => {
+		for (const [schema, value, expected] of [
+			[s.min_length(2), 'a', 'length >= 2'],
+			[s.max_length(2), 'abc', 'length <= 2'],
+			[s.min_value(0), -1, '>= 0'],
+			[s.max_value(10n), 11n, '<= 10'],
+			[s.union([s.string, s.number]), true, 'string | number']
+		] as const) {
+			// first as a probe, which builds no issue
+			assert(!s.is(schema, value));
+			assert.strictEqual(issues_of(schema, value)[0]!.expected, expected);
+			assert.strictEqual(issues_of(schema, value)[0]!.expected, expected);
+		}
+		for (const [a, b, value, expected_a, expected_b] of [
+			[s.min_length(1), s.min_length(3), '', 'length >= 1', 'length >= 3'],
+			[s.max_length(1), s.max_length(3), 'abcd', 'length <= 1', 'length <= 3'],
+			[s.min_value(1), s.min_value(3), 0, '>= 1', '>= 3'],
+			[s.max_value(1), s.max_value(3), 4, '<= 1', '<= 3'],
+			[s.union([s.string]), s.union([s.number]), true, 'string', 'number']
+		] as const) {
+			assert.strictEqual(issues_of(a, value)[0]!.expected, expected_a);
+			assert.strictEqual(issues_of(b, value)[0]!.expected, expected_b);
+			assert.strictEqual(issues_of(a, value)[0]!.expected, expected_a);
+		}
+	});
+
 	test('regex, check, transform', () => {
 		assert(s.is(s.pipe(s.string, s.regex(/^a/)), 'ab'));
 		assert(!s.is(s.pipe(s.string, s.regex(/^a/)), 'ba'));
