@@ -3,3 +3,5 @@
 [toolchain]
 channel = "1.94.1"
 components = ["rustfmt", "clippy"]
+# the target fuz_schema_wasm is built for
+targets = ["wasm32-unknown-unknown"]

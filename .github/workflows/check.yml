@@ -58,3 +58,5 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      # the wasm crate compiles natively too, so only this proves the target builds
+      - run: cargo check -p fuz_schema_wasm --target wasm32-unknown-unknown

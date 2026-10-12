@@ -69,6 +69,9 @@ impl Json {
     /// crate does not: a number too large for a double, a `\u` escape of half a
     /// surrogate pair, and nesting deeper than `MAX_DEPTH`. The error is of
     /// the first problem met.
+    ///
+    /// Nothing here checks for `serde_json`'s `arbitrary_precision` feature,
+    /// under which a number parses to an object. `SchemaBuilder::build` does.
     pub fn parse(text: &str) -> Result<Self, JsonError> {
         let mut deserializer = serde_json::Deserializer::from_str(text);
         let json = JsonSeed

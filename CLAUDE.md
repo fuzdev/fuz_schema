@@ -161,7 +161,9 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ```
 
-CI runs these in the `rust` job of `.github/workflows/check.yml`.
+CI runs these in the `rust` job of `.github/workflows/check.yml`, and checks
+that `fuz_schema_wasm` compiles for `wasm32-unknown-unknown`, the target
+`rust-toolchain.toml` installs.
 
 `crates/fuz_schema` is the Rust side of the library: its schema model,
 whether a JSON text matches a schema, and the issues of one that doesn't.
