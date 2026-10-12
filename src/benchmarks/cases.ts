@@ -313,13 +313,10 @@ const real: CaseGroup = (s) => {
 	// defaults fill what a config leaves out, so its output is a copy
 	const Config = to_object(s)({
 		host: s.string,
-		port: s.with_default(
-			s.pipe(s.number, s.integer, s.min_value<number>(1), s.max_value<number>(65535)),
-			8080
-		),
+		port: s.with_default(s.pipe(s.number, s.integer, s.min_value(1), s.max_value(65535)), 8080),
 		tls: s.optional(to_object(s)({ cert: s.string, key: s.string })),
 		log_level: s.with_default(to_one_of(s)(['debug', 'info', 'warn', 'error']), 'info'),
-		retries: s.with_default(s.pipe(s.number, s.integer, s.min_value<number>(0)), 3),
+		retries: s.with_default(s.pipe(s.number, s.integer, s.min_value(0)), 3),
 		timeout_ms: s.optional(s.number),
 		allow: s.with_default(s.array(s.string), []),
 		verbose: s.optional(s.boolean)

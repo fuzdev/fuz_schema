@@ -2219,6 +2219,37 @@ describe('types', () => {
 		}>();
 	});
 
+	test('a value action keeps the type it is given, whatever its bound', () => {
+		const _Age = s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150));
+		expectTypeOf<s.Infer<typeof _Age>>().toEqualTypeOf<number>();
+		const _Big = s.pipe(s.bigint, s.min_value(0n));
+		expectTypeOf<s.Infer<typeof _Big>>().toEqualTypeOf<bigint>();
+		const _Meters = s.pipe(s.flavor(s.number, 'Meters'), s.max_value(10));
+		expectTypeOf<s.Infer<typeof _Meters>>().toEqualTypeOf<s.Flavored<number, 'Meters'>>();
+		// so a default need not be the bound
+		const _Retries = s.with_default(s.pipe(s.number, s.min_value(0)), 3);
+		expectTypeOf<s.Infer<typeof _Retries>>().toEqualTypeOf<number>();
+		// @ts-expect-error a bigint bound on a number
+		s.pipe(s.number, s.min_value(0n));
+		// outside a `pipe` there is nothing to say which it is
+		const _alone = s.max_value(1);
+		expectTypeOf<s.Infer<typeof _alone>>().toEqualTypeOf<number | bigint>();
+		// as an entry or an option, where the schema around the `pipe` types it as any schema
+		const _Entry = s.object({
+			age: s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150)),
+			name: s.pipe(s.string, s.min_length(1), s.max_length(50))
+		});
+		expectTypeOf<s.Infer<typeof _Entry>>().toEqualTypeOf<{ age: number; name: string }>();
+		const _Option = s.union([s.pipe(s.bigint, s.min_value(0n)), s.string]);
+		expectTypeOf<s.Infer<typeof _Option>>().toEqualTypeOf<bigint | string>();
+		s.pipe(s.number, s.min_value(0)) satisfies s.SchemaNode;
+		// a brand is kept, and takes a plain bound
+		const _Id = s.pipe(s.brand(s.number, 'Id'), s.min_value(0));
+		expectTypeOf<s.Infer<typeof _Id>>().toEqualTypeOf<s.Branded<number, 'Id'>>();
+		// @ts-expect-error a number bound on a bigint
+		s.pipe(s.bigint, s.max_value(0));
+	});
+
 	test('infers through pipe, union, and variant', () => {
 		const _Length = s.pipe(
 			s.string,

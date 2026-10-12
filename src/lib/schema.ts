@@ -1020,10 +1020,18 @@ export const pipe: SchemaPipeFactory = (
 // Actions
 //
 
+// Resolves to `T`, in a form nothing is inferred through. An action's `T` is the
+// type it is given, which comes from its input in a `pipe` and never from what
+// the schema around that `pipe` expects, which is any schema and would make it
+// `any`. For the same reason the bound of a value action is typed by whether
+// it is a number or a bigint and its `def` apart from `T`: either of them
+// typed `T` would have the bound's literal type inferred as the value's.
+type Uninferred<T> = T extends infer U ? U : never;
+
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
-): Schema<T, T, 'min_length', number> => {
+): Schema<Uninferred<T>, T, 'min_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_length',
@@ -1038,7 +1046,7 @@ export const min_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
-): Schema<T, T, 'max_length', number> => {
+): Schema<Uninferred<T>, T, 'max_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_length',
@@ -1051,7 +1059,9 @@ export const max_length = <T extends { length: number }>(
 };
 
 // @__NO_SIDE_EFFECTS__
-export const min_value = <T extends number | bigint>(min: T): Schema<T, T, 'min_value', T> => {
+export const min_value = <T extends number | bigint>(
+	min: T extends bigint ? bigint : number
+): Schema<Uninferred<T>, T, 'min_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_value',
@@ -1062,7 +1072,9 @@ export const min_value = <T extends number | bigint>(min: T): Schema<T, T, 'min_
 };
 
 // @__NO_SIDE_EFFECTS__
-export const max_value = <T extends number | bigint>(max: T): Schema<T, T, 'max_value', T> => {
+export const max_value = <T extends number | bigint>(
+	max: T extends bigint ? bigint : number
+): Schema<Uninferred<T>, T, 'max_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_value',
