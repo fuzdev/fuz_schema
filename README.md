@@ -32,7 +32,7 @@ Those numbers come from one shared workstation and a small set of scenarios,
 and Valibot's bytes pay for features this doesn't have.
 See [Measurements](#measurements) for what backs each claim and how to rerun it.
 
-fuz_schema is not published, has no stable API, and is missing a lot.
+fuz_schema is published as `@fuzdev/fuz_schema`, has no stable API, and is missing a lot.
 
 AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code)
 using Claude Opus 5.5, with a human steering the design.
@@ -204,7 +204,7 @@ is an open question.
 
 ## Status
 
-> **status**: early experiment — unpublished, unstable, incomplete
+> **status**: early experiment — unstable, incomplete
 
 - [x] the schemas and actions in the table above, with output and input type inference
 - [x] custom messages, as an opt-in wrapper
@@ -215,7 +215,7 @@ is an open question.
 - [ ] `meta`
 - [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
 - [ ] abort-early as a caller option
-- [ ] a published package
+- [x] a published package
 - [ ] the Rust side
 
 Not designed yet: JSON Schema output, async validation, i18n.
