@@ -163,8 +163,10 @@ const fail_at = (
 	if (!ctx.probe) prefix_path(ctx.issues, count, key);
 };
 
-const is_object = (value: unknown): value is Record<string, unknown> =>
-	value !== null && typeof value === 'object';
+// whether `value` is anything but an object that isn't an array,
+// stated in the negative because that is the form every caller wants
+const not_object = (value: unknown): boolean =>
+	value === null || typeof value !== 'object' || Array.isArray(value);
 
 /**
  * Validates `value`, returning the output or every issue found.
@@ -516,7 +518,7 @@ export const object = <T extends SchemaEntries>(
 		kind: 'object',
 		def: entries,
 		run: (value, ctx): any => {
-			if (!is_object(value)) return fail(ctx, 'object', value);
+			if (not_object(value)) return fail(ctx, 'object', value);
 			const output = run_entries(keys, schemas, value, ctx);
 			// a failed probe has nothing more to find
 			if (output) {
@@ -556,7 +558,7 @@ export const loose_object = <T extends SchemaEntries>(
 		def: entries,
 		// its own loop, so keeping unknown keys costs the other object schemas nothing
 		run: (value, ctx): any => {
-			if (!is_object(value)) return fail(ctx, 'loose_object', value, 'object');
+			if (not_object(value)) return fail(ctx, 'loose_object', value, 'object');
 			let output: Record<string, unknown> | undefined;
 			for (let i = 0; i < keys.length; i++) {
 				const key = keys[i]!;
@@ -589,7 +591,7 @@ export const strip_object = <T extends SchemaEntries>(
 		kind: 'strip_object',
 		def: entries,
 		run: (value, ctx): any => {
-			if (!is_object(value)) return fail(ctx, 'strip_object', value, 'object');
+			if (not_object(value)) return fail(ctx, 'strip_object', value, 'object');
 			const count = ctx.fails;
 			const output = run_entries(keys, schemas, value, ctx);
 			// a copy has only this schema's keys already, and a failure's output is unused
@@ -624,7 +626,7 @@ export const record = <T extends AnySchema>(
 	kind: 'record',
 	def: schema,
 	run: (value, ctx): any => {
-		if (!is_object(value)) return fail(ctx, 'record', value, 'object');
+		if (not_object(value)) return fail(ctx, 'record', value, 'object');
 		let output: Record<string, unknown> | undefined;
 		for (const key in value) {
 			if (!Object.hasOwn(value, key)) continue;
@@ -730,7 +732,7 @@ export const variant = <
 		kind: 'variant',
 		def: { key, options },
 		run: (value, ctx) => {
-			if (!is_object(value)) return fail(ctx, 'variant', value, 'object');
+			if (not_object(value)) return fail(ctx, 'variant', value, 'object');
 			const option = by_value.get(value[key]);
 			if (option) return option.run(value, ctx);
 			fail_at(ctx, 'variant', value[key], (expected ??= format_literals(by_value.keys())), key);

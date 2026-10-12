@@ -58,6 +58,9 @@ Three, differing only in what they do with keys the schema doesn't name:
 | `loose_object` | kept | none; they are never looked at |
 | `strip_object` | dropped | one pass, then a copy when there are any |
 
+An array is not an object: all three reject one, as do `record` and
+`variant`, with the one issue any non-object gets.
+
 `object` is the default name because rejecting is the safe default.
 `loose_object` is the cheapest, and `strip_object` is the one that works for
 its result.

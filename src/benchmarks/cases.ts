@@ -325,6 +325,8 @@ const object: CaseGroup = (s) => [
 		to_record(6),
 		false
 	),
+	// an array is not an object, whatever its length
+	to_case(s, 'object/array_100/invalid', to_object(s)(to_entries(5, s.string)), range(100), false),
 	to_case(s, 'object/user/valid', create_user(s), to_user(1), true, true),
 	to_case(
 		s,

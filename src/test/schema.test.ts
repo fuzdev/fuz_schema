@@ -1,3 +1,5 @@
+import { runInNewContext } from 'node:vm';
+
 import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
@@ -164,6 +166,145 @@ describe('object', () => {
 		const output = s.parse_or_throw(Counts, JSON.parse('{"__proto__": 1, "a": 2}'));
 		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
 		assert.deepEqual(Object.keys(output), ['a']);
+	});
+});
+
+describe('arrays are not objects', () => {
+	const entries = { a: s.optional(s.string) };
+	const schemas = [
+		s.object(entries),
+		s.strip_object(entries),
+		s.loose_object(entries),
+		s.record(s.unknown),
+		s.variant('kind', [s.object({ kind: s.literal('a') })])
+	];
+
+	test('every object schema rejects an array, as it does any non-object', () => {
+		for (const schema of schemas) {
+			for (const input of [[], [1, 2], ['a'], [{ kind: 'a' }], new Array(3), Array.from('abc')]) {
+				assert(!s.is(schema, input), schema.kind);
+				// one issue for the array, with nothing about its items
+				assert.deepEqual(issues_of(schema, input), [{ ...issues_of(schema, 1)[0]!, value: input }]);
+			}
+			const issue = issues_of(schema, [])[0]!;
+			assert.strictEqual(issue.kind, schema.kind);
+			assert.strictEqual(issue.expected, 'object');
+			assert.strictEqual(s.format_issue(issue), 'expected object, received array');
+		}
+		// an array with keys of its own that match the entries
+		const named = Object.assign(['x'], { a: 'x', kind: 'a' });
+		for (const schema of schemas) assert(!s.is(schema, named), schema.kind);
+		// and an empty schema, which has no entry to fail on
+		for (const factory of [s.object, s.strip_object, s.loose_object]) {
+			assert(!s.is(factory({}), []));
+			assert(s.is(factory({}), {}));
+		}
+	});
+
+	test('a long array is one issue, not one per item', () => {
+		const long = Array.from({ length: 1000 }, (_, i) => i);
+		for (const schema of schemas) assert.strictEqual(issues_of(schema, long).length, 1);
+	});
+
+	test('an array is rejected in a union, nested, and as a record value', () => {
+		for (const schema of schemas) {
+			const U = s.union([s.string, schema]);
+			assert(!s.is(U, []));
+			assert.deepEqual(
+				issues_of(U, [1]).map((i) => i.kind),
+				['union']
+			);
+			// an array schema ahead of it still takes the array
+			assert.deepEqual(s.parse_or_throw(s.union([schema, s.array(s.number)]), [1]), [1]);
+			assert.deepEqual(
+				issues_of(s.object({ outer: s.array(schema) }), { outer: [{}, []] }).map((i) => i.path),
+				schema.kind === 'variant'
+					? [
+							['outer', 0, 'kind'],
+							['outer', 1]
+						]
+					: [['outer', 1]]
+			);
+			assert.deepEqual(
+				issues_of(s.record(schema), { k: [] }).map((i) => [i.kind, i.path]),
+				[[schema.kind, ['k']]]
+			);
+		}
+	});
+
+	test('a proxy of an array is an array', () => {
+		for (const schema of schemas) {
+			assert(!s.is(schema, new Proxy([], {})), schema.kind);
+		}
+		assert(s.is(s.object(entries), new Proxy({}, {})));
+	});
+
+	test('every other object is still accepted', () => {
+		class Empty {
+			#hidden = 1;
+			get hidden(): number {
+				return this.#hidden;
+			}
+		}
+		const typed = new Uint8Array(0);
+		const objects: Array<object> = [
+			{},
+			Object.create(null),
+			new Empty(),
+			new Map([['a', 1]]),
+			new Set([1]),
+			new Date(0),
+			/x/,
+			new Error('x'),
+			typed,
+			// array-like, and not an array
+			(function () {
+				// eslint-disable-next-line prefer-rest-params
+				return arguments;
+			})()
+		];
+		for (const input of objects) {
+			for (const schema of schemas.slice(0, 4)) {
+				assert.strictEqual(s.parse_or_throw(schema, input), input, schema.kind);
+			}
+		}
+		assert(s.is(s.loose_object(entries), { length: 1, 0: 'x' }));
+		assert(s.is(s.record(s.unknown), new Uint8Array(2)));
+		// a function never was one
+		for (const schema of schemas) {
+			assert(!s.is(schema, () => 1));
+			assert(!s.is(schema, Empty));
+		}
+	});
+
+	// each of these tells `Array.isArray` from one cheaper stand-in for it
+	test('an array from another realm is an array', () => {
+		const foreign: unknown = runInNewContext('[1]');
+		assert(!(foreign instanceof Array));
+		for (const schema of schemas) assert(!s.is(schema, foreign), schema.kind);
+		// and an object from one is an object
+		const foreign_object: unknown = runInNewContext('({a: "x"})');
+		assert(s.is(s.object(entries), foreign_object));
+	});
+
+	test('an array is an array without its prototype or its tag', () => {
+		const bare: unknown = Object.setPrototypeOf([], null);
+		const retagged = Object.assign([], { [Symbol.toStringTag]: 'Object' });
+		class Sub extends Array<unknown> {}
+		for (const schema of schemas) {
+			assert(!s.is(schema, bare), schema.kind);
+			assert(!s.is(schema, retagged), schema.kind);
+			assert(!s.is(schema, new Sub()), schema.kind);
+		}
+	});
+
+	test('an object is an object with an array for a prototype or a tag', () => {
+		const inherits: object = Object.create(Array.prototype);
+		const tagged = { [Symbol.toStringTag]: 'Array' };
+		for (const schema of schemas.slice(0, 4)) {
+			assert.strictEqual(s.parse_or_throw(schema, inherits), inherits, schema.kind);
+			assert.strictEqual(s.parse_or_throw(schema, tagged), tagged, schema.kind);
+		}
 	});
 });
 

@@ -110,6 +110,7 @@ Everything is a named export of `schema.ts`, used through a namespace import.
 The three object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest,
 `strip_object` drops them and pays for a copy when there are any.
+None of them accepts an array, and neither do `record` and `variant`.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
