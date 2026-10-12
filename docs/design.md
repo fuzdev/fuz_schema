@@ -78,6 +78,12 @@ Given up:
   holds can pass and then differ. Parsed JSON can't.
 - A class instance that matches comes back as that instance.
 - Non-enumerable and symbol keys survive.
+- Entries are read through the prototype, which is what lets a class instance
+  match. An entry named like a member of `Object.prototype`, such as
+  `toString` or `constructor`, therefore sees that member when the input
+  lacks the key: the input is rejected unless the entry accepts a function,
+  and a copy carries the member as an own key. Inputs with no prototype are
+  unaffected.
 
 Kept:
 
