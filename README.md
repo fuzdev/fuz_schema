@@ -176,8 +176,9 @@ is an open question.
 Not designed yet: JSON Schema output, async validation, i18n.
 
 Known regressions to fix: `strip_object` got slower when it has unknown keys to drop,
-and `object` and `strip_object` when a default applies late in a wide object.
-Both came with copy-on-write and share a cause.
+and when a default applies late in a wide object.
+Both came with copy-on-write and share a cause: the copy is made after the fact,
+so the keys it keeps are read a second time. Dropping keys also has to enumerate the input's keys first.
 
 ## Measurements
 

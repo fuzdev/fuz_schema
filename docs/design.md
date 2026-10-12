@@ -62,6 +62,25 @@ Three, differing only in what they do with keys the schema doesn't name:
 `loose_object` is the cheapest, and `strip_object` is the one that works for
 its result.
 
+`object` and `strip_object` share a loop over the entries:
+
+- **Entries run first, then the input's keys are checked.** Whether the output
+  can be the input itself is decided last, so nothing that runs in between can
+  slip a key in.
+- **A key in the schema's order is known by its position.** Any other key is
+  looked up in the entries, so order never changes the result, only the cost.
+  The position doesn't resync: after an absent optional key, every later key
+  is looked up.
+- **A copy has the schema's keys, in the schema's order.** They are read
+  through the prototype and written as own keys. A key the input lacks stays
+  out, and one that is `undefined` stays in.
+- **A copy reads its unchanged keys a second time**, and finding a key to
+  drop means enumerating the input's keys. That is what a key to drop, or a
+  change late in a wide object, costs over building every output.
+
+`loose_object` copies with a spread instead: the input's own keys, in the
+input's order.
+
 ## Issues
 
 An issue is `{kind, expected, value, path, message}`. `format_issue` derives

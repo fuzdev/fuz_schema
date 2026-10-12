@@ -221,6 +221,30 @@ const strip: CaseGroup = (s) => [
 		to_record(8),
 		true
 	),
+	// far more unknown keys than known ones
+	to_case(
+		s,
+		'strip/5_of_20_keys/valid',
+		to_strip_object(s)(to_entries(5, s.string)),
+		to_record(20),
+		true
+	),
+	// the unknown key comes first, and the input has no more keys than the schema
+	to_case(
+		s,
+		'strip/4_of_5_keys_1_unknown_first/valid',
+		to_strip_object(s)({ ...to_entries(4, s.string), k4: s.optional(s.string) }),
+		{ x: 1, ...to_record(4) },
+		true
+	),
+	// a key to drop and an entry that changes
+	to_case(
+		s,
+		'strip/5_of_8_keys_last_defaulted/valid',
+		to_strip_object(s)({ ...to_entries(5, s.string), last: s.with_default(s.string, 'd') }),
+		to_record(8),
+		true
+	),
 	to_case(
 		s,
 		'strip/5_optional_absent/valid',
@@ -250,6 +274,13 @@ const strip: CaseGroup = (s) => [
 		to_record(5, 1),
 		false
 	),
+	to_case(
+		s,
+		'strip/5_of_8_keys_first_bad/invalid',
+		to_strip_object(s)(to_entries(5, s.string)),
+		{ ...to_record(8), k0: 1 },
+		false
+	),
 	to_case(s, 'strip/not_object/invalid', to_strip_object(s)(to_entries(5, s.string)), 'x', false)
 ];
 
@@ -261,6 +292,30 @@ const object: CaseGroup = (s) => [
 		'object/5_optional_absent/valid',
 		to_object(s)(to_entries(5, s.optional(s.string))),
 		{},
+		true
+	),
+	// the input's keys in another order than the schema's
+	to_case(
+		s,
+		'object/5_keys_reversed/valid',
+		to_object(s)(to_entries(5, s.string)),
+		Object.fromEntries(Object.entries(to_record(5)).reverse()),
+		true
+	),
+	// an absent optional key ahead of the rest
+	to_case(
+		s,
+		'object/6_keys_first_optional_absent/valid',
+		to_object(s)({ first: s.optional(s.string), ...to_entries(5, s.string) }),
+		to_record(5),
+		true
+	),
+	// the same at a width where every later key misses its position
+	to_case(
+		s,
+		'object/21_keys_first_optional_absent/valid',
+		to_object(s)({ first: s.optional(s.string), ...to_entries(20, s.string) }),
+		to_record(20),
 		true
 	),
 	to_case(
@@ -515,8 +570,46 @@ const scale: CaseGroup = (s) => {
 		),
 		to_case(
 			s,
+			'scale/strip_20_keys_first_defaulted/valid',
+			to_strip_object(s)({ first: s.with_default(s.string, 'd'), ...to_entries(19, s.string) }),
+			to_record(19),
+			true
+		),
+		to_case(
+			s,
+			'scale/strip_20_keys_middle_defaulted/valid',
+			to_strip_object(s)({
+				...to_entries(10, s.string),
+				middle: s.with_default(s.string, 'd'),
+				...Object.fromEntries(range(9).map((i) => [`k${i + 10}`, s.string]))
+			}),
+			to_record(19),
+			true
+		),
+		to_case(
+			s,
 			'scale/strip_20_keys_last_defaulted/valid',
 			to_strip_object(s)({ ...to_entries(19, s.string), last: s.with_default(s.string, 'd') }),
+			to_record(19),
+			true
+		),
+		// the same with an absent optional key first, so the input's keys
+		// stop lining up with the schema's
+		to_case(
+			s,
+			'scale/strip_21_keys_first_optional_absent_last_defaulted/valid',
+			to_strip_object(s)({
+				first: s.optional(s.string),
+				...to_entries(19, s.string),
+				last: s.with_default(s.string, 'd')
+			}),
+			to_record(19),
+			true
+		),
+		to_case(
+			s,
+			'scale/object_20_keys_last_defaulted/valid',
+			to_object(s)({ ...to_entries(19, s.string), last: s.with_default(s.string, 'd') }),
 			to_record(19),
 			true
 		),

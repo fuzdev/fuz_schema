@@ -266,6 +266,338 @@ describe('copy on write', () => {
 	});
 });
 
+describe('object keys', () => {
+	// the two object schemas that look at keys the schema doesn't name
+	const factories = [s.object, s.strip_object] as const;
+
+	// the own keys of `value`, symbols included, in order
+	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
+
+	test('a copy has the schema keys in the schema order', () => {
+		for (const factory of factories) {
+			const O = factory({ a: s.string, b: s.with_default(s.string, 'd'), c: s.string });
+			assert.deepEqual(keys_of(s.parse_or_throw(O, { c: 'z', a: 'x' })), ['a', 'b', 'c']);
+			// the first, a middle, and the last entry changing
+			const P = factory({
+				a: s.with_default(s.string, 'd'),
+				b: s.string,
+				c: s.with_default(s.string, 'd'),
+				d: s.string,
+				e: s.with_default(s.string, 'd')
+			});
+			for (const input of [
+				{ b: 'x', c: 'y', d: 'z', e: 'w' },
+				{ a: 'v', b: 'x', d: 'z', e: 'w' },
+				{ a: 'v', b: 'x', c: 'y', d: 'z' },
+				{ d: 'z', b: 'x' }
+			]) {
+				const output = s.parse_or_throw(P, input);
+				assert.deepEqual(keys_of(output), ['a', 'b', 'c', 'd', 'e']);
+				assert.deepEqual(output, { a: 'd', c: 'd', e: 'd', ...input });
+			}
+		}
+		// dropping keys copies the same way, whatever order the input has them in
+		const O = s.strip_object({ a: s.string, b: s.string, c: s.string });
+		assert.deepEqual(keys_of(s.parse_or_throw(O, { z: 1, c: 'z', b: 'y', y: 2, a: 'x' })), [
+			'a',
+			'b',
+			'c'
+		]);
+	});
+
+	test('a copy keeps a missing key missing and an undefined one present', () => {
+		for (const factory of factories) {
+			const O = factory({
+				a: s.optional(s.string),
+				b: s.string,
+				c: s.optional(s.string),
+				d: s.with_default(s.string, 'd'),
+				e: s.optional(s.string)
+			});
+			assert.deepEqual(keys_of(s.parse_or_throw(O, { b: 'x' })), ['b', 'd']);
+			assert.deepEqual(keys_of(s.parse_or_throw(O, { a: undefined, b: 'x', e: undefined })), [
+				'a',
+				'b',
+				'd',
+				'e'
+			]);
+			assert.deepEqual(keys_of(s.parse_or_throw(O, { b: 'x', c: undefined })), ['b', 'c', 'd']);
+		}
+		// and when the copy is made to drop a key
+		const O = s.strip_object({ a: s.optional(s.string), b: s.string, c: s.optional(s.string) });
+		assert.deepEqual(keys_of(s.parse_or_throw(O, { b: 'x', z: 1 })), ['b']);
+		assert.deepEqual(keys_of(s.parse_or_throw(O, { z: 1, c: undefined, b: 'x' })), ['b', 'c']);
+		// a transform to `undefined` keeps its key
+		const T = s.object({
+			a: s.pipe(
+				s.string,
+				s.transform(() => undefined)
+			),
+			b: s.string
+		});
+		assert.deepEqual(keys_of(s.parse_or_throw(T, { a: 'x', b: 'y' })), ['a', 'b']);
+	});
+
+	test('an unknown key is found wherever it is', () => {
+		const entries = { a: s.string, b: s.optional(s.string), c: s.string, 1: s.string };
+		const inputs: Array<Record<string, unknown>> = [
+			{ a: 'x', b: 'y', c: 'z', 1: 'n', z: 1 },
+			{ z: 1, a: 'x', b: 'y', c: 'z', 1: 'n' },
+			{ a: 'x', z: 1, b: 'y', c: 'z', 1: 'n' },
+			// in another order than the schema's
+			{ c: 'z', z: 1, a: 'x', 1: 'n' },
+			// an optional key absent, so the rest don't line up with the schema
+			{ a: 'x', c: 'z', 1: 'n', z: 1 },
+			// an integer-like key, which is enumerated ahead of the others
+			{ a: 'x', c: 'z', 1: 'n', 0: 'm' },
+			// names an object inherits
+			{ a: 'x', c: 'z', 1: 'n', toString: 1 },
+			{ a: 'x', c: 'z', 1: 'n', constructor: 1 },
+			JSON.parse('{"a": "x", "c": "z", "1": "n", "__proto__": {"a": 1}}')
+		];
+		for (const input of inputs) {
+			const unknown = keys_of(input).filter((k) => !Object.hasOwn(entries, k));
+			assert.strictEqual(unknown.length, 1);
+			const Strict = s.object(entries);
+			assert(!s.is(Strict, input));
+			assert.deepEqual(
+				issues_of(Strict, input).map((i) => [i.kind, i.path]),
+				[['unknown_key', unknown]]
+			);
+			const Strip = s.strip_object(entries);
+			assert(s.is(Strip, input));
+			const output: object = s.parse_or_throw(Strip, input);
+			assert.notStrictEqual(output, input);
+			assert.deepEqual(
+				keys_of(output),
+				Object.keys(entries).filter((k) => Object.hasOwn(input, k))
+			);
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			// and with an entry that changes
+			const Changed = s.strip_object({ ...entries, d: s.with_default(s.string, 'd') });
+			const changed: object = s.parse_or_throw(Changed, input);
+			assert.deepEqual(keys_of(changed), [...keys_of(output), 'd']);
+		}
+		// without the unknown key every one of them is the output itself
+		for (const input of [
+			{ a: 'x', b: 'y', c: 'z', 1: 'n' },
+			{ c: 'z', a: 'x', 1: 'n' },
+			{ a: 'x', c: 'z', 1: 'n' }
+		]) {
+			for (const factory of factories) {
+				assert.strictEqual(s.parse_or_throw(factory(entries), input), input);
+			}
+		}
+	});
+
+	test('object reports every unknown key after the entries, in the order of the input', () => {
+		const O = s.object({ a: s.string, b: s.string });
+		assert.deepEqual(
+			issues_of(O, { y: 1, b: 2, z: 3, a: 4, x: 5 }).map((i) => [i.kind, i.path, i.value]),
+			[
+				['string', ['a'], 4],
+				['string', ['b'], 2],
+				['unknown_key', ['y'], 1],
+				['unknown_key', ['z'], 3],
+				['unknown_key', ['x'], 5]
+			]
+		);
+	});
+
+	test('strip_object never returns a key the schema does not name', () => {
+		const entries = { a: s.string, b: s.optional(s.string), c: s.with_default(s.string, 'd') };
+		const O = s.strip_object(entries);
+		const inputs: Array<Record<string, unknown>> = [
+			// more keys than the schema, as many, and fewer
+			{ a: 'x', b: 'y', c: 'z', y: 1, z: 2 },
+			{ a: 'x', c: 'z', z: 2 },
+			{ a: 'x', b: 'y', z: 2 },
+			{ z: 2, a: 'x' },
+			{ a: 'x', z: 2 }
+		];
+		for (const input of inputs) {
+			const snapshot = { ...input };
+			const output: object = s.parse_or_throw(O, input);
+			assert(keys_of(output).every((k) => Object.hasOwn(entries, k)));
+			const { y: _y, z: _z, ...known } = snapshot;
+			assert.deepEqual(output, { c: 'd', ...known });
+			assert(!('z' in output));
+			assert.deepEqual(input, snapshot);
+			// as an option of a union, which reads the output of a probe
+			assert.deepEqual<unknown>(s.parse_or_throw(s.union([s.number, O]), input), output);
+		}
+		// an unknown key the input inherits is dropped too
+		const inherits = Object.assign(Object.create({ z: 1 }), { a: 'x', c: 'z' });
+		const output: object = s.parse_or_throw(O, inherits);
+		assert.notStrictEqual(output, inherits);
+		assert.deepEqual(keys_of(output), ['a', 'c']);
+		assert(!('z' in output));
+		assert(!s.is(s.object(entries), inherits));
+	});
+
+	test('a key the input adds while it is parsed is still dropped or rejected', () => {
+		const create_input = (): Record<string, unknown> => {
+			const input: Record<string, unknown> = {
+				get a() {
+					input.added = 1;
+					return 'x';
+				},
+				b: 'y'
+			};
+			return input;
+		};
+		const output: object = s.parse_or_throw(
+			s.strip_object({ a: s.string, b: s.string }),
+			create_input()
+		);
+		assert.deepEqual(keys_of(output), ['a', 'b']);
+		assert.deepEqual(
+			issues_of(s.object({ a: s.string, b: s.string }), create_input()).map((i) => i.path),
+			[['added']]
+		);
+	});
+
+	test('keys the schema names are read through the prototype and copied as own', () => {
+		class Point {
+			x = 1;
+			get y(): number {
+				return this.x + 1;
+			}
+		}
+		for (const factory of factories) {
+			const O = factory({ x: s.number, y: s.number });
+			// unchanged, an instance is the output itself
+			const point = new Point();
+			assert.strictEqual(s.parse_or_throw(O, point), point);
+			const Defaulted = factory({ x: s.number, y: s.number, z: s.with_default(s.number, 3) });
+			const output: object = s.parse_or_throw(Defaulted, point);
+			assert.deepEqual(keys_of(output), ['x', 'y', 'z']);
+			assert.deepEqual(output, { x: 1, y: 2, z: 3 });
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			// an enumerable key on the prototype
+			const inherits = Object.assign(Object.create({ y: 2 }), { x: 1 });
+			assert.strictEqual(s.parse_or_throw(O, inherits), inherits);
+			assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, inherits)), ['x', 'y', 'z']);
+			// a non-enumerable own key
+			const hidden = Object.defineProperty({ x: 1 }, 'y', { value: 2 });
+			assert.strictEqual(s.parse_or_throw(O, hidden), hidden);
+			assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, hidden)), ['x', 'y', 'z']);
+			// no prototype at all
+			const bare = Object.assign(Object.create(null), { x: 1, y: 2 });
+			assert.strictEqual(s.parse_or_throw(O, bare), bare);
+			assert.deepEqual(s.parse_or_throw(Defaulted, bare), { x: 1, y: 2, z: 3 });
+		}
+		// dropping a key copies them the same way
+		const O = s.strip_object({ x: s.number, y: s.number });
+		const output: object = s.parse_or_throw(O, Object.assign(new Point(), { extra: 1 }));
+		assert.deepEqual(keys_of(output), ['x', 'y']);
+		assert.deepEqual(output, { x: 1, y: 2 });
+	});
+
+	test('symbol and non-enumerable keys the schema does not name are never copied', () => {
+		const sym = Symbol('sym');
+		for (const factory of factories) {
+			const O = factory({ a: s.string, b: s.with_default(s.string, 'd') });
+			const input = Object.defineProperty({ a: 'x', b: 'y', [sym]: 1 }, 'hidden', { value: 2 });
+			// they are not looked at, so an unchanged input is still the output itself
+			assert.strictEqual(s.parse_or_throw(O, input), input);
+			const changed = Object.defineProperty({ a: 'x', [sym]: 1 }, 'hidden', { value: 2 });
+			assert.deepEqual(keys_of(s.parse_or_throw(O, changed)), ['a', 'b']);
+		}
+	});
+
+	test('each entry runs once, and each key is read once when nothing is copied', () => {
+		for (const factory of factories) {
+			let runs = 0;
+			let reads = 0;
+			const O = factory({
+				a: s.pipe(
+					s.string,
+					s.check(() => {
+						runs++;
+						return true;
+					})
+				),
+				b: s.string
+			});
+			const input = {
+				get a() {
+					reads++;
+					return 'x';
+				},
+				b: 'y'
+			};
+			assert.strictEqual(s.parse_or_throw(O, input), input);
+			assert.strictEqual(runs, 1);
+			assert.strictEqual(reads, 1);
+		}
+		let runs = 0;
+		const O = s.strip_object({
+			a: s.pipe(
+				s.string,
+				s.check(() => {
+					runs++;
+					return true;
+				})
+			)
+		});
+		assert.deepEqual(s.parse_or_throw(O, { a: 'x', z: 1 }), { a: 'x' });
+		assert.strictEqual(runs, 1);
+	});
+
+	test('object rejects an unknown key when an entry changed', () => {
+		const schemas = [
+			s.object({ a: s.string, b: s.with_default(s.string, 'd') }),
+			s.object({ b: s.with_default(s.string, 'd'), a: s.string }),
+			s.object({
+				a: s.pipe(
+					s.string,
+					s.transform((v) => v.toUpperCase())
+				)
+			})
+		];
+		for (const O of schemas) {
+			for (const input of [
+				{ a: 'x', z: 1 },
+				{ z: 1, a: 'x' }
+			]) {
+				assert(!s.is(O, input));
+				assert.deepEqual(
+					issues_of(O, input).map((i) => [i.kind, i.path]),
+					[['unknown_key', ['z']]]
+				);
+				// as an option of a union, which takes the output of a probe
+				assert(!s.is(s.union([s.number, O]), input));
+			}
+		}
+	});
+
+	test('a copy keeps an inherited undefined key, as an own one', () => {
+		const create_input = (own: Record<string, unknown>): Record<string, unknown> =>
+			Object.assign(Object.create({ a: undefined }), own);
+		for (const factory of factories) {
+			// the inherited key before the entry that changes, and after it
+			const Before = factory({
+				a: s.optional(s.string),
+				b: s.string,
+				c: s.with_default(s.string, 'd')
+			});
+			const before: object = s.parse_or_throw(Before, create_input({ b: 'x' }));
+			assert.deepEqual(keys_of(before), ['a', 'b', 'c']);
+			assert.strictEqual(Object.getPrototypeOf(before), Object.prototype);
+			const After = factory({
+				c: s.with_default(s.string, 'd'),
+				a: s.optional(s.string),
+				b: s.string
+			});
+			assert.deepEqual(keys_of(s.parse_or_throw(After, create_input({ b: 'x' }))), ['c', 'a', 'b']);
+		}
+		// and when the copy is made to drop a key
+		const O = s.strip_object({ a: s.optional(s.string), b: s.string });
+		assert.deepEqual(keys_of(s.parse_or_throw(O, create_input({ b: 'x', z: 1 }))), ['a', 'b']);
+	});
+});
+
 describe('array, union, variant', () => {
 	test('array prefixes the index', () => {
 		assert.deepEqual(s.parse_or_throw(s.array(s.number), [1, 2]), [1, 2]);
@@ -470,6 +802,44 @@ describe('probe mode', () => {
 			issues_of(O, { a: true, b: { c: 1, d: 2 } }).map((i) => i.path),
 			[['a'], ['b', 'c'], ['b', 'd']]
 		);
+	});
+
+	test('is stops looking at keys once it has failed', () => {
+		let scans = 0;
+		const create_input = (): Record<string, unknown> =>
+			new Proxy(
+				{ a: 1, z: 2 },
+				{
+					ownKeys: (target) => {
+						scans++;
+						return Reflect.ownKeys(target);
+					}
+				}
+			);
+		// a failed entry, so the keys are never enumerated
+		assert(!s.is(s.object({ a: s.string }), create_input()));
+		assert(!s.is(s.strip_object({ a: s.string }), create_input()));
+		assert.strictEqual(scans, 0);
+		// and without probe mode `object` goes on to report the unknown key
+		assert.deepEqual(
+			issues_of(s.object({ a: s.string }), create_input()).map((i) => i.path),
+			[['a'], ['z']]
+		);
+		assert.strictEqual(scans, 1);
+		// the first unknown key is the last one looked at
+		let reads = 0;
+		const input = {
+			a: 'x',
+			y: 1,
+			get z() {
+				reads++;
+				return 2;
+			}
+		};
+		assert(!s.is(s.object({ a: s.string }), input));
+		assert.strictEqual(reads, 0);
+		assert.strictEqual(issues_of(s.object({ a: s.string }), input).length, 2);
+		assert.strictEqual(reads, 1);
 	});
 });
 
