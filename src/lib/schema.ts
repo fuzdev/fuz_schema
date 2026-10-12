@@ -680,17 +680,64 @@ export const brand: <T extends AnySchema, const TName extends string>(
 // Containers
 //
 
-// runs every entry and returns the output, or `undefined` when a probe failed,
-// the output being `value` itself until an entry's output differs from its input,
-// which copies the entries before it
-const run_entries = (
+// the first `count` of `keys` that `value` has, as a new object:
+// only this schema's keys, in its order
+const copy_keys = (
+	keys: Array<string>,
+	value: Record<string, unknown>,
+	count: number
+): Record<string, unknown> => {
+	const copy: Record<string, unknown> = {};
+	for (let j = 0; j < count; j++) {
+		const k = keys[j]!;
+		const u = value[k];
+		// a key the input doesn't have stays out of the output
+		if (u !== undefined || k in value) copy[k] = u;
+	}
+	return copy;
+};
+
+// `object` and `strip_object`: runs every entry, then unless the input's keys all
+// came where the schema has them looks for keys the schema doesn't have, which
+// fail the one and are left out of a copy by the other.
+// Returns the output, or `undefined` when a probe failed, the output being `value`
+// itself until an entry's output differs from its input, which copies the entries
+// before it.
+const run_object = (
+	entries: SchemaEntries,
 	keys: Array<string>,
 	schemas: Array<AnySchema>,
 	value: Record<string, unknown>,
-	ctx: SchemaContext
+	ctx: SchemaContext,
+	strip: boolean
 ): Record<string, unknown> | undefined => {
+	const fails = ctx.fails;
 	let output: Record<string, unknown> | undefined;
-	for (let i = 0; i < keys.length; i++) {
+	let i = 0;
+	let ordered = true;
+	// While the input's keys come in the schema's order they are read as they are
+	// enumerated, which is cheaper than reading them by name, and when that takes in
+	// every key the input has there is no unknown one. The enumeration doesn't visit
+	// a key added after it began, so one the input gains mid-parse goes unseen.
+	for (const key in value) {
+		if (key !== keys[i]) {
+			ordered = false;
+			break;
+		}
+		const input = value[key];
+		const count = ctx.fails;
+		const v = schemas[i]!.run(input, ctx);
+		if (ctx.fails > count) {
+			if (ctx.probe) return;
+			prefix_path(ctx.issues!, count, key);
+		} else if (output) {
+			// a key the input doesn't have stays out of the output
+			if (v !== undefined || key in value) output[key] = v;
+		} else if (v !== input) (output = copy_keys(keys, value, i))[key] = v;
+		i++;
+	}
+	// the rest by name: the keys the input lacks, and everything from a key out of place
+	for (; i < keys.length; i++) {
 		const key = keys[i]!;
 		const input = value[key];
 		const count = ctx.fails;
@@ -701,15 +748,18 @@ const run_entries = (
 		} else if (output) {
 			// a key the input doesn't have stays out of the output
 			if (v !== undefined || key in value) output[key] = v;
-		} else if (v !== input) {
-			output = {};
-			// only this schema's keys, in its order
-			for (let j = 0; j < i; j++) {
-				const k = keys[j]!;
-				const u = value[k];
-				if (u !== undefined || k in value) output[k] = u;
-			}
-			output[key] = v;
+		} else if (v !== input) (output = copy_keys(keys, value, i))[key] = v;
+	}
+	// to `strip_object` a copy has only its keys already, and a failure's output is unused
+	if (ordered || (strip && (output || ctx.fails > fails))) return output ?? value;
+	i = 0;
+	for (const key in value) {
+		// a key in the schema's order is known without a lookup
+		if (key === keys[i]) i++;
+		else if (!Object.hasOwn(entries, key)) {
+			if (strip) return copy_keys(keys, value, keys.length);
+			fail_at(ctx, 'unknown_key', value[key], 'no unknown keys', key);
+			if (ctx.probe) break;
 		}
 	}
 	return output ?? value;
@@ -728,23 +778,10 @@ export const object = <T extends SchemaEntries>(
 	return {
 		kind: 'object',
 		def: entries,
-		run: (value, ctx): any => {
-			if (not_object(value)) return fail(ctx, 'object', value);
-			const output = run_entries(keys, schemas, value, ctx);
-			// a failed probe has nothing more to find
-			if (output) {
-				let i = 0;
-				for (const key in value) {
-					// a key in the schema's order is known without a lookup
-					if (key === keys[i]) i++;
-					else if (!Object.hasOwn(entries, key)) {
-						fail_at(ctx, 'unknown_key', value[key], 'no unknown keys', key);
-						if (ctx.probe) break;
-					}
-				}
-			}
-			return output;
-		}
+		run: (value, ctx): any =>
+			not_object(value)
+				? fail(ctx, 'object', value)
+				: run_object(entries, keys, schemas, value, ctx, false)
 	};
 };
 
@@ -801,28 +838,10 @@ export const strip_object = <T extends SchemaEntries>(
 	return {
 		kind: 'strip_object',
 		def: entries,
-		run: (value, ctx): any => {
-			if (not_object(value)) return fail(ctx, 'strip_object', value, 'object');
-			const count = ctx.fails;
-			const output = run_entries(keys, schemas, value, ctx);
-			// a copy has only this schema's keys already, and a failure's output is unused
-			if (output !== value || ctx.fails > count) return output;
-			let i = 0;
-			for (const key in value) {
-				// a key in the schema's order is known without a lookup
-				if (key === keys[i]) i++;
-				else if (!Object.hasOwn(entries, key)) {
-					const copy: Record<string, unknown> = {};
-					for (let j = 0; j < keys.length; j++) {
-						const k = keys[j]!;
-						const u = value[k];
-						if (u !== undefined || k in value) copy[k] = u;
-					}
-					return copy;
-				}
-			}
-			return value;
-		}
+		run: (value, ctx): any =>
+			not_object(value)
+				? fail(ctx, 'strip_object', value, 'object')
+				: run_object(entries, keys, schemas, value, ctx, true)
 	};
 };
 

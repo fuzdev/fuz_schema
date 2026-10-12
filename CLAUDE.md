@@ -117,7 +117,9 @@ Things that are easy to break without a test noticing:
 - **In probe mode nothing touches `ctx.issues`**, and containers return at
   their first failed child.
 - **The input is never mutated**, `object` never accepts an input with unknown
-  keys, and `strip_object` never returns one.
+  keys, and `strip_object` never returns one. The one exception is a key the
+  input gains while it is parsed, which the enumeration that reads its keys
+  may not visit.
 - **`loose_object` has its own loop.** Folding it into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate

@@ -91,6 +91,8 @@ Kept:
 
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
+- Both hold for the keys the input has throughout its parse, and not for one
+  that appears during it, see [Object schemas](#object-schemas).
 - `record` drops a `__proto__` key.
 - The input is never mutated.
 
@@ -100,9 +102,9 @@ Three, differing only in what they do with keys the schema doesn't name:
 
 | | Unknown keys | Cost on valid input |
 |---|---|---|
-| `object` | an error | one pass over the input's keys |
+| `object` | an error | none past reading the keys, when every key comes where the schema has it; else one more pass over them |
 | `loose_object` | kept | none; they are never looked at |
-| `strip_object` | dropped | one pass, then a copy when there are any |
+| `strip_object` | dropped | the same as `object`, then a copy when there are any |
 
 An array is not an object: all three reject one, as do `record` and
 `variant`, with the one issue any non-object gets.
@@ -111,15 +113,26 @@ An array is not an object: all three reject one, as do `record` and
 `loose_object` is the cheapest, and `strip_object` is the one that works for
 its result.
 
-`object` and `strip_object` share a loop over the entries:
+`object` and `strip_object` are one function, told which it is running for:
 
-- **Entries run first, then the input's keys are checked.** Whether the output
-  can be the input itself is decided last, so nothing that runs in between can
-  slip a key in.
-- **A key in the schema's order is known by its position.** Any other key is
-  looked up in the entries, so order never changes the result, only the cost.
-  The position doesn't resync: after an absent optional key, every later key
-  is looked up.
+- **Keys in the schema's order are read as they are enumerated.** One
+  `for...in` runs each entry on the input's keys while they come where the
+  schema has them, which reads a value more cheaply than by name. When it takes
+  in every key the input has, there is no unknown key and nothing more to do
+  but run the entries the input lacks.
+- **From the first key out of place, entries run by name and the input's keys
+  are checked after.** Issues are in the schema's order, then unknown keys,
+  whatever the input's order: order changes the cost, never the result.
+- **In that check a key in the schema's order is known by its position.** Any
+  other key is looked up in the entries. The position doesn't resync: after an
+  absent optional key, every later key is looked up.
+- **A key that appears while the input is parsed can go unseen.** The
+  enumeration visits the enumerable keys the input and its prototypes had when
+  it began, less any removed before it reached them, so a key added, made
+  enumerable, inherited, or removed and put back by the input's own getter or
+  a `transform` holding it can match `object` and come back from
+  `strip_object`. The check after the entries, when it runs, does see such a
+  key.
 - **A copy has the schema's keys, in the schema's order.** They are read
   through the prototype and written as own keys. A key the input lacks stays
   out, and one that is `undefined` stays in.

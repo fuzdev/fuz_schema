@@ -78,6 +78,8 @@ This is deliberate, for speed, and it's the main thing to know before using it.
   (a getter, a proxy, an object someone else holds) can pass and then differ.
   Parsed JSON can't do this; objects from untrusted in-process code can.
 - A class instance that matches comes back as that instance, not a plain object.
+- A key the input gains while it is being parsed (from its own getter, or a
+  `transform` that holds it) can go unseen by `object` and `strip_object`.
 
 What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
 and the input is never mutated.
