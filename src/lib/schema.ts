@@ -282,16 +282,17 @@ const prefix_path = (issues: Array<SchemaIssue>, from: number, key: PropertyKey)
 	for (let i = from; i < issues.length; i++) issues[i]!.path.unshift(key);
 };
 
-// like `fail` for an issue about `key` of the current value
+// like `fail` for an issue about `key` of `value`, which is read only when an
+// issue is built: a probe has no use for it, and is handed `true` in its place
 const fail_at = (
 	ctx: SchemaContext,
 	kind: string,
-	value: unknown,
+	value: Record<PropertyKey, unknown>,
 	expected: string,
 	key: PropertyKey
 ): void => {
 	const count = ctx.fails;
-	fail(ctx, kind, value, expected);
+	fail(ctx, kind, ctx.probe || value[key], expected);
 	if (!ctx.probe) prefix_path(ctx.issues!, count, key);
 };
 
@@ -738,7 +739,7 @@ export const object = <T extends SchemaEntries>(
 					// a key in the schema's order is known without a lookup
 					if (key === keys[i]) i++;
 					else if (!Object.hasOwn(entries, key)) {
-						fail_at(ctx, 'unknown_key', value[key], 'no unknown keys', key);
+						fail_at(ctx, 'unknown_key', value, 'no unknown keys', key);
 						if (ctx.probe) break;
 					}
 				}
@@ -956,7 +957,7 @@ export const variant = <
 			if (not_object(value)) return fail(ctx, 'variant', value, 'object');
 			const option = by_value.get(value[key]);
 			if (option) return option.run(value, ctx);
-			fail_at(ctx, 'variant', value[key], (expected ??= format_literals(by_value.keys())), key);
+			fail_at(ctx, 'variant', value, (expected ??= format_literals(by_value.keys())), key);
 			return value;
 		}
 	};

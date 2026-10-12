@@ -1525,6 +1525,43 @@ describe('probe mode', () => {
 		assert.strictEqual(issues_of(s.object({ a: s.string }), input).length, 2);
 		assert.strictEqual(reads, 1);
 	});
+
+	test('a failure about a key reads its value only to build an issue', () => {
+		let reads = 0;
+		const unknown = {
+			a: 'x',
+			get z() {
+				reads++;
+				return 1;
+			}
+		};
+		assert(!s.is(s.object({ a: s.string }), unknown));
+		assert(s.is(s.union([s.object({ a: s.string }), s.loose_object({ a: s.string })]), unknown));
+		assert.strictEqual(reads, 0);
+		assert.deepEqual(issues_of(s.object({ a: s.string }), unknown), [
+			{
+				kind: 'unknown_key',
+				expected: 'no unknown keys',
+				received: 'number',
+				path: ['z'],
+				message: undefined
+			}
+		]);
+		assert.strictEqual(reads, 1);
+		// a `variant` reads its discriminator to find the option, and again for the issue
+		reads = 0;
+		const V = s.variant('kind', [s.object({ kind: s.literal('a') })]);
+		const untagged = {
+			get kind() {
+				reads++;
+				return 'zz';
+			}
+		};
+		assert(!s.is(V, untagged));
+		assert.strictEqual(reads, 1);
+		assert.strictEqual(issues_of(V, untagged)[0]!.received, 'string');
+		assert.strictEqual(reads, 3);
+	});
 });
 
 describe('parse_or_throw', () => {
