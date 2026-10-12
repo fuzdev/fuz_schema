@@ -2,7 +2,7 @@
 
 ```bash
 npm run grade                                   # the working tree against HEAD
-npm run grade -- --against HEAD~2 --filter union
+npm run grade -- --against HEAD~2 --filter each/union
 npm run grade -- --against-file path/to/old_schema.ts
 npm run grade -- --no-process                   # skip retained heap and cold start
 ```
@@ -16,7 +16,9 @@ process and reports, per [case](benchmarks.md#scenarios-and-cases):
 - heap bytes allocated per parse
 - whether the output is the input itself or a copy
 
-then bundle size, retained heap, and cold start, and a verdict against the rules.
+summarized by group and by path (what the parse does: return the input,
+return a copy, build issues, or probe), then bundle size, retained heap, and
+cold start, and a verdict against the rules.
 
 A starred time change is past the noise floor and statistically significant
 in both pairs. When a change targets a path no case isolates, add the case
@@ -29,7 +31,8 @@ remove the context. A change can win one and lose the other.
 
 ## Rules
 
-1. **Judge speed on the realistic cases**, valid input first.
+1. **Judge speed on the realistic cases**, valid input first, and read it
+   by path: one figure can hide a path that got slower.
 2. **A time difference under about 10% is noise** until reproduced on a quiet
    machine. Bytes and allocations are exact.
 3. **Opt-in bytes only have to pay for themselves.**

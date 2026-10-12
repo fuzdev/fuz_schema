@@ -22,7 +22,7 @@
  *
  * Usage (`npm run grade` passes the node flags it needs):
  *   npm run grade
- *   npm run grade -- --against HEAD~3 --filter union
+ *   npm run grade -- --against HEAD~3 --filter each/union
  *   npm run grade -- --against-file .gro/grade/snapshot.ts --duration 500
  *
  * @module
@@ -38,7 +38,7 @@ import { Benchmark } from '@fuzdev/fuz_util/benchmark.ts';
 import { benchmark_stats_compare } from '@fuzdev/fuz_util/benchmark_stats.ts';
 
 import * as current_lib from '#lib/schema.ts';
-import { create_cases, type Case, type SchemaLib } from './cases.ts';
+import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { measure_bundle_size } from './bundle_size.ts';
 import { ENTRY_FORMS, type EntryVariant } from './child.ts';
@@ -170,6 +170,10 @@ const measured: Array<Measured> = [];
 
 for (const [i, c] of cases.entries()) {
 	if (c.ok() !== c.valid) throw new Error(`${c.name} expected valid=${c.valid}`);
+	// and that a case through `parse` that matches takes the path it names
+	if (c.valid && c.path !== 'probe' && (c.run() === c.input) !== (c.path === 'identity')) {
+		throw new Error(`${c.name} expected path=${c.path}`);
+	}
 	let base = baseline_cases.get(c.name);
 	if (base && base.ok() !== base.valid) {
 		console.warn(`baseline disagrees on ${c.name}, skipping its comparison`);
@@ -260,9 +264,10 @@ console.log(
 );
 console.log(
 	format_table([
-		['case', 'base ns', 'new ns', 'time', 'base B', 'new B', 'alloc', 'out'],
+		['case', 'path', 'base ns', 'new ns', 'time', 'base B', 'new B', 'alloc', 'out'],
 		...measured.map((m) => [
 			m.c.name + (m.c.realistic ? ' †' : ''),
+			m.c.path,
 			format_number(m.base_ns),
 			format_number(m.ns),
 			format_ratio(m.ns / m.base_ns, m.significant),
@@ -283,6 +288,16 @@ const sum = (ms: Array<Measured>, key: 'bytes' | 'base_bytes'): number =>
 	ms.reduce((total, m) => total + m[key], 0);
 
 const groups = [...new Set(compared.map((m) => m.c.group))];
+// a path's cases are of one validity, but for `probe`, so its row has one time
+const to_path_rows = (label: string, ms: Array<Measured>): Array<Array<string>> =>
+	CASE_PATHS.map((path) => ms.filter((m) => m.c.path === path))
+		.filter((of_path) => of_path.length)
+		.map((of_path) => [
+			label + of_path[0]!.c.path,
+			String(of_path.length),
+			format_ratio(time_ratio(of_path)),
+			format_ratio(sum(of_path, 'bytes') / sum(of_path, 'base_bytes'))
+		]);
 const to_summary_row = (label: string, ms: Array<Measured>): Array<string> => [
 	label,
 	String(ms.length),
@@ -306,6 +321,18 @@ console.log(
 			compared.filter((m) => m.c.realistic)
 		),
 		to_summary_row('all', compared)
+	])
+);
+
+console.log('\nby path: what the parse does, over the realistic cases and over all of them\n');
+console.log(
+	format_table([
+		['path', 'cases', 'time', 'alloc'],
+		...to_path_rows(
+			'realistic † ',
+			compared.filter((m) => m.c.realistic)
+		),
+		...to_path_rows('all ', compared)
 	])
 );
 
@@ -462,11 +489,20 @@ const changed_out = compared.filter((m) => m.base_same !== m.same);
 
 const format_names = (ms: Array<Measured>): string =>
 	ms.length ? ms.map((m) => m.c.name).join(', ') : 'none';
-const format_percent = (n: number): string => `${n >= 0 ? '+' : ''}${(n * 100).toFixed(0)}%`;
+const format_percent = (n: number): string => {
+	// rounded first, so a small loss reads `+0%` and not `-0%`
+	const percent = Math.round(n * 100) || 0;
+	return `${percent >= 0 ? '+' : ''}${percent}%`;
+};
 
 console.log('\nagainst the acceptance rules\n');
 if (realistic_valid.length) {
-	console.log(`realistic valid-path speed: ${format_percent(realistic_speedup)}`);
+	const by_path = CASE_PATHS.map((path) => realistic_valid.filter((m) => m.c.path === path))
+		.filter((of_path) => of_path.length)
+		.map((of_path) => `${of_path[0]!.c.path} ${format_percent(1 - time_ratio(of_path))}`);
+	console.log(
+		`realistic valid-path speed: ${format_percent(realistic_speedup)} (${by_path.join(', ')})`
+	);
 } else {
 	console.log('realistic valid-path speed: no realistic cases in this run');
 }

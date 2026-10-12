@@ -20,9 +20,22 @@ Zod Mini, TypeBox, and ArkType.
   schema, a valid input, an invalid input. `type_json` is a real recursive
   schema from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo); the
   rest are synthetic. A test holds every library to the same answer on each.
-- **Cases** (`cases.ts`) are for this library only: small schema-and-input
-  pairs that each isolate one behavior, named `group/shape/outcome`. `grade`
-  runs them. A few are marked realistic, and speed is judged on those.
+- **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
+  named `group/shape/outcome`, which `grade` runs. They come in tiers:
+  - `real` is what a consumer has: an object, a list, a config, a form, a
+    recursive tree, an event stream, a union of shapes. Speed is judged on
+    these, so they are chosen as a set, each differing from the rest in the
+    schema kinds it leans on or the path it takes.
+  - The other groups hold one case per code path, at one medium size. `each`
+    runs a schema over a hundred items, so its cost shows over the fixed cost
+    of a parse, which `fixed` measures alone.
+  - `scale` repeats a shape at the sizes where a different cost takes over.
+
+  Every case names its path: `identity` returns the input itself, `copy`
+  returns another value, `issues` fails through `parse`, and `probe` goes
+  through `is`. Schemas are written as literals and inputs come from
+  `JSON.parse`, as a consumer's do: an object built key by key can be a
+  different kind of object to the engine, and cost differently.
 
 ## Method
 
@@ -107,6 +120,10 @@ and never a table.
   `scenario_<name>` export in every module under `libs/`.
 - A library: a module in `libs/`, an entry in `LIBS`, and its name in the
   lists the process and type benchmarks keep.
-- A case: an entry in a group in `cases.ts`.
+- A case: an entry in a group in `cases.ts`, with the path it takes, which
+  `grade` and `src/test/cases.test.ts` check. Add to `real` only what is a
+  shape of its own: every case there moves what speed is judged on. A path
+  case goes in at the size its group already uses, and a schema whose cost
+  is near a parse's fixed cost goes in `each`.
 - Never add harness imports or work to a generated process module. The bare
   baseline is that module with no library.

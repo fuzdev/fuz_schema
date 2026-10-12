@@ -53,6 +53,8 @@ dev server.
   behavior and type inference
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
+- `src/test/cases.test.ts` - every case of the matrix matches or not as it
+  says and takes the path it names
 - `src/test/schema_json.test.ts` - what `to_schema_json` writes and refuses
 - `src/test/fixtures/json/` - the fixtures shared with the Rust crate
   - `<group>/fixture.ts` - authored: a schema and named JSON texts

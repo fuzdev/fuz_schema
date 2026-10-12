@@ -391,12 +391,12 @@ Caveats:
 
 ```bash
 npm run grade                       # the working tree against HEAD
-npm run grade -- --against HEAD~2 --filter union
+npm run grade -- --against HEAD~2 --filter real/
 ```
 
 `grade` loads two versions of the library into one process and compares them
-over a matrix of small cases, each isolating one behavior:
-time, heap bytes allocated, and whether the output is the input itself.
+over a matrix of cases (realistic shapes, one case per code path, and the
+same shapes at scale): time, heap bytes allocated, and whether the output is the input itself.
 It then compares bundle size, retained heap, and cold start,
 and checks the result against the rules a change is accepted by:
 
