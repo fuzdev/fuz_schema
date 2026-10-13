@@ -9,13 +9,15 @@
  * specialized to the first it is given, and two arms holding the same library
  * then read apart, so each arm has its own.
  *
- * Nothing here is shared with another arm, so this module imports the cases
- * and nothing of the harness.
+ * Nothing here is shared with another arm, so this module imports the cases,
+ * the program a process of the `apart` regime runs first, and nothing of the
+ * harness.
  *
  * @module
  */
 
 import { CASE_GROUPS, create_case, create_cases, type Case, type SchemaLib } from './cases.ts';
+import { run_program } from './program.ts';
 
 /** Tells one arm's instance of the case matrix from another's. */
 export const instance: unknown = CASE_GROUPS;
@@ -27,3 +29,7 @@ export const build_cases = (lib: SchemaLib, strict: boolean): Array<Case> =>
 /** Builds one case and as little else as it can, for a process that runs that case alone. With `strict`, a group that throws on the way fails it. */
 export const build_case = (lib: SchemaLib, name: string, strict: boolean): Case | undefined =>
 	create_case(lib, name, strict);
+
+/** Runs the program of `program.ts` with the arm's library, for a process of the `apart` regime. With `strict`, an entry that fails fails it. */
+export const run_arm_program = (lib: SchemaLib, strict: boolean): number =>
+	run_program(lib, strict);

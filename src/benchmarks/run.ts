@@ -7,7 +7,7 @@
  * processes, and a figure is the median of its passes beside their spread:
  * see `timing_passes.ts`.
  *
- * **Two regimes**, as in `grade`. By default a library's process holds all of
+ * **Two regimes**, the first two of `grade`. By default a library's process holds all of
  * its scenarios and runs every one, on both inputs, before it times any: each
  * is timed in library code that has seen several schemas, as in an app, and
  * reads the same whichever scenarios are asked for. With `--alone` every

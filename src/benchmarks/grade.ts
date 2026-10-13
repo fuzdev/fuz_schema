@@ -17,14 +17,19 @@
  * same process and the same moment as the difference between the versions,
  * and a difference is only read against it.
  *
- * **Two regimes**, each a different program and both real:
+ * **Three regimes**, each a different program and all real:
  *
  * - `matrix`: one process runs every case, so every call site in the library
  *   has seen many schemas, as in an app
  * - `alone`: one process per case, so the engine specializes the library to
  *   that schema, as where a program has one
+ * - `apart`: a process holds one version, uses every kind of schema, and
+ *   times one case. In the other two a process holds both versions, and what
+ *   one does to the state a process shares, the other pays as well. Here a
+ *   version's processes are its own, and what they differ by among
+ *   themselves is the noise.
  *
- * **Runs.** The whole of both is repeated `--runs` times, each run in fresh
+ * **Runs.** The whole of them is repeated `--runs` times, each run in fresh
  * processes, and nothing is concluded from one.
  *
  * **Time and bytes come from different processes.** Time is taken under Node's
@@ -33,7 +38,9 @@
  *
  * The baseline comes from git (`--against`, default `HEAD`) or from a file
  * (`--against-file`), and the graded version is the working tree's or a file
- * (`--new-file`). The baseline may have another API. The cases reach renamed
+ * (`--new-file`). Both are copied into one directory and loaded from there:
+ * the same bytes read apart by where their file sits. The baseline may have
+ * another API. The cases reach renamed
  * exports through helpers in `cases.ts`; the bundle, heap, and cold-start
  * comparisons use the baseline's own scenario module, taken from the same git
  * ref or given with `--against-libs-file`. Without one they use the working
@@ -44,6 +51,7 @@
  *   npm run grade -- --against HEAD~3 --filter each/union
  *   npm run grade -- --against-file .gro/grade/snapshot.ts --runs 5
  *   npm run grade -- --new-file .gro/grade/variant.ts --alone object/
+ *   npm run grade -- --apart each/ --no-alone
  *
  * @module
  */
@@ -59,6 +67,7 @@ import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
 import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
+import { PROGRAM } from './program.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { measure_bundle_size, measure_library_size } from './bundle_size.ts';
 import { ENTRY_FORMS, start_child, type EntryVariant } from './child.ts';
@@ -69,11 +78,14 @@ import {
 	summarize_coldstart
 } from './coldstart.ts';
 import {
+	GRADE_APART_ROUNDS,
 	GRADE_PRELUDE_MS,
 	GRADE_WARM_MS,
 	type GradeChildCase,
 	type GradeChildOutput,
-	type GradeJob
+	type GradeJob,
+	type GradeJobArm,
+	type GradeRegime
 } from './grade_job.ts';
 import { HEAP_SETTLED_BELOW_BYTES, measure_retained_heap } from './heap.ts';
 import {
@@ -119,6 +131,15 @@ const Args = z.strictObject({
 				'by default the realistic ones, and every case when given with no value'
 		}),
 	'no-alone': z.boolean().default(false).meta({ description: 'opt out of alone' }),
+	apart: z
+		.union([z.string(), z.boolean()])
+		.optional()
+		.meta({
+			description:
+				'which cases are also timed a version to a process: those whose name includes this, ' +
+				'by default a few, mostly ones the engine folds whole, and every case when given with no value'
+		}),
+	'no-apart': z.boolean().default(false).meta({ description: 'opt out of apart' }),
 	slice: z
 		.number()
 		.positive()
@@ -159,6 +180,34 @@ hold_benchmark_lock('fuz_schema grade');
 
 /** How many module instances of each version a timing process holds. */
 const INSTANCES = 3;
+/**
+ * How many processes of each version a case of the `apart` regime is timed in,
+ * a run. A process there stands where an instance does in the other regimes,
+ * so it is the same count, and the same reading of them.
+ */
+const APART_PROCESSES = INSTANCES;
+/**
+ * The cases timed apart by default: mostly ones the engine folds whole in a
+ * process that runs nothing else, each of another construction. Such a case is where
+ * a change to the state a process shares shows, as little else is left of
+ * the parse to hide it.
+ *
+ * - an array of primitives, small and large, where a parse is the array's
+ *   loop and a call an item
+ * - the same through a wrapper
+ * - a flat object, its loop over its entries
+ * - a recursive schema, which runs a `lazy` itself
+ *
+ * The recursive one is not folded. It is here as the case that uses a `lazy`
+ * itself, so a change to `lazy` is read apart on what it is for.
+ */
+const APART_CASES: ReadonlyArray<string> = [
+	'each/string/valid',
+	'each/optional_present/valid',
+	'scale/array_10_numbers/valid',
+	'object/6_keys/valid',
+	'real/docinfo_types/valid'
+];
 // A case's floor, in the logarithm of a time ratio: this many times what two
 // instances of one version differ by on it, and never under the least. A
 // spread read from a few instances can be near nothing, and a floor of nothing
@@ -209,21 +258,28 @@ const JOBS_DIR = join(WORK_DIR, 'jobs');
 const CHILD_PATH = fileURLToPath(new URL('./grade_child.ts', import.meta.url));
 mkdirSync(JOBS_DIR, { recursive: true });
 
-let baseline_path: string;
+// Both versions are loaded from this directory, whatever file each came from.
+// The same bytes read apart by where their file sits: a file outside any
+// directory whose `package.json` gives a `type` took a tenth longer on a case,
+// in most processes, than a copy of it inside one.
+const baseline_path = join(WORK_DIR, 'against_schema.ts');
+const new_path = join(WORK_DIR, 'new_schema.ts');
+// read before either copy is written: a file given may be a copy an earlier grade left here
+const new_source = readFileSync(resolve(args['new-file'] ?? 'src/lib/schema.ts'));
+
 let baseline_lib_path: string | undefined;
 let baseline_label: string;
 if (args['against-file']) {
-	baseline_path = resolve(args['against-file']);
+	writeFileSync(baseline_path, readFileSync(resolve(args['against-file'])));
 	baseline_lib_path = args['against-libs-file'] && resolve(args['against-libs-file']);
 	baseline_label = args['against-file'];
 } else {
-	baseline_path = join(WORK_DIR, 'against_schema.ts');
 	writeFileSync(baseline_path, execFileSync('git', ['show', `${args.against}:src/lib/schema.ts`]));
 	baseline_lib_path = join(WORK_DIR, 'against_libs_fuz_schema.ts');
 	writeFileSync(baseline_lib_path, execFileSync('git', ['show', `${args.against}:${LIB_MODULE}`]));
 	baseline_label = args.against;
 }
-const new_path = resolve(args['new-file'] ?? 'src/lib/schema.ts');
+writeFileSync(new_path, new_source);
 const new_label = args['new-file'] ?? 'the working tree';
 // the graded version as the bundle, heap, and cold-start builds take it
 const new_variant: EntryVariant | undefined = args['new-file']
@@ -243,6 +299,12 @@ const alone = args['no-alone'] ? false : args.alone;
 const alone_cases = cases.filter(
 	(c) => alone === true || (alone !== false && c.name.includes(alone))
 );
+const apart = args['no-apart'] ? false : args.apart;
+const apart_cases = cases.filter((c) =>
+	apart === undefined
+		? APART_CASES.includes(c.name)
+		: apart === true || (apart !== false && c.name.includes(apart))
+);
 
 //
 // The processes
@@ -260,6 +322,16 @@ const BYTES_ARMS: GradeJob['arms'] = [
 	{ id: 'base1', path: baseline_path, graded: false },
 	{ id: 'new0', path: new_path, graded: true }
 ];
+
+// A process of the `apart` regime: one version, as an instance that uses the
+// library and one that is timed.
+const to_apart_arms = (graded: boolean): Array<GradeJobArm> => {
+	const path = graded ? new_path : baseline_path;
+	return [
+		{ id: 'user', path, graded, program: true },
+		{ id: graded ? 'new0' : 'base0', path, graded }
+	];
+};
 
 let job_count = 0;
 
@@ -289,11 +361,12 @@ const to_job = (
 	mode: GradeJob['mode'],
 	regime: GradeJob['regime'],
 	names: Array<string>,
-	offset: number
+	offset: number,
+	arms: Array<GradeJobArm> = mode === 'time' ? TIME_ARMS : BYTES_ARMS
 ): GradeJob => ({
 	mode,
 	regime,
-	arms: mode === 'time' ? TIME_ARMS : BYTES_ARMS,
+	arms,
 	cases: names,
 	slice_ms: args.slice,
 	offset
@@ -320,17 +393,21 @@ const ESTIMATE = {
 		(all_cases.length * TIME_ARMS.length * GRADE_PRELUDE_MS) / 1000 +
 		cases.length * (GRADE_WARM_MS.matrix / 1000 + case_seconds) * 1.15,
 	alone_case: 0.17 + GRADE_WARM_MS.alone / 1000 + case_seconds,
+	// a process of one version, which a case has `APART_PROCESSES` of for each
+	apart_process: 0.17 + GRADE_WARM_MS.apart / 1000 + (GRADE_APART_ROUNDS + 1) * slice_seconds,
 	bytes: 2 + (cases.length * 2.3 + alone_cases.length * 3.8) / BYTES_CONCURRENCY,
 	bundle: args.bundle ? 1 : 0,
 	process: args.process ? 4 + args.samples * 0.6 : 0
 };
+const estimate_apart =
+	args.runs * apart_cases.length * 2 * APART_PROCESSES * ESTIMATE.apart_process;
 const estimate_timing =
-	args.runs * (ESTIMATE.matrix_run + alone_cases.length * ESTIMATE.alone_case);
+	args.runs * (ESTIMATE.matrix_run + alone_cases.length * ESTIMATE.alone_case) + estimate_apart;
 
 console.log(
 	`grading ${new_label} against ${baseline_label}: ${cases.length} cases, ` +
-		`${alone_cases.length} of them also alone, ${args.runs} ${args.runs === 1 ? 'run' : 'runs'}, ` +
-		`${INSTANCES} instances a version`
+		`${alone_cases.length} of them also alone, ${apart_cases.length} apart, ` +
+		`${args.runs} ${args.runs === 1 ? 'run' : 'runs'}, ${INSTANCES} instances a version`
 );
 if (identical) {
 	console.log(
@@ -340,7 +417,9 @@ if (identical) {
 }
 console.log(
 	`about ${format_seconds(estimate_timing + ESTIMATE.bytes + ESTIMATE.bundle + ESTIMATE.process)}: ` +
-		`time ${format_seconds(estimate_timing)}, bytes ${format_seconds(ESTIMATE.bytes)}` +
+		`time ${format_seconds(estimate_timing)}` +
+		(apart_cases.length ? `, ${format_seconds(estimate_apart)} of it apart` : '') +
+		`, bytes ${format_seconds(ESTIMATE.bytes)}` +
 		(args.bundle ? `, bundles ${format_seconds(ESTIMATE.bundle)}` : '') +
 		(args.process ? `, retained heap and cold start ${format_seconds(ESTIMATE.process)}` : '') +
 		'\n'
@@ -350,9 +429,52 @@ const names = cases.map((c) => c.name);
 const started = performance.now();
 const to_elapsed = (since: number): string => format_seconds((performance.now() - since) / 1000);
 
+/** One case in one process, or in the processes of a run: the logarithm of each instance's nanoseconds per call, by version. */
+interface Reading {
+	base: Array<number>;
+	new: Array<number>;
+}
+
+const to_reading = (c: GradeChildCase, reading: Reading = { base: [], new: [] }): Reading => {
+	for (const arm of c.arms) {
+		reading[arm.startsWith('base') ? 'base' : 'new'].push(Math.log(stats_median(c.ns![arm]!)));
+	}
+	return reading;
+};
+
+/**
+ * Times the cases of the `apart` regime for one run: each in
+ * `APART_PROCESSES` processes of each version, a process of one and then of
+ * the other, and which goes first moves on by a process, a case, and a run.
+ *
+ * @returns by case, what the processes read: a figure a process, where the other regimes have one an instance
+ */
+const time_apart = async (run: number): Promise<Array<Reading>> => {
+	const of_run: Array<Reading> = [];
+	for (const [index, c] of apart_cases.entries()) {
+		const reading: Reading = { base: [], new: [] };
+		for (let at = 0; at < APART_PROCESSES; at++) {
+			for (const graded of (run + index + at) % 2 ? [true, false] : [false, true]) {
+				const output = await run_job(
+					to_job('time', 'apart', [c.name], run + at, to_apart_arms(graded))
+				);
+				if (!graded) apart_program_ran = Math.min(apart_program_ran, output.program_ran ?? 0);
+				// a baseline that lacks the case, or disagrees on it, times nothing
+				if (output.cases.length) to_reading(output.cases[0]!, reading);
+			}
+		}
+		of_run.push(reading);
+	}
+	return of_run;
+};
+
 // timed, so one process at a time and nothing beside it
 const matrix_runs: Array<GradeChildOutput> = [];
 const alone_runs: Array<Array<GradeChildCase>> = [];
+// by run, then by case: what each process read, by version
+const apart_runs: Array<Array<Reading>> = [];
+// the fewest entries of the program a process of the baseline ran
+let apart_program_ran = PROGRAM.length;
 for (let run = 0; run < args.runs; run++) {
 	const since = performance.now();
 	matrix_runs.push(await run_job(to_job('time', 'matrix', names, run)));
@@ -361,6 +483,7 @@ for (let run = 0; run < args.runs; run++) {
 		of_run.push((await run_job(to_job('time', 'alone', [c.name], run))).cases[0]!);
 	}
 	alone_runs.push(of_run);
+	apart_runs.push(await time_apart(run));
 	console.log(`time, run ${run + 1} of ${args.runs}: ${to_elapsed(since)}`);
 }
 
@@ -381,20 +504,6 @@ console.log(`bytes: ${to_elapsed(bytes_since)}`);
 //
 // Reading the processes
 //
-
-/** One case in one process: the logarithm of each instance's nanoseconds per call, by version. */
-interface Reading {
-	base: Array<number>;
-	new: Array<number>;
-}
-
-const to_reading = (c: GradeChildCase): Reading => {
-	const reading: Reading = { base: [], new: [] };
-	for (const arm of c.arms) {
-		reading[arm.startsWith('base') ? 'base' : 'new'].push(Math.log(stats_median(c.ns![arm]!)));
-	}
-	return reading;
-};
 
 const mean = (values: Array<number>): number =>
 	values.reduce((sum, v) => sum + v, 0) / values.length;
@@ -565,6 +674,7 @@ interface Graded {
 	c: Case;
 	matrix: CaseTime;
 	alone: CaseTime | undefined;
+	apart: CaseTime | undefined;
 	bytes: CaseBytes;
 	alone_bytes: CaseBytes | undefined;
 	same: boolean;
@@ -575,6 +685,7 @@ const graded: Array<Graded> = cases.map((c, i) => {
 	const first = matrix_runs[0]!.cases[i]!;
 	if (first.name !== c.name) throw new Error(`expected ${c.name} and was given ${first.name}`);
 	const alone_index = alone_cases.indexOf(c);
+	const apart_index = apart_cases.indexOf(c);
 	return {
 		c,
 		matrix: to_case_time(matrix_runs.map((run) => to_reading(run.cases[i]!))),
@@ -582,6 +693,8 @@ const graded: Array<Graded> = cases.map((c, i) => {
 			alone_index === -1
 				? undefined
 				: to_case_time(alone_runs.map((run) => to_reading(run[alone_index]!))),
+		apart:
+			apart_index === -1 ? undefined : to_case_time(apart_runs.map((run) => run[apart_index]!)),
 		bytes: to_case_bytes(matrix_bytes.find((b) => b.name === c.name)),
 		alone_bytes: alone_index === -1 ? undefined : to_case_bytes(alone_bytes[alone_index]),
 		same: first.same.new0!,
@@ -683,14 +796,44 @@ if (graded_alone.length) {
 	);
 }
 
-type Regime = 'matrix' | 'alone';
-const REGIMES: ReadonlyArray<Regime> = ['matrix', 'alone'];
+const graded_apart = graded.filter((g) => g.apart);
+if (graded_apart.length) {
+	console.log(
+		'\ncases, apart: a process holds one version. It uses every kind of schema once, in an instance of\n' +
+			'the library beside the one it times, and then runs one case and nothing else. What using a version\n' +
+			`does to the state a process shares is then in its own processes alone. Each version has ${APART_PROCESSES}\n` +
+			'processes a run, and a process is here what an instance is above: ns is their median, the floor is\n' +
+			'from what the processes of one version differ by, and a mark is of every process of the new version\n' +
+			'against every one of the baseline. The matrix and alone times are beside for comparison.\n'
+	);
+	console.log(
+		format_table([
+			['case', 'path', 'matrix', 'alone', 'base ns', 'new ns', 'time', 'floor'],
+			...graded_apart.map((g) => [
+				g.c.name + (g.c.realistic ? ' †' : ''),
+				g.c.path,
+				format_time(g.matrix.ratio, to_mark(g.matrix)),
+				g.alone ? format_time(g.alone.ratio, to_mark(g.alone)) : '-',
+				...to_time_cells(g.apart!)
+			])
+		])
+	);
+}
 
-const to_bytes_of = (g: Graded, regime: Regime): CaseBytes =>
-	regime === 'matrix' ? g.bytes : g.alone_bytes!;
+type Regime = GradeRegime;
+const REGIMES: ReadonlyArray<Regime> = ['matrix', 'alone', 'apart'];
+// the regimes whose realistic cases the rules read as one figure: `apart` has
+// a few chosen cases, read one at a time
+const SUMMARY_RULE_REGIMES: ReadonlyArray<Regime> = ['matrix', 'alone'];
+
+// bytes are read in the processes that hold both versions
+const to_bytes_of = (g: Graded, regime: Regime): CaseBytes | undefined =>
+	regime === 'matrix' ? g.bytes : regime === 'alone' ? g.alone_bytes : undefined;
 
 const format_alloc_sum = (gs: Array<Graded>, regime: Regime): string => {
-	const compared = gs.map((g) => to_bytes_of(g, regime)).filter((b) => !Number.isNaN(b.base));
+	const compared = gs
+		.map((g) => to_bytes_of(g, regime))
+		.filter((b): b is CaseBytes => b !== undefined && !Number.isNaN(b.base));
 	const sum = (key: 'base' | 'new'): number => compared.reduce((total, b) => total + b[key], 0);
 	return compared.length ? format_ratio(to_bytes_ratio(sum('new'), sum('base'))) : '-';
 };
@@ -737,8 +880,11 @@ for (const regime of REGIMES) {
 	const realistic = of_regime.filter((g) => g.c.realistic);
 	console.log(
 		`\nsummary, ${regime}: time is the geometric mean of the cases' ratios, and the A/A beside it is from what\n` +
-			'the instances of one version differ by over the same cases, in the same processes: a time inside\n' +
-			'it is no difference. alloc is the ratio of summed bytes.\n'
+			(regime === 'apart'
+				? 'the processes of one version differ by over the same cases, in the same runs: a time inside\n' +
+					'it is no difference. Bytes are not read apart.\n'
+				: 'the instances of one version differ by over the same cases, in the same processes: a time inside\n' +
+					'it is no difference. alloc is the ratio of summed bytes.\n')
 	);
 	console.log(
 		format_table([
@@ -934,7 +1080,7 @@ const format_names = (gs: Array<Graded>): string =>
 	gs.length ? gs.map((g) => g.c.name).join(', ') : 'none';
 
 // by regime, what the valid path of the realistic cases reads, whole and by path
-const valid_by_regime = REGIMES.map((regime) => {
+const valid_by_regime = SUMMARY_RULE_REGIMES.map((regime) => {
 	const valid = graded.filter(
 		(g) => g.c.realistic && g.c.valid && g[regime] && !Number.isNaN(g[regime].ratio)
 	);
@@ -1015,7 +1161,8 @@ const to_flagged = (regime: Regime, flag: CaseTime['flag'], valid?: boolean): Ar
 	graded.filter((g) => g[regime]?.flag === flag && (valid === undefined || g.c.valid === valid));
 
 // what of the valid path reads slower past its A/A: a summary, or cases, which are named below
-// the cases are counted in every regime, whether or not it has a realistic valid one
+// the cases are counted in every regime, whether or not it has a realistic valid one,
+// and `apart` among them
 const slowed = [
 	...valid_by_regime.flatMap(({ regime, whole, paths }) =>
 		[{ path: 'valid', summary: whole }, ...paths]
@@ -1045,7 +1192,7 @@ for (const regime of REGIMES) {
 const to_more_alloc = (regime: Regime): Array<Graded> =>
 	graded.filter((g) => {
 		const bytes = g[regime] && to_bytes_of(g, regime);
-		return bytes && bytes.settled && is_past_alloc_floor(bytes.new, bytes.base);
+		return bytes?.settled && is_past_alloc_floor(bytes.new, bytes.base);
 	});
 const unsettled = graded.filter((g) => !g.bytes.settled || g.alone_bytes?.settled === false);
 console.log(`cases allocating more, matrix: ${format_names(to_more_alloc('matrix'))}`);
@@ -1061,6 +1208,12 @@ console.log(
 const disagreed = [...new Set(matrix_runs.flatMap((run) => run.disagreed))];
 if (disagreed.length) {
 	console.log(`cases the baseline gives another verdict on, not compared: ${disagreed.join(', ')}`);
+}
+if (apart_program_ran < PROGRAM.length) {
+	console.log(
+		`the program, apart: the baseline ran ${apart_program_ran} of its ${PROGRAM.length} entries, ` +
+			'the rest throwing or giving another answer in it, where the new version ran them all'
+	);
 }
 if (args.process) {
 	console.log(

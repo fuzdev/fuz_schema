@@ -417,6 +417,8 @@ npm run grade -- --against HEAD~2 --filter real/
 time, heap bytes allocated, and whether the output is the input itself.
 Each version is loaded several times over, in fresh processes, several runs of them,
 so every time is printed beside what copies of one version differed by, its A/A.
+A few cases are also timed with each version in processes of its own,
+where a cost one version puts on everything in a process shows.
 It then compares bundle size, retained heap, and cold start,
 and checks the result against the rules a change is accepted by:
 

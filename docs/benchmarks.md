@@ -252,7 +252,7 @@ and `harvest_sets.ts` are what a process loads its rows through.
   in all, shared out over the passes. More passes at one duration cost the
   warming and the processes again, not the timing.
 
-`npm run benchmark` has two regimes, the two [`grade`](grading.md) has:
+`npm run benchmark` has two regimes, the first two [`grade`](grading.md) has:
 
 - **shared**, the default: a library's process holds every scenario, and runs
   each of them on both of its inputs before it times any. A scenario's valid
@@ -280,7 +280,8 @@ version of Node.
 
 `grade.ts` plans processes and reads them together, `grade_child.ts` is one
 process, `grade_arm.ts` and `timing.ts` are what a process loads once for
-each instance, the case matrix and the loops, and `grade_job.ts` is what the
+each instance, the case matrix and the loops, `program.ts` is what a process
+of the `apart` regime runs before its case, and `grade_job.ts` is what the
 first two share. [grading.md](grading.md) says what
 is measured and how a difference is decided. What the code has to hold to:
 
@@ -299,11 +300,23 @@ is measured and how a difference is decided. What the code has to hold to:
 - **The loops that call a case have seen many functions** before they see
   one, so the engine never inlines a case into its loop. When it inlines one
   is a matter of timing, which sets instances of one file far apart.
+- **Both versions load from one directory**, `.gro/grade/`, where `grade.ts`
+  copies each whatever file it came from. The same bytes time differently by
+  where their file sits: [grading.md](grading.md#apart) has what was measured.
 - **Order favors nothing.** Which instance is loaded first, which runs a case
   first, and which order of a round leads each move on by a case and by a run.
 - **Time is taken under no flags**, and a timing process refuses any of the
   ones bytes need, on its command line or in `NODE_OPTIONS`. Bytes are taken
   in processes of their own, which are not timed and so run several at once.
+- **A process of the `apart` regime holds one version**, and runs the
+  program through an instance that is not timed. A process that held both
+  would have each pay for what the other does to the state they share, which
+  is what the regime is there to read. A program run through the timed
+  instance would leave its case no longer folded, in both versions, and the
+  difference with it. Each process does the same whichever version it holds.
+- **The program uses every kind of schema.** `src/test/program.test.ts`
+  holds it to the kinds there are. A kind it left out could change what a
+  process shares on first use and never be seen apart.
 - **The graded version builds every group of cases**, and a group of its that
   throws fails the grade, by name. A baseline with an older API loses the
   groups it can't build, and is compared on the rest.
@@ -342,7 +355,8 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   and quiet the machine before recording a result. One process's reading of
   one function is a draw: the same code loaded twice can settle several
   percent apart on a case and stay there. `grade` measures that beside every
-  figure, as a case's floor and a summary's A/A. `benchmark` and
+  figure, as a case's floor and a summary's A/A, among instances in a process
+  and, for the cases it times apart, among processes. `benchmark` and
   `benchmark:harvest` repeat the whole in fresh processes and print each
   figure's spread, which is of a few passes: a gap inside it is not a finding,
   and one just outside it is not much of one. `benchmark:allocations` and

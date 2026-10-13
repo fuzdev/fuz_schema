@@ -38,8 +38,8 @@ gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
 `--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
 `npm run grade` takes `--against`,
 `--against-file`, `--against-libs-file`, `--new-file`, `--filter`, `--runs`,
-`--alone`, `--no-alone`, `--slice`, `--no-bundle`, `--no-process`, and
-`--samples`, see `docs/grading.md`. `npm run benchmark:harvest` takes
+`--alone`, `--no-alone`, `--apart`, `--no-apart`, `--slice`, `--no-bundle`,
+`--no-process`, and `--samples`, see `docs/grading.md`. `npm run benchmark:harvest` takes
 `--set`, `--passes`, and `--duration`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
@@ -65,6 +65,8 @@ dev server.
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
   says and takes the path it names
+- `src/test/program.test.ts` - the program of the grader's `apart` regime has
+  every kind of schema and runs
 - `src/test/docinfo.test.ts`, `src/test/harvest.test.ts` - a harvested set's
   two forms, the consumer's and this library's, give the same answers on its
   data: the first for the valibot set, the second for the zod ones, with its
@@ -104,6 +106,8 @@ dev server.
   - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
     grader, what it loads once for each instance of a version, and what the
     grader and its processes share
+  - `program.ts` - one schema of every kind, built and run: what a process of
+    the grader's `apart` regime runs before it times a case
   - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/` - the
     harvested sets: a consumer's schemas as it writes them (valibot or zod),
     the same in this library, and its data, for the cases. Snapshots, not
@@ -186,7 +190,7 @@ Things that are easy to break without a test noticing:
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and
-  which `npm run grade` doesn't show.
+  which `npm run grade` shows only in its `apart` regime.
 - **`loose_object` has its own loop.** Folding it into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
@@ -222,17 +226,26 @@ change, and read the diff.
 
 - **Measure before stating.** What the engine allocates, inlines, or folds is
   measured before it is said, in a comment, a doc, or a proposal.
-- **The grader's two versions share a process**, so it can't see a cost one
-  of them puts on both. A change that writes to a schema, adds a field or a
-  second shape, or adds module-level state is checked in separate processes,
-  and by `src/test/schema.shape.test.ts`, whatever the grade says.
+- **The grader's two versions share a process in `matrix` and `alone`**, so
+  those can't see a cost one of them puts on both through the engine's state:
+  a write to a schema, or a field added to one. The `apart` regime holds a
+  version to a process and is where such a cost shows, on cases named with
+  `--apart` when the default few don't take its path.
+  `src/test/schema.shape.test.ts` holds the schemas to one map and no field
+  written to, whatever the grade says.
+  Module-level state is each instance's own, so what one schema's use does to
+  it is read in `matrix` and not apart.
 - **Read the grade's lists with its verdict lines**: what allocates more,
-  what retains more, and the cases marked. Read both regimes.
+  what retains more, and the cases marked. Read every regime.
 - **A declined trade gets an entry in `docs/declined.md`**, with its numbers.
 
 Easy to break in the grader without a test noticing: an instance shares no
 function with another, every instance is called the same number of times in
-the same way, and a timing process runs under no flags. `docs/benchmarks.md`
+the same way, both versions load from the same directory, and a timing
+process runs under no flags. For `apart`: a
+process holds one version and no module of the other, its program runs
+through an instance that is not timed, and a process does the same whichever
+version it holds. `docs/benchmarks.md`
 says what each of those guards against.
 
 The flat namespace is enforced: `svelte_docinfo({onDuplicates: 'throw'})` in

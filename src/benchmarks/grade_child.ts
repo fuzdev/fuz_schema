@@ -10,10 +10,16 @@
  * lets one stand as the noise reference of the other. It is checked, not
  * assumed.
  *
- * **Two regimes.** In `matrix` every case of every arm is run before any is
+ * **Three regimes.** In `matrix` every case of every arm is run before any is
  * measured, so each is measured in code that has seen every schema, whichever
  * cases are measured. In `alone` the process builds and runs one case, so the
- * engine can specialize all the way down.
+ * engine can specialize all the way down. In `apart` the arms are of one
+ * version, and one of them is there to use the library: the process builds one
+ * case as `alone` does, runs the program of `program.ts`, which uses every
+ * kind of schema, through that arm, and then times the case in the others,
+ * for a set count of rounds. What using a version does to the state a process
+ * shares is then in that version's processes and in none of the other's,
+ * while the functions the case is timed in have run only the case.
  *
  * **Two modes.** `time` runs under Node's own flags and refuses the ones
  * allocation needs. `bytes` needs them. So a figure of one never comes from a
@@ -36,6 +42,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { Case, SchemaLib } from './cases.ts';
 import {
+	GRADE_APART_ROUNDS,
 	GRADE_BATCH_MAX,
 	GRADE_BATCH_MS,
 	GRADE_BYTES_SETTLE_MS,
@@ -110,18 +117,27 @@ const to_rotated = <T>(list: Array<T>, by: number): Array<T> =>
 // same place reads that as a change.
 const libs: Array<SchemaLib> = [];
 const arms: Array<Arm> = [];
-for (const { id, path, graded } of to_rotated(job.arms, job.offset)) {
+// the instances that only use the library, by what runs their program
+const users: Array<{ instance: unknown; run_program: () => number }> = [];
+for (const { id, path, graded, program } of to_rotated(job.arms, job.offset)) {
 	const query = `?arm=${id}`;
 	const lib: SchemaLib = await import(pathToFileURL(path).href + query);
 	const module: ArmModule = await import(ARM_MODULE_URL + query);
+	libs.push(lib);
+	if (program) {
+		users.push({
+			instance: module.instance,
+			run_program: () => module.run_arm_program(lib, graded)
+		});
+		continue;
+	}
 	const loops: LoopsModule = await import(LOOPS_MODULE_URL + query);
 	// a graded arm that lost a group would be graded on fewer cases, so it fails:
 	// only another version's arm may lack what a group needs
 	const built =
-		job.regime === 'alone'
-			? [module.build_case(lib, job.cases[0]!, graded)].filter((c) => c !== undefined)
-			: module.build_cases(lib, graded);
-	libs.push(lib);
+		job.regime === 'matrix'
+			? module.build_cases(lib, graded)
+			: [module.build_case(lib, job.cases[0]!, graded)].filter((c) => c !== undefined);
 	arms.push({
 		id,
 		loops,
@@ -129,20 +145,30 @@ for (const { id, path, graded } of to_rotated(job.arms, job.offset)) {
 		cases: new Map(built.map((c) => [c.name, c]))
 	});
 }
-// two arms that shared an instance would be one arm timed against itself
+// two arms that shared an instance would be one arm timed against itself, and
+// a program run through a timed arm's instance would be run in its functions
 for (const distinct of [
 	libs,
 	libs.map((lib) => lib.is),
-	arms.map((a) => a.loops.time_slice),
-	arms.map((a) => a.instance)
+	[...arms.map((a) => a.loops.time_slice), ...users],
+	[...arms, ...users].map((a) => a.instance)
 ]) {
-	if (new Set(distinct).size !== arms.length) throw new Error('two arms share a module instance');
+	if (new Set(distinct).size !== job.arms.length) {
+		throw new Error('two arms share a module instance');
+	}
 }
+// once every schema of the timed arms is made, and before any of them runs
+const program_ran = users.map((user) => user.run_program());
 
-const subject = arms.find((arm) => arm.id === job.arms.at(-1)!.id)!;
+const subject_job = job.arms.findLast((arm) => !arm.program)!;
+const subject = arms.find((arm) => arm.id === subject_job.id)!;
 const names = new Set(job.cases);
-const measured = [...subject.cases.values()].filter((c) => names.has(c.name));
-if (measured.length !== names.size) throw new Error('a case to measure is not in the matrix');
+const found = [...subject.cases.values()].filter((c) => names.has(c.name));
+// a process that holds only another version than the graded one goes without
+// what that version lacks
+if (subject_job.graded && found.length !== names.size) {
+	throw new Error('a case to measure is not in the matrix');
+}
 
 // The arms of each case: the graded one, and each other that has it and agrees.
 // Every arm's case is called the same way here, the graded one's no more than
@@ -160,7 +186,7 @@ for (const [index, c] of [...subject.cases.values()].entries()) {
 		// which is asked of the graded version alone: another may copy where it doesn't
 		const same = own.run() === own.input;
 		const on_path = !own.valid || own.path === 'probe' || same === (own.path === 'identity');
-		if (arm === subject && !(ok && on_path)) {
+		if (arm === subject && subject_job.graded && !(ok && on_path)) {
 			throw new Error(`${c.name} expected valid=${c.valid} and path=${c.path}`);
 		}
 		if (ok) of_case.push(arm);
@@ -214,11 +240,16 @@ const to_orders = (count: number): Array<Array<number>> => {
 };
 
 const output: GradeChildOutput = { cases: [], disagreed, sink: 0 };
+if (program_ran.length) output.program_ran = Math.min(...program_ran);
+
+// a case no arm agrees on is one the process holds only another version's arms for
+const measured = found.filter((c) => case_arms.get(c.name)!.length);
 
 for (const [index, c] of measured.entries()) {
 	const of_case = case_arms.get(c.name)!;
 	const runs = of_case.map((arm) => arm.cases.get(c.name)!.run);
 	const orders = to_orders(of_case.length);
+	const rounds = job.regime === 'apart' ? GRADE_APART_ROUNDS : orders.length;
 	const lead = index + job.offset;
 	const result: GradeChildCase = {
 		name: c.name,
@@ -231,7 +262,7 @@ for (const [index, c] of measured.entries()) {
 	if (job.mode === 'time') {
 		const ns: Array<Array<number>> = of_case.map(() => []);
 		// from -1: the round before the first is timed and thrown away
-		for (let round = -1; round < orders.length; round++) {
+		for (let round = -1; round < rounds; round++) {
 			for (const at of orders[(lead + round + orders.length) % orders.length]!) {
 				const samples = of_case[at]!.loops.time_slice(
 					runs[at]!,
