@@ -27,14 +27,14 @@
     "deploy": "gro deploy",
     "benchmark": "gro run src/benchmarks/run.ts",
     "benchmark:bundle": "gro run src/benchmarks/bundle.ts",
-    "benchmark:allocations": "node --expose-gc --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/allocations.ts",
+    "benchmark:allocations": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/allocations.ts",
     "benchmark:types": "gro run src/benchmarks/types.ts",
     "benchmark:coldstart": "gro run src/benchmarks/run_coldstart.ts",
     "benchmark:heap": "gro run src/benchmarks/run_heap.ts",
     "benchmark:wasm": "node src/benchmarks/wasm.ts",
     "benchmark:harvest": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/harvest.ts",
     "build:wasm": "wasm-pack build crates/fuz_schema_wasm --target web --release --out-dir ../../target/fuz_schema_wasm",
-    "grade": "node --expose-gc --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/grade.ts"
+    "grade": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/grade.ts"
   },
   "type": "module",
   "imports": {

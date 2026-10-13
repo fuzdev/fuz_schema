@@ -19,13 +19,8 @@
  * schemas teach the engine about the libraries' shared code is not there when
  * the next is timed, and a set gives the same figures run alone.
  *
- * Bytes are sampled here and not by `measure_bytes`, which forces a collection
- * before each of its rounds. A forced collection clears the maps optimized code
- * holds weakly, the code that held them is thrown away, and a parse that
- * allocates a great deal is then measured in the few calls after it, before the
- * engine has optimized it again. So no collection is forced here, a sample that
- * a collection fell in is left to the median, and a row is sampled until two
- * medians in a row agree. Time is taken in the same process, under the same flags.
+ * Bytes are `measure_bytes`'s, which forces no collection. Time is taken in the
+ * same process, under the flags the bytes need.
  *
  * Usage (`npm run benchmark:harvest` passes the node flags the bytes need):
  *   npm run benchmark:harvest
@@ -38,7 +33,6 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { getHeapStatistics } from 'node:v8';
 import { rolldown } from 'rolldown';
 import type * as v from 'valibot';
 import { z } from 'zod';
@@ -46,7 +40,14 @@ import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
 import * as s from '#lib/schema.ts';
 import { to_bundle_size, type BundleSize } from './bundle_size.ts';
-import { format_table, hold_benchmark_lock, measure_ms, median } from './measure.ts';
+import {
+	format_table,
+	hold_benchmark_lock,
+	measure_bytes,
+	measure_ms,
+	median,
+	require_allocation_node_flags
+} from './measure.ts';
 
 const to_path = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
 
@@ -521,12 +522,7 @@ if (isolated !== undefined && (sets.length !== 1 || sets[0]!.name !== isolated))
 	process.exit(1);
 }
 
-if (!process.execArgv.some((arg) => arg.startsWith('--min-semi-space-size='))) {
-	console.error(
-		'run it as `npm run benchmark:harvest`, which passes the node flags the bytes need'
-	);
-	process.exit(1);
-}
+require_allocation_node_flags();
 
 // the process of one set runs under its parent's lock
 if (isolated === undefined) hold_benchmark_lock('fuz_schema harvest');
@@ -666,60 +662,6 @@ const measure_together = (runs: Array<() => unknown>): Array<number> => {
 	return times.map(median);
 };
 
-// what a sample aims to allocate, a small share of the young generation, so
-// that a collection falls in few samples and the median is of those it didn't
-const SAMPLE_BYTES = 1024 * 1024;
-const SAMPLE_CALLS_MAX = 2000;
-const SAMPLES = 15;
-// A row is run for this long between two medians, which are taken until one is
-// within `SETTLED_WITHIN` of the one before it. After `SETTLE_TRIES` that were
-// not, past the first, the bytes did not settle and the measurement throws.
-const SETTLE_MS = 250;
-const SETTLE_TRIES = 20;
-const SETTLED_WITHIN = 0.005;
-// the share of a median's samples a collection may fall in before the measurement throws
-const MAX_COLLECTED_SHARE = 1 / 3;
-
-const sample_heap = (fn: () => unknown, calls: number): number => {
-	const before = getHeapStatistics().used_heap_size;
-	for (let i = 0; i < calls; i++) fn();
-	return getHeapStatistics().used_heap_size - before;
-};
-
-const noop = (): void => {};
-
-// The median heap bytes a call of `fn` allocates, once two medians in a row
-// agree. No collection is forced, see the module comment.
-// @throws Error when a collection fell in too many samples, or the bytes did not settle
-const measure_settled_bytes = (fn: () => unknown): number => {
-	const to_median = (calls: number): number => {
-		const raw = Array.from({ length: SAMPLES }, () => sample_heap(fn, calls));
-		const collected = raw.filter((delta) => delta < 0).length;
-		if (collected > raw.length * MAX_COLLECTED_SHARE) {
-			throw new Error(
-				`a collection fell in ${collected} of ${raw.length} samples: the young generation is ` +
-					'smaller than the npm script asks for, or a call allocates too large a share of it'
-			);
-		}
-		// what a sample grows the heap by with nothing in it, the statistics objects,
-		// read beside the samples because it falls as the engine optimizes the sampling
-		const overhead = median(Array.from({ length: SAMPLES }, () => sample_heap(noop, 0)));
-		return median(raw.map((delta) => Math.max(0, delta - overhead) / calls));
-	};
-	let bytes = to_median(1);
-	for (let tries = 0; tries < SETTLE_TRIES; tries++) {
-		const until = performance.now() + SETTLE_MS;
-		do fn();
-		while (performance.now() < until);
-		const calls = Math.max(1, Math.min(SAMPLE_CALLS_MAX, Math.floor(SAMPLE_BYTES / bytes)));
-		const next = to_median(calls);
-		const settled = Math.abs(next - bytes) <= bytes * SETTLED_WITHIN;
-		bytes = next;
-		if (settled) return bytes;
-	}
-	throw new Error(`the bytes did not settle within ${SETTLE_TRIES} tries`);
-};
-
 // said under every set's tables, before its library's notes and its own
 const METHOD_NOTES = [
 	'Time and bytes are taken in one process, under the node flags the bytes need: a young\n' +
@@ -746,7 +688,7 @@ const run_set = async (set: HarvestSet): Promise<void> => {
 		// this library's last, which the batch is sized by
 		const runs = [...row.theirs, row.ours];
 		const us = measure_together(runs).map((ms) => ms * 1000);
-		const bytes = runs.map(measure_settled_bytes);
+		const bytes = runs.map((run) => measure_bytes(run));
 		for (const [table, values] of [
 			[time_table, us],
 			[bytes_table, bytes]
@@ -770,7 +712,7 @@ const run_set = async (set: HarvestSet): Promise<void> => {
 			aside_table.push([
 				aside.name,
 				format_number(measure_together([aside.run])[0]! * 1000),
-				format_number(measure_settled_bytes(aside.run))
+				format_number(measure_bytes(aside.run))
 			]);
 		}
 		console.log("\nchecks that are a rewrite's own code and no library's, each alone\n");

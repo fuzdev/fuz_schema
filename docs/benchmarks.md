@@ -85,13 +85,10 @@ once.
   part of it. It is taken in the process the bytes are, under the flags the
   bytes need. Those are not the flags a consumer runs under, and a side's time
   moves with them, by set and not always the same way.
-- **Bytes** are sampled with no collection forced, a row run until two medians
-  in a row agree. A sample is a small share of the young generation the npm
-  script asks for, or one parse where a parse is more than that, so a
-  collection falls in few and the median is of the rest. The same parse in two
-  rows reads within about a percent. A figure is of the code the engine has
-  made for a set's rows together: a document parsed alone in a process can
-  allocate less.
+- **Bytes** are measured as [below](#method), each row after its timing. The
+  same parse in two rows reads within about a percent. A figure is of the code
+  the engine has made for a set's rows together: a document parsed alone in a
+  process can allocate less.
 - **Zod is two columns.** It compiles a parser for each object schema with
   `new Function` on that schema's first parse, where the environment lets it,
   and otherwise interprets: under `z.config({jitless: true})`, or a content
@@ -127,10 +124,19 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 - **Parse time**: fuz_util's `Benchmark`, a batch of parses per timing.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped.
-- **Allocation**: growth of V8's used heap across a batch, per call, after a
-  forced collection. Needs `--expose-gc` and a large young generation, which
-  the npm scripts pass. `benchmark:harvest` samples its own way,
-  [above](#head-to-head).
+- **Allocation**: growth of V8's used heap across a sample of calls, per call,
+  with no collection forced. A forced collection makes the engine throw away
+  optimized code, and the calls sampled after it allocate more than the code
+  a consumer runs. A sample is a small share of a large young generation, or
+  one call where a call is more than that, so a collection falls in few and
+  the median is of the rest. The function is run between medians until two in
+  a row agree within half a percent. The measurement throws when a collection
+  fell in too many samples or the bytes never settle. The sampling loop is
+  the engine's code as well: given one function it inlines it, and an object
+  the function only returns is then never allocated. So a process measures
+  two functions and throws them away before the first it keeps. The scripts
+  need the young generation's node flags, which their npm scripts pass, and
+  refuse to run without them.
 - **Cold start**: one fresh Node process per sample, in three stages that
   build on each other, against a bare process. Bundled and unbundled entries.
   Compile cache off, rounds interleaved, medians.
@@ -146,13 +152,24 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
 
 ## Reading the numbers
 
-- Bundle size is exact. Allocation is exact only for the code the engine is
-  running when it is sampled, and that changes. `grade` and
-  `benchmark:allocations` force a collection before each round, which throws
-  away optimized code that the round then runs without, and a figure of
-  `benchmark:allocations` can differ by over a tenth from one run to the next.
-  `benchmark:harvest` forces none and repeats to about a percent. Retained
-  heap repeats to about a kilobyte.
+- Bundle size is exact. Allocation is exact for the code the engine is running
+  when it is sampled: two readings of one parse in a process agree to the byte
+  on a small case and within a few bytes on most large ones, and the largest
+  copy has read over a tenth of a percent apart. Which code the engine runs is
+  settled per process, and not always the same way. From one run to the next
+  a case of `grade` reads the same in the whole matrix and alone, but for the
+  largest copy, which moves by a percent or two. Under a filter that takes in
+  a few cases the two versions can be left in different code, and an unchanged
+  library then reads less on one side, by the context, and faster. A row of
+  `benchmark:allocations` repeats within about a percent, with one kind of
+  exception: a row can settle at one of a few figures, tens of bytes apart or
+  a few hundred, each process at one of them and every reading in it the
+  same. That is over a tenth of the smallest such row. Retained heap repeats
+  to about a kilobyte.
+- Allocation depends on what else the process has run. A parse whose call
+  sites have seen one schema can be inlined and its context removed, and
+  reads less than the same parse among many schemas: see
+  [grading.md](grading.md).
 - Time is not exact. Trust group means and realistic cases over one fast case,
   and quiet the machine before recording a result.
 - It isn't like-for-like: TypeBox's check builds no output, ArkType keeps

@@ -27,14 +27,19 @@ first.
 Grade a change to the core twice over: the whole matrix, where every call
 site has seen many schemas, and each case it touches alone
 (`--filter <its full name>`), where the engine inlines the parse and can
-remove the context. A change can win one and lose the other.
+remove the context. A change can win one and lose the other. The bytes differ
+too, and both are right: a case reads less alone than in the matrix by the
+objects the engine removed. Give the case's full name: under a filter that
+takes in a few cases, an unchanged library can read apart from itself in
+bytes and in time.
 
 ## Rules
 
 1. **Judge speed on the realistic cases**, valid input first, and read it
    by path: one figure can hide a path that got slower.
 2. **A time difference under about 10% is noise** until reproduced on a quiet
-   machine. Bundle bytes are exact, and allocations nearly: see
+   machine. Bundle bytes are exact. Allocations are exact for the code the
+   engine is running, and need no quiet machine: see
    [benchmarks.md](benchmarks.md#reading-the-numbers).
 3. **Opt-in bytes only have to pay for themselves.**
 4. **Bytes every user pays need a return**: roughly a 10% speedup on the
@@ -45,7 +50,10 @@ remove the context. A change can win one and lose the other.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
 
 `grade` checks 2, 4, 5, and 6, and lists what allocates more, retains more, or
-starts slower. The rest is judgment. Rule 4's "core" is the `strict_nested`
-scenario's bundle, the one built from `object`.
+starts slower. A case is listed as allocating more when it does by over eight
+bytes and a fifth of a percent, which is past what two readings of one parse
+differ by: a smaller rise on a large case is in the table and not in the
+list. The rest is judgment. Rule 4's "core" is the `strict_nested` scenario's
+bundle, the one built from `object`.
 
 A pass doesn't mean nothing regressed. Read the lists.

@@ -14,7 +14,12 @@ import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
 import { SCENARIOS } from './scenarios.ts';
 import { LIBS } from './libs.ts';
-import { format_table, measure_bytes, measure_ms } from './measure.ts';
+import {
+	format_table,
+	measure_bytes,
+	measure_ms,
+	require_allocation_node_flags
+} from './measure.ts';
 
 const Names = z
 	.union([z.string(), z.array(z.string())])
@@ -33,6 +38,8 @@ if (!parsed.success) {
 	process.exit(1);
 }
 const args = parsed.data;
+
+require_allocation_node_flags();
 
 const format_number = (n: number): string =>
 	Number.isNaN(n) ? '?' : n >= 100 ? n.toFixed(0) : n.toFixed(1);
@@ -59,11 +66,11 @@ for (const scenario of SCENARIOS) {
 			lib.name,
 			format_number(measure_bytes(() => run(valid))),
 			format_number(measure_bytes(() => run(invalid))),
-			format_number(measure_bytes(factory, 20)),
+			format_number(measure_bytes(factory)),
 			format_number(measure_ms(factory, 20) * 1000)
 		]);
 	}
 }
 
-console.log('\nallocations, heap bytes per call (median of rounds), and warm creation time\n');
+console.log('\nallocations, heap bytes per call, and warm creation time\n');
 console.log(format_table(rows, 2));

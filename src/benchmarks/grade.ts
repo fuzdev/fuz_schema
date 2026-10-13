@@ -54,7 +54,8 @@ import {
 	geometric_mean,
 	hold_benchmark_lock,
 	measure_bytes,
-	measure_ms
+	measure_ms,
+	require_allocation_node_flags
 } from './measure.ts';
 
 const Args = z.strictObject({
@@ -90,10 +91,14 @@ if (!parsed.success) {
 }
 const args = parsed.data;
 
+require_allocation_node_flags();
 hold_benchmark_lock('fuz_schema grade');
 
 // thresholds from the acceptance rules
 const NOISE_FLOOR = 0.1;
+// what a case must allocate more by to be listed: a word, and past that the
+// share two readings of one parse can differ by
+const ALLOC_FLOOR = { bytes: 8, share: 0.002 };
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 const CEILING_VS_VALIBOT = 2 / 3;
 // the scenario standing in for "what `parse` plus an object schema reaches":
@@ -158,6 +163,11 @@ const bench = new Benchmark({
 	min_iterations: 30,
 	cooldown_ms: 10
 });
+
+// What a case is run for between two medians of its bytes. Every case has been
+// timed for a second or so by then, so this is short: the bytes read the same
+// at a tenth of it and at five times it.
+const BYTES_SETTLE_MS = 50;
 
 let sink = 0;
 const to_task = (run: () => unknown, batch: number) => (): void => {
@@ -225,7 +235,7 @@ const results = new Map((await bench.run()).map((r) => [r.name, r]));
 for (const m of measured) {
 	const result = results.get(`${m.c.name} [new 1]`)!;
 	m.ns = result.stats.p50_ns / m.batch;
-	m.bytes = measure_bytes(m.c.run, undefined, 5);
+	m.bytes = measure_bytes(m.c.run, BYTES_SETTLE_MS);
 	if (m.base) {
 		const result_2 = results.get(`${m.c.name} [new 2]`)!;
 		const base_result = results.get(`${m.c.name} [base 1]`)!;
@@ -241,7 +251,7 @@ for (const m of measured) {
 		});
 		m.significant =
 			compared_1.significant && compared_2.significant && compared_1.faster === compared_2.faster;
-		m.base_bytes = measure_bytes(m.base.run, undefined, 5);
+		m.base_bytes = measure_bytes(m.base.run, BYTES_SETTLE_MS);
 	}
 }
 
@@ -484,7 +494,9 @@ const realistic_speedup = 1 - time_ratio(realistic_valid);
 const slower_valid = compared.filter(
 	(m) => m.c.valid && m.significant && m.ns / m.base_ns > 1 + NOISE_FLOOR
 );
-const more_alloc = compared.filter((m) => m.bytes > m.base_bytes + 8);
+const more_alloc = compared.filter(
+	(m) => m.bytes - m.base_bytes > Math.max(ALLOC_FLOOR.bytes, m.base_bytes * ALLOC_FLOOR.share)
+);
 const changed_out = compared.filter((m) => m.base_same !== m.same);
 
 const format_names = (ms: Array<Measured>): string =>

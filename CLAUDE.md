@@ -156,7 +156,8 @@ Things that are easy to break without a test noticing:
 Grade a change before keeping it: `npm run grade`, then read the verdict
 against `docs/grading.md`. Add a case to `src/benchmarks/cases.ts` first when
 the change targets a path no case isolates. Timed results need a quiet machine
-to be trusted. Bundle bytes are exact; allocations repeat closely and not exactly, see
+to be trusted; bytes and allocations don't. Bundle bytes are exact, and
+allocations are exact for the code the engine is running, see
 `docs/benchmarks.md`.
 
 The flat namespace is enforced: `svelte_docinfo({onDuplicates: 'throw'})` in
@@ -168,8 +169,9 @@ same name.
 `src/benchmarks/*.ts` runs through Node's type stripping, with no build step:
 erasable syntax only, imports with explicit `.ts` extensions that Node
 resolves on its own (relative paths, packages, `#lib/*`), and `import type`
-for types. `allocations.ts`, `grade.ts`, and `harvest.ts` need V8 flags, which
-their npm scripts pass.
+for types. `allocations.ts`, `grade.ts`, and `harvest.ts` measure allocation,
+which needs the node flags for a large young generation: their npm scripts
+pass them, and each refuses to run without.
 
 ## Rust workspace
 
