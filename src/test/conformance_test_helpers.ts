@@ -369,6 +369,9 @@ export class ConformancePoint {
 	a = 'x';
 }
 
+/** An `Array` subclass, whose `slice` makes one of itself. */
+export class ConformanceList extends Array<string> {}
+
 const with_hidden = (o: object, key: PropertyKey, value: unknown): object =>
 	Object.defineProperty(o, key, { value, enumerable: false, configurable: true, writable: true });
 
@@ -910,6 +913,16 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => Object.assign(['x'], { z: 1 })
 	},
 	{
+		name: 'array of a subclass',
+		schema: (l) => l.array(l.string),
+		input: () => ConformanceList.from(['x'])
+	},
+	{
+		name: 'array of a subclass, an item changes',
+		schema: (l) => l.array(l.map(l.string, (x) => x + '!')),
+		input: () => ConformanceList.from(['x'])
+	},
+	{
 		name: 'array, an object like one',
 		schema: (l) => l.array(l.string),
 		input: () => ({ 0: 'x', length: 1 })
@@ -934,6 +947,8 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'bigint, a bigint', schema: (l) => l.bigint, input: () => 1n },
 	{ name: 'literal 0, -0', schema: (l) => l.literal(0), input: () => -0 },
 	{ name: 'literal NaN, NaN', schema: (l) => l.literal(NaN), input: () => NaN },
+	{ name: 'literal NaN, a number', schema: (l) => l.literal(NaN), input: () => 1 },
+	{ name: 'literal 1, NaN', schema: (l) => l.literal(1), input: () => NaN },
 	{
 		name: 'literal "x", a String object',
 		schema: (l) => l.literal('x'),
@@ -1119,12 +1134,10 @@ const same_output = (ours: unknown, theirs: unknown, of_input: Set<object>): boo
 	const keys = Reflect.ownKeys(theirs);
 	if (of_input.has(ours)) {
 		// the input's own object: it has every key of theirs as its own, and no
-		// enumerable string key of its own past them
-		if (
-			!keys.every((key) => Object.hasOwn(ours, key)) ||
-			!Object.keys(ours).every((key) => Object.hasOwn(theirs, key))
-		) {
-			return false;
+		// enumerable string key past them, its own or one it inherits
+		if (!keys.every((key) => Object.hasOwn(ours, key))) return false;
+		for (const key in ours) {
+			if (!Object.hasOwn(theirs, key)) return false;
 		}
 	} else {
 		// one this library built: everything `render_value` writes
@@ -1147,9 +1160,10 @@ const same_output = (ours: unknown, theirs: unknown, of_input: Set<object>): boo
  *
  * So an object of the output that is the input's own is held to less than a
  * copy is: it must have every key of the other library's copy as an own key,
- * with the same value, and no enumerable string key of its own past those.
- * What else it has is the input's and not this library's doing: its key
- * order, its prototype, its symbol keys, and which of its keys are
+ * with the same value, and no enumerable string key past those, whether its
+ * own or one it inherits, as either is read through it. What else it has is
+ * the input's and not this library's doing: its key order, its prototype and
+ * what of it isn't enumerable, its symbol keys, and which of its keys are
  * enumerable. An object this library built is compared in full, as the texts
  * are.
  */

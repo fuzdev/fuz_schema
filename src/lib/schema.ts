@@ -502,7 +502,8 @@ const format_literals = (values: Iterable<unknown>): string =>
 	Array.from(values, (v) => (typeof v === 'string' ? JSON.stringify(v) : String(v))).join(' | ');
 
 /**
- * Matches a single value by `===`.
+ * Matches a single value by `===`, so `0` and `-0` match each other, and
+ * matches `NaN` when the value is `NaN`, which `===` alone never would.
  */
 // @__NO_SIDE_EFFECTS__
 export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, 'literal', T> => {
@@ -512,12 +513,17 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
 		kind: 'literal',
 		def: value,
 		run: (v, ctx) =>
-			v === value ? v : fail(ctx, 'literal', v, (expected ??= format_literals([value])))
+			// `NaN` is the one value that isn't itself, and is looked for only after a miss
+			// eslint-disable-next-line no-self-compare
+			v === value || (v !== v && value !== value)
+				? v
+				: fail(ctx, 'literal', v, (expected ??= format_literals([value])))
 	};
 };
 
 /**
- * Matches any of `values` by `===`.
+ * Matches any of `values` as `literal` matches one: by `===`, so `0` and `-0`
+ * match each other, and `NaN` when it is among them.
  */
 // @__NO_SIDE_EFFECTS__
 export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(

@@ -42,6 +42,59 @@ describe('primitives', () => {
 			{ kind: 'one_of', expected: '"a" | "b"', received: 'string', path: [], message: undefined }
 		]);
 	});
+
+	test('a NaN literal matches NaN and nothing else', () => {
+		const Nan = s.literal(NaN);
+		assert.deepEqual(Object.keys(Nan), ['kind', 'def', 'run']);
+		assert(s.is(Nan, NaN));
+		assert(s.is(Nan, 0 / 0));
+		assert.deepEqual(s.parse(Nan, NaN), { ok: true, value: NaN });
+		for (const value of [0, -0, 1, Infinity, 'NaN', null, undefined, {}, [NaN], Object(NaN)]) {
+			assert(!s.is(Nan, value), inspect(value));
+		}
+		assert.deepEqual(issues_of(Nan, 1), [
+			{ kind: 'literal', expected: 'NaN', received: 'number', path: [], message: undefined }
+		]);
+		assert.strictEqual(issues_of(Nan, 'NaN')[0]!.received, 'string');
+		assert.throws(() => s.parse_or_throw(Nan, 1), s.SchemaError);
+		// the other literals still refuse it
+		for (const value of [0, 1, 'NaN', null, undefined, 1n, true]) {
+			assert(!s.is(s.literal(value), NaN), inspect(value));
+		}
+		assert(s.is(s.one_of([1, NaN]), NaN));
+	});
+
+	test('a literal of either zero matches both, and the output is the input', () => {
+		for (const schema of [s.literal(0), s.literal(-0), s.one_of([0, 1]), s.one_of([-0, 1])]) {
+			for (const value of [0, -0]) {
+				const result = s.parse(schema, value);
+				assert(result.ok);
+				assert(Object.is(result.value, value));
+			}
+		}
+		// the text is the literal's own
+		assert.strictEqual(issues_of(s.literal(-0), 1)[0]!.expected, '0');
+	});
+
+	test('variant finds an option by a NaN literal, and by either zero', () => {
+		const V = s.variant('t', [
+			s.object({ t: s.literal(NaN), a: s.string }),
+			s.object({ t: s.literal(0), b: s.string })
+		]);
+		// a copy: a `NaN` that passes reads as a change to the container holding it
+		const nan = { t: NaN, a: 'x' };
+		const output = s.parse_or_throw(V, nan);
+		assert.deepEqual(output, nan);
+		assert.notStrictEqual(output, nan);
+		const negative_zero: unknown = { t: -0, b: 'x' };
+		assert.strictEqual(s.parse_or_throw(V, negative_zero), negative_zero);
+		assert.deepEqual(issues_of(V, { t: NaN, a: 1 }), [
+			{ kind: 'string', expected: 'string', received: 'number', path: ['a'], message: undefined }
+		]);
+		assert.deepEqual(issues_of(V, { t: 1 }), [
+			{ kind: 'variant', expected: 'NaN | 0', received: 'number', path: ['t'], message: undefined }
+		]);
+	});
 });
 
 describe('wrappers', () => {

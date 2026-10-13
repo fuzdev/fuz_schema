@@ -37,7 +37,8 @@ interface ConformanceDifference {
 	/**
 	 * `declared` is deliberate, and in `docs/design.md`. `undecided` is a
 	 * difference the test found that nobody has ruled on: it passes, and is
-	 * printed on every run until it is conformed to or declared.
+	 * printed on every run until it is conformed to or declared. The table is
+	 * kept free of them.
 	 */
 	status: 'declared' | 'undecided';
 	/** Words of `docs/design.md` that declare it, whatever the line breaks. */
@@ -124,8 +125,9 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 	},
 	{
 		reason:
-			'`record` runs the value of an own `__proto__` key before dropping the key, where both drop it unread',
-		status: 'undecided',
+			"`record` validates the value of every own key, so that of an own `__proto__` key too, before leaving the key out of a copy, where both drop it unread: the stricter answer, and the Rust crate's",
+		status: 'declared',
+		docs: '`record` validates the value of an own `__proto__` key',
 		rows: {
 			'record, own __proto__ key whose value is wrong': {
 				both: 'ok {a: 1}',
@@ -135,13 +137,31 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 	},
 	{
 		reason:
-			'a hole of an array stays one in an array that comes back, and in a copy before its first item that changed, where both have `undefined` in it',
-		status: 'undecided',
+			'an enumerable key the input inherits is still read through a `record` input that comes back, unvalidated, where a copy has only the own keys',
+		status: 'declared',
+		docs: 'An enumerable key the input inherits is still read through an input that comes back',
+		rows: {
+			'record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' }
+		}
+	},
+	{
+		reason:
+			'a hole of an array stays a hole in an array that comes back, where both write `undefined`',
+		status: 'declared',
+		docs: 'a hole stays a hole',
 		rows: {
 			'array of optionals, a hole': {
 				both: 'ok ["x", undefined, "y"]',
 				ours: 'ok ["x", <hole>, "y"]'
-			},
+			}
+		}
+	},
+	{
+		reason:
+			'a copy of an array is a `slice`, so a hole before the first item that changed stays a hole in it, where both write `undefined`',
+		status: 'declared',
+		docs: 'a hole before the first item that changed stays a hole in it',
+		rows: {
 			'array of optionals, a hole before an item that changes': {
 				both: 'ok [undefined, "x!"]',
 				ours: 'ok [<hole>, "x!"]'
@@ -149,17 +169,20 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 		}
 	},
 	{
-		reason: 'an array that comes back keeps its keys that are not items, where a copy has none',
-		status: 'undecided',
+		reason: 'an array that comes back keeps its own keys that are not items, where a copy has none',
+		status: 'declared',
+		docs: 'its own keys that are not items stay',
 		rows: {
 			'array with another key': { both: 'ok ["x"]', ours: 'ok ["x"] with {z: 1}' }
 		}
 	},
 	{
-		reason: '`literal` compares by `===`, so `literal(NaN)` matches nothing',
-		status: 'undecided',
+		reason:
+			"a copy of an array is a `slice`, so an instance of the input's `Array` subclass, where both give a plain array",
+		status: 'declared',
+		docs: "it is an instance of the input's `Array` subclass",
 		rows: {
-			'literal NaN, NaN': { both: 'ok NaN', ours: 'fail at <root>' }
+			'array of a subclass, an item changes': { both: 'ok ["x!"]', ours: 'ok ["x!"] proto=other' }
 		}
 	}
 ];
@@ -169,7 +192,7 @@ interface ConformanceSide {
 	side: 'zod' | 'valibot' | 'neither' | 'both';
 	zod: string;
 	valibot: string;
-	/** This library's result, where it isn't the text of its side's. */
+	/** This library's result, where it isn't the text of its side's. Always given for `neither`. */
 	ours?: string;
 }
 
@@ -194,9 +217,12 @@ const SIDES: Record<string, ConformanceSide> = {
 		valibot: 'ok {t: "b", d: "D"}'
 	},
 
-	// the unknown keys of a loose object
+	// the unknown keys of a loose object. An enumerable one the input inherits
+	// zod copies and valibot drops: a copy here drops it, and an input that
+	// comes back is neither's, as the key is still read through it, and not as
+	// an own key
 	'unknown inherited key / loose': {
-		side: 'valibot',
+		side: 'neither',
 		zod: 'ok {a: "x", z: 1}',
 		valibot: 'ok {a: "x"}',
 		ours: 'ok {a: "x"} proto=other'
@@ -448,7 +474,10 @@ const assert_conforms = (row: ConformanceRow): void => {
 		);
 	}
 	// this library's text is its side's unless the entry gives another
-	const recorded = side.ours ?? (side.side === 'zod' ? side.zod : side.valibot);
+	const recorded = side.ours ?? (side.side === 'valibot' ? side.valibot : side.zod);
+	if (side.side === 'neither' && side.ours === undefined) {
+		fail('is in SIDES as neither, with no result of this library.', 'Give it as `ours`.');
+	}
 	if (side.zod !== zod.text || side.valibot !== valibot.text || recorded !== ours.text) {
 		fail(
 			'is in SIDES with results that are no longer what the libraries do.',

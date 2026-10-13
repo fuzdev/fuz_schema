@@ -662,6 +662,7 @@ const each: CaseGroup = (s) => {
 		// a hundred issues, each with an index for its path
 		of('string/invalid', s.string, 42, 'issues'),
 		of('message/invalid', s.message(s.string, 'must be text'), 42, 'issues'),
+		of('literal/invalid', s.literal('a'), 'b', 'issues'),
 		of('pipe_string_first_action_bad/invalid', Name, '', 'issues'),
 		of('pipe_string_last_action_bad/invalid', Name, 'Ada', 'issues'),
 		of('union_3_primitives/invalid', primitives, null, 'issues'),

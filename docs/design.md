@@ -100,13 +100,24 @@ Given up:
   unaffected.
 - A key read through the prototype stays inherited in an input that comes
   back, where a copy has it as an own key.
+- An enumerable key the input inherits is still read through an input that
+  comes back: one a `record` never validated, as it runs own keys only, and
+  one a `loose_object` doesn't name. A copy has neither.
+- An array that comes back is the input as it is, as an object is: a hole
+  stays a hole, and its own keys that are not items stay. A copy of one is a
+  `slice` with the changed items written to it: it has none of those keys, a
+  hole before the first item that changed stays a hole in it, and it is an
+  instance of the input's `Array` subclass.
+- A `NaN` that passes reads as a change, as it isn't `===` itself, so the
+  container holding it is copied.
 
 Kept:
 
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
-- `record` drops a `__proto__` key, and so does a copy `loose_object` makes
-  of one the schema doesn't name. A schema entry named `__proto__` is not
+- `record` drops a `__proto__` key, after validating its value as any own
+  key's, and so does a copy `loose_object` makes of one the schema doesn't
+  name. A schema entry named `__proto__` is not
   guarded in any object schema: a copy writes it, which sets the copy's
   prototype from the input, and an input that comes back keeps its own
   `__proto__` key.
@@ -115,10 +126,11 @@ Kept:
 Zod and Valibot build every output. `src/test/schema.conformance.test.ts`
 compares this library with both, and allows an object of the output that is
 the input's own to differ from their copy in the ways above that are the
-input's alone: its prototype and what it inherits, its key order, and its
-symbol keys and keys that aren't enumerable. A key read through the prototype
-and an own `__proto__` key are rows of its table, see
-[below](#behavior-that-differs-from-valibot-and-zod).
+input's alone and that nothing reads by enumerating it: its prototype, its key
+order, and its symbol keys and keys that aren't enumerable. The rest are rows
+of its table, see [below](#behavior-that-differs-from-valibot-and-zod): a key
+read through the prototype, an enumerable key it inherits, an own `__proto__`
+key, and what an array keeps.
 
 ## Object schemas
 
@@ -286,7 +298,16 @@ What the test compares is the verdict, the output, and the paths of the
 issues. These it holds:
 
 - Output is copy-on-write, where both always copy. What an input that comes
-  back keeps is under [Copy-on-write output](#copy-on-write-output).
+  back keeps, and what a copy is, are under
+  [Copy-on-write output](#copy-on-write-output). The rows of it:
+  - a key read through the prototype, which stays inherited
+  - an enumerable key a `record` input inherits, which is still read through it
+  - an own `__proto__` key, of a `loose_object` input and of an entry named so
+  - an array's holes, and its own keys that are not items
+  - an array copy's hole before the first item that changed, and its subclass
+- `record` validates the value of an own `__proto__` key, and fails where it
+  is refused, where both drop the key unread and pass. Every own key's value
+  is validated, which is the stricter answer, and is what the Rust crate does.
 - Valibot and Zod need the key of every entry that isn't optional. Here only
   an `unknown` entry needs its key, and for the other entries that accept
   `undefined` a missing key is the `undefined` it reads as:
@@ -312,6 +333,9 @@ Where the two disagree, this library goes with:
   Zod copies an enumerable one and Valibot doesn't, and here it is left out.
   The copy otherwise has the keys Valibot's and Zod's loose objects give, in
   their order.
+- **Neither on that key in a `loose_object` input that comes back.** It is
+  still read through the input, which Valibot's copy doesn't allow, and is
+  not an own key, as it is in Zod's.
 - **Zod on an unknown key named `constructor` or `prototype`**, in a
   `loose_object`: Valibot drops it and Zod keeps it, and here it is kept.
 - **Valibot on an entry named `__proto__`.** Zod leaves it out of the output

@@ -154,8 +154,9 @@ Things that are easy to break without a test noticing:
 - **A difference from zod and valibot where they agree is declared**, in the
   table of `src/test/schema.conformance.test.ts` and in `docs/design.md`,
   which say the same. The test finds one that isn't, and one that is declared
-  and gone. One not yet ruled on is marked undecided in the table, and
-  printed on every run. A new behavior gets a case in the matrix.
+  and gone. One not yet ruled on can be marked undecided in the table, which
+  prints it on every run until it is ruled on: the table is kept free of them.
+  A new behavior gets a case in the matrix.
 - **The library has no dependencies.** The comparison libraries and the
   bundler are devDependencies of the benchmarks only.
 - **A generated process module holds nothing of the harness.** The bare
