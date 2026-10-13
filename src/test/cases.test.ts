@@ -7,7 +7,7 @@ describe('the case matrix', () => {
 	const cases = create_cases(s);
 
 	test('every group builds', () => {
-		// called directly, since `create_cases` drops a group that throws
+		// called directly, since `create_cases` drops a group that throws unless it is strict
 		for (const group of CASE_GROUPS) assert(group(s).length > 0);
 	});
 

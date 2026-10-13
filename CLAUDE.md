@@ -29,12 +29,15 @@ npm run benchmark:heap        # memory still held after building and parsing
 npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_wasm
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
-npm run grade                 # grade the working tree against HEAD
+npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 gro src/test/fixtures/json/update # regenerate the JSON fixtures' expected.json
 ```
 
 `npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`, and
-`--duration`, see `src/benchmarks/run.ts`. `npm run benchmark:harvest` takes
+`--duration`, see `src/benchmarks/run.ts`. `npm run grade` takes `--against`,
+`--against-file`, `--against-libs-file`, `--new-file`, `--filter`, `--runs`,
+`--alone`, `--no-alone`, `--slice`, `--no-bundle`, `--no-process`, and
+`--samples`, see `docs/grading.md`. `npm run benchmark:harvest` takes
 `--set`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
@@ -83,6 +86,9 @@ dev server.
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
+  - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
+    grader, what it loads once for each instance of a version, and what the
+    grader and its processes share
   - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/` - the
     harvested sets: a consumer's schemas as it writes them (valibot or zod),
     the same in this library, and its data, for the cases. Snapshots, not
@@ -166,10 +172,18 @@ Things that are easy to break without a test noticing:
 
 Grade a change before keeping it: `npm run grade`, then read the verdict
 against `docs/grading.md`. Add a case to `src/benchmarks/cases.ts` first when
-the change targets a path no case isolates. Timed results need a quiet machine
-to be trusted; bytes and allocations don't. Bundle bytes are exact, and
-allocations are exact for the code the engine is running, see
-`docs/benchmarks.md`.
+the change targets a path no case isolates. Every summary time `grade` prints
+is beside its A/A, what instances of one version differed by in the same
+processes: a time inside its A/A is not a difference. A case's time is beside
+its floor, and only a case marked `*` is a finding: one outside its floor or
+marked `?` is not. Give a small change `--runs 5` or more, and a quiet machine, which
+narrows the A/A. Bundle bytes are exact, and allocations are exact for the
+code the engine is running, see `docs/benchmarks.md`.
+
+Easy to break in the grader without a test noticing: an instance shares no
+function with another, every instance is called the same number of times in
+the same way, and a timing process runs under no flags. `docs/benchmarks.md`
+says what each of those guards against.
 
 The flat namespace is enforced: `svelte_docinfo({onDuplicates: 'throw'})` in
 `vite.config.ts` fails the build when two modules in `src/lib/` export the
@@ -180,9 +194,10 @@ same name.
 `src/benchmarks/*.ts` runs through Node's type stripping, with no build step:
 erasable syntax only, imports with explicit `.ts` extensions that Node
 resolves on its own (relative paths, packages, `#lib/*`), and `import type`
-for types. `allocations.ts`, `grade.ts`, and `harvest.ts` measure allocation,
-which needs the node flags for a large young generation: their npm scripts
-pass them, and each refuses to run without.
+for types. `allocations.ts` and `harvest.ts` measure allocation, which needs
+the node flags for a large young generation: their npm scripts pass them, and
+each refuses to run without. `grade.ts` runs under none and passes them to
+the processes that measure bytes.
 
 ## Rust workspace
 

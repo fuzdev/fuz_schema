@@ -28,10 +28,32 @@ const ALLOCATION_NODE_FLAGS_MESSAGE =
 	`allocation measurement needs \`node ${ALLOCATION_NODE_FLAGS}\`, a young generation large ` +
 	'enough that a collection falls in few samples: run the script with `npm run`, which passes them';
 
-const has_allocation_node_flags = (): boolean =>
-	ALLOCATION_NODE_FLAGS.split(' ').every((flag) =>
-		process.execArgv.some((arg) => arg.startsWith(flag.slice(0, flag.indexOf('=') + 1)))
+// by flag of `ALLOCATION_NODE_FLAGS`, whether the process was given it, on the
+// command line or in `NODE_OPTIONS`
+const to_allocation_node_flags_given = (): Array<boolean> => {
+	// V8 reads a flag's underscores as dashes
+	const given = [...process.execArgv, ...(process.env.NODE_OPTIONS ?? '').split(/\s+/)].map((arg) =>
+		arg.replaceAll('_', '-')
 	);
+	return ALLOCATION_NODE_FLAGS.split(' ').map((flag) =>
+		given.some((arg) => arg.startsWith(flag.slice(0, flag.indexOf('=') + 1)))
+	);
+};
+
+/**
+ * Whether the process runs under every one of `ALLOCATION_NODE_FLAGS`, given
+ * on the command line or in `NODE_OPTIONS`, which is what a byte reading needs.
+ */
+export const has_allocation_node_flags = (): boolean =>
+	to_allocation_node_flags_given().every((given) => given);
+
+/**
+ * Whether the process runs under any of `ALLOCATION_NODE_FLAGS`, given on the
+ * command line or in `NODE_OPTIONS`, which is what a timing refuses: one of
+ * them alone moves what a parse takes, and is not what a consumer runs under.
+ */
+export const has_some_allocation_node_flag = (): boolean =>
+	to_allocation_node_flags_given().some((given) => given);
 
 /**
  * Exits with 1, saying which node flags it needs, unless the process has
@@ -139,6 +161,26 @@ export const measure_ms = (fn: () => unknown, batch: number, rounds = 7): number
 		results.push((performance.now() - start) / batch);
 	}
 	return median(results);
+};
+
+/**
+ * The orders to time `count` things in, an order a round, so that position
+ * favors none of them: the rotations of one order and of its reverse. Across
+ * the rounds each is in every position equally often, and with three, each
+ * follows each other equally often inside a round.
+ *
+ * @returns the orders, each a list of indexes
+ */
+export const to_balanced_orders = (count: number): Array<Array<number>> => {
+	const forward = Array.from({ length: count }, (_, i) => i);
+	const orders: Array<Array<number>> = [];
+	for (const base of [forward, forward.toReversed()]) {
+		for (let shift = 0; shift < count; shift++) {
+			const order = base.map((_, i) => base[(i + shift) % count]!);
+			if (!orders.some((o) => o.every((v, i) => v === order[i]))) orders.push(order);
+		}
+	}
+	return orders;
 };
 
 /**

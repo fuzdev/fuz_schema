@@ -405,14 +405,16 @@ npm run grade                       # the working tree against HEAD
 npm run grade -- --against HEAD~2 --filter real/
 ```
 
-`grade` loads two versions of the library into one process and compares them
-over a matrix of cases (realistic shapes, one case per code path, and the
-same shapes at scale): time, heap bytes allocated, and whether the output is the input itself.
+`grade` compares two versions of the library over a matrix of cases
+(realistic shapes, one case per code path, and the same shapes at scale):
+time, heap bytes allocated, and whether the output is the input itself.
+Each version is loaded several times over, in fresh processes, several runs of them,
+so every time is printed beside what copies of one version differed by, its A/A.
 It then compares bundle size, retained heap, and cold start,
 and checks the result against the rules a change is accepted by:
 
 - speed is judged on the realistic cases, valid input first
-- a time difference under about 10% is noise until reproduced on a quiet machine
+- a time difference is read against its A/A, and inside it is noise
 - bytes that tree-shake away unless imported only have to pay for themselves
 - bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
 - the whole stays under about two thirds of Valibot's size

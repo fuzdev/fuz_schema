@@ -1071,14 +1071,51 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	scale
 ];
 
+// a group that throws while it builds, as the error a strict build fails with
+const to_group_error = (group: CaseGroup, cause: unknown): Error =>
+	new Error(
+		`the \`${group.name}\` group of cases did not build: ` +
+			(cause instanceof Error ? cause.message : String(cause)),
+		{ cause }
+	);
+
 /**
  * Builds every case the given library version supports.
+ *
+ * @param strict - whether a group that throws while it builds fails the whole, where otherwise the version loses that group's cases. For a version that is to have every case, as the one a grade is of.
+ * @throws Error when `strict` and a group throws, naming the group
  */
-export const create_cases = (s: SchemaLib): Array<Case> =>
+export const create_cases = (s: SchemaLib, strict = false): Array<Case> =>
 	CASE_GROUPS.flatMap((group) => {
 		try {
 			return group(s);
-		} catch {
+		} catch (error) {
+			if (strict) throw to_group_error(group, error);
 			return [];
 		}
 	});
+
+/**
+ * Builds the one named case, a group at a time, stopping at the group that has
+ * it. For a process that is to run one case and nothing else: the group that
+ * parses a document while it builds is tried last, so that no other group's
+ * case has a parse ahead of its own.
+ *
+ * @param strict - whether a group that throws while it builds fails the whole, as in `create_cases`
+ * @returns the case, or `undefined` when the given library version has none of that name
+ * @throws Error when `strict` and a group built on the way throws, naming the group
+ */
+export const create_case = (s: SchemaLib, name: string, strict = false): Case | undefined => {
+	for (const group of [...CASE_GROUPS.filter((g) => g !== real_docinfo), real_docinfo]) {
+		let cases: Array<Case>;
+		try {
+			cases = group(s);
+		} catch (error) {
+			if (strict) throw to_group_error(group, error);
+			continue;
+		}
+		const found = cases.find((c) => c.name === name);
+		if (found) return found;
+	}
+	return undefined;
+};

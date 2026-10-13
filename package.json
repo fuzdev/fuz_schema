@@ -34,7 +34,7 @@
     "benchmark:wasm": "node src/benchmarks/wasm.ts",
     "benchmark:harvest": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/harvest.ts",
     "build:wasm": "wasm-pack build crates/fuz_schema_wasm --target web --release --out-dir ../../target/fuz_schema_wasm",
-    "grade": "node --min-semi-space-size=64 --max-semi-space-size=64 src/benchmarks/grade.ts"
+    "grade": "node src/benchmarks/grade.ts"
   },
   "type": "module",
   "imports": {

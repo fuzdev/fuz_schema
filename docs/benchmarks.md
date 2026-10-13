@@ -122,6 +122,7 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 ## Method
 
 - **Parse time**: fuz_util's `Benchmark`, a batch of parses per timing.
+  `grade` times its own way, below.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
@@ -136,7 +137,8 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
   the function only returns is then never allocated. So a process measures
   two functions and throws them away before the first it keeps. The scripts
   need the young generation's node flags, which their npm scripts pass, and
-  refuse to run without them.
+  refuse to run without them. `grade` is the other way round: it refuses
+  them, and gives them to the processes that measure its bytes.
 - **Cold start**: one fresh Node process per sample, in three stages that
   build on each other, against a bare process. Bundled and unbundled entries.
   Compile cache off, rounds interleaved, medians.
@@ -145,6 +147,44 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 - **Type-checking**: `tsc` over one library's scenario module.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm).
+
+### Grading
+
+`grade.ts` plans processes and reads them together, `grade_child.ts` is one
+process, `grade_arm.ts` is what a process loads once for each instance, and
+`grade_job.ts` is what the first two share. [grading.md](grading.md) says what
+is measured and how a difference is decided. What the code has to hold to:
+
+- **An instance is a module instance of everything it is called through**:
+  the library, the case matrix, and the loops that call and time a case. The
+  process loads each under a URL with the instance's own query, and a resolve
+  hook passes the query on to what those modules import. Two instances of one
+  file then share no function, which a process checks before it measures.
+- **Nothing one instance has run is known to another.** A function shared by
+  two versions, a case's or a loop's, is specialized by the engine to the
+  first version's `parse`, and the same library then reads apart from itself
+  in time and in bytes. So each instance has its own.
+- **Every instance is treated alike**, down to the calls that check a case
+  before it is measured. An instance that runs a case once more than the rest
+  can settle in other code on it, the same way in every run.
+- **The loops that call a case have seen many functions** before they see
+  one, so the engine never inlines a case into its loop. When it inlines one
+  is a matter of timing, which sets instances of one file far apart.
+- **Order favors nothing.** Which instance is loaded first, which runs a case
+  first, and which order of a round leads each move on by a case and by a run.
+- **Time is taken under no flags**, and a timing process refuses any of the
+  ones bytes need, on its command line or in `NODE_OPTIONS`. Bytes are taken
+  in processes of their own, which are not timed and so run several at once.
+- **The graded version builds every group of cases**, and a group of its that
+  throws fails the grade, by name. A baseline with an older API loses the
+  groups it can't build, and is compared on the rest.
+- **Warm by time with a floor of calls**, never by a count alone, and force no
+  collection.
+
+With all of that held, two instances of one file can still settle apart on a
+case for the life of a process, whatever the warmup or the order. So that is
+measured and not removed: several instances of each version, and whole runs
+repeated.
 
 The process benchmarks follow
 [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench).
@@ -156,11 +196,9 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   when it is sampled: two readings of one parse in a process agree to the byte
   on a small case and within a few bytes on most large ones, and the largest
   copy has read over a tenth of a percent apart. Which code the engine runs is
-  settled per process, and not always the same way. From one run to the next
-  a case of `grade` reads the same in the whole matrix and alone, but for the
-  largest copy, which moves by a percent or two. Under a filter that takes in
-  a few cases the two versions can be left in different code, and an unchanged
-  library then reads less on one side, by the context, and faster. A row of
+  settled per process, and not always the same way. `grade` holds two
+  instances of the baseline in a bytes process and marks a case they differ
+  on. A row of
   `benchmark:allocations` repeats within about a percent, with one kind of
   exception: a row can settle at one of a few figures, tens of bytes apart or
   a few hundred, each process at one of them and every reading in it the
@@ -171,7 +209,11 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   reads less than the same parse among many schemas: see
   [grading.md](grading.md).
 - Time is not exact. Trust group means and realistic cases over one fast case,
-  and quiet the machine before recording a result.
+  and quiet the machine before recording a result. One process's reading of
+  one function is a draw: the same code loaded twice can settle several
+  percent apart on a case and stay there. `grade` measures that beside every
+  figure, as a case's floor and a summary's A/A. The other benchmarks time each library once a process,
+  so a small gap on a single row there is not a finding.
 - It isn't like-for-like: TypeBox's check builds no output, ArkType keeps
   unknown keys, and Valibot's bytes pay for more features.
 - Cold start reports work inside the process, which resolves sub-millisecond
@@ -222,7 +264,7 @@ and never a table.
     read the whole text there.
   - Then the size of the `.wasm`, raw and gzipped.
 
-  By [grading.md](grading.md), a difference under 10% is not a win.
+  A difference under 10% is not a win: nothing here measures its own noise.
 
 ## Extending
 
