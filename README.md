@@ -458,8 +458,9 @@ The repo is also a Rust workspace. `crates/fuz_schema` is the Rust side of the
 library: the same schema model, loaded from a schema serialized in TypeScript,
 whether a JSON text matches it, and the issues of one that doesn't, tested
 against this library on shared fixtures. `crates/fuz_schema_wasm` compiles it
-to wasm, to measure against this library. Neither is published. Run them with
-cargo, and the measurement with npm:
+to wasm, to measure against this library. Neither crate is published; the npm
+package is the TypeScript library. Run them with cargo, and the measurement
+with npm:
 
 ```bash
 cargo test --workspace
