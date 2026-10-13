@@ -1,8 +1,8 @@
 /**
  * Grades a version of `schema.ts`, by default the working tree's, against
  * another, across every factor the acceptance rules weigh: time and allocation
- * per case, whether the output is the input itself, bundle size per scenario,
- * retained heap, and cold start.
+ * per case, whether the output is the input itself, bundle size per scenario
+ * and of every export together, retained heap, and cold start.
  *
  * This module measures nothing itself. It plans the processes, runs them one
  * at a time where they are timed, and reads the verdict from all of them
@@ -60,7 +60,7 @@ import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
 import { SCENARIOS } from './scenarios.ts';
-import { measure_bundle_size } from './bundle_size.ts';
+import { measure_bundle_size, measure_library_size } from './bundle_size.ts';
 import { ENTRY_FORMS, start_child, type EntryVariant } from './child.ts';
 import {
 	COLDSTART_STAGES,
@@ -793,8 +793,12 @@ if (args.bundle) {
 	const core_index = headers.indexOf(CORE_SCENARIO);
 	core_delta = sizes[core_index]! - base_sizes[core_index]!;
 	all_vs_valibot = sizes.at(-1)! / valibot_all;
+	// every export of each version's own module, which no rule reads
+	headers.push('library');
+	base_sizes.push((await measure_library_size(baseline_path)).gzip);
+	sizes.push((await measure_library_size(new_path)).gzip);
 
-	console.log('\nbundle size: minified + gzip bytes per scenario\n');
+	console.log('\nbundle size: minified + gzip bytes per scenario, and of every export together\n');
 	console.log(
 		format_table([
 			['', ...headers],

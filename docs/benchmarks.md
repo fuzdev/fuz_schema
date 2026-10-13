@@ -6,7 +6,7 @@ Zod Mini, TypeBox, and ArkType.
 | Command | Measures |
 |---|---|
 | `npm run benchmark` | parse time per scenario, valid and invalid, a library to a process |
-| `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped |
+| `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped, then this library's export by export |
 | `npm run benchmark:allocations` | heap bytes per parse and per schema built |
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
 | `npm run benchmark:heap` | memory still held after building and parsing |
@@ -135,7 +135,8 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 - **Parse time**: a process for each library, in passes. See
   [below](#timing-across-libraries). `grade` times its own way, after that.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
-  bundled and minified by Rolldown, then gzipped.
+  bundled and minified by Rolldown, then gzipped. See
+  [below](#the-whole-library) for this library's own table.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
   with no collection forced. A forced collection makes the engine throw away
   optimized code, and the calls sampled after it allocate more than the code
@@ -160,6 +161,43 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 - **Type-checking**: `tsc` over one library's scenario module.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm).
+
+### The whole library
+
+The scenarios are a few small bundles, and much of the library is in none of
+them. So
+`npm run benchmark:bundle` prints a second table, of this library alone
+(`measure_library_sizes` in `bundle_size.ts`):
+
+- **The library** is every runtime export of `schema.ts` in one bundle. No
+  consumer ships it. It is what a change is weighed against when it moves
+  bytes from one export to another.
+- **`alone`** is a bundle of `parse` and one export, less a bundle of `parse`:
+  what a consumer of that export and nothing else pays for it.
+- **`last in`** is the library, less a bundle of every export but that one: what
+  the export costs a consumer who has the rest, which is the code nothing else
+  shares. The table is sorted by it. It is the figure to read before factoring:
+  a helper two exports share moves bytes out of both, and into `alone` for
+  each.
+- **A module beside `schema.ts`** (`meta.ts`, `standard_schema.ts`,
+  `schema_json.ts`) is one row: what all its exports add to the library.
+
+Gzip is not additive, so the `last in` figures don't sum to the library, and
+an export can read a few bytes either way from what its source suggests: in a
+diff of `sizes.json`, a line that moves a byte or two with no change to its
+export is gzip and not the change. Every figure also has the export's name in
+it, as the bundle's `export` clause spells it, which a consumer's bundle
+doesn't carry: under a tenth of the library, and the same in both sides of a
+diff.
+
+`src/benchmarks/sizes.json` is a committed snapshot of the gzipped figures:
+each scenario's bundle, all of them together beside Valibot's and the ratio
+[rule 5](grading.md#rules) reads, `parse` alone, the library, each export's
+`last in`, and what each module beside `schema.ts` adds.
+`gro src/benchmarks/update_sizes` regenerates it and `src/test/sizes.test.ts`
+fails when it is stale, so the diff of a change shows its bytes wherever they
+fell. An upgrade of Rolldown, of Valibot, or of Node's zlib can make it stale
+too.
 
 ### Timing across libraries
 
@@ -283,7 +321,8 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
 
 ## Reading the numbers
 
-- Bundle size is exact. Allocation is exact for the code the engine is running
+- Bundle size is exact, in every table and in `sizes.json`: the same source,
+  bundler, and zlib give the same bytes. Allocation is exact for the code the engine is running
   when it is sampled: two readings of one parse in a process agree to the byte
   on a small case and within a few bytes on most large ones, and the largest
   copy has read over a tenth of a percent apart. Which code the engine runs is

@@ -24,6 +24,12 @@ each summarized by group and by path (what the parse does: return the input,
 return a copy, build issues, or probe), then bundle size, retained heap, and
 cold start, and a verdict against the rules.
 
+The bundle table has a column for each scenario, `all` for the scenarios
+together, and `library` for every runtime export of each version's own
+`schema.ts` in one bundle. `library` is reported only: no rule reads it. It
+shows what a change costs the exports the scenarios don't reach, and
+[`npm run benchmark:bundle`](benchmarks.md#the-whole-library) says which.
+
 When a change targets a path no case isolates, add the case first.
 
 ## Flags

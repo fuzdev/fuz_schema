@@ -371,7 +371,7 @@ run against Valibot, Zod, Zod Mini, TypeBox, and ArkType.
 
 ```bash
 npm run benchmark             # parse time, every library on every scenario
-npm run benchmark:bundle      # bundle size per scenario, minified and gzipped
+npm run benchmark:bundle      # bundle size per scenario and per export, minified and gzipped
 npm run benchmark:allocations # heap bytes per parse and per schema built
 npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
 npm run benchmark:heap        # memory still held after building and parsing

@@ -6,6 +6,8 @@
  * plus whatever library code it reaches after tree shaking. The `all` column
  * bundles every scenario together, showing how the shared cost amortizes.
  *
+ * Then this library alone, whole and export by export, see `LibrarySizes`.
+ *
  * Usage:
  *   gro run src/benchmarks/bundle.ts
  *   gro run src/benchmarks/bundle.ts --raw   # minified bytes instead of gzip
@@ -15,7 +17,7 @@
 
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
-import { measure_bundle_size, type BundleSize } from './bundle_size.ts';
+import { measure_bundle_size, measure_library_sizes, type BundleSize } from './bundle_size.ts';
 import { format_table } from './measure.ts';
 
 const raw = process.argv.includes('--raw');
@@ -43,5 +45,31 @@ console.log(
 	format_table([
 		['lib', ...headers],
 		...rows.map((r) => [r.lib, ...r.sizes.map((s, i) => format_cell(s, baseline.sizes[i]!))])
+	])
+);
+
+const format_signed = (bytes: number): string => `${bytes >= 0 ? '+' : ''}${bytes}`;
+
+const library = await measure_library_sizes(metric);
+
+console.log(
+	`\nthis library, ${raw ? 'minified' : 'minified + gzip'} bytes: ` +
+		`every export of schema.ts ${library.library}, parse alone ${library.parse}\n`
+);
+console.log(
+	format_table([
+		['export', 'alone', 'last in'],
+		...library.exports.map((e) => [e.name, format_signed(e.alone), format_signed(e.last_in)])
+	])
+);
+console.log(
+	'\nalone: a bundle of parse and the export, over one of parse\n' +
+		'last in: every export, over every export but it\n' +
+		'added: every export of schema.ts and of the module, over every export of schema.ts\n'
+);
+console.log(
+	format_table([
+		['module', 'added'],
+		...library.modules.map((m) => [m.name, format_signed(m.added)])
 	])
 );
