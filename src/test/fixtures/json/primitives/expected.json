@@ -844,6 +844,223 @@
 			"issues": []
 		},
 		{
+			"name": "number_largest",
+			"text": "{\"number\":1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_most_negative",
+			"text": "{\"number\":-1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_smallest",
+			"text": "{\"number\":5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_underflow",
+			"text": "{\"number\":1e-999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_past_safe",
+			"text": "{\"number\":9007199254740993}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_huge_integer",
+			"text": "{\"number\":123456789012345678901234567890}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_huge_integer_by_digits",
+			"text": "{\"number\":100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_overflow",
+			"text": "{\"number\":1e999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"number"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "string_overflow",
+			"text": "{\"string\":1e999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "unknown_overflow",
+			"text": "{\"unknown\":1e999}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "number_negative_overflow",
+			"text": "{\"number\":-1e999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"number"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "string_negative_overflow",
+			"text": "{\"string\":-1e999}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "unknown_negative_overflow",
+			"text": "{\"unknown\":-1e999}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "number_overflow_by_digits",
+			"text": "{\"number\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"number"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "string_overflow_by_digits",
+			"text": "{\"string\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "unknown_overflow_by_digits",
+			"text": "{\"unknown\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
+			"name": "number_just_past_largest",
+			"text": "{\"number\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"number"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "string_just_past_largest",
+			"text": "{\"string\":1.7976931348623159e308}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"string"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "unknown_just_past_largest",
+			"text": "{\"unknown\":1.7976931348623159e308}",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "number_overflow_unread"
+		},
+		{
 			"name": "all",
 			"text": "{\"string\":\"a\",\"number\":1,\"boolean\":true,\"unknown\":null}",
 			"json": true,

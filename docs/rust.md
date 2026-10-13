@@ -29,7 +29,10 @@ at.
   is given a missing key as `undefined`, which an `optional` and a
   `with_default` accept before it reaches what they hold. A `pipe` starts
   with a schema that fixes the type, which refuses `undefined` itself.
-- **Numbers are `f64`**, lengths and bounds included.
+- **Numbers are `f64`**, lengths and bounds included. A `number` is a finite
+  one, as in the library, and no text hands an evaluator another: JSON has
+  no `NaN`, and a number past a double is an error of the parser,
+  [below](#declared-divergences).
 - **`bigint` is a kind** that no JSON value matches.
 
 A schema is made with `SchemaBuilder`, which adds a node per call and checks
@@ -183,6 +186,11 @@ which the crate parses with, and so does the depth: nesting is read to
 `MAX_DEPTH`, one level short of serde_json's recursion limit. A `JsonError`
 is of the first problem the parser meets and says nothing of what follows, so
 `1e400x` is a `NumberOutOfRange` though `JSON.parse` throws on it.
+
+A number past a double matches no `number` on either side: the library reads
+an infinity and refuses it, and the crate answers with the error. The library
+takes one where the schema takes any value, as under `unknown`, which is where
+the streaming evaluator skips it unread.
 
 The crate reads numbers as serde_json hands them over by default. Its
 `arbitrary_precision` feature, which any crate of a build turns on for all of

@@ -264,7 +264,8 @@ impl From<String> for SchemaLiteral {
 pub enum SchemaNode {
     /// Matches a string.
     String,
-    /// Matches a number.
+    /// Matches a finite number. No JSON text holds another: one past a
+    /// double is an error of the parser.
     Number,
     /// Matches a boolean.
     Boolean,
@@ -315,7 +316,8 @@ pub enum SchemaNode {
     Integer,
     /// An integer every neighbor of which is a distinct double.
     SafeInteger,
-    /// A number that is not an infinity.
+    /// A number that is not an infinity, which every number `Number`
+    /// matches is.
     Finite,
 }
 

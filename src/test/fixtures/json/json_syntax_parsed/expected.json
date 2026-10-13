@@ -773,40 +773,75 @@
 			"name": "overflow",
 			"text": "1e400",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | number | string | array | record",
+					"received": "number",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
 			"name": "negative_overflow",
 			"text": "-1e400",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | number | string | array | record",
+					"received": "number",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
 			"name": "overflow_huge_exponent",
 			"text": "1e99999",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | number | string | array | record",
+					"received": "number",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
 			"name": "overflow_in_array",
 			"text": "[0,1e400]",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | number | string | array | record",
+					"received": "array",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
 			"name": "overflow_in_object",
 			"text": "{\"a\":{\"b\":-1e400}}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "literal | boolean | number | string | array | record",
+					"received": "object",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{

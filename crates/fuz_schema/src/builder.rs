@@ -61,7 +61,8 @@ impl SchemaBuilder {
         self.push(SchemaNode::String)
     }
 
-    /// Matches a number.
+    /// Matches a finite number, which every number of a JSON text the crate
+    /// reads is.
     pub fn number(&mut self) -> NodeId {
         self.push(SchemaNode::Number)
     }

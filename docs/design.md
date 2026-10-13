@@ -308,6 +308,10 @@ is only bundled when used. There is no message registry.
   failed: `'null'`, `'array'`, or its `typeof`. Nothing reachable from a
   result or a `SchemaError` is the input or part of it, so issues can be
   serialized and kept. `fail` is passed the value and names its type.
+- **A number `number` refuses reads as any other value it refuses**: `NaN`
+  and the infinities are `{kind: 'number', expected: 'number', received:
+  'number'}`, as `received` is the value's `typeof`, and `format_issue`
+  writes `expected number, received number`.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
@@ -524,9 +528,14 @@ Where the two disagree, this library goes with:
   symbol key out of its copy. By design, for consistency with the object
   schemas, which take any object that isn't an array, as Zod's own `object`
   does. Refusing would also read the prototype on every parse.
-- **Valibot on numbers.** `number` takes the infinities and `integer` takes
-  an integer past the safe ones, where Zod's refuse both. An integer past
-  the safe ones is by design: it is an integer, and `safe_integer` is the
+- **Zod on the infinities.** `number` refuses `Infinity` and `-Infinity`, as
+  Zod's does, where Valibot's takes them. By design: a JSON text carries one
+  through a plain `number` as a number too large for a double, which
+  `JSON.parse` reads `1e999` as, and `JSON.stringify` writes it back as
+  `null`. A `literal` or a `one_of` of an infinity still matches it, as in
+  both, and a bound may be one.
+- **Valibot on an integer past the safe ones.** `integer` takes one, where
+  Zod's refuses it. By design: it is an integer, and `safe_integer` is the
   opt-in for the stricter claim.
 
 These the test doesn't see, as they are in the count of the issues, in the

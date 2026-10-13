@@ -497,13 +497,31 @@ const SIDES: Record<string, ConformanceSide> = {
 		ours: 'ok {a: "x"} proto=other'
 	},
 
-	// zod's `number` refuses the infinities, and its integer is a safe one
-	'number, Infinity': { side: 'valibot', zod: 'fail at <root>', valibot: 'ok Infinity' },
-	'number, -Infinity': { side: 'valibot', zod: 'fail at <root>', valibot: 'ok -Infinity' },
+	// the infinities, which valibot's `number` takes: zod's refuses them, as here
+	'number, Infinity': { side: 'zod', zod: 'fail at <root>', valibot: 'ok Infinity' },
+	'number, -Infinity': { side: 'zod', zod: 'fail at <root>', valibot: 'ok -Infinity' },
+	'number, 1e999 parsed': { side: 'zod', zod: 'fail at <root>', valibot: 'ok Infinity' },
+	'number entry, -1e999 parsed / *': {
+		side: 'zod',
+		zod: 'fail at a',
+		valibot: 'ok {a: -Infinity}'
+	},
+	'array of numbers, an Infinity': {
+		side: 'zod',
+		zod: 'fail at [1]',
+		valibot: 'ok [1, Infinity]'
+	},
+	// an integer past the safe ones, which zod's integer refuses: valibot's
+	// takes it, as here
 	'integer, past the safe ones': {
 		side: 'valibot',
 		zod: 'fail at <root>',
 		valibot: 'ok 9007199254740992'
+	},
+	'integer, the largest double': {
+		side: 'valibot',
+		zod: 'fail at <root>',
+		valibot: 'ok 1.7976931348623157e+308'
 	}
 };
 

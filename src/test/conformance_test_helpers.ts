@@ -865,8 +865,7 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	// which zod reports the failed step beside as well
 	...needs_key(
 		'nullable(optional(string) then a check that fails) then a transform to "T" entry',
-		(l) =>
-			l.map(l.nullable(l.refine(l.optional(l.string), () => false)), () => 'T')
+		(l) => l.map(l.nullable(l.refine(l.optional(l.string), () => false)), () => 'T')
 	),
 	...needs_key(
 		'lazy(optional(string) then a check that fails) then a transform to "T" entry',
@@ -1219,6 +1218,21 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'number, NaN', schema: (l) => l.number, input: () => NaN },
 	{ name: 'number, Infinity', schema: (l) => l.number, input: () => Infinity },
 	{ name: 'number, -Infinity', schema: (l) => l.number, input: () => -Infinity },
+	// what `JSON.parse` reads a number too large for a double as
+	{ name: 'number, 1e999 parsed', schema: (l) => l.number, input: () => JSON.parse('1e999') },
+	{
+		name: 'number entry, -1e999 parsed',
+		entries: (l) => ({ a: l.number }),
+		input: () => JSON.parse('{"a":-1e999}')
+	},
+	{
+		name: 'array of numbers, an Infinity',
+		schema: (l) => l.array(l.number),
+		input: () => [1, Infinity]
+	},
+	{ name: 'number, the largest double', schema: (l) => l.number, input: () => Number.MAX_VALUE },
+	{ name: 'number, the smallest double', schema: (l) => l.number, input: () => Number.MIN_VALUE },
+	{ name: 'number, past the safe integers', schema: (l) => l.number, input: () => 2 ** 60 },
 	{ name: 'number, -0', schema: (l) => l.number, input: () => -0 },
 	{ name: 'number, a string of one', schema: (l) => l.number, input: () => '1' },
 	{ name: 'number, a Number object', schema: (l) => l.number, input: () => Object(1) },
@@ -1227,6 +1241,8 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'integer, a fraction', schema: (l) => l.integer, input: () => 1.5 },
 	{ name: 'integer, past the safe ones', schema: (l) => l.integer, input: () => 2 ** 53 },
 	{ name: 'integer, Infinity', schema: (l) => l.integer, input: () => Infinity },
+	{ name: 'integer, the largest double', schema: (l) => l.integer, input: () => Number.MAX_VALUE },
+	{ name: 'integer, the last safe one', schema: (l) => l.integer, input: () => 2 ** 53 - 1 },
 	{ name: 'string, a String object', schema: (l) => l.string, input: () => Object('x') },
 	{ name: 'boolean, 0', schema: (l) => l.boolean, input: () => 0 },
 	{ name: 'bigint, a number', schema: (l) => l.bigint, input: () => 1 },
@@ -1235,6 +1251,22 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'literal NaN, NaN', schema: (l) => l.literal(NaN), input: () => NaN },
 	{ name: 'literal NaN, a number', schema: (l) => l.literal(NaN), input: () => 1 },
 	{ name: 'literal 1, NaN', schema: (l) => l.literal(1), input: () => NaN },
+	// a literal of an infinity is not a `number`
+	{
+		name: 'literal Infinity, Infinity',
+		schema: (l) => l.literal(Infinity),
+		input: () => Infinity
+	},
+	{
+		name: 'literal Infinity, -Infinity',
+		schema: (l) => l.literal(Infinity),
+		input: () => -Infinity
+	},
+	{
+		name: 'one_of with Infinity, Infinity',
+		schema: (l) => l.one_of([Infinity, 1]),
+		input: () => Infinity
+	},
 	{
 		name: 'literal "x", a String object',
 		schema: (l) => l.literal('x'),

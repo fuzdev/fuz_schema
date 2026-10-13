@@ -25,19 +25,123 @@ describe('primitives', () => {
 		assert(!s.is(s.bigint, 1));
 	});
 
-	test('number rejects NaN and allows infinities', () => {
-		assert(!s.is(s.number, NaN));
-		assert.deepEqual(issues_of(s.number, NaN), [
-			{ kind: 'number', expected: 'number', received: 'number', path: [], message: undefined }
-		]);
-		for (const value of [Infinity, -Infinity, 0, -0, 1.5, Number.MAX_VALUE, Number.MIN_VALUE]) {
+	test('number rejects NaN and the infinities', () => {
+		for (const value of [
+			NaN,
+			Infinity,
+			-Infinity,
+			JSON.parse('1e999'),
+			JSON.parse('-1e999'),
+			JSON.parse('1' + '0'.repeat(400)),
+			Number.MAX_VALUE * 2
+		]) {
+			assert(!s.is(s.number, value), inspect(value));
+			assert.deepEqual(
+				issues_of(s.number, value),
+				[{ kind: 'number', expected: 'number', received: 'number', path: [], message: undefined }],
+				inspect(value)
+			);
+			assert.strictEqual(
+				s.format_issue(issues_of(s.number, value)[0]!),
+				'expected number, received number'
+			);
+		}
+		for (const value of [
+			0,
+			-0,
+			1.5,
+			Number.MAX_VALUE,
+			-Number.MAX_VALUE,
+			Number.MIN_VALUE,
+			Number.MAX_SAFE_INTEGER + 2,
+			2 ** 1023,
+			JSON.parse('123456789012345678901234567890'),
+			JSON.parse('1e308')
+		]) {
 			assert(s.is(s.number, value), inspect(value));
 			assert(Object.is(s.parse_or_throw(s.number, value), value), inspect(value));
 		}
-		for (const value of ['1', null, undefined, 1n, Object(1), [1]]) {
+		for (const value of ['1', 'Infinity', null, undefined, 1n, true, Object(1), [1], {}]) {
 			assert(!s.is(s.number, value), inspect(value));
+			assert.notStrictEqual(issues_of(s.number, value)[0]!.received, 'number', inspect(value));
 		}
-		assert(!s.is(s.pipe(s.number, s.finite), Infinity));
+		// a value with a `valueOf` is not asked for it
+		const coerced = {
+			valueOf: () => {
+				throw Error('read');
+			}
+		};
+		assert(!s.is(s.number, coerced));
+	});
+
+	test('number refuses an infinity wherever it is', () => {
+		const O = s.object({ a: s.number, b: s.optional(s.array(s.number)) });
+		assert.deepEqual(issues_of(O, JSON.parse('{"a":1e999,"b":[0,-1e999]}')), [
+			{ kind: 'number', expected: 'number', received: 'number', path: ['a'], message: undefined },
+			{ kind: 'number', expected: 'number', received: 'number', path: ['b', 1], message: undefined }
+		]);
+		assert(!s.is(s.record(s.number), { a: Infinity }));
+		assert(!s.is(s.union([s.string, s.number]), Infinity));
+		assert(!s.is(s.nullable(s.number), -Infinity));
+		assert(!s.is(s.with_default(s.number, 0), Infinity));
+		// a pipe stops at it, so no action sees one
+		let calls = 0;
+		const counted = s.check<number>(() => {
+			calls++;
+			return true;
+		});
+		assert.deepEqual(
+			issues_of(s.pipe(s.number, counted), Infinity).map((i) => i.kind),
+			['number']
+		);
+		assert.strictEqual(calls, 0);
+	});
+
+	test('the number tests after number, and alone', () => {
+		// an integer past the safe ones is an integer
+		for (const value of [2 ** 53, 2 ** 53 + 2, -(2 ** 60), Number.MAX_VALUE, 1e21]) {
+			assert(s.is(s.pipe(s.number, s.integer), value), inspect(value));
+			assert(!s.is(s.pipe(s.number, s.safe_integer), value), inspect(value));
+			assert(s.is(s.pipe(s.number, s.finite), value), inspect(value));
+		}
+		// after `number` an infinity fails as a `number`, and `finite` has nothing left to fail
+		for (const action of [s.integer, s.safe_integer, s.finite]) {
+			for (const value of [Infinity, -Infinity, NaN]) {
+				assert.deepEqual(
+					issues_of(s.pipe(s.number, action), value).map((i) => i.kind),
+					['number'],
+					action.kind
+				);
+				// alone, or after a schema that takes any value, each fails it itself
+				assert.deepEqual(
+					issues_of(action, value).map((i) => i.kind),
+					[action.kind]
+				);
+				assert.deepEqual(
+					issues_of(s.pipe(s.unknown, action), value).map((i) => i.kind),
+					[action.kind]
+				);
+			}
+		}
+	});
+
+	test('an infinity is still a literal, a one_of value, and a bound', () => {
+		assert(s.is(s.literal(Infinity), Infinity));
+		assert(!s.is(s.literal(Infinity), -Infinity));
+		assert(!s.is(s.literal(Infinity), Number.MAX_VALUE));
+		assert(s.is(s.one_of([Infinity, -Infinity]), -Infinity));
+		assert(s.is(s.union([s.number, s.literal(Infinity)]), Infinity));
+		assert(!s.is(s.union([s.number, s.literal(Infinity)]), -Infinity));
+		// a bound is not a value that is validated
+		const Any = s.pipe(s.number, s.min_value(-Infinity), s.max_value(Infinity));
+		assert(s.is(Any, Number.MAX_VALUE));
+		assert(s.is(Any, -Number.MAX_VALUE));
+		assert(!s.is(Any, Infinity));
+		assert(!s.is(s.pipe(s.number, s.min_value(Infinity)), Number.MAX_VALUE));
+		assert.strictEqual(
+			issues_of(s.pipe(s.number, s.min_value(Infinity)), 1)[0]!.expected,
+			'>= Infinity'
+		);
 	});
 
 	test('literal and one_of', () => {

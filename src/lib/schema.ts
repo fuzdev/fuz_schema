@@ -468,14 +468,23 @@ export const string: Schema<string, string, 'string', undefined> = {
 	run: (value, ctx) => (typeof value === 'string' ? value : fail(ctx, 'string', value))
 };
 
-/** Rejects `NaN`. Allows infinities, see `finite`. */
+/**
+ * Matches a finite number: rejects `NaN` and the infinities, with the issue
+ * any value that isn't a number gets.
+ *
+ * A JSON text can carry an infinity as a number too large for a double, which
+ * `JSON.parse` reads `1e999` as, and `JSON.stringify` writes one back as
+ * `null`. An integer of any size is a finite number, see `integer`.
+ *
+ * Only `number` is about which numbers: a `literal` or a `one_of` of an
+ * infinity still matches it, and a bound of `min_value` or `max_value` may
+ * be one.
+ */
 export const number: Schema<number, number, 'number', undefined> = {
 	kind: 'number',
 	def: undefined,
-	run: (value, ctx) =>
-		// `NaN` is the one number that isn't itself
-		// eslint-disable-next-line no-self-compare
-		typeof value === 'number' && value === value ? value : fail(ctx, 'number', value)
+	// true of a finite number and of nothing else, so the type is not asked first
+	run: (value, ctx) => (Number.isFinite(value) ? value : fail(ctx, 'number', value))
 };
 
 export const boolean: Schema<boolean, boolean, 'boolean', undefined> = {
@@ -1349,18 +1358,33 @@ export const max_value = <T extends number | bigint>(
 	};
 };
 
+/**
+ * Fails a number that isn't an integer: one with a fraction, and alone `NaN`
+ * and the infinities too. An integer past the safe range passes, as it is an
+ * integer: `safe_integer` is the stricter test.
+ */
 export const integer: Schema<number, number, 'integer', undefined> = {
 	kind: 'integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isInteger(value) ? value : fail(ctx, 'integer', value))
 };
 
+/**
+ * Fails a number that isn't a safe integer: an integer from
+ * `Number.MIN_SAFE_INTEGER` to `Number.MAX_SAFE_INTEGER`, the range in which
+ * every integer is a double of its own.
+ */
 export const safe_integer: Schema<number, number, 'safe_integer', undefined> = {
 	kind: 'safe_integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isSafeInteger(value) ? value : fail(ctx, 'safe_integer', value))
 };
 
+/**
+ * Fails `NaN` and the infinities. After `number` it never fails, as `number`
+ * refuses both: it is for a number that came another way, as through
+ * `unknown` or a schema defined outside this module.
+ */
 export const finite: Schema<number, number, 'finite', undefined> = {
 	kind: 'finite',
 	def: undefined,

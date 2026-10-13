@@ -93,6 +93,9 @@ and the input is never mutated.
   They also need the key of the one other entry that accepts `undefined`,
   a `check` with no schema before it,
   and here that accepts a missing key. See [`docs/design.md`](docs/design.md#missing-keys).
+- `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities:
+  a JSON text carries one as a number too large for a double, which `JSON.parse` reads `1e999` as.
+  `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.

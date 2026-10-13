@@ -123,7 +123,8 @@ for (const [key, texts] of Object.entries(values)) {
 		cases[`${key}_${i}`] = `{"${key}":${text}}`;
 	});
 }
-// `JSON.parse` reads these as an infinity, which is a number and is not finite
+// `JSON.parse` reads these as an infinity, which `number` refuses before any
+// action is asked
 for (const [name, text] of Object.entries({
 	overflow: '1e400',
 	negative_overflow: '-1e400',

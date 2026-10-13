@@ -487,6 +487,20 @@ mod tests {
         assert_eq!(error(&numbers, "nul"), JsonErrorKind::Eof);
         assert_eq!(error(&numbers, r#"[1,"\x"]"#), JsonErrorKind::Syntax);
         assert_eq!(error(&numbers, "[1e400]"), JsonErrorKind::NumberOutOfRange);
+        // whatever the schema, as `number` refuses the infinity it would be read as
+        let number = build(SchemaBuilder::number);
+        for text in ["1e999", "-1e999", "2e308"] {
+            assert_eq!(
+                error(&number, text),
+                JsonErrorKind::NumberOutOfRange,
+                "{text}"
+            );
+        }
+        assert_eq!(matches_json(&number, "1.7976931348623157e308"), Ok(true));
+        assert_eq!(
+            matches_json(&number, "123456789012345678901234567890"),
+            Ok(true)
+        );
     }
 
     #[test]

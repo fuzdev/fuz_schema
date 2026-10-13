@@ -2015,8 +2015,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "integer",
-					"expected": "integer",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"integer"
@@ -2032,8 +2032,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"finite"
@@ -2049,8 +2049,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1e+21",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_large"
@@ -2063,8 +2063,17 @@
 			"name": "at_least_zero_overflow",
 			"text": "{\"at_least_zero\":1e400}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
@@ -2074,8 +2083,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1.7976931348623157e+308",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_max"
@@ -2091,8 +2100,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "integer",
-					"expected": "integer",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"integer"
@@ -2108,8 +2117,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"finite"
@@ -2122,8 +2131,17 @@
 			"name": "at_most_large_negative_overflow",
 			"text": "{\"at_most_large\":-1e400}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"at_most_large"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
@@ -2133,8 +2151,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "min_value",
-					"expected": ">= 0",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_least_zero"
@@ -2150,8 +2168,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_max"
@@ -2167,8 +2185,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "integer",
-					"expected": "integer",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"integer"
@@ -2184,8 +2202,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"finite"
@@ -2201,8 +2219,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1e+21",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_large"
@@ -2215,8 +2233,17 @@
 			"name": "at_least_zero_overflow_by_digits",
 			"text": "{\"at_least_zero\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
@@ -2226,8 +2253,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1.7976931348623157e+308",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_max"
@@ -2243,8 +2270,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "integer",
-					"expected": "integer",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"integer"
@@ -2260,8 +2287,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"finite"
@@ -2277,8 +2304,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1e+21",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_large"
@@ -2291,8 +2318,17 @@
 			"name": "at_least_zero_just_past_max",
 			"text": "{\"at_least_zero\":1.7976931348623159e308}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
@@ -2302,8 +2338,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1.7976931348623157e+308",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_max"
@@ -2319,8 +2355,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "integer",
-					"expected": "integer",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"integer"
@@ -2336,8 +2372,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "finite",
-					"expected": "finite",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"finite"
@@ -2353,8 +2389,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1e+21",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_large"
@@ -2367,8 +2403,17 @@
 			"name": "at_least_zero_twice_max",
 			"text": "{\"at_least_zero\":2e308}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"at_least_zero"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{
@@ -2378,8 +2423,8 @@
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_value",
-					"expected": "<= 1.7976931348623157e+308",
+					"kind": "number",
+					"expected": "number",
 					"received": "number",
 					"path": [
 						"at_most_max"

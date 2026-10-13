@@ -164,8 +164,19 @@
 			"name": "overflow",
 			"text": "[{\"a\":[1,1e400]}]",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						0,
+						"a",
+						1
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{

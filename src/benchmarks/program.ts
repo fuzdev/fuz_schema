@@ -125,7 +125,8 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		valid: 1,
 		invalid: 2 ** 60
 	},
-	{ name: 'finite', create: (s) => s.pipe(s.number, s.finite), valid: 1, invalid: Infinity },
+	// alone, as an infinity fails `number` before it in every version that refuses one there
+	{ name: 'finite', create: (s) => s.finite, valid: 1, invalid: Infinity },
 	{ name: 'regex', create: (s) => s.pipe(s.string, s.regex(/^a/)), valid: 'a', invalid: 'b' },
 	{
 		name: 'check',

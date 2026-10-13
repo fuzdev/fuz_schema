@@ -388,8 +388,13 @@ fn select<'a>(variant: &VariantDef, value: Value<'a>) -> Selected<'a> {
 fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
     match node {
         SchemaNode::String => matches!(value, Value::String(_)),
-        // JSON has no `NaN`, the one number `number` rejects
-        SchemaNode::Number => matches!(value, Value::Number(_)),
+        // `number` rejects `NaN` and the infinities, as `finite` does. JSON
+        // has no `NaN`, and a number past a double is the parser's error, so
+        // no text hands an evaluator either: the test is the library's all
+        // the same
+        SchemaNode::Number | SchemaNode::Finite => {
+            matches!(value, Value::Number(number) if number.is_finite())
+        }
         SchemaNode::Boolean => matches!(value, Value::Bool(_)),
         SchemaNode::Unknown => true,
         SchemaNode::Literal(literal) => literal.matches(value),
@@ -404,7 +409,6 @@ fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
         SchemaNode::SafeInteger => {
             matches!(value, Value::Number(number) if js::is_safe_integer(number))
         }
-        SchemaNode::Finite => matches!(value, Value::Number(number) if number.is_finite()),
         // JSON holds no bigint, and the rest are not scalars
         _ => false,
     }
@@ -532,6 +536,7 @@ fn array<R: Report>(
 pub mod tests {
     use super::*;
     use crate::builder::SchemaBuilder;
+    use crate::error::JsonErrorKind;
     use crate::schema::{SchemaKind, SchemaLiteral};
 
     /// A report that keeps the node of each failure.
@@ -1176,6 +1181,51 @@ pub mod tests {
             b.pipe([number, min])
         });
         check(&zero, &["0", "-0", "5e-324"], &["-5e-324", "-1"]);
+    }
+
+    #[test]
+    fn number_rejects_what_is_not_finite() {
+        // no text hands the walker one, so it is given the values
+        let schema = build(SchemaBuilder::number);
+        for value in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+            let value = Value::Number(value);
+            assert!(!run(&schema, schema.root(), value, &mut Probe), "{value:?}");
+            let mut collect = Collect::new(&schema);
+            assert!(!run(&schema, schema.root(), value, &mut collect));
+            let issues = collect.finish();
+            assert_eq!(issues.len(), 1, "{value:?}");
+            assert_eq!(issues[0].kind(), SchemaIssueKind::Number);
+            assert_eq!(issues[0].expected(), "number");
+            assert_eq!(issues[0].received(), Received::Number);
+            assert!(issues[0].path().is_empty());
+        }
+        for value in [0.0, -0.0, 1.5, f64::MAX, f64::MIN, 5e-324] {
+            let value = Value::Number(value);
+            assert!(run(&schema, schema.root(), value, &mut Probe), "{value:?}");
+        }
+        // an integer of any size is a number
+        check(
+            &schema,
+            &[
+                "9007199254740993",
+                "123456789012345678901234567890",
+                "1.7976931348623157e308",
+            ],
+            &[],
+        );
+        // and a number past a double is an error before it is a value
+        for text in ["1e999", "-1e999", "2e308", "1.7976931348623159e308"] {
+            assert_eq!(
+                matches_json(&schema, text).unwrap_err().kind(),
+                JsonErrorKind::NumberOutOfRange,
+                "{text}"
+            );
+            assert_eq!(
+                validate_json(&schema, text).unwrap_err().kind(),
+                JsonErrorKind::NumberOutOfRange,
+                "{text}"
+            );
+        }
     }
 
     #[test]

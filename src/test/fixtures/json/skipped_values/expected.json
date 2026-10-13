@@ -209,8 +209,18 @@
 			"name": "loose_entry_overflow",
 			"text": "{\"loose\":{\"a\":1e400}}",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						"loose",
+						"a"
+					]
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{

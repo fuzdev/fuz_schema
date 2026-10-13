@@ -192,8 +192,15 @@
 			"name": "overflow",
 			"text": "[1e400]",
 			"json": true,
-			"valid": true,
-			"issues": [],
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | array | object | object | literal",
+					"received": "array",
+					"path": []
+				}
+			],
 			"diverges": "number_overflow"
 		},
 		{

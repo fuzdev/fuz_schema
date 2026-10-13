@@ -160,6 +160,14 @@
 					"path": [
 						0
 					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						1
+					]
 				}
 			],
 			"diverges": "number_overflow_unread"
@@ -170,6 +178,14 @@
 			"json": true,
 			"valid": false,
 			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "number",
+					"path": [
+						0
+					]
+				},
 				{
 					"kind": "number",
 					"expected": "number",
