@@ -48,7 +48,7 @@
  * @module
  */
 
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -61,7 +61,7 @@ import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { measure_bundle_size } from './bundle_size.ts';
-import { ENTRY_FORMS, type EntryVariant } from './child.ts';
+import { ENTRY_FORMS, start_child, type EntryVariant } from './child.ts';
 import {
 	COLDSTART_STAGES,
 	plan_coldstart,
@@ -262,32 +262,27 @@ const BYTES_ARMS: GradeJob['arms'] = [
 
 let job_count = 0;
 
-const run_job = (job: GradeJob): Promise<GradeChildOutput> =>
-	new Promise((resolve_output, reject) => {
-		const path = join(JOBS_DIR, `${job_count++}.json`);
-		writeFileSync(path, JSON.stringify(job));
-		const flags = job.mode === 'bytes' ? ALLOCATION_NODE_FLAGS.split(' ') : [];
+const run_job = async (job: GradeJob): Promise<GradeChildOutput> => {
+	const path = join(JOBS_DIR, `${job_count++}.json`);
+	writeFileSync(path, JSON.stringify(job));
+	const start = (): Promise<unknown> =>
 		// a timing gets none of this process's own flags either
-		const child = spawn(process.execPath, [...flags, CHILD_PATH, path], {
-			stdio: ['ignore', 'pipe', 'pipe']
+		start_child(CHILD_PATH, {
+			flags: job.mode === 'bytes' ? ALLOCATION_NODE_FLAGS.split(' ') : [],
+			args: [path],
+			label: `${job.regime} ${job.mode}` + (job.cases.length === 1 ? ` of ${job.cases[0]}` : '')
 		});
-		let stdout = '';
-		let stderr = '';
-		child.stdout.on('data', (chunk) => (stdout += chunk));
-		child.stderr.on('data', (chunk) => (stderr += chunk));
-		child.on('error', reject);
-		child.on('close', (code, signal) => {
-			if (code !== 0) {
-				reject(new Error(`${job.regime} ${job.mode}: exited with ${code ?? signal}\n${stderr}`));
-				return;
-			}
-			try {
-				resolve_output(JSON.parse(stdout));
-			} catch {
-				reject(new Error(`${job.regime} ${job.mode}: printed other than JSON:\n${stdout}`));
-			}
-		});
-	});
+	// a process of bytes now and then has a collection in too many samples, so
+	// it gets one more process, and a timing never does
+	const output =
+		job.mode === 'bytes'
+			? await start().catch((error: unknown) => {
+					console.error(`${(error as Error).message.split('\n')[0]}: once more`);
+					return start();
+				})
+			: await start();
+	return output as GradeChildOutput;
+};
 
 const to_job = (
 	mode: GradeJob['mode'],

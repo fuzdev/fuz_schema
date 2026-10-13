@@ -5,7 +5,7 @@ Zod Mini, TypeBox, and ArkType.
 
 | Command | Measures |
 |---|---|
-| `npm run benchmark` | parse time per scenario, valid and invalid |
+| `npm run benchmark` | parse time per scenario, valid and invalid, a library to a process |
 | `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped |
 | `npm run benchmark:allocations` | heap bytes per parse and per schema built |
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
@@ -66,35 +66,46 @@ that set's schemas and data: the bundle of a module that parses one document,
 then parse time and allocation over rows that are documents of the set. They
 are the comparisons of a consumer's whole schema set; the scenarios are one
 small schema each. `--set` names the sets to run, and may be given more than
-once.
+once. `--passes` and `--duration` are as for `npm run benchmark`,
+[below](#timing-across-libraries), which this is timed like.
 
-- **A set is a process.** Each is measured in a process of its own, so what
-  one set's schemas teach the engine about a library's shared code is not
-  there when the next is timed, and a set reads the same run alone.
+- **A side of a set is a process.** A side is a column: the consumer's
+  library, this library, and each of Zod's two modes. Each is measured in a
+  process of its own, so what one side's parses teach the engine is not there
+  when another is timed. A process holds one set, so a set reads the same run
+  alone. It loads the set whole: both schema modules are built in it, and this
+  library prepares some inputs: the `full` rows are its own output, and the
+  published manifests of `package_json` are the ones it matches. From
+  then on it runs its side and no other.
 - **Agreement comes first.** Every row is run by each side, and must give the
   verdict the row names and outputs that are deeply and strictly equal, before
-  anything is timed. A row that fails stops the run. The ways the rewrites
-  differ are all on input this data doesn't have, or in the issues of a
-  document that doesn't match, which are not compared.
+  anything is measured, in the process that starts the others and times
+  nothing. A row that fails stops the run. The ways the rewrites differ are
+  all on input this data doesn't have, or in the issues of a document that
+  doesn't match, which are not compared. A measuring process checks its own
+  side's verdicts again.
 - **The rows** are a typical document, the collection where the consumer reads
   one, a document that doesn't match, and one through a guard. A document
   `cases.ts` takes from a set unchanged is a row here too.
-- **Timing** runs a row on every side for at least a set time and count, then
-  times the sides in turns, each round starting one later, and takes medians.
-  A timing is long enough that a collection of the young generation is a small
-  part of it. It is taken in the process the bytes are, under the flags the
-  bytes need. Those are not the flags a consumer runs under, and a side's time
-  moves with them, by set and not always the same way.
-- **Bytes** are measured as [below](#method), each row after its timing. The
-  same parse in two rows reads within about a percent. A figure is of the code
-  the engine has made for a set's rows together: a document parsed alone in a
-  process can allocate less.
+- **Timing** is in passes, a fresh process for each side in each, under the
+  flags a consumer has. A process runs every row of its side before it times
+  any, so a row is timed in code that has seen the set's other documents. A
+  time is the median of the passes, printed beside their spread and its
+  median batch.
+- **Bytes** are measured as [below](#method), in other processes, a side to
+  each, under the flags bytes need. They are not timed, so they run several
+  at once, after every set has been timed, and the tables are printed when
+  they are done. The same parse in two rows reads within about a percent. A
+  figure is of the code the engine has made for a set's rows together: a
+  document parsed alone in a process can allocate less.
 - **Zod is two columns.** It compiles a parser for each object schema with
   `new Function` on that schema's first parse, where the environment lets it,
   and otherwise interprets: under `z.config({jitless: true})`, or a content
   security policy that refuses eval. `zod jitless` is the interpreter, asked
-  for a parse at a time on the same schemas, and the run checks that those
-  parses compiled nothing, and that the others compiled some.
+  for a parse at a time on the same schemas. The two are processes of their
+  own, so neither runs in code the other shaped, and each checks itself: that
+  the interpreter's parses compiled nothing, and that the others compiled
+  some.
 - **Zod's bundle** is the consumer's module as it is written, on classic `zod`
   and not `zod/mini`, which the consumer would have to be rewritten for.
 - **Zod has no guard**, so its side of a guard row is `safeParse` read for
@@ -121,8 +132,8 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 
 ## Method
 
-- **Parse time**: fuz_util's `Benchmark`, a batch of parses per timing.
-  `grade` times its own way, below.
+- **Parse time**: a process for each library, in passes. See
+  [below](#timing-across-libraries). `grade` times its own way, after that.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
@@ -137,8 +148,10 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
   the function only returns is then never allocated. So a process measures
   two functions and throws them away before the first it keeps. The scripts
   need the young generation's node flags, which their npm scripts pass, and
-  refuse to run without them. `grade` is the other way round: it refuses
-  them, and gives them to the processes that measure its bytes.
+  refuse to run without them. `grade` and `benchmark:harvest` are the other
+  way round: they refuse them, and give them to the processes that measure
+  their bytes, and such a process that fails is started once more, announced
+  on stderr, which a timing never is.
 - **Cold start**: one fresh Node process per sample, in three stages that
   build on each other, against a bare process. Bundled and unbundled entries.
   Compile cache off, rounds interleaved, medians.
@@ -148,11 +161,89 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm).
 
+### Timing across libraries
+
+`npm run benchmark` (`run.ts`) and `npm run benchmark:harvest` (`harvest.ts`)
+time the same way. `timing_passes.ts` plans the processes and pools them,
+`timing_child.ts` is one process, `timing_job.ts` is what those two share,
+and `timing.ts` is the loops a function is called and timed from. `run_rows.ts`
+and `harvest_sets.ts` are what a process loads its rows through.
+
+- **A process holds one library.** What a library takes depends on what its
+  process ran before. Call sites that two libraries reach have seen both, the
+  engine sizes the young generation from what was allocated lately, an input
+  one library left as a slower kind of object is slower for the next, and
+  whatever is timed first reads slow. Timed together, a library's figure
+  moves with the list of libraries and their order. So each has a process,
+  which imports its module and no other library's.
+- **A process is a draw.** The same code settles at another speed from one
+  process to the next and stays there, so more samples inside one process
+  only read that draw more finely. The whole is repeated instead: `--passes`
+  times, five by default, every library in a fresh process each pass. A figure
+  is the median of its passes.
+- **The spread is printed beside every figure**: half of what its passes
+  range over, as a share of the median, with the fastest and slowest pass. It
+  is how far that figure moved on that run, from one process to the next and
+  with which row a process ran first: a library can settle differently on
+  that alone, the same way every time. Two libraries whose gap is inside
+  their spreads have not been told apart.
+- **Order favors nothing.** Which library's process starts a pass moves on by
+  a pass, forward and backward by turns, and which row a process measures
+  first moves on with it. Timed processes run one at a time. The order is
+  rotated and not balanced: at the default count of passes a library does
+  not start a pass in every place. A run of some libraries or scenarios
+  agrees with a full one within spread.
+- **Warm by time with a floor of calls**, through the loop that then times,
+  and force no collection. The loops have been run over several functions
+  first, so the engine doesn't inline a row into them.
+- **A figure is the whole of a timing over its calls.** The collections a
+  library's parses bring are in it, and they are not always small: what
+  Zod's failing parse makes outlives a collection of the young generation,
+  and collecting it is around half of such a row. A median of short batches
+  would leave that out, and flatter the library that causes it. That median
+  is printed beside the figure, pooled over the passes the same way, and no
+  ratio is taken from it: a wide gap between the two is collection time.
+- **A call is in every figure.** Because the loop inlines nothing, each
+  parse is a real call, and what that costs is in every row alike. A process
+  times a function that does nothing through the same loop, and the figure is
+  printed under the tables: a row near it is mostly the call, and the ratio of
+  two such rows says little.
+- **Time is taken under no flags**, and a timing process refuses any of the
+  ones bytes need.
+- **`--duration`** is the milliseconds each row of each library is timed for
+  in all, shared out over the passes. More passes at one duration cost the
+  warming and the processes again, not the timing.
+
+`npm run benchmark` has two regimes, the two [`grade`](grading.md) has:
+
+- **shared**, the default: a library's process holds every scenario, and runs
+  each of them on both of its inputs before it times any. A scenario's valid
+  and invalid rows share one schema. Every call site in the library has then
+  seen several schemas, as in an app, and a row reads the same whichever
+  scenarios are asked for and in whatever order: `--scenario` and
+  `--no-invalid` pick what is timed and printed, not what the process runs
+  first.
+- **alone**, with `--alone`: a process for each scenario on each input, which
+  builds and runs only that. The engine specializes the library to the one
+  schema, and to the row's one input: the smallest rows then read as the call
+  itself, with nothing left of the parse to compare. On the rest a library
+  reads faster than shared, and by the most where it compiles a validator. It
+  is what a program with one schema pays at best, and takes a process for
+  every row of every library in every pass.
+
+What a process per library tells: what a library takes on these rows with
+the engine's attention to itself, which is what an app that validates with
+one library has. What it doesn't: what two libraries in one program cost each
+other, which no figure here includes. And it does not make a figure exact. A
+library is still a few draws, read at their median, on one machine and one
+version of Node.
+
 ### Grading
 
 `grade.ts` plans processes and reads them together, `grade_child.ts` is one
-process, `grade_arm.ts` is what a process loads once for each instance, and
-`grade_job.ts` is what the first two share. [grading.md](grading.md) says what
+process, `grade_arm.ts` and `timing.ts` are what a process loads once for
+each instance, the case matrix and the loops, and `grade_job.ts` is what the
+first two share. [grading.md](grading.md) says what
 is measured and how a difference is decided. What the code has to hold to:
 
 - **An instance is a module instance of everything it is called through**:
@@ -212,8 +303,12 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   and quiet the machine before recording a result. One process's reading of
   one function is a draw: the same code loaded twice can settle several
   percent apart on a case and stay there. `grade` measures that beside every
-  figure, as a case's floor and a summary's A/A. The other benchmarks time each library once a process,
-  so a small gap on a single row there is not a finding.
+  figure, as a case's floor and a summary's A/A. `benchmark` and
+  `benchmark:harvest` repeat the whole in fresh processes and print each
+  figure's spread, which is of a few passes: a gap inside it is not a finding,
+  and one just outside it is not much of one. `benchmark:allocations` and
+  `benchmark:wasm` time in one process, once, so a small gap on a single row
+  there is not a finding.
 - It isn't like-for-like: TypeBox's check builds no output, ArkType keeps
   unknown keys, and Valibot's bytes pay for more features.
 - Cold start reports work inside the process, which resolves sub-millisecond

@@ -1,6 +1,6 @@
 /**
- * What the cold-start and retained-heap benchmarks share: the entries a
- * measured process imports, and running that process.
+ * What the benchmarks that measure in processes share: the entries a
+ * cold-start or retained-heap process imports, and running a process.
  *
  * A measured process is a generated module that holds one scenario and
  * nothing of the harness, so its time and memory are the library's. The
@@ -16,7 +16,7 @@
  * @module
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -133,6 +133,107 @@ export const to_child_report_source = (fields: Array<string>): Array<string> => 
 	');',
 	''
 ];
+
+export interface StartChildOptions {
+	/** Node flags, none for a process that should be a consumer's. */
+	flags?: ReadonlyArray<string>;
+	/** What follows the module's path on the command line. */
+	args?: ReadonlyArray<string>;
+	/** The process's environment, this one's when left out. */
+	env?: NodeJS.ProcessEnv;
+	/** Names the process in an error, its path when left out. */
+	label?: string;
+	/**
+	 * The milliseconds after which the process is killed, `START_CHILD_TIMEOUT_MS`
+	 * when left out: far more than a healthy one takes.
+	 */
+	timeout_ms?: number;
+}
+
+/**
+ * How long `start_child` gives a process by default, in milliseconds. It is a
+ * bound on a process that hangs, not on one that measures: no healthy process
+ * of a benchmark comes near it.
+ */
+export const START_CHILD_TIMEOUT_MS = 30 * 60_000;
+
+// the processes `start_child` has started and not yet seen close
+const started_children: Set<ChildProcess> = new Set();
+
+let is_watching_exit = false;
+
+// A process started here is killed when this one exits, whether it ends, throws
+// with others still running, or is told to stop. A signal with a listener no
+// longer ends the process, so the listener exits, which also runs the `exit`
+// listeners that release a benchmark lock.
+const kill_children_on_exit = (): void => {
+	if (is_watching_exit) return;
+	is_watching_exit = true;
+	process.on('exit', () => {
+		for (const child of started_children) child.kill('SIGKILL');
+	});
+	process.once('SIGINT', () => process.exit(130));
+	process.once('SIGTERM', () => process.exit(143));
+};
+
+/**
+ * Starts a module in a fresh Node process and resolves to the JSON it printed,
+ * without blocking this one, so processes that are not timed can run several
+ * at once. The process gets none of this one's node flags. It is killed when
+ * it outlasts `options.timeout_ms`, and when this process exits or is sent
+ * `SIGINT` or `SIGTERM`.
+ *
+ * @throws Error when the process fails, is killed, outlasts its timeout, or prints anything but JSON
+ */
+export const start_child = (path: string, options: StartChildOptions = {}): Promise<unknown> =>
+	new Promise((resolve, reject) => {
+		const {
+			flags = [],
+			args = [],
+			env,
+			label = path,
+			timeout_ms = START_CHILD_TIMEOUT_MS
+		} = options;
+		kill_children_on_exit();
+		const child = spawn(process.execPath, [...flags, path, ...args], {
+			stdio: ['ignore', 'pipe', 'pipe'],
+			env
+		});
+		started_children.add(child);
+		let timed_out = false;
+		const timeout = setTimeout(() => {
+			timed_out = true;
+			child.kill('SIGKILL');
+		}, timeout_ms);
+		let stdout = '';
+		let stderr = '';
+		child.stdout.on('data', (chunk) => (stdout += chunk));
+		child.stderr.on('data', (chunk) => (stderr += chunk));
+		child.on('error', (error) => {
+			clearTimeout(timeout);
+			started_children.delete(child);
+			reject(error);
+		});
+		child.on('close', (code, signal) => {
+			clearTimeout(timeout);
+			started_children.delete(child);
+			if (timed_out) {
+				reject(
+					new Error(`${label}: killed after ${Math.round(timeout_ms / 1000)}s without finishing`)
+				);
+				return;
+			}
+			if (code !== 0) {
+				reject(new Error(`${label}: exited with ${code ?? signal}\n${stderr}`));
+				return;
+			}
+			try {
+				resolve(JSON.parse(stdout));
+			} catch {
+				reject(new Error(`${label}: printed other than JSON:\n${stdout}`));
+			}
+		});
+	});
 
 /**
  * Runs a generated module in a fresh Node process and returns the JSON it printed.

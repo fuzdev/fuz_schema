@@ -3,8 +3,8 @@
  * arms, measures cases, and prints one line of JSON.
  *
  * **An arm is a module instance of everything it runs through.** Each arm's
- * library, its case matrix, and its loops (`grade_arm.ts`) are loaded under a
- * URL of that arm's own, by a resolve hook that passes the arm's query on to
+ * library, its case matrix (`grade_arm.ts`), and its loops (`timing.ts`) are
+ * loaded under a URL of that arm's own, by a resolve hook that passes the arm's query on to
  * what an arm's modules import. Two arms given the same file are then two
  * instances, with their own functions and their own feedback, which is what
  * lets one stand as the noise reference of the other. It is checked, not
@@ -58,10 +58,14 @@ import {
 } from './measure.ts';
 
 type ArmModule = typeof import('./grade_arm.ts');
+type LoopsModule = typeof import('./timing.ts');
 
 interface Arm {
 	id: string;
-	module: ArmModule;
+	/** The arm's own instance of the loops its cases are called and timed from. */
+	loops: LoopsModule;
+	/** What tells the arm's instance of the case matrix from another's. */
+	instance: unknown;
 	cases: Map<string, Case>;
 }
 
@@ -96,6 +100,7 @@ registerHooks({
 });
 
 const ARM_MODULE_URL = new URL('./grade_arm.ts', import.meta.url).href;
+const LOOPS_MODULE_URL = new URL('./timing.ts', import.meta.url).href;
 
 const to_rotated = <T>(list: Array<T>, by: number): Array<T> =>
 	list.map((_, i) => list[(i + by) % list.length]!);
@@ -109,6 +114,7 @@ for (const { id, path, graded } of to_rotated(job.arms, job.offset)) {
 	const query = `?arm=${id}`;
 	const lib: SchemaLib = await import(pathToFileURL(path).href + query);
 	const module: ArmModule = await import(ARM_MODULE_URL + query);
+	const loops: LoopsModule = await import(LOOPS_MODULE_URL + query);
 	// a graded arm that lost a group would be graded on fewer cases, so it fails:
 	// only another version's arm may lack what a group needs
 	const built =
@@ -116,14 +122,19 @@ for (const { id, path, graded } of to_rotated(job.arms, job.offset)) {
 			? [module.build_case(lib, job.cases[0]!, graded)].filter((c) => c !== undefined)
 			: module.build_cases(lib, graded);
 	libs.push(lib);
-	arms.push({ id, module, cases: new Map(built.map((c) => [c.name, c])) });
+	arms.push({
+		id,
+		loops,
+		instance: module.instance,
+		cases: new Map(built.map((c) => [c.name, c]))
+	});
 }
 // two arms that shared an instance would be one arm timed against itself
 for (const distinct of [
 	libs,
 	libs.map((lib) => lib.is),
-	arms.map((a) => a.module.time_slice),
-	arms.map((a) => a.module.instance)
+	arms.map((a) => a.loops.time_slice),
+	arms.map((a) => a.instance)
 ]) {
 	if (new Set(distinct).size !== arms.length) throw new Error('two arms share a module instance');
 }
@@ -171,7 +182,7 @@ if (job.regime === 'matrix') {
 			const { run } = arm.cases.get(c.name)!;
 			const until = performance.now() + GRADE_PRELUDE_MS;
 			for (let calls = 0; calls < GRADE_PRELUDE_CALLS || performance.now() < until; calls++) {
-				arm.module.call(run, 1);
+				arm.loops.call(run, 1);
 			}
 		}
 	}
@@ -186,12 +197,7 @@ const warm = (of_case: Array<Arm>, name: string): number => {
 	do {
 		let fastest = Infinity;
 		for (const arm of of_case) {
-			const samples = arm.module.time_slice(
-				arm.cases.get(name)!.run,
-				batch,
-				GRADE_WARM_SLICE_MS,
-				1
-			);
+			const samples = arm.loops.time_slice(arm.cases.get(name)!.run, batch, GRADE_WARM_SLICE_MS, 1);
 			fastest = Math.min(fastest, median(samples) / batch);
 		}
 		calls += batch;
@@ -227,7 +233,7 @@ for (const [index, c] of measured.entries()) {
 		// from -1: the round before the first is timed and thrown away
 		for (let round = -1; round < orders.length; round++) {
 			for (const at of orders[(lead + round + orders.length) % orders.length]!) {
-				const samples = of_case[at]!.module.time_slice(
+				const samples = of_case[at]!.loops.time_slice(
 					runs[at]!,
 					batch,
 					job.slice_ms,
@@ -247,5 +253,5 @@ for (const [index, c] of measured.entries()) {
 	output.cases.push(result);
 }
 
-output.sink = arms.reduce((sum, arm) => sum + arm.module.read_sink(), 0);
+output.sink = arms.reduce((sum, arm) => sum + arm.loops.read_sink(), 0);
 process.stdout.write(JSON.stringify(output) + '\n', (error) => process.exit(error ? 1 : 0));
