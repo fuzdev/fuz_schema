@@ -17,7 +17,8 @@
  *   a changed subtree still shares its unchanged siblings with the input.
  *   Changed is as `Object.is` tells: a `0` made `-0` is, a `NaN` kept is not.
  * - Issue paths are built on unwind: a container prefixes its key onto the
- *   issues its child added, so valid input never touches a path.
+ *   issues its child added, so valid input never touches a path. Each prefix
+ *   is a new array, so a path is replaced as it grows and never changed.
  * - Schemas with no options are constants (`string`, not `string()`).
  * - Messages are derived from structured issues by `format_issue`, which is
  *   only bundled when used.
@@ -288,22 +289,29 @@ export const fail = (
 ): any => {
 	ctx.fails++;
 	if (!ctx.probe) {
-		(ctx.issues ??= []).push({
+		const issue: SchemaIssue = {
 			kind,
 			expected,
 			// `get_issue_value` names a type the same way, to compare against this
 			received: value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value,
 			path: [],
 			message: undefined
-		});
+		};
+		// the first issue is the array's one element: a push onto an empty array
+		// grows it to hold many
+		if (ctx.issues) ctx.issues.push(issue);
+		else ctx.issues = [issue];
 	}
 	return value;
 };
 
 // prefixes `key` onto the path of every issue added since `from`,
-// callers must not be in probe mode
+// callers must not be in probe mode. The path is a new array each time:
+// `unshift` is a call the engine doesn't inline, and its first on an empty
+// array grows it to hold many. A path past one key pays for that in bytes,
+// an array a level
 const prefix_path = (issues: Array<SchemaIssue>, from: number, key: PropertyKey): void => {
-	for (let i = from; i < issues.length; i++) issues[i]!.path.unshift(key);
+	for (let i = from; i < issues.length; i++) issues[i]!.path = [key, ...issues[i]!.path];
 };
 
 // like `fail` for an issue about `key` of `value`, which is read only when an
@@ -461,7 +469,9 @@ export const number: Schema<number, number, 'number', undefined> = {
 	kind: 'number',
 	def: undefined,
 	run: (value, ctx) =>
-		typeof value === 'number' && !Number.isNaN(value) ? value : fail(ctx, 'number', value)
+		// `NaN` is the one number that isn't itself
+		// eslint-disable-next-line no-self-compare
+		typeof value === 'number' && value === value ? value : fail(ctx, 'number', value)
 };
 
 export const boolean: Schema<boolean, boolean, 'boolean', undefined> = {

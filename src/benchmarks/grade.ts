@@ -968,18 +968,37 @@ if (args.bundle) {
 					(core_delta / SPEEDUP_PER_CORE_BYTES.bytes) * SPEEDUP_PER_CORE_BYTES.speedup
 				)
 			: 0;
+	// the return may be on the invalid cases when the valid path is not slower
+	const matrix_invalid = summarize(
+		graded.filter((g) => g.c.realistic && !g.c.valid && g.matrix && !Number.isNaN(g.matrix.ratio)),
+		'matrix'
+	);
+	const is_return = (s: Summary): boolean =>
+		is_outside(s) && s.ratio < 0 && to_speed(s) >= required;
 	let verdict: string;
 	if (core_delta <= 0) verdict = 'pass, no bytes added';
 	else if (!confirmable) verdict = NOT_JUDGED;
 	else if (!matrix_valid) verdict = 'not judged, no realistic valid cases in this run';
-	else if (!(is_outside(matrix_valid) && matrix_valid.ratio < 0)) {
-		verdict = `FAIL, ${format_speed(matrix_valid)} is no speedup past its A/A`;
-	} else if (to_speed(matrix_valid) < required) {
-		verdict = `FAIL, ${format_speed(matrix_valid)} is short of it`;
-	} else verdict = `pass, ${format_speed(matrix_valid)}`;
+	else if (is_return(matrix_valid)) verdict = `pass, valid ${format_speed(matrix_valid)}`;
+	else if (is_outside(matrix_valid) && matrix_valid.ratio > 0) {
+		verdict = `FAIL, valid ${format_speed(matrix_valid)} is slower past its A/A`;
+	} else if (matrix_invalid.cases && is_return(matrix_invalid)) {
+		verdict =
+			`pass, invalid ${format_speed(matrix_invalid)}, ` +
+			`with valid ${format_speed(matrix_valid)} ${format_standing(matrix_valid)}`;
+	} else {
+		const to_shortfall = (s: Summary): string =>
+			`${format_speed(s)} is ${is_outside(s) && s.ratio < 0 ? 'short of it' : 'no speedup past its A/A'}`;
+		verdict =
+			`FAIL, valid ${to_shortfall(matrix_valid)}` +
+			(matrix_invalid.cases
+				? `, and invalid ${to_shortfall(matrix_invalid)}`
+				: ', and there are no realistic invalid cases in this run');
+	}
 	console.log(
 		`core bytes (${CORE_SCENARIO}): ${core_delta >= 0 ? '+' : ''}${core_delta} gzip, ` +
-			`which needs ${format_percent(required)} realistic speed in the matrix: ${verdict}`
+			`which needs ${format_percent(required)} realistic speed in the matrix, on the valid path ` +
+			`or with it not slower on the invalid: ${verdict}`
 	);
 	console.log(
 		`size ceiling: all scenarios are ${all_vs_valibot.toFixed(2)}x valibot, ` +

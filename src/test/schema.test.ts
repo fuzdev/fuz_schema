@@ -26,7 +26,16 @@ describe('primitives', () => {
 
 	test('number rejects NaN and allows infinities', () => {
 		assert(!s.is(s.number, NaN));
-		assert(s.is(s.number, Infinity));
+		assert.deepEqual(issues_of(s.number, NaN), [
+			{ kind: 'number', expected: 'number', received: 'number', path: [], message: undefined }
+		]);
+		for (const value of [Infinity, -Infinity, 0, -0, 1.5, Number.MAX_VALUE, Number.MIN_VALUE]) {
+			assert(s.is(s.number, value), inspect(value));
+			assert(Object.is(s.parse_or_throw(s.number, value), value), inspect(value));
+		}
+		for (const value of ['1', null, undefined, 1n, Object(1), [1]]) {
+			assert(!s.is(s.number, value), inspect(value));
+		}
 		assert(!s.is(s.pipe(s.number, s.finite), Infinity));
 	});
 
@@ -2566,6 +2575,96 @@ describe('issues', () => {
 		['a strip_object', s.strip_object({ a: s.number }), { a: SECRET, extra: SECRET }],
 		['a loose_object', s.loose_object({ a: s.number }), { a: SECRET, extra: SECRET }]
 	];
+
+	test('a path is outermost first at every depth, through every container', () => {
+		const Leaf = s.variant('t', [
+			s.object({ t: s.literal('a'), v: s.string }),
+			s.object({ t: s.literal('b'), v: s.number })
+		]);
+		const Deep = s.object({
+			top: s.string,
+			list: s.array(s.record(s.strip_object({ inner: s.loose_object({ leaves: s.array(Leaf) }) })))
+		});
+		const input = {
+			top: 1,
+			list: [
+				1,
+				{ k: 1, m: { inner: { leaves: [{ t: 'a', v: 1 }, { t: 'c' }, { t: 'b', v: 'x', w: 1 }] } } }
+			]
+		};
+		assert.deepEqual(
+			issues_of(Deep, input).map((i) => [i.kind, i.path]),
+			[
+				['string', ['top']],
+				['record', ['list', 0]],
+				['strip_object', ['list', 1, 'k']],
+				['string', ['list', 1, 'm', 'inner', 'leaves', 0, 'v']],
+				['variant', ['list', 1, 'm', 'inner', 'leaves', 1, 't']],
+				['number', ['list', 1, 'm', 'inner', 'leaves', 2, 'v']],
+				['unknown_key', ['list', 1, 'm', 'inner', 'leaves', 2, 'w']]
+			]
+		);
+		assert.deepEqual(
+			issues_of(s.array(s.array(s.string)), [['a', 1], [2]]).map((i) => i.path),
+			[
+				[0, 1],
+				[1, 0]
+			]
+		);
+		assert.deepEqual(issues_of(s.record(s.string), { a: 1 })[0]!.path, ['a']);
+	});
+
+	test('every issue has a path array of its own', () => {
+		const O = s.object({
+			a: s.string,
+			b: s.object({ c: s.string, d: s.array(s.number) }),
+			e: s.record(s.string)
+		});
+		const input = { a: 1, b: { c: 1, d: ['x', 'y'], z: 1 }, e: { f: 1, g: 2 } };
+		const expected = [
+			['a'],
+			['b', 'c'],
+			['b', 'd', 0],
+			['b', 'd', 1],
+			['b', 'z'],
+			['e', 'f'],
+			['e', 'g']
+		];
+		const issues = issues_of(O, input);
+		assert.deepEqual(
+			issues.map((i) => i.path),
+			expected
+		);
+		assert.strictEqual(new Set(issues.map((i) => i.path)).size, issues.length);
+		// writing to one path changes no other
+		for (const issue of issues) issue.path.push('written');
+		assert.deepEqual(
+			issues.map((i) => i.path),
+			expected.map((path) => [...path, 'written'])
+		);
+		// the issues at the root too, which no container prefixed
+		const [first, second] = [issues_of(s.string, 1)[0]!, issues_of(s.string, 2)[0]!];
+		assert.notStrictEqual(first.path, second.path);
+		first.path.push('written');
+		assert.deepEqual(second.path, []);
+	});
+
+	test('a path is replaced as it grows, so one a message function keeps stays empty', () => {
+		const kept: Array<Array<PropertyKey>> = [];
+		const Leaf = s.message(s.string, (issue) => {
+			kept.push(issue.path);
+			return 'text';
+		});
+		const issues = issues_of(s.object({ a: s.array(Leaf) }), { a: [1, 2] });
+		assert.deepEqual(
+			issues.map((i) => [i.message, i.path]),
+			[
+				['text', ['a', 0]],
+				['text', ['a', 1]]
+			]
+		);
+		assert.deepEqual(kept, [[], []]);
+	});
 
 	test('an issue is kind, expected, received, path, and message, in that order', () => {
 		for (const [name, schema, input] of failing) {

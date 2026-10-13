@@ -60,10 +60,19 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   when the count grew across the call.
 - **Paths are built on unwind.** A container prefixes its key onto the issues
   its child added. Valid input never touches a path.
+- **A prefix is a new array**, the key and then the path so far, which
+  replaces the issue's `path`. `unshift` on the one array is a call the
+  engine doesn't inline, and its first on an empty array grows it to hold
+  many keys. Given up: an issue allocates an array a level, and the engine
+  gives each one past the first room to grow. So a path of one key takes
+  fewer bytes than the grown array did, and a deeper one more, by about that
+  array again a level. It measured faster at every depth tried.
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
 - **`ctx.issues` is `undefined` until the first failure** outside probe mode,
-  so a parse that finds nothing allocates no array for them. From then on
+  so a parse that finds nothing allocates no array for them. The first issue
+  is written as the array's one element, where a push onto an empty array
+  would grow it to hold many. From then on
   `ctx.fails === ctx.issues.length` outside probe mode, and containers use
   the count as an index into `issues`.
 - **An entry's `run` gets two more arguments**: the object schemas call
@@ -221,6 +230,9 @@ is only bundled when used. There is no message registry.
   serialized and kept. `fail` is passed the value and names its type.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
+- **`path` is each issue's own array**, shared with no other issue. While the
+  parse unwinds it is replaced, not changed, so a `message` function that
+  keeps the `path` it was handed keeps an empty array.
 - **A `missing_key` issue is the entry schema's**, where an `unknown_key` is
   the object's. It is `{kind: 'missing_key', expected: 'a required key',
   received: 'undefined'}` with the key as its last path element, at the

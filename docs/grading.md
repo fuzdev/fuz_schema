@@ -148,6 +148,8 @@ now and then be graded against an older ref (`--against <ref>`).
 3. **Opt-in bytes only have to pay for themselves.**
 4. **Bytes every user pays need a return**: roughly a 10% speedup on the
    realistic cases per 50 gzipped bytes of core. Under 5% for any bytes is a no.
+   The return is on the valid path, or on the invalid one when the valid path
+   is not slower.
 5. **The whole stays under about two thirds of Valibot's gzipped size.**
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
@@ -156,11 +158,14 @@ now and then be graded against an older ref (`--against <ref>`).
 `grade` checks 2, 4, 5, and 6, and lists what allocates more, retains more, or
 starts slower. The rest is judgment.
 
-- **Rule 4** reads the realistic valid cases in the matrix, all the runs
-  together. "Core" is the `strict_nested` scenario's bundle, the one built
-  from `object`. No bytes added is a pass. Added bytes pass when that speed is
-  past its A/A and is the return the rule asks, which is never under its 5%. A speedup inside its A/A has
-  not been shown.
+- **Rule 4** reads the realistic cases in the matrix, all the runs together,
+  the valid ones and the invalid ones each as one figure beside its own A/A.
+  "Core" is the `strict_nested` scenario's bundle, the one built from
+  `object`. No bytes added is a pass. Added bytes pass when the valid speed is
+  past its A/A and is the return the rule asks, which is never under its 5%.
+  When it is not, and the valid path does not read slower past its A/A, they
+  pass when the invalid speed is that return, at the same price and past its
+  own A/A. A speedup inside its A/A has not been shown.
 - **Rule 6** fails when the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in either regime,
   or when a valid case, realistic or not, is confirmed slower in either.
