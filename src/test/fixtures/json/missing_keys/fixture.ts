@@ -11,20 +11,47 @@ const Tree: s.Schema<Tree> = s.object({
 	next: s.lazy(() => s.optional(Tree))
 });
 
-// every entry here accepts the `undefined` a missing key reads as. Only the
-// first, an `unknown` that is the entry itself, is handed the object and needs
-// its key. Held by another schema an `unknown` accepts a missing key, as an
-// `optional` held by one does
+// every entry here accepts `undefined`. An `unknown` needs its key, as the
+// entry itself and held by a `nullable`, a `lazy`, a `union`, or a `message`,
+// which hand it the object. An `optional` or a `with_default` lets the key be
+// missing, and so does a `union` with one among its options
 const entries = {
 	unknown: s.unknown,
 	optional: s.optional(s.unknown),
 	with_default: s.with_default(s.unknown, 'x'),
 	nullable_unknown: s.nullable(s.unknown),
 	nullable_optional: s.nullable(s.optional(s.string)),
+	nullable_with_default: s.nullable(s.with_default(s.unknown, 'x')),
 	union_unknown: s.union([s.string, s.unknown]),
 	union_optional: s.union([s.number, s.optional(s.string)]),
+	union_unknown_optional: s.union([s.unknown, s.optional(s.string)]),
+	union_with_default: s.union([s.string, s.with_default(s.number, 0)]),
 	lazy_unknown: s.lazy(() => s.unknown),
-	lazy_optional: s.lazy(() => s.optional(s.string))
+	lazy_optional: s.lazy(() => s.optional(s.string)),
+	lazy_with_default: s.lazy(() => s.with_default(s.string, 'x')),
+	// one in another
+	nullable_lazy_unknown: s.nullable(s.lazy(() => s.unknown)),
+	lazy_nullable_unknown: s.lazy(() => s.nullable(s.unknown)),
+	lazy_lazy_unknown: s.lazy(() => s.lazy(() => s.unknown)),
+	nullable_union_unknown: s.nullable(s.union([s.string, s.unknown])),
+	union_nullable_unknown: s.union([s.number, s.nullable(s.unknown)]),
+	union_lazy_unknown: s.union([s.number, s.lazy(() => s.unknown)]),
+	union_union_unknown: s.union([s.number, s.union([s.string, s.unknown])]),
+	lazy_union_optional: s.lazy(() => s.union([s.unknown, s.optional(s.unknown)])),
+	nullable_lazy_optional: s.nullable(s.lazy(() => s.optional(s.unknown))),
+	optional_nullable_unknown: s.optional(s.nullable(s.unknown)),
+	// a `message` is the schema it holds
+	message_unknown: s.message(s.unknown, 'text'),
+	message_optional: s.message(s.optional(s.unknown), 'text'),
+	message_nullable_unknown: s.message(s.nullable(s.unknown), 'text'),
+	nullable_message_unknown: s.nullable(s.message(s.unknown, 'text')),
+	message_lazy_unknown: s.message(
+		s.lazy(() => s.unknown),
+		'text'
+	),
+	message_union_unknown: s.message(s.union([s.string, s.unknown]), 'text'),
+	union_message_unknown: s.union([s.string, s.message(s.unknown, 'text')]),
+	message_union_optional: s.message(s.union([s.string, s.optional(s.unknown)]), 'text')
 };
 
 const present: Record<keyof typeof entries, string> = {
@@ -33,10 +60,32 @@ const present: Record<keyof typeof entries, string> = {
 	with_default: '2',
 	nullable_unknown: '[]',
 	nullable_optional: 'null',
+	nullable_with_default: 'null',
 	union_unknown: '0',
 	union_optional: '"a"',
+	union_unknown_optional: '[]',
+	union_with_default: '1',
 	lazy_unknown: '{}',
-	lazy_optional: '"a"'
+	lazy_optional: '"a"',
+	lazy_with_default: '"a"',
+	nullable_lazy_unknown: 'null',
+	lazy_nullable_unknown: '1',
+	lazy_lazy_unknown: 'false',
+	nullable_union_unknown: '"a"',
+	union_nullable_unknown: '{}',
+	union_lazy_unknown: '0',
+	union_union_unknown: '[1]',
+	lazy_union_optional: '1',
+	nullable_lazy_optional: 'null',
+	optional_nullable_unknown: 'null',
+	message_unknown: '0',
+	message_optional: '1',
+	message_nullable_unknown: 'null',
+	nullable_message_unknown: '2',
+	message_lazy_unknown: '""',
+	message_union_unknown: '{}',
+	union_message_unknown: '"a"',
+	message_union_optional: '3'
 };
 
 // every entry but `without`, then `more`

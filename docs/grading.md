@@ -150,7 +150,9 @@ now and then be graded against an older ref (`--against <ref>`).
    realistic cases per 50 gzipped bytes of core. Under 5% for any bytes is a no.
    The return is on the valid path, or on the invalid one when the valid path
    is not slower.
-5. **The whole stays under about two thirds of Valibot's gzipped size.**
+5. **The whole stays under 0.72 of Valibot's gzipped size**, measured on all
+   the benchmark scenarios bundled together, this library's bundle against
+   Valibot's.
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.

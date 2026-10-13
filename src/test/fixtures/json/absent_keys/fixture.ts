@@ -2,8 +2,8 @@ import * as s from '#lib/schema.ts';
 import type { JsonFixture } from '../json_test_helpers.ts';
 
 // a key that is not there is `undefined`, which more than a wrapper around the
-// entry can accept: an option of a union, what a lazy defers to, an `unknown`
-// one of those holds. An `unknown` that is the entry itself needs its key
+// entry can accept: an option of a union, and what a lazy defers to. An
+// `unknown` needs its key, as the entry itself and as an option of a union
 export const fixture: JsonFixture = {
 	schema: s.object({
 		optional_option: s.optional(s.object({ u: s.union([s.number, s.optional(s.string)]) })),

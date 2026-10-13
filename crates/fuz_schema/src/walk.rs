@@ -48,8 +48,8 @@ pub enum Failure {
     Discriminator,
     /// The value is at a key the `object` node has no entry for.
     UnknownKey,
-    /// The node is an `unknown` entry of an object schema, and the value has
-    /// no key for it.
+    /// The node is an `unknown` that an entry of an object schema reached,
+    /// and the value has no key for the entry.
     MissingKey,
 }
 
@@ -278,6 +278,12 @@ fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R
                 report,
             ),
         },
+        // the one thing an `unknown` refuses is no value at all: the key of
+        // the entry it was reached from is missing
+        SchemaNode::Unknown if matches!(value, Value::Undefined) => {
+            report.fail(id, Failure::MissingKey, Received::of(value));
+            false
+        }
         _ => scalar(node, value) || fail(id, value, report),
     };
     Rest::Matched(matched)
@@ -377,7 +383,8 @@ fn select<'a>(variant: &VariantDef, value: Value<'a>) -> Selected<'a> {
 }
 
 /// Whether `value` matches a node that looks no further than the value
-/// itself. The kinds that do look further are `run`'s.
+/// itself. The kinds that do look further are `run`'s, and so is an `unknown`
+/// given a missing key.
 fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
     match node {
         SchemaNode::String => matches!(value, Value::String(_)),
@@ -415,9 +422,11 @@ fn length(value: Value<'_>) -> Option<f64> {
 /// The three object schemas: the entries in the schema's order, each reading
 /// a missing key as `undefined`, then for a `strict` one the input's keys.
 ///
-/// An entry that is an `unknown` needs its key, as the library's does, which
-/// is handed the object and looks. That is of the entry itself: an `unknown`
-/// held by another schema is handed no object, and takes the `undefined`.
+/// `Value::Undefined` is a missing key and nothing else, as JSON has no
+/// `undefined`. So an `unknown` that is given one refuses it, which is the
+/// library's `unknown` handed the object and finding no key: as the entry
+/// itself, and through the `nullable`, `lazy`, and `union` that pass the
+/// object on. An `optional` and a `with_default` take it before it gets there.
 fn object<R: Report>(
     schema: &Schema,
     id: NodeId,
@@ -434,18 +443,8 @@ fn object<R: Report>(
     for (key, entry) in entries.iter() {
         let field = fields.get(key);
         let count = report.count();
-        let entry_matched = if field.is_none() && schema.at(entry).needs_key() {
-            report.fail(entry, Failure::MissingKey, Received::of(Value::Undefined));
-            false
-        } else {
-            run(
-                schema,
-                entry,
-                field.map_or(Value::Undefined, Json::view),
-                report,
-            )
-        };
-        if !entry_matched {
+        let value = field.map_or(Value::Undefined, Json::view);
+        if !run(schema, entry, value, report) {
             if R::PROBE {
                 return false;
             }
@@ -718,6 +717,11 @@ pub mod tests {
             let default = b.with_default(string, Json::Null);
             let held = b.nullable(unknown);
             let either = b.union([string, unknown]);
+            let deferred = b.declare();
+            b.define(deferred, held);
+            let lenient = b.union([unknown, optional]);
+            let optional_unknown = b.optional(unknown);
+            let held_optional = b.nullable(optional_unknown);
             b.object([
                 ("string", string),
                 ("unknown", unknown),
@@ -726,45 +730,69 @@ pub mod tests {
                 ("default", default),
                 ("held", held),
                 ("either", either),
+                ("deferred", deferred),
+                ("lenient", lenient),
+                ("held_optional", held_optional),
             ])
         });
+        // the entries a missing key fails, each with a value
+        let needed =
+            r#""string":"a","unknown":null,"nullable":null,"held":1,"either":2,"deferred":[]"#;
+        let without = |key: &str| {
+            let rest: Vec<&str> = needed
+                .split(',')
+                .filter(|entry| !entry.starts_with(&format!("\"{key}\"")))
+                .collect();
+            format!("{{{}}}", rest.join(","))
+        };
         check(
             &schema,
             &[
-                r#"{"string":"a","unknown":null,"nullable":null}"#,
-                r#"{"string":"a","nullable":"b","optional":"c","default":"d","unknown":[1],"held":1,"either":2}"#,
-                r#"{"nullable":null,"unknown":0,"string":""}"#,
+                &format!("{{{needed}}}"),
+                &format!(
+                    r#"{{{needed},"optional":"c","default":"d","lenient":3,"held_optional":4}}"#
+                ),
+                r#"{"deferred":null,"either":"","held":null,"nullable":"b","unknown":0,"string":""}"#,
             ],
             &[
                 "{}",
-                r#"{"string":"a","unknown":1}"#,
-                r#"{"nullable":null,"unknown":1}"#,
-                // an `unknown` entry accepts any value and needs its key
-                r#"{"string":"a","nullable":null}"#,
-                r#"{"string":"a","unknown":1,"nullable":null,"optional":null}"#,
-                r#"{"string":"a","unknown":1,"nullable":null,"default":null}"#,
-                r#"{"string":"a","unknown":1,"nullable":null,"default":1}"#,
-                r#"{"string":"a","unknown":1,"nullable":null,"extra":1}"#,
-                r#"{"string":null,"unknown":1,"nullable":null}"#,
+                // an `unknown` accepts any value and needs its key, as the
+                // entry and under a `nullable`, a `union`, and a `lazy`
+                &without("string"),
+                &without("unknown"),
+                &without("nullable"),
+                &without("held"),
+                &without("either"),
+                &without("deferred"),
+                &format!(r#"{{{needed},"optional":null}}"#),
+                &format!(r#"{{{needed},"default":null}}"#),
+                &format!(r#"{{{needed},"default":1}}"#),
+                &format!(r#"{{{needed},"extra":1}}"#),
             ],
         );
-        // in the order of the entries, and not of an `unknown` another schema
-        // holds
+        // in the order of the entries. The `unknown` an entry reaches reports
+        // the missing key, and a union none of whose options takes one
+        // reports itself
         assert_eq!(
             failures(&schema, "{}"),
             [
                 "string: string received Undefined",
                 "unknown: missing_key received Undefined",
-                "nullable: string received Undefined"
+                "nullable: string received Undefined",
+                "held: missing_key received Undefined",
+                "either: union received Undefined",
+                "deferred: missing_key received Undefined"
             ]
         );
-        assert_eq!(
-            expects(&schema, r#"{"string":"a","nullable":null}"#),
-            ["a required key"]
-        );
+        assert_eq!(expects(&schema, &without("unknown")), ["a required key"]);
+        assert_eq!(expects(&schema, &without("held")), ["a required key"]);
+        assert_eq!(expects(&schema, &without("either")), ["string | unknown"]);
         // and before the unknown keys
         assert_eq!(
-            failures(&schema, r#"{"z":1,"string":"a","nullable":1}"#),
+            failures(
+                &schema,
+                r#"{"z":1,"string":"a","nullable":1,"held":1,"either":1,"deferred":1}"#
+            ),
             [
                 "unknown: missing_key received Undefined",
                 "nullable: string received Number",

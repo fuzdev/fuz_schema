@@ -417,6 +417,10 @@ const VARIANT = (l: ConformanceLib): any =>
 		l.strict({ t: l.literal('b'), d: l.with_default(l.string, 'D') })
 	]);
 
+// the same with `undefined` as the first option's value of `t`
+const VARIANT_UNDEFINED = (l: ConformanceLib): any =>
+	l.variant('t', [l.strict({ t: l.undef, x: l.string }), l.strict({ t: l.literal('b') })]);
+
 // an entry schema as the one key `a`, with the key missing and with it `undefined`
 const missing_and_undefined = (
 	name: string,
@@ -642,11 +646,79 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('unknown then a check entry', (l) => l.refine(l.unknown, () => true)),
 	...missing_and_undefined('unknown then a transform entry', (l) => l.map(l.unknown, (x) => x)),
 	...missing_and_undefined('message(unknown) entry', (l) => l.message(l.unknown)),
+	// an `unknown` under schemas that are one in another
+	...missing_and_undefined('nullable(lazy(unknown)) entry', (l) =>
+		l.nullable(l.lazy(() => l.unknown))
+	),
+	...missing_and_undefined('lazy(nullable(unknown)) entry', (l) =>
+		l.lazy(() => l.nullable(l.unknown))
+	),
+	...missing_and_undefined('lazy(lazy(unknown)) entry', (l) =>
+		l.lazy(() => l.lazy(() => l.unknown))
+	),
+	...missing_and_undefined('nullable(union[string, unknown]) entry', (l) =>
+		l.nullable(l.union([l.string, l.unknown]))
+	),
+	...missing_and_undefined('union[number, nullable(unknown)] entry', (l) =>
+		l.union([l.number, l.nullable(l.unknown)])
+	),
+	...missing_and_undefined('union[number, lazy(unknown)] entry', (l) =>
+		l.union([l.number, l.lazy(() => l.unknown)])
+	),
+	...missing_and_undefined('union[unknown, optional(string)] entry', (l) =>
+		l.union([l.unknown, l.optional(l.string)])
+	),
+	...missing_and_undefined('union[number, unknown then a check] entry', (l) =>
+		l.union([l.number, l.refine(l.unknown, () => true)])
+	),
+	...missing_and_undefined('lazy(unknown) then a check entry', (l) =>
+		l.refine(
+			l.lazy(() => l.unknown),
+			() => true
+		)
+	),
+	...missing_and_undefined('nullable(unknown) then a transform to "T" entry', (l) =>
+		l.map(l.nullable(l.unknown), () => 'T')
+	),
+	...missing_and_undefined('lazy(unknown then a check) entry', (l) =>
+		l.lazy(() => l.refine(l.unknown, () => true))
+	),
+	...missing_and_undefined('unknown then a check, then a check entry', (l) =>
+		l.refine(
+			l.refine(l.unknown, () => true),
+			() => true
+		)
+	),
+	...missing_and_undefined('message(nullable(unknown)) entry', (l) =>
+		l.message(l.nullable(l.unknown))
+	),
+	...missing_and_undefined('nullable(message(unknown)) entry', (l) =>
+		l.nullable(l.message(l.unknown))
+	),
+	...missing_and_undefined('message(lazy(unknown)) entry', (l) =>
+		l.message(l.lazy(() => l.unknown))
+	),
+	...missing_and_undefined('message(union[string, unknown]) entry', (l) =>
+		l.message(l.union([l.string, l.unknown]))
+	),
+	...missing_and_undefined('message(unknown then a check) entry', (l) =>
+		l.message(l.refine(l.unknown, () => true))
+	),
 	...missing_and_undefined('default(unknown) entry', (l) => l.with_default(l.unknown, 'D')),
 	...missing_and_undefined('literal(undefined) entry', (l) => l.undef),
 	...missing_and_undefined('one_of with undefined entry', (l) => l.one_of(['x', undefined])),
 	...missing_and_undefined('bare check entry', (l) => l.check(() => true)),
 	...missing_and_undefined('bare transform entry', (l) => l.transform((x) => x)),
+	// a `check` or a `literal(undefined)` that another schema holds: it is handed the object, and doesn't look
+	...missing_and_undefined('nullable(check) entry', (l) => l.nullable(l.check(() => true))),
+	...missing_and_undefined('lazy(check) entry', (l) => l.lazy(() => l.check(() => true))),
+	...missing_and_undefined('union[string, check] entry', (l) =>
+		l.union([l.string, l.check(() => true)])
+	),
+	...missing_and_undefined('nullable(literal(undefined)) entry', (l) => l.nullable(l.undef)),
+	...missing_and_undefined('literal(undefined) then a check entry', (l) =>
+		l.refine(l.undef, () => true)
+	),
 	...missing_and_undefined('bare transform to "T" entry', (l) => l.transform(() => 'T')),
 	...missing_and_undefined('string entry', (l) => l.string),
 	...missing_and_undefined('nullable(string) entry', (l) => l.nullable(l.string)),
@@ -1021,6 +1093,16 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'variant, the second option, a default', schema: VARIANT, input: () => ({ t: 'b' }) },
 	{ name: 'variant, no option has the value', schema: VARIANT, input: () => ({ t: 'c' }) },
 	{ name: 'variant, key missing', schema: VARIANT, input: () => ({ x: 'x' }) },
+	{
+		name: 'variant, a literal(undefined) discriminator, key missing',
+		schema: VARIANT_UNDEFINED,
+		input: () => ({ x: 'x' })
+	},
+	{
+		name: 'variant, a literal(undefined) discriminator, key undefined',
+		schema: VARIANT_UNDEFINED,
+		input: () => ({ t: undefined, x: 'x' })
+	},
 	{ name: 'variant, key inherited', schema: VARIANT, input: () => inheriting({ t: 'b' }) },
 	{ name: 'variant, an entry wrong', schema: VARIANT, input: () => ({ t: 'a', x: 1 }) },
 	{ name: 'variant, unknown key', schema: VARIANT, input: () => ({ t: 'a', x: 'x', z: 1 }) },

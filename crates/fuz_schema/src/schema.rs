@@ -270,8 +270,8 @@ pub enum SchemaNode {
     Boolean,
     /// Matches a bigint, which JSON never holds.
     Bigint,
-    /// Matches anything. As an entry itself it needs its key, and held by
-    /// another schema it matches a missing key too.
+    /// Matches anything, and needs the key of the entry it is reached from:
+    /// as the entry itself, and under a `nullable`, a `lazy`, or a `union`.
     Unknown,
     /// Matches one value.
     Literal(SchemaLiteral),
@@ -320,12 +320,6 @@ pub enum SchemaNode {
 }
 
 impl SchemaNode {
-    /// Whether the node, as an entry itself, fails an object without its key
-    /// though it matches `undefined`. The library's `unknown` alone does.
-    pub(crate) const fn needs_key(&self) -> bool {
-        matches!(self, Self::Unknown)
-    }
-
     /// The node's kind.
     pub const fn kind(&self) -> SchemaKind {
         match self {
@@ -745,6 +739,9 @@ mod tests {
             let deferred = b.declare();
             b.define(deferred, unknown);
             let optional_unknown = b.optional(unknown);
+            let both = b.union([unknown, nullable]);
+            let unknown_or_optional = b.union([unknown, optional]);
+            let held_optional = b.nullable(optional_unknown);
             b.loose_object([
                 ("string", string),
                 ("unknown", unknown),
@@ -757,6 +754,9 @@ mod tests {
                 ("option", option),
                 ("deferred", deferred),
                 ("optional_unknown", optional_unknown),
+                ("both", both),
+                ("unknown_or_optional", unknown_or_optional),
+                ("held_optional", held_optional),
             ])
         });
         let entries = schema.at(schema.root()).entries().unwrap();
@@ -766,9 +766,15 @@ mod tests {
             .filter(|&(position, _)| entries.required().contains(position))
             .map(|(_, (key, _))| key)
             .collect();
-        // an `unknown` takes `undefined` and needs its key when it is the
-        // entry, and only then
-        assert_eq!(required, ["string", "unknown", "nullable"]);
+        // an `unknown` needs its key wherever the entry reaches it, and an
+        // `optional` on the way, or beside it in a `union`, lets the key be
+        // missing
+        assert_eq!(
+            required,
+            [
+                "string", "unknown", "nullable", "held", "option", "deferred", "both"
+            ]
+        );
     }
 
     #[test]

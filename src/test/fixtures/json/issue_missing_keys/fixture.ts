@@ -25,13 +25,20 @@ const entries = {
 	short_array: s.pipe(s.array(s.unknown), s.max_length(1)),
 	nullable: s.nullable(s.string),
 	lazy: s.lazy(() => s.string),
-	// accepts `undefined`, and as the entry itself needs its key
+	// accepts `undefined` and needs its key, as the entry itself and where
+	// another schema hands it the object
 	unknown: s.unknown,
+	nullable_unknown: s.nullable(s.unknown),
+	lazy_unknown: s.lazy(() => s.unknown),
+	nullable_lazy_unknown: s.nullable(s.lazy(() => s.unknown)),
+	// no option lets the key be missing, which the union reports as its own
+	union_unknown: s.union([s.string, s.unknown]),
+	lazy_union_unknown: s.lazy(() => s.union([s.unknown, s.nullable(s.unknown)])),
 	// the entries a missing key does not fail
 	optional: s.optional(s.string),
 	with_default: s.with_default(s.string, 'x'),
 	nullable_optional: s.nullable(s.optional(s.string)),
-	union_unknown: s.union([s.string, s.unknown]),
+	union_optional: s.union([s.unknown, s.optional(s.string)]),
 	lazy_optional: s.lazy(() => s.optional(s.string))
 };
 
@@ -39,11 +46,13 @@ const all =
 	'"string":"","number":0,"boolean":false,"literal":"a","literal_null":null,"one_of":1,"object":{},' +
 	'"loose_object":{},"strip_object":{},"record":{},"array":[],"union":null,"variant":{"k":"a"},' +
 	'"integer":0,"safe_integer":0,"finite":0,"long_string":"a","bounded_number":0,"bounded_integer":0,' +
-	'"short_array":[],"nullable":null,"lazy":"","unknown":null';
+	'"short_array":[],"nullable":null,"lazy":"","unknown":null,"nullable_unknown":null,' +
+	'"lazy_unknown":1,"nullable_lazy_unknown":[],"union_unknown":{},"lazy_union_unknown":0';
 
 // a key that is not there is `undefined` to its entry, which reports having
-// received that, an `unknown` as a `missing_key`. Only a `bigint` entry keeps
-// these from matching.
+// received that: an `unknown` as a `missing_key`, wherever the entry reaches
+// it, and a `union` none of whose options takes it as a `union`. Only a
+// `bigint` entry keeps these from matching.
 export const fixture: JsonFixture = {
 	schema: s.object({
 		strict: s.optional(s.object(entries)),

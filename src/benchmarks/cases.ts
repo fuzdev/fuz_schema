@@ -659,6 +659,24 @@ const each: CaseGroup = (s) => {
 			{ a: 'x', b: 'y' }
 		),
 		of('variant_10_last/valid', Shape, { kind: 'k9', value: 1 }),
+		// an entry that hands the object and the key on, to an `unknown` that
+		// looks for the key: the closure of each that takes them, and a `lazy`,
+		// which passes on what it is given
+		of('entry_nullable_unknown/valid', to_object(s)({ a: s.nullable(s.unknown) }), { a: 1 }),
+		of('entry_lazy_unknown/valid', to_object(s)({ a: s.lazy(() => s.unknown) }), { a: 1 }),
+		of('entry_union_unknown_last/valid', to_object(s)({ a: s.union([s.string, s.unknown]) }), {
+			a: 1
+		}),
+		of(
+			'entry_pipe_unknown_check/valid',
+			to_object(s)({
+				a: s.pipe(
+					s.unknown,
+					s.check((v: unknown) => v !== null)
+				)
+			}),
+			{ a: 1 }
+		),
 		// a hundred issues, each with an index for its path
 		of('string/invalid', s.string, 42, 'issues'),
 		of('message/invalid', s.message(s.string, 'must be text'), 42, 'issues'),

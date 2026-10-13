@@ -76,8 +76,8 @@ impl SchemaBuilder {
         self.push(SchemaNode::Bigint)
     }
 
-    /// Matches anything. As an entry itself it needs its key, and held by
-    /// another schema it matches a missing key too.
+    /// Matches anything, and needs the key of the entry it is reached from:
+    /// as the entry itself, and under a `nullable`, a `lazy`, or a `union`.
     pub fn unknown(&mut self) -> NodeId {
         self.push(SchemaNode::Unknown)
     }
@@ -316,17 +316,15 @@ impl SchemaBuilder {
             any,
             candidates: candidates.into_boxed_slice(),
         };
-        // an entry is required when a missing key fails it, as it does an
-        // `unknown` that is the entry and nothing held by another schema
+        // an entry is required when a missing key fails it, which the tree
+        // evaluator is asked
         for &id in &order {
             let Some(entries) = schema.at(id).entries() else {
                 continue;
             };
             let mut required = Bits::new(entries.len());
             for (position, (_, entry)) in entries.iter().enumerate() {
-                if schema.at(entry).needs_key()
-                    || !walk::run(&schema, entry, Value::Undefined, &mut walk::Probe)
-                {
+                if !walk::run(&schema, entry, Value::Undefined, &mut walk::Probe) {
                     required.insert(position);
                 }
             }

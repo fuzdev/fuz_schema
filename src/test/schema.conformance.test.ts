@@ -56,29 +56,29 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 		docs: '`literal(undefined)`, and a `one_of` with `undefined` among its values',
 		rows: {
 			'literal(undefined) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'one_of with undefined entry, key missing / *': { both: 'fail at a', ours: 'ok {}' }
-		}
-	},
-	{
-		reason: 'a `check` that is the entry itself takes a missing key as `undefined`',
-		status: 'declared',
-		docs: 'a `check` that is the entry itself',
-		rows: {
-			'bare check entry, key missing / *': { both: 'fail at a', ours: 'ok {}' }
+			'one_of with undefined entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'union[string, undefined] entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'nullable(literal(undefined)) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'literal(undefined) then a check entry, key missing / *': {
+				both: 'fail at a',
+				ours: 'ok {}'
+			},
+			'variant, a literal(undefined) discriminator, key missing': {
+				both: 'fail at t',
+				ours: 'ok {x: "x"}'
+			}
 		}
 	},
 	{
 		reason:
-			'an `unknown` or a `literal(undefined)` held by another schema is not handed the object, and takes a missing key as `undefined`',
+			'a `check` that is the entry itself, or that another schema holds as one, takes a missing key as `undefined`',
 		status: 'declared',
-		docs: 'an `unknown`, or one of those, held by another schema',
+		docs: 'a `check` that is the entry itself, or that another schema holds in one of those places',
 		rows: {
-			'nullable(unknown) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'lazy(unknown) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'union[string, unknown] entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'unknown then a check entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'unknown then a transform entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'union[string, undefined] entry, key missing / *': { both: 'fail at a', ours: 'ok {}' }
+			'bare check entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'nullable(check) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'lazy(check) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
+			'union[string, check] entry, key missing / *': { both: 'fail at a', ours: 'ok {}' }
 		}
 	},
 	{
@@ -255,6 +255,11 @@ const SIDES: Record<string, ConformanceSide> = {
 
 	// an optional key under another schema: valibot needs the key
 	'union[string, optional(number)] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'union[unknown, optional(string)] entry, key missing / *': {
 		side: 'zod',
 		zod: 'ok {}',
 		valibot: 'fail at a'

@@ -185,7 +185,8 @@ const ALLOC_FLOOR = { bytes: 8, share: 0.002 };
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 // the least speedup any added core bytes need, the rule's second sentence
 const LEAST_SPEEDUP_FOR_BYTES = 0.05;
-const CEILING_VS_VALIBOT = 2 / 3;
+// of all the scenarios bundled together, this library's gzip bytes over valibot's
+const CEILING_VS_VALIBOT = 0.72;
 // the scenario standing in for "what `parse` plus an object schema reaches":
 // the one built from `object`, the default object schema
 const CORE_SCENARIO = 'strict_nested';

@@ -13,6 +13,10 @@ Every schema and every action is `{kind, def, run}`, keys in that order.
   everywhere. Kind-specific data goes in `def`, never in extra fields.
 - `def` makes schemas introspectable: an object's entries, a literal's value.
 - Schemas with no options are constants: `s.string`, not `s.string()`.
+- **Nothing writes to a schema after it is made**, so a frozen one parses. A
+  `lazy` keeps the schema it got in a closure, not in itself: a write to one
+  schema's `run` makes that field a mutable one for every schema, as they
+  share a hidden class, and the engine then loads it on calls it had folded.
 
 ## What `def` holds
 
@@ -78,13 +82,28 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 - **An entry's `run` gets two more arguments**: the object schemas call
   `run(value, ctx, parent, key)`, with the object being read and the entry's
   key. Both are optional in `Schema.run`'s type, so a `run` of two parameters
-  is an entry like any other. `unknown` reads them, and every schema that
-  holds another calls it with `value` and `ctx` alone, but for `message`.
-- **`message` passes them on to a `run` that takes them**, which it tells
-  once, when it is made, by the `length` of that `run`. So a schema that
-  reads the object and the key declares them as plain parameters, with no
-  default and not as a rest. Around any other schema a `message` has a `run`
-  of two parameters and calls with two.
+  is an entry like any other. `unknown` reads them.
+- **`nullable`, `union`, `pipe`, and `message` pass them on to a `run` that
+  takes them**, which each tells once, when it is made, by the `length` of
+  that `run` or by the kind `'lazy'`: `nullable` and `message` by the schema
+  they hold, `union` by any of its options, and `pipe` by its first schema,
+  the only step it hands them to. So a schema that reads the object and the key declares them as
+  plain parameters, with no default and not as a rest. Around anything else
+  each has a `run` of two parameters and calls with two, as `optional`,
+  `with_default`, `array`, `record`, and `variant` always do.
+- **Each of the four is two closures** that differ only in what they pass on.
+  One `run` of four parameters is fewer bytes, and measured slower on valid
+  input for `union`, for `pipe`, and for a `message` around every schema: it
+  hands two arguments to a `run` that doesn't take them. So what passing them
+  on costs is bytes, in the bundles that have the kind.
+- **A `lazy` passes on what it is given**, two arguments or four, which it
+  tells on each call by the length of its `arguments`. Its schema isn't known
+  when it is made, so it can't choose a closure then, and a `run` of four
+  parameters costs every caller that passes two. So its `run` declares two,
+  and the four tell a lazy by its `kind` where its `length` can't say: around
+  one they pass the object and the key on, whatever it defers to. Until the
+  engine's last tier has the call, its `arguments` is an object a call, which
+  a parse of settled code doesn't allocate.
 
 ## Copy-on-write output
 
@@ -207,13 +226,25 @@ all a missing key costs an object that has no schema asking.
   so an inherited or non-enumerable key is there, and fails as a
   `missing_key` without it. `{}` doesn't match `object({a: unknown})` and
   `{a: undefined}` does.
-- **It looks only when it is handed the object**, which is as the entry
-  itself, or through `flavor`, `brand`, and `meta`, which keep its `run`, and
-  `message`, which passes the object on. At the top level, as an array's
-  item, a record's value, a union's option, or under any other schema, it
-  accepts `undefined` and is told nothing of a key. Passing the two arguments
-  on measured slower on valid input for `union`, and for a `message` that
-  did so around every schema.
+- **It is handed the object wherever the entry reaches it**: as the entry
+  itself, through `flavor`, `brand`, and `meta`, which keep its `run`, and
+  through `message`, `nullable`, `lazy`, an option of a `union`, and the first
+  schema of a `pipe`, which pass the object on. So `nullable(unknown)`,
+  `lazy(() => unknown)`, and `pipe(unknown, ...)` fail a missing key as a
+  `missing_key`, and the pipe runs no step after it.
+- **An `optional` or a `with_default` on the way takes the `undefined`
+  first**, so `nullable(optional(unknown))` lets its key be missing.
+- **A `union` hands the object to every option**, and a missing key matches
+  the first that lets its key be missing. With none it fails as it does on any
+  value, with its own issue: `union([string, unknown])` without its key
+  reports a `union` that received `undefined`, and no `missing_key`.
+- **Anywhere else `unknown` is told nothing of a key**, and accepts
+  `undefined`: at the top level, as an array's item, as a record's value, and
+  as a step of a `pipe` after the first.
+- **The other kinds that accept `undefined` don't look for the key**:
+  `literal(undefined)`, a `one_of` with `undefined`, and a `check` or a
+  `transform` that is the entry itself take a missing key as the `undefined`
+  it reads as. Why is [below](#behavior-that-differs-from-valibot-and-zod).
 - **The inferred types are narrower than this**: a key is optional in the
   input type only where its entry's `kind` is `optional` or `with_default`,
   and in the output type only where it is `optional`.
@@ -233,12 +264,13 @@ is only bundled when used. There is no message registry.
 - **`path` is each issue's own array**, shared with no other issue. While the
   parse unwinds it is replaced, not changed, so a `message` function that
   keeps the `path` it was handed keeps an empty array.
-- **A `missing_key` issue is the entry schema's**, where an `unknown_key` is
+- **A `missing_key` issue is the `unknown`'s**, where an `unknown_key` is
   the object's. It is `{kind: 'missing_key', expected: 'a required key',
   received: 'undefined'}` with the key as its last path element, at the
-  entry's place in the order. So a `message` around the `unknown` entry
-  labels it, and one around the object doesn't, as it labels only what has
-  no path.
+  entry's place in the order. So a `message` around the `unknown`, or around
+  a `nullable`, a `lazy`, or a `pipe` that reaches it, labels it, and one
+  around the object doesn't, as it labels only what has no path. A `union`
+  reports its own issue in its place.
 - **`format_issue` quotes a key that isn't only word characters**, as JSON.
   A key with a `.` can't read as two keys, and one with a newline can't add
   a line to a `SchemaError`'s message, which is one issue per line.
@@ -308,28 +340,46 @@ declare, and on a declared one that is no longer there. Where the two
 disagree, the table records which this library goes with. This list is that
 table in words.
 
+Each entry that has a reason on record says it, as one of three:
+
+- **by design**: what this library does is judged the better behavior, for
+  what it buys
+- **cost declined**: conforming would cost bytes or time, and where
+- **not guarded**: the schema is a malformed one, which is not paid for
+
 What the test compares is the verdict, the output, and the paths of the
 issues. These it holds:
 
-- Output is copy-on-write, where both always copy. What an input that comes
-  back keeps, and what a copy is, are under
-  [Copy-on-write output](#copy-on-write-output). The rows of it:
+- Output is copy-on-write, where both always copy. By design: a value that
+  matches and that nothing changes comes back as it is, so its parse
+  allocates nothing. What an input that comes back keeps, and what a copy is,
+  are under [Copy-on-write output](#copy-on-write-output). The rows of it:
   - a key read through the prototype, which stays inherited
   - an enumerable key a `record` input inherits, which is still read through it
   - an own `__proto__` key, of a `loose_object` input and of an entry named so
   - an array's holes, and its own keys that are not items
-  - an array copy's hole before the first item that changed, and its subclass
+  - an array copy's hole before the first item that changed, and its subclass:
+    the copy is one `slice` of the whole length, where building it an item at
+    a time regrows it
 - `record` validates the value of an own `__proto__` key, and fails where it
-  is refused, where both drop the key unread and pass. Every own key's value
-  is validated, which is the stricter answer, and is what the Rust crate does.
-- Valibot and Zod need the key of every entry that isn't optional. Here only
-  an `unknown` entry needs its key, and for the other entries that accept
-  `undefined` a missing key is the `undefined` it reads as:
-  - `literal(undefined)`, and a `one_of` with `undefined` among its values
-  - a `check` that is the entry itself
-  - an `unknown`, or one of those, held by another schema:
-    `nullable(unknown)`, `lazy(() => unknown)`, `union([string, unknown])`,
-    `pipe(unknown, ...)`
+  is refused, where both drop the key unread and pass. By design: every own
+  key's value is validated, which is the stricter answer, and is what the
+  Rust crate does.
+- Valibot and Zod need the key of every entry that isn't optional. Here a key
+  is needed by an entry that refuses `undefined`, and by one that reaches an
+  `unknown`, see [Missing keys](#missing-keys). For the other entries that
+  accept `undefined` a missing key is the `undefined` it reads as:
+  - `literal(undefined)`, and a `one_of` with `undefined` among its values,
+    as the entry and where another schema holds one: under a `nullable`, a
+    `lazy`, or a `message`, as an option of a `union`, at the start of a
+    `pipe`, or as the discriminator of a `variant` option, which an input
+    without the key then selects
+  - a `check` that is the entry itself, or that another schema holds in one
+    of those places
+
+  Cost declined: looking for the key takes a `run` of four parameters, on
+  kinds whose `run` is called with two nearly everywhere, which measured
+  slower on valid input.
 
 Where the two disagree, this library goes with:
 
@@ -338,7 +388,9 @@ Where the two disagree, this library goes with:
   missing, as in Zod and not in Valibot. One at the start of a `pipe` does
   too, as in both, and the steps after it run on the `undefined`, as in Zod,
   where Valibot leaves the key out. A `transform` that is the entry itself
-  lets the key be missing too, as Zod's does.
+  lets the key be missing too, as Zod's does. By design: a missing key is the
+  `undefined` it reads as to every schema but an `unknown`, so the object
+  schemas look for no key to reach a verdict.
 - **Valibot on a default under an `optional`.** `optional(with_default(...))`
   leaves `undefined` and a missing key as they are, where Zod fills the
   default in. And a `with_default` whose value is `undefined` leaves a
@@ -349,15 +401,20 @@ Where the two disagree, this library goes with:
   their order.
 - **Neither on that key in a `loose_object` input that comes back.** It is
   still read through the input, which Valibot's copy doesn't allow, and is
-  not an own key, as it is in Zod's.
+  not an own key, as it is in Zod's. By design: the input comes back with its
+  unknown keys never looked at, which is what makes `loose_object` the
+  cheapest of the three.
 - **Zod on an unknown key named `constructor` or `prototype`**, in a
-  `loose_object`: Valibot drops it and Zod keeps it, and here it is kept.
+  `loose_object`: Valibot drops it and Zod keeps it, and here it is kept. By
+  design: a loose object keeps its unknown keys, and leaves out only
+  `__proto__`, the one whose assignment would set the prototype.
 - **Valibot on an entry named `__proto__`.** Zod leaves it out of the output
   and reads nothing for it. Valibot and this library read and write it as any
   other key, so it sees `Object.prototype` when the input lacks the key, and
-  writing it sets the output's prototype.
+  writing it sets the output's prototype. Not guarded.
 - **Zod on an array.** Valibot's object, record, and variant schemas take an
-  array as an object. Zod's refuse it, as these do.
+  array as an object. Zod's refuse it, as these do. By design: an array is
+  not an object.
 - **Valibot on what a `record` is given.** Zod refuses a class instance and
   a symbol key. Valibot takes both, as this library does, and leaves the
   symbol key out of its copy.
@@ -367,16 +424,20 @@ Where the two disagree, this library goes with:
 These the test doesn't see, as they are in the count of the issues, in the
 API, or in the names:
 
-- `pipe` stops at its first failing step.
-- A failed `union` reports one issue, not its options'.
+- `pipe` stops at its first failing step. By design: an action assumes the
+  type the steps before it gave its value.
+- A failed `union` reports one issue, not its options'. By design: options
+  are only probed, so one that fails builds no issue and allocates nothing.
 - An unknown key is one issue each, at the key. Zod reports every unknown
   key of an object in one issue at the object, and Valibot the first alone.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   Dropping is `strip_object`, and keeping is `loose_object`. The test
-  compares each with the other libraries' schema that does the same.
+  compares each with the other libraries' schema that does the same. By
+  design: rejecting is the safe default, so it has the default name.
 - `variant` dispatches by map; its options need a `literal` discriminator.
   What it does with an input is in the matrix, and is what both do but for
-  an array.
+  an array, and for an option whose discriminator is `literal(undefined)`.
+  By design: the option is found in constant time.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.

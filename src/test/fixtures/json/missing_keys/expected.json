@@ -50,6 +50,20 @@
 										}
 									}
 								},
+								"nullable_with_default": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												},
+												"value": "x"
+											}
+										}
+									}
+								},
 								"union_unknown": {
 									"kind": "union",
 									"def": [
@@ -77,6 +91,39 @@
 										}
 									]
 								},
+								"union_unknown_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "unknown"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
+										}
+									]
+								},
+								"union_with_default": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "number"
+												},
+												"value": 0
+											}
+										}
+									]
+								},
 								"lazy_unknown": {
 									"kind": "lazy",
 									"def": "$0"
@@ -84,6 +131,185 @@
 								"lazy_optional": {
 									"kind": "lazy",
 									"def": "$1"
+								},
+								"lazy_with_default": {
+									"kind": "lazy",
+									"def": "$2"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$0"
+										}
+									}
+								},
+								"lazy_nullable_unknown": {
+									"kind": "lazy",
+									"def": "$3"
+								},
+								"lazy_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$4"
+								},
+								"nullable_union_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									}
+								},
+								"union_nullable_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
+								},
+								"union_lazy_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "lazy",
+											"def": "$0"
+										}
+									]
+								},
+								"union_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									]
+								},
+								"lazy_union_optional": {
+									"kind": "lazy",
+									"def": "$5"
+								},
+								"nullable_lazy_optional": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$6"
+										}
+									}
+								},
+								"optional_nullable_unknown": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									}
+								},
+								"message_unknown": {
+									"kind": "unknown"
+								},
+								"message_optional": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"nullable_message_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$0"
+								},
+								"message_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"union_message_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"message_union_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
 								}
 							}
 						}
@@ -136,6 +362,20 @@
 										}
 									}
 								},
+								"nullable_with_default": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												},
+												"value": "x"
+											}
+										}
+									}
+								},
 								"union_unknown": {
 									"kind": "union",
 									"def": [
@@ -163,6 +403,39 @@
 										}
 									]
 								},
+								"union_unknown_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "unknown"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
+										}
+									]
+								},
+								"union_with_default": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "number"
+												},
+												"value": 0
+											}
+										}
+									]
+								},
 								"lazy_unknown": {
 									"kind": "lazy",
 									"def": "$0"
@@ -170,6 +443,185 @@
 								"lazy_optional": {
 									"kind": "lazy",
 									"def": "$1"
+								},
+								"lazy_with_default": {
+									"kind": "lazy",
+									"def": "$2"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$0"
+										}
+									}
+								},
+								"lazy_nullable_unknown": {
+									"kind": "lazy",
+									"def": "$3"
+								},
+								"lazy_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$4"
+								},
+								"nullable_union_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									}
+								},
+								"union_nullable_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
+								},
+								"union_lazy_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "lazy",
+											"def": "$0"
+										}
+									]
+								},
+								"union_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									]
+								},
+								"lazy_union_optional": {
+									"kind": "lazy",
+									"def": "$5"
+								},
+								"nullable_lazy_optional": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$6"
+										}
+									}
+								},
+								"optional_nullable_unknown": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									}
+								},
+								"message_unknown": {
+									"kind": "unknown"
+								},
+								"message_optional": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"nullable_message_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$0"
+								},
+								"message_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"union_message_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"message_union_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
 								}
 							}
 						}
@@ -222,6 +674,20 @@
 										}
 									}
 								},
+								"nullable_with_default": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												},
+												"value": "x"
+											}
+										}
+									}
+								},
 								"union_unknown": {
 									"kind": "union",
 									"def": [
@@ -249,6 +715,39 @@
 										}
 									]
 								},
+								"union_unknown_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "unknown"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
+										}
+									]
+								},
+								"union_with_default": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "with_default",
+											"def": {
+												"schema": {
+													"kind": "number"
+												},
+												"value": 0
+											}
+										}
+									]
+								},
 								"lazy_unknown": {
 									"kind": "lazy",
 									"def": "$0"
@@ -256,6 +755,185 @@
 								"lazy_optional": {
 									"kind": "lazy",
 									"def": "$1"
+								},
+								"lazy_with_default": {
+									"kind": "lazy",
+									"def": "$2"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$0"
+										}
+									}
+								},
+								"lazy_nullable_unknown": {
+									"kind": "lazy",
+									"def": "$3"
+								},
+								"lazy_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$4"
+								},
+								"nullable_union_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									}
+								},
+								"union_nullable_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
+								},
+								"union_lazy_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "lazy",
+											"def": "$0"
+										}
+									]
+								},
+								"union_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "number"
+										},
+										{
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												},
+												{
+													"kind": "unknown"
+												}
+											]
+										}
+									]
+								},
+								"lazy_union_optional": {
+									"kind": "lazy",
+									"def": "$5"
+								},
+								"nullable_lazy_optional": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$6"
+										}
+									}
+								},
+								"optional_nullable_unknown": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "nullable",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									}
+								},
+								"message_unknown": {
+									"kind": "unknown"
+								},
+								"message_optional": {
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"nullable_message_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"message_lazy_unknown": {
+									"kind": "lazy",
+									"def": "$0"
+								},
+								"message_union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"union_message_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"message_union_optional": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "unknown"
+												}
+											}
+										}
+									]
 								}
 							}
 						}
@@ -375,7 +1053,7 @@
 								},
 								"next": {
 									"kind": "lazy",
-									"def": "$2"
+									"def": "$7"
 								}
 							}
 						}
@@ -431,6 +1109,51 @@
 				}
 			},
 			"$2": {
+				"kind": "with_default",
+				"def": {
+					"schema": {
+						"kind": "string"
+					},
+					"value": "x"
+				}
+			},
+			"$3": {
+				"kind": "nullable",
+				"def": {
+					"schema": {
+						"kind": "unknown"
+					}
+				}
+			},
+			"$4": {
+				"kind": "lazy",
+				"def": "$0"
+			},
+			"$5": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "unknown"
+					},
+					{
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "unknown"
+							}
+						}
+					}
+				]
+			},
+			"$6": {
+				"kind": "optional",
+				"def": {
+					"schema": {
+						"kind": "unknown"
+					}
+				}
+			},
+			"$7": {
 				"kind": "optional",
 				"def": {
 					"schema": {
@@ -441,7 +1164,7 @@
 							},
 							"next": {
 								"kind": "lazy",
-								"def": "$2"
+								"def": "$7"
 							}
 						}
 					}
@@ -927,6 +1650,150 @@
 						"strict",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_message_unknown"
+					]
 				}
 			]
 		},
@@ -934,19 +1801,164 @@
 			"name": "strict_only_unknown",
 			"text": "{\"strict\":{\"unknown\":false}}",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_message_unknown"
+					]
+				}
+			]
 		},
 		{
 			"name": "strict_all",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strict_null_for_each",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"union_unknown\":null,\"union_optional\":null,\"lazy_unknown\":null,\"lazy_optional\":null}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":null,\"union_optional\":null,\"union_unknown_optional\":null,\"union_with_default\":null,\"lazy_unknown\":null,\"lazy_optional\":null,\"lazy_with_default\":null,\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":null,\"lazy_lazy_unknown\":null,\"nullable_union_unknown\":null,\"union_nullable_unknown\":null,\"union_lazy_unknown\":null,\"union_union_unknown\":null,\"lazy_union_optional\":null,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":null,\"message_optional\":null,\"message_nullable_unknown\":null,\"nullable_message_unknown\":null,\"message_lazy_unknown\":null,\"message_union_unknown\":null,\"union_message_unknown\":null,\"message_union_optional\":null}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -960,12 +1972,30 @@
 					]
 				},
 				{
+					"kind": "union",
+					"expected": "string | with_default",
+					"received": "null",
+					"path": [
+						"strict",
+						"union_with_default"
+					]
+				},
+				{
 					"kind": "string",
 					"expected": "string",
 					"received": "null",
 					"path": [
 						"strict",
 						"lazy_optional"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"strict",
+						"lazy_with_default"
 					]
 				}
 			]
@@ -983,6 +2013,150 @@
 					"path": [
 						"strict",
 						"unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_message_unknown"
 					]
 				},
 				{
@@ -1007,7 +2181,7 @@
 		},
 		{
 			"name": "strict_missing_unknown",
-			"text": "{\"strict\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1024,56 +2198,370 @@
 		},
 		{
 			"name": "strict_missing_optional",
-			"text": "{\"strict\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strict_missing_with_default",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strict_missing_nullable_unknown",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_nullable_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strict_missing_nullable_optional",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"name": "strict_missing_nullable_with_default",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strict_missing_union_unknown",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_union_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strict_missing_union_optional",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"lazy_unknown\":{},\"lazy_optional\":\"a\"}}",
+			"name": "strict_missing_union_unknown_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_union_with_default",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strict_missing_lazy_unknown",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_optional\":\"a\"}}",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_lazy_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strict_missing_lazy_optional",
-			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{}}}",
+			"name": "strict_missing_lazy_with_default",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_nullable_lazy_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_lazy_nullable_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_lazy_lazy_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_nullable_union_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_union_nullable_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_union_lazy_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_union_union_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_lazy_union_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_nullable_lazy_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_optional_nullable_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_message_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_message_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strict_missing_message_nullable_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_nullable_message_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_message_lazy_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_message_union_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"union_message_unknown\":\"a\",\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"message_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_union_message_unknown",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"message_union_optional\":3}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strict_missing_message_union_optional",
+			"text": "{\"strict\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\"}}",
 			"json": true,
 			"valid": true,
 			"issues": []
@@ -1092,6 +2580,150 @@
 						"loose",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_message_unknown"
+					]
 				}
 			]
 		},
@@ -1099,19 +2731,164 @@
 			"name": "loose_only_unknown",
 			"text": "{\"loose\":{\"unknown\":false,\"other\":1}}",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_message_unknown"
+					]
+				}
+			]
 		},
 		{
 			"name": "loose_all",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "loose_null_for_each",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"union_unknown\":null,\"union_optional\":null,\"lazy_unknown\":null,\"lazy_optional\":null}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":null,\"union_optional\":null,\"union_unknown_optional\":null,\"union_with_default\":null,\"lazy_unknown\":null,\"lazy_optional\":null,\"lazy_with_default\":null,\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":null,\"lazy_lazy_unknown\":null,\"nullable_union_unknown\":null,\"union_nullable_unknown\":null,\"union_lazy_unknown\":null,\"union_union_unknown\":null,\"lazy_union_optional\":null,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":null,\"message_optional\":null,\"message_nullable_unknown\":null,\"nullable_message_unknown\":null,\"message_lazy_unknown\":null,\"message_union_unknown\":null,\"union_message_unknown\":null,\"message_union_optional\":null}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1125,12 +2902,30 @@
 					]
 				},
 				{
+					"kind": "union",
+					"expected": "string | with_default",
+					"received": "null",
+					"path": [
+						"loose",
+						"union_with_default"
+					]
+				},
+				{
 					"kind": "string",
 					"expected": "string",
 					"received": "null",
 					"path": [
 						"loose",
 						"lazy_optional"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"loose",
+						"lazy_with_default"
 					]
 				}
 			]
@@ -1149,12 +2944,156 @@
 						"loose",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_message_unknown"
+					]
 				}
 			]
 		},
 		{
 			"name": "loose_missing_unknown",
-			"text": "{\"loose\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1171,56 +3110,370 @@
 		},
 		{
 			"name": "loose_missing_optional",
-			"text": "{\"loose\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "loose_missing_with_default",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "loose_missing_nullable_unknown",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_nullable_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "loose_missing_nullable_optional",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"name": "loose_missing_nullable_with_default",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "loose_missing_union_unknown",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_union_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "loose_missing_union_optional",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"name": "loose_missing_union_unknown_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_union_with_default",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "loose_missing_lazy_unknown",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_lazy_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "loose_missing_lazy_optional",
-			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"other\":1}}",
+			"name": "loose_missing_lazy_with_default",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_nullable_lazy_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_lazy_nullable_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_lazy_lazy_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_nullable_union_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_union_nullable_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_union_lazy_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_union_union_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_lazy_union_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_nullable_lazy_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_optional_nullable_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_message_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_message_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "loose_missing_message_nullable_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_nullable_message_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_message_lazy_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_message_union_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"message_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_union_message_unknown",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "loose_missing_message_union_optional",
+			"text": "{\"loose\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
@@ -1239,6 +3492,150 @@
 						"strip",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_message_unknown"
+					]
 				}
 			]
 		},
@@ -1246,19 +3643,164 @@
 			"name": "strip_only_unknown",
 			"text": "{\"strip\":{\"unknown\":false,\"other\":1}}",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_message_unknown"
+					]
+				}
+			]
 		},
 		{
 			"name": "strip_all",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strip_null_for_each",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"union_unknown\":null,\"union_optional\":null,\"lazy_unknown\":null,\"lazy_optional\":null}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":null,\"with_default\":null,\"nullable_unknown\":null,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":null,\"union_optional\":null,\"union_unknown_optional\":null,\"union_with_default\":null,\"lazy_unknown\":null,\"lazy_optional\":null,\"lazy_with_default\":null,\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":null,\"lazy_lazy_unknown\":null,\"nullable_union_unknown\":null,\"union_nullable_unknown\":null,\"union_lazy_unknown\":null,\"union_union_unknown\":null,\"lazy_union_optional\":null,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":null,\"message_optional\":null,\"message_nullable_unknown\":null,\"nullable_message_unknown\":null,\"message_lazy_unknown\":null,\"message_union_unknown\":null,\"union_message_unknown\":null,\"message_union_optional\":null}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1272,12 +3814,30 @@
 					]
 				},
 				{
+					"kind": "union",
+					"expected": "string | with_default",
+					"received": "null",
+					"path": [
+						"strip",
+						"union_with_default"
+					]
+				},
+				{
 					"kind": "string",
 					"expected": "string",
 					"received": "null",
 					"path": [
 						"strip",
 						"lazy_optional"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"strip",
+						"lazy_with_default"
 					]
 				}
 			]
@@ -1296,12 +3856,156 @@
 						"strip",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_nullable_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_union_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_message_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_message_unknown"
+					]
 				}
 			]
 		},
 		{
 			"name": "strip_missing_unknown",
-			"text": "{\"strip\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1318,56 +4022,370 @@
 		},
 		{
 			"name": "strip_missing_optional",
-			"text": "{\"strip\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strip_missing_with_default",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strip_missing_nullable_unknown",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_nullable_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strip_missing_nullable_optional",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"name": "strip_missing_nullable_with_default",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strip_missing_union_unknown",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_optional\":\"a\",\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_union_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strip_missing_union_optional",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"other\":1}}",
+			"name": "strip_missing_union_unknown_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_union_with_default",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "strip_missing_lazy_unknown",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_optional\":\"a\",\"other\":1}}",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_lazy_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "strip_missing_lazy_optional",
-			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"lazy_unknown\":{},\"other\":1}}",
+			"name": "strip_missing_lazy_with_default",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_nullable_lazy_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_lazy_nullable_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_lazy_lazy_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_nullable_union_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_union_nullable_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | nullable",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_union_lazy_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | lazy",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_union_union_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | union",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_lazy_union_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_nullable_lazy_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_optional_nullable_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_message_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_message_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "strip_missing_message_nullable_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_nullable_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_nullable_message_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_message_lazy_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_lazy_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_message_union_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"union_message_unknown\":\"a\",\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"message_union_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_union_message_unknown",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"message_union_optional\":3,\"other\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_message_unknown"
+					]
+				}
+			]
+		},
+		{
+			"name": "strip_missing_message_union_optional",
+			"text": "{\"strip\":{\"unknown\":null,\"optional\":1,\"with_default\":2,\"nullable_unknown\":[],\"nullable_optional\":null,\"nullable_with_default\":null,\"union_unknown\":0,\"union_optional\":\"a\",\"union_unknown_optional\":[],\"union_with_default\":1,\"lazy_unknown\":{},\"lazy_optional\":\"a\",\"lazy_with_default\":\"a\",\"nullable_lazy_unknown\":null,\"lazy_nullable_unknown\":1,\"lazy_lazy_unknown\":false,\"nullable_union_unknown\":\"a\",\"union_nullable_unknown\":{},\"union_lazy_unknown\":0,\"union_union_unknown\":[1],\"lazy_union_optional\":1,\"nullable_lazy_optional\":null,\"optional_nullable_unknown\":null,\"message_unknown\":0,\"message_optional\":1,\"message_nullable_unknown\":null,\"nullable_message_unknown\":2,\"message_lazy_unknown\":\"\",\"message_union_unknown\":{},\"union_message_unknown\":\"a\",\"other\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []

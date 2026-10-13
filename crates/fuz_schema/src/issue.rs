@@ -168,8 +168,9 @@ pub enum SchemaIssueKind {
     Finite,
     /// `unknown_key`: the value is at a key an `object` has no entry for.
     UnknownKey,
-    /// `missing_key`: the value has no key for an `unknown` entry of an object
-    /// schema, which accepts anything at its key and still needs the key.
+    /// `missing_key`: the value has no key for an entry of an object schema
+    /// that is an `unknown` or reaches one, which accepts anything at its key
+    /// and still needs the key.
     MissingKey,
 }
 

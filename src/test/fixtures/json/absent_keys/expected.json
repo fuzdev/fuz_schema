@@ -260,8 +260,18 @@
 			"name": "unknown_option_absent",
 			"text": "{\"unknown_option\":{}}",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"unknown_option",
+						"u"
+					]
+				}
+			]
 		},
 		{
 			"name": "nullable_option_absent",

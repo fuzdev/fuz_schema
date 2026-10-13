@@ -18,8 +18,9 @@ const entries = {
 	nullable_bigint: s.nullable(s.bigint)
 };
 
-// the two entries that reject a missing key, present so the others are what varies
-const base = '"required":"r","nullable":null,"nullable_bigint":null';
+// the entries that reject a missing key, present so the others are what varies
+const base = '"required":"r","nullable":null,"nullable_unknown":null,"nullable_bigint":null';
+const in_base = ['required', 'nullable', 'nullable_unknown', 'nullable_bigint'];
 
 const values: Record<string, string> = {
 	null: 'null',
@@ -36,14 +37,16 @@ const values: Record<string, string> = {
 const cases: Record<string, JsonFixtureText> = {
 	all_missing: '{}',
 	base: `{${base}}`,
-	required_missing: '{"nullable":null,"nullable_bigint":null}',
-	nullable_missing: '{"required":"r","nullable_bigint":null}',
-	nullable_bigint_missing: '{"required":"r","nullable":null}'
+	required_missing: '{"nullable":null,"nullable_unknown":null,"nullable_bigint":null}',
+	nullable_missing: '{"required":"r","nullable_unknown":null,"nullable_bigint":null}',
+	// an `unknown` under a `nullable` still needs its key
+	nullable_unknown_missing: '{"required":"r","nullable":null,"nullable_bigint":null}',
+	nullable_bigint_missing: '{"required":"r","nullable":null,"nullable_unknown":null}'
 };
 for (const key of Object.keys(entries)) {
 	for (const [name, value] of Object.entries(values)) {
 		// a key written twice here would be a different test
-		if (key === 'required' || key === 'nullable' || key === 'nullable_bigint') {
+		if (in_base.includes(key)) {
 			const rest = base
 				.split(',')
 				.filter((entry) => !entry.startsWith(`"${key}"`))

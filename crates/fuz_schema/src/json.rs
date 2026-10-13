@@ -48,7 +48,8 @@ pub struct JsonObject {
 
 /// A value as an evaluator sees it: a borrowed view of a `Json`, or of a
 /// scalar the streaming evaluator has in hand, or the `undefined` a missing
-/// key reads as.
+/// key reads as. Nothing else is `Undefined`, so an evaluator given one knows
+/// the key is missing.
 #[derive(Debug, Clone, Copy)]
 pub enum Value<'a> {
     Undefined,

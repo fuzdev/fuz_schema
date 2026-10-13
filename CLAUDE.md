@@ -157,11 +157,19 @@ Things that are easy to break without a test noticing:
 - **The object loops hand an entry the object and its key**, as the third and
   fourth argument of `run`, and leave whether a missing key fails to it. A schema
   that accepts `undefined` and should refuse a missing key checks the object
-  itself, as `unknown` does. A schema that calls what it holds with two
-  arguments, as every one but `message` does, lets a missing key through to
-  it as `undefined`. `message` passes them on only to a `run` whose `length`
-  is past two, read once when it is made, so a `run` that reads them declares
-  them as plain parameters.
+  itself, as `unknown` does. `nullable`, `union`, `pipe` to its first schema,
+  and `message` pass them on only to a `run` whose `length` is past two or to
+  a schema of kind `'lazy'`, read once when each is made, so a `run` that
+  reads them declares them as plain parameters. Each is two closures, one for
+  either answer: a single `run` of four parameters measured slower. A `lazy`
+  declares two parameters and passes on what it is called with, two arguments
+  or four, by the length of its `arguments`. A schema that calls what it
+  holds with two arguments, as every other does, lets a missing key through
+  to it as `undefined`.
+- **Nothing writes to a schema after it is made**, a `lazy` included: it
+  keeps the schema it got in a closure. One write to a `run` makes the field
+  mutable for every schema, which slows parses the engine had folded and
+  which `npm run grade` doesn't show.
 - **`loose_object` has its own loop.** Folding it into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
@@ -263,11 +271,12 @@ Things that are easy to break without a test noticing:
 - **Issues are the library's, in its order.** `validate_json` reports what
   `parse` does: each kind, `expected` text, received type, and path. A change
   to what a `run` passes `fail` in `schema.ts` is a change to `walk.rs`.
-- **Which entries need their key is the library's.** `walk.rs` fails an
-  `unknown` entry whose key is missing, and the builder's `required` is those
-  entries and the ones a missing key fails as `undefined`. Both ask
-  `SchemaNode::needs_key`, which a schema that starts to read the object
-  `run` is handed changes.
+- **Which entries need their key is the library's.** `Value::Undefined` is a
+  missing key and nothing else. `walk.rs` fails an `unknown` given one, as a
+  `MissingKey`, wherever an entry reaches it, and the builder's `required` is
+  the entries the walker refuses it for. A schema in `schema.ts` that starts
+  to read the object its `run` is handed, or to pass it on or stop passing it
+  on, is a change to `walk.rs`.
 - **A difference is declared, not skipped.** It is a flag on a fixture case,
   and `tests/fixtures.rs` asserts the declared behavior.
 - **Refuse, don't guess.** What the crate can't carry across is a

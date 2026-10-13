@@ -173,6 +173,42 @@
 								"unknown": {
 									"kind": "unknown"
 								},
+								"nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"lazy_unknown": {
+									"kind": "lazy",
+									"def": "$1"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$1"
+										}
+									}
+								},
+								"union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"lazy_union_unknown": {
+									"kind": "lazy",
+									"def": "$2"
+								},
 								"optional": {
 									"kind": "optional",
 									"def": {
@@ -203,20 +239,25 @@
 										}
 									}
 								},
-								"union_unknown": {
+								"union_optional": {
 									"kind": "union",
 									"def": [
 										{
-											"kind": "string"
+											"kind": "unknown"
 										},
 										{
-											"kind": "unknown"
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
 										}
 									]
 								},
 								"lazy_optional": {
 									"kind": "lazy",
-									"def": "$1"
+									"def": "$3"
 								}
 							}
 						}
@@ -392,6 +433,42 @@
 								"unknown": {
 									"kind": "unknown"
 								},
+								"nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"lazy_unknown": {
+									"kind": "lazy",
+									"def": "$1"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$1"
+										}
+									}
+								},
+								"union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"lazy_union_unknown": {
+									"kind": "lazy",
+									"def": "$2"
+								},
 								"optional": {
 									"kind": "optional",
 									"def": {
@@ -422,20 +499,25 @@
 										}
 									}
 								},
-								"union_unknown": {
+								"union_optional": {
 									"kind": "union",
 									"def": [
 										{
-											"kind": "string"
+											"kind": "unknown"
 										},
 										{
-											"kind": "unknown"
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
 										}
 									]
 								},
 								"lazy_optional": {
 									"kind": "lazy",
-									"def": "$1"
+									"def": "$3"
 								}
 							}
 						}
@@ -611,6 +693,42 @@
 								"unknown": {
 									"kind": "unknown"
 								},
+								"nullable_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "unknown"
+										}
+									}
+								},
+								"lazy_unknown": {
+									"kind": "lazy",
+									"def": "$1"
+								},
+								"nullable_lazy_unknown": {
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "lazy",
+											"def": "$1"
+										}
+									}
+								},
+								"union_unknown": {
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "unknown"
+										}
+									]
+								},
+								"lazy_union_unknown": {
+									"kind": "lazy",
+									"def": "$2"
+								},
 								"optional": {
 									"kind": "optional",
 									"def": {
@@ -641,20 +759,25 @@
 										}
 									}
 								},
-								"union_unknown": {
+								"union_optional": {
 									"kind": "union",
 									"def": [
 										{
-											"kind": "string"
+											"kind": "unknown"
 										},
 										{
-											"kind": "unknown"
+											"kind": "optional",
+											"def": {
+												"schema": {
+													"kind": "string"
+												}
+											}
 										}
 									]
 								},
 								"lazy_optional": {
 									"kind": "lazy",
-									"def": "$1"
+									"def": "$3"
 								}
 							}
 						}
@@ -749,6 +872,25 @@
 				"kind": "string"
 			},
 			"$1": {
+				"kind": "unknown"
+			},
+			"$2": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "unknown"
+					},
+					{
+						"kind": "nullable",
+						"def": {
+							"schema": {
+								"kind": "unknown"
+							}
+						}
+					}
+				]
+			},
+			"$3": {
 				"kind": "optional",
 				"def": {
 					"schema": {
@@ -987,6 +1129,51 @@
 						"strict",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_union_unknown"
+					]
 				}
 			]
 		},
@@ -1210,6 +1397,51 @@
 					"path": [
 						"loose",
 						"unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown | nullable",
+					"received": "undefined",
+					"path": [
+						"loose",
+						"lazy_union_unknown"
 					]
 				}
 			]
@@ -1435,12 +1667,57 @@
 						"strip",
 						"unknown"
 					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown | nullable",
+					"received": "undefined",
+					"path": [
+						"strip",
+						"lazy_union_unknown"
+					]
 				}
 			]
 		},
 		{
 			"name": "strict_all_but_bigint",
-			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null}}",
+			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1457,7 +1734,7 @@
 		},
 		{
 			"name": "loose_all_but_bigint",
-			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"other\":1}}",
+			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0,\"other\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1683,6 +1960,51 @@
 					"path": [
 						"strict",
 						"lazy"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_union_unknown"
 					]
 				},
 				{
@@ -1925,6 +2247,51 @@
 					"path": [
 						"strict",
 						"unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_unknown"
+					]
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"nullable_lazy_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "string | unknown",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"union_unknown"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown | nullable",
+					"received": "undefined",
+					"path": [
+						"strict",
+						"lazy_union_unknown"
 					]
 				},
 				{

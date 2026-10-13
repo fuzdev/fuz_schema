@@ -540,7 +540,11 @@ describe('to_schema_json refuses', () => {
 	});
 
 	test('pipes that do not fix a type, or act on another', () => {
-		refuses(() => (s.pipe as any)(), 'cannot serialize `pipe` at /schema: it has no schema');
+		// `pipe` itself reads its first schema when it is made, so one with none is written by hand
+		refuses(
+			() => ({ kind: 'pipe', def: [], run: s.unknown.run }) satisfies s.SchemaNode<'pipe'>,
+			'cannot serialize `pipe` at /schema: it has no schema'
+		);
 		for (const head of [s.unknown, s.boolean, s.nullable(s.string), s.record(s.string)]) {
 			refuses(
 				() => s.pipe(head, s.min_length(1) as any),

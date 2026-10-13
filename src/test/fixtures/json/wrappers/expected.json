@@ -164,6 +164,14 @@
 					]
 				},
 				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"nullable_unknown"
+					]
+				},
+				{
 					"kind": "bigint",
 					"expected": "bigint",
 					"received": "undefined",
@@ -175,14 +183,14 @@
 		},
 		{
 			"name": "base",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "required_missing",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -198,7 +206,7 @@
 		},
 		{
 			"name": "nullable_missing",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -213,8 +221,24 @@
 			]
 		},
 		{
+			"name": "nullable_unknown_missing",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"nullable_unknown"
+					]
+				}
+			]
+		},
+		{
 			"name": "nullable_bigint_missing",
-			"text": "{\"required\":\"r\",\"nullable\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -230,7 +254,7 @@
 		},
 		{
 			"name": "required_null",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":null}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -246,14 +270,14 @@
 		},
 		{
 			"name": "required_string",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":\"a\"}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "required_number",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":1}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -269,7 +293,7 @@
 		},
 		{
 			"name": "required_false",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":false}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -285,7 +309,7 @@
 		},
 		{
 			"name": "required_array",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":[]}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -301,7 +325,7 @@
 		},
 		{
 			"name": "required_strings",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":[\"a\"]}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -317,7 +341,7 @@
 		},
 		{
 			"name": "required_object",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{}}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -333,7 +357,7 @@
 		},
 		{
 			"name": "required_object_a",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{\"a\":1}}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -349,7 +373,7 @@
 		},
 		{
 			"name": "required_object_a_wrong",
-			"text": "{\"nullable\":null,\"nullable_bigint\":null,\"required\":{\"a\":\"1\"}}",
+			"text": "{\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"required\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -365,7 +389,7 @@
 		},
 		{
 			"name": "optional_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -381,14 +405,14 @@
 		},
 		{
 			"name": "optional_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -404,7 +428,7 @@
 		},
 		{
 			"name": "optional_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -420,7 +444,7 @@
 		},
 		{
 			"name": "optional_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -436,7 +460,7 @@
 		},
 		{
 			"name": "optional_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -452,7 +476,7 @@
 		},
 		{
 			"name": "optional_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -468,7 +492,7 @@
 		},
 		{
 			"name": "optional_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -484,7 +508,7 @@
 		},
 		{
 			"name": "optional_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -500,21 +524,21 @@
 		},
 		{
 			"name": "nullable_null",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":null}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "nullable_string",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "nullable_number",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":1}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -530,7 +554,7 @@
 		},
 		{
 			"name": "nullable_false",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":false}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -546,7 +570,7 @@
 		},
 		{
 			"name": "nullable_array",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":[]}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -562,7 +586,7 @@
 		},
 		{
 			"name": "nullable_strings",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -578,7 +602,7 @@
 		},
 		{
 			"name": "nullable_object",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{}}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -594,7 +618,7 @@
 		},
 		{
 			"name": "nullable_object_a",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -610,7 +634,7 @@
 		},
 		{
 			"name": "nullable_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable_bigint\":null,\"nullable\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -626,7 +650,7 @@
 		},
 		{
 			"name": "with_default_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -642,14 +666,14 @@
 		},
 		{
 			"name": "with_default_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "with_default_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -665,7 +689,7 @@
 		},
 		{
 			"name": "with_default_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -681,7 +705,7 @@
 		},
 		{
 			"name": "with_default_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -697,7 +721,7 @@
 		},
 		{
 			"name": "with_default_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -713,7 +737,7 @@
 		},
 		{
 			"name": "with_default_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -729,7 +753,7 @@
 		},
 		{
 			"name": "with_default_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -745,7 +769,7 @@
 		},
 		{
 			"name": "with_default_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"with_default\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -761,21 +785,21 @@
 		},
 		{
 			"name": "optional_nullable_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_nullable_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_nullable_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -791,7 +815,7 @@
 		},
 		{
 			"name": "optional_nullable_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -807,7 +831,7 @@
 		},
 		{
 			"name": "optional_nullable_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -823,7 +847,7 @@
 		},
 		{
 			"name": "optional_nullable_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -839,7 +863,7 @@
 		},
 		{
 			"name": "optional_nullable_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -855,7 +879,7 @@
 		},
 		{
 			"name": "optional_nullable_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -871,7 +895,7 @@
 		},
 		{
 			"name": "optional_nullable_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_nullable\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -887,21 +911,21 @@
 		},
 		{
 			"name": "nullable_optional_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "nullable_optional_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "nullable_optional_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -917,7 +941,7 @@
 		},
 		{
 			"name": "nullable_optional_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -933,7 +957,7 @@
 		},
 		{
 			"name": "nullable_optional_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -949,7 +973,7 @@
 		},
 		{
 			"name": "nullable_optional_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -965,7 +989,7 @@
 		},
 		{
 			"name": "nullable_optional_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -981,7 +1005,7 @@
 		},
 		{
 			"name": "nullable_optional_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -997,7 +1021,7 @@
 		},
 		{
 			"name": "nullable_optional_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"nullable_optional\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1013,14 +1037,14 @@
 		},
 		{
 			"name": "default_nullable_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "default_nullable_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":\"a\"}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1036,14 +1060,14 @@
 		},
 		{
 			"name": "default_nullable_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":1}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "default_nullable_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1059,7 +1083,7 @@
 		},
 		{
 			"name": "default_nullable_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1075,7 +1099,7 @@
 		},
 		{
 			"name": "default_nullable_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1091,7 +1115,7 @@
 		},
 		{
 			"name": "default_nullable_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1107,7 +1131,7 @@
 		},
 		{
 			"name": "default_nullable_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1123,7 +1147,7 @@
 		},
 		{
 			"name": "default_nullable_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_nullable\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1139,7 +1163,7 @@
 		},
 		{
 			"name": "optional_default_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1155,14 +1179,14 @@
 		},
 		{
 			"name": "optional_default_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_default_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1178,7 +1202,7 @@
 		},
 		{
 			"name": "optional_default_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1194,7 +1218,7 @@
 		},
 		{
 			"name": "optional_default_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1210,7 +1234,7 @@
 		},
 		{
 			"name": "optional_default_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1226,7 +1250,7 @@
 		},
 		{
 			"name": "optional_default_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1242,7 +1266,7 @@
 		},
 		{
 			"name": "optional_default_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1258,7 +1282,7 @@
 		},
 		{
 			"name": "optional_default_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_default\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1274,7 +1298,7 @@
 		},
 		{
 			"name": "default_object_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1290,7 +1314,7 @@
 		},
 		{
 			"name": "default_object_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":\"a\"}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1306,7 +1330,7 @@
 		},
 		{
 			"name": "default_object_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1322,7 +1346,7 @@
 		},
 		{
 			"name": "default_object_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1338,7 +1362,7 @@
 		},
 		{
 			"name": "default_object_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1354,7 +1378,7 @@
 		},
 		{
 			"name": "default_object_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1370,7 +1394,7 @@
 		},
 		{
 			"name": "default_object_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1387,14 +1411,14 @@
 		},
 		{
 			"name": "default_object_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "default_object_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_object\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1411,7 +1435,7 @@
 		},
 		{
 			"name": "default_array_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1427,7 +1451,7 @@
 		},
 		{
 			"name": "default_array_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":\"a\"}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1443,7 +1467,7 @@
 		},
 		{
 			"name": "default_array_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1459,7 +1483,7 @@
 		},
 		{
 			"name": "default_array_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1475,21 +1499,21 @@
 		},
 		{
 			"name": "default_array_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":[]}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "default_array_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":[\"a\"]}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "default_array_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1505,7 +1529,7 @@
 		},
 		{
 			"name": "default_array_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1521,7 +1545,7 @@
 		},
 		{
 			"name": "default_array_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"default_array\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1537,63 +1561,63 @@
 		},
 		{
 			"name": "optional_unknown_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":\"a\"}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":1}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":false}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":[]}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":[\"a\"]}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":{}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":1}}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "optional_unknown_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null,\"optional_unknown\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": true,
 			"issues": []
@@ -1663,14 +1687,14 @@
 		},
 		{
 			"name": "nullable_bigint_null",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":null}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":null}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "nullable_bigint_string",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":\"a\"}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":\"a\"}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1686,7 +1710,7 @@
 		},
 		{
 			"name": "nullable_bigint_number",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":1}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":1}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1702,7 +1726,7 @@
 		},
 		{
 			"name": "nullable_bigint_false",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":false}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":false}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1718,7 +1742,7 @@
 		},
 		{
 			"name": "nullable_bigint_array",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":[]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1734,7 +1758,7 @@
 		},
 		{
 			"name": "nullable_bigint_strings",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":[\"a\"]}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":[\"a\"]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1750,7 +1774,7 @@
 		},
 		{
 			"name": "nullable_bigint_object",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":{}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1766,7 +1790,7 @@
 		},
 		{
 			"name": "nullable_bigint_object_a",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{\"a\":1}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":{\"a\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1782,7 +1806,7 @@
 		},
 		{
 			"name": "nullable_bigint_object_a_wrong",
-			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_bigint\":{\"a\":\"1\"}}",
+			"text": "{\"required\":\"r\",\"nullable\":null,\"nullable_unknown\":null,\"nullable_bigint\":{\"a\":\"1\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [

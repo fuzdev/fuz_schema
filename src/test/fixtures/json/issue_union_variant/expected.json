@@ -1046,6 +1046,15 @@
 					]
 				},
 				{
+					"kind": "union",
+					"expected": "unknown",
+					"received": "undefined",
+					"path": [
+						"entries",
+						"y"
+					]
+				},
+				{
 					"kind": "number",
 					"expected": "number",
 					"received": "undefined",
@@ -1069,6 +1078,15 @@
 					"path": [
 						"entries",
 						"x"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "unknown",
+					"received": "undefined",
+					"path": [
+						"entries",
+						"y"
 					]
 				},
 				{
