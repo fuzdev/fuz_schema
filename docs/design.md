@@ -17,6 +17,11 @@ Every schema and every action is `{kind, def, run}`, keys in that order.
   `lazy` keeps the schema it got in a closure, not in itself: a write to one
   schema's `run` makes that field a mutable one for every schema, as they
   share a hidden class, and the engine then loads it on calls it had folded.
+- **The engine is asked.** `src/test/schema.shape.test.ts` builds one of
+  every schema the library makes, runs each, and then reads from V8, in a
+  process under `--allow-natives-syntax`, that they share one map and that
+  none of its fields was written to. Neither shows in what a parse returns,
+  or in a grade, whose two versions share a process.
 
 ## What `def` holds
 

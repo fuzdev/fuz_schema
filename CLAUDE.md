@@ -58,6 +58,9 @@ dev server.
   carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
   behavior and type inference
+- `src/test/schema.shape.test.ts` - every schema the library makes has one
+  hidden class and no field written to, asked of the engine in a process of
+  its own, `shape_test_child.ts`, over the samples in `shape_test_helpers.ts`
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
@@ -145,6 +148,11 @@ Things that are easy to break without a test noticing:
 - **Every schema is exactly `{kind, def, run}`, in that key order.** A fourth
   field or another order gives it a second hidden class. Kind-specific data
   goes in `def`.
+- **Nothing writes to a schema after it is made.** A write to one schema's
+  `run` makes that field mutable for every schema, and slows parses the
+  engine had folded. `src/test/schema.shape.test.ts` asks the engine for both:
+  one map, and no field written to. A new export gets a sample in
+  `shape_test_helpers.ts`, which the test fails without.
 - **Every issue is exactly `{kind, expected, received, path, message}`, built
   by `fail`.** It never holds the value that failed, or anything else of the
   input but the keys in `path`.
