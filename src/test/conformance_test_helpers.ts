@@ -447,8 +447,8 @@ const inherited_and_present = (
 	{ name: `${name}, key "x"`, entries: (l) => ({ a: entry(l) }), input: () => ({ a: 'x' }) }
 ];
 
-// an entry that accepts `undefined` and needs its key: with the key missing,
-// `undefined`, inherited as `undefined`, and another value
+// an entry for which a key that is missing is not one that is `undefined`:
+// with the key missing, `undefined`, inherited as `undefined`, and another value
 const needs_key = (name: string, entry: (l: ConformanceLib) => any): Array<ConformanceCase> => [
 	...missing_and_undefined(name, entry),
 	...inherited_and_present(name, entry)
@@ -786,8 +786,156 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('optional(string) then a transform entry', (l) =>
 		l.map(l.optional(l.string), (x) => x)
 	),
-	...missing_and_undefined('optional(string) then a transform to "T" entry', (l) =>
+	// a schema that lets its key be missing, with steps after it: with the key
+	// missing, whether they run, and what is done with one that fails
+	...needs_key('optional(string) then a transform to "T" entry', (l) =>
 		l.map(l.optional(l.string), () => 'T')
+	),
+	...needs_key('optional(string) then a check that fails entry', (l) =>
+		l.refine(l.optional(l.string), () => false)
+	),
+	...needs_key('optional(string) then a check entry', (l) =>
+		l.refine(l.optional(l.string), () => true)
+	),
+	...needs_key('optional(unknown) then a check that fails entry', (l) =>
+		l.refine(l.optional(l.unknown), () => false)
+	),
+	...needs_key('optional(nullable(string)) then a check that fails entry', (l) =>
+		l.refine(l.optional(l.nullable(l.string)), () => false)
+	),
+	...needs_key('message(optional(string)) then a check that fails entry', (l) =>
+		l.refine(l.message(l.optional(l.string)), () => false)
+	),
+	...needs_key('message(optional(string)) then a transform to "T" entry', (l) =>
+		l.map(l.message(l.optional(l.string)), () => 'T')
+	),
+	// a pipe that starts with one that starts with an optional
+	...needs_key('optional(string) then a check, then a check that fails entry', (l) =>
+		l.refine(
+			l.refine(l.optional(l.string), () => true),
+			() => false
+		)
+	),
+	...needs_key('optional(string) then a check, then a transform to "T" entry', (l) =>
+		l.map(
+			l.refine(l.optional(l.string), () => true),
+			() => 'T'
+		)
+	),
+	// the same pipe under a schema that hands it the object and the key
+	...needs_key('nullable(optional(string) then a check that fails) entry', (l) =>
+		l.nullable(l.refine(l.optional(l.string), () => false))
+	),
+	...needs_key('lazy(optional(string) then a transform to "T") entry', (l) =>
+		l.lazy(() => l.map(l.optional(l.string), () => 'T'))
+	),
+	...needs_key('union[number, optional(string) then a check that fails] entry', (l) =>
+		l.union([l.number, l.refine(l.optional(l.string), () => false)])
+	),
+	// and with a transform among its steps, beside one that fails: zod drops a
+	// failed step only where no step is a transform, so both refuse
+	...needs_key('nullable(optional(string) then a transform, then a check that fails) entry', (l) =>
+		l.nullable(
+			l.refine(
+				l.map(l.optional(l.string), (x) => x),
+				() => false
+			)
+		)
+	),
+	...needs_key('lazy(optional(string) then a check that fails, then a transform) entry', (l) =>
+		l.lazy(() =>
+			l.map(
+				l.refine(l.optional(l.string), () => false),
+				(x) => x
+			)
+		)
+	),
+	...needs_key(
+		'union[number, optional(string) then a transform, then a check that fails] entry',
+		(l) =>
+			l.union([
+				l.number,
+				l.refine(
+					l.map(l.optional(l.string), (x) => x),
+					() => false
+				)
+			])
+	),
+	// and with the transform a step of a pipe around the nullable or the lazy,
+	// which zod reports the failed step beside as well
+	...needs_key(
+		'nullable(optional(string) then a check that fails) then a transform to "T" entry',
+		(l) =>
+			l.map(l.nullable(l.refine(l.optional(l.string), () => false)), () => 'T')
+	),
+	...needs_key(
+		'lazy(optional(string) then a check that fails) then a transform to "T" entry',
+		(l) =>
+			l.map(
+				l.lazy(() => l.refine(l.optional(l.string), () => false)),
+				() => 'T'
+			)
+	),
+	// which as the entry itself valibot leaves out
+	...needs_key('optional(string) then a transform, then a check that fails entry', (l) =>
+		l.refine(
+			l.map(l.optional(l.string), (x) => x),
+			() => false
+		)
+	),
+	// an optional under another schema, with steps after that one
+	...needs_key('nullable(optional(string)) then a check that fails entry', (l) =>
+		l.refine(l.nullable(l.optional(l.string)), () => false)
+	),
+	...needs_key('nullable(optional(string)) then a transform to "T" entry', (l) =>
+		l.map(l.nullable(l.optional(l.string)), () => 'T')
+	),
+	...needs_key('lazy(optional(string)) then a check that fails entry', (l) =>
+		l.refine(
+			l.lazy(() => l.optional(l.string)),
+			() => false
+		)
+	),
+	...needs_key('lazy(optional(string)) then a transform to "T" entry', (l) =>
+		l.map(
+			l.lazy(() => l.optional(l.string)),
+			() => 'T'
+		)
+	),
+	// a pipe that starts with one that starts with a lazy
+	...needs_key('lazy(optional(string)) then a transform, then a check that fails entry', (l) =>
+		l.refine(
+			l.map(
+				l.lazy(() => l.optional(l.string)),
+				(x) => x
+			),
+			() => false
+		)
+	),
+	...needs_key('union[number, optional(string)] then a check that fails entry', (l) =>
+		l.refine(l.union([l.number, l.optional(l.string)]), () => false)
+	),
+	...needs_key('union[number, optional(string)] then a transform to "T" entry', (l) =>
+		l.map(l.union([l.number, l.optional(l.string)]), () => 'T')
+	),
+	// a default before the steps, which is not `undefined` when they run
+	...needs_key('default then a check that fails entry', (l) =>
+		l.refine(l.with_default(l.string, 'D'), () => false)
+	),
+	...needs_key('default then a transform entry', (l) =>
+		l.map(l.with_default(l.string, 'D'), (x) => x + '!')
+	),
+	...needs_key('optional(default) then a check that fails entry', (l) =>
+		l.refine(l.optional(l.with_default(l.string, 'D')), () => false)
+	),
+	...needs_key('optional(default) then a transform to "T" entry', (l) =>
+		l.map(l.optional(l.with_default(l.string, 'D')), () => 'T')
+	),
+	...needs_key('default of undefined then a check that fails entry', (l) =>
+		l.refine(l.with_default(l.optional(l.string), undefined), () => false)
+	),
+	...needs_key('default of undefined then a transform to "T" entry', (l) =>
+		l.map(l.with_default(l.optional(l.string), undefined), () => 'T')
 	),
 	...missing_and_undefined('optional(string then a transform to "T") entry', (l) =>
 		l.optional(l.map(l.string, () => 'T'))

@@ -2160,7 +2160,7 @@ describe('missing keys', () => {
 			s.nullable(s.optional(s.unknown)),
 			s.union([s.string, s.optional(s.unknown)]),
 			s.pipe(s.string, s.min_length(1)),
-			s.pipe(s.optional(s.unknown), s.unknown),
+			s.pipe(s.nullable(s.optional(s.unknown)), s.unknown),
 			s.object({ a: s.unknown }),
 			s.min_length(1)
 		]) {
@@ -2177,6 +2177,11 @@ describe('missing keys', () => {
 			[s.union([s.string, s.nullable(s.unknown)]), 4],
 			[s.pipe(s.unknown, s.unknown), 4],
 			[s.pipe(s.nullable(s.unknown), s.unknown), 4],
+			// a `pipe` takes them for itself after an `optional`, which takes neither
+			[s.pipe(s.optional(s.unknown), s.unknown), 4],
+			[s.pipe(s.message(s.optional(s.string), 'm'), accepts), 4],
+			[s.pipe(s.pipe(s.optional(s.string), accepts), accepts), 4],
+			[s.nullable(s.pipe(s.optional(s.string), accepts)), 4],
 			// or around a `lazy`, whatever it defers to and whether it has been used
 			[s.nullable(s.lazy(() => s.string)), 4],
 			[s.union([s.string, s.lazy(() => s.string)]), 4],
@@ -2413,12 +2418,279 @@ describe('missing keys', () => {
 					assert.deepEqual(s.parse_or_throw(O, { a: 1 }), { a: 'T' }, head.kind);
 				}
 			}
-			// a first schema that lets the key be missing has the steps run on `undefined`
-			calls = 0;
-			const P = factory({ a: s.pipe(s.optional(s.unknown), counted, mapped) });
-			assert.deepEqual(s.parse_or_throw(P, {}), { a: 'T' });
-			assert.strictEqual(calls, 2);
 		}
+	});
+
+	describe('a pipe whose first schema let a missing key through', () => {
+		// a step that fails whatever it is given, one that replaces it, and one
+		// that passes it on, each counting its calls
+		let calls = 0;
+		const refuses = s.check<any>(() => {
+			calls++;
+			return false;
+		}, 'never');
+		const mapped = s.transform((v: unknown) => {
+			calls++;
+			return v ?? 'T';
+		});
+		const counted = s.check<any>(() => {
+			calls++;
+			return true;
+		});
+		const refused: s.SchemaIssue = {
+			kind: 'check',
+			expected: 'never',
+			received: 'undefined',
+			path: ['a'],
+			message: undefined
+		};
+		const inherited = (): object => Object.create({ a: undefined });
+		const hidden = (): object => Object.defineProperty({}, 'a', { value: undefined });
+
+		// the first schemas a pipe starts with an `optional` by, each made anew
+		const stopping: Array<[name: string, make: () => s.AnySchema]> = [
+			['optional', () => s.optional(s.string)],
+			['optional unknown', () => s.optional(s.unknown)],
+			['optional nullable', () => s.optional(s.nullable(s.string))],
+			['optional default', () => s.optional(s.with_default(s.string, 'd'))],
+			['optional lazy', () => s.optional(s.lazy(() => s.string))],
+			['message optional', () => s.message(s.optional(s.string), 'm')],
+			['flavor optional', () => s.flavor(s.optional(s.string), 'F')],
+			['brand optional', () => s.brand(s.optional(s.string), 'B')],
+			['meta optional', () => meta(s.optional(s.string), { description: 'd' })],
+			['pipe of an optional', () => s.pipe(s.optional(s.string), accepts)],
+			[
+				'pipe of a pipe of an optional',
+				() => s.pipe(s.pipe(s.optional(s.string), accepts), accepts)
+			],
+			['message pipe of an optional', () => s.message(s.pipe(s.optional(s.string), accepts), 'm')],
+			['meta pipe of an optional', () => meta(s.pipe(s.optional(s.string), accepts), {})]
+		];
+
+		// and the ones that let a missing key through without being one
+		const passing: Array<[name: string, make: () => s.AnySchema]> = [
+			['nullable optional', () => s.nullable(s.optional(s.string))],
+			['lazy optional', () => s.lazy(() => s.optional(s.string))],
+			['lazy lazy optional', () => s.lazy(() => s.lazy(() => s.optional(s.string)))],
+			['nullable lazy optional', () => s.nullable(s.lazy(() => s.optional(s.string)))],
+			['union with an optional', () => s.union([s.number, s.optional(s.string)])],
+			['union with a lazy optional', () => s.union([s.number, s.lazy(() => s.optional(s.string))])],
+			['union with an unknown and an optional', () => s.union([s.unknown, s.optional(s.string)])],
+			['default of undefined', () => s.with_default(s.optional(s.string), undefined)],
+			['check', () => s.check<any>(() => true)],
+			['transform', () => s.transform((v: unknown) => v)],
+			[
+				'pipe of a lazy optional',
+				() =>
+					s.pipe(
+						s.lazy(() => s.optional(s.string)),
+						accepts
+					)
+			],
+			['pipe of a nullable optional', () => s.pipe(s.nullable(s.optional(s.string)), accepts)]
+		];
+
+		test('runs no step after it, and leaves the key out', () => {
+			for (const factory of factories) {
+				for (const [name, make] of stopping) {
+					for (const step of [refuses, mapped, counted]) {
+						const O = factory({ a: s.pipe(make(), step) });
+						const at = `${factory({}).kind}: ${name}, ${step.kind}`;
+						// twice, a `lazy` having its schema by the second
+						for (let i = 0; i < 2; i++) {
+							calls = 0;
+							const input = {};
+							assert.strictEqual(s.parse_or_throw(O, input), input, at);
+							assert(s.is(O, input), at);
+							assert.strictEqual(calls, 0, at);
+						}
+					}
+				}
+			}
+		});
+
+		test('beside an entry that changes, the key is not in the copy', () => {
+			for (const factory of factories) {
+				for (const [name, make] of stopping) {
+					const O = factory({
+						d: s.with_default(s.string, 'D'),
+						a: s.pipe(make(), mapped),
+						e: s.with_default(s.string, 'E')
+					});
+					// typed with the key, which a `pipe` entry always has in the types
+					const output: object = s.parse_or_throw(O, {});
+					assert.deepEqual(output, { d: 'D', e: 'E' }, name);
+					assert(!('a' in output), name);
+				}
+			}
+		});
+
+		test('runs every step when the key is there, on `undefined` too', () => {
+			for (const factory of factories) {
+				for (const [name, make] of stopping) {
+					const at = `${factory({}).kind}: ${name}`;
+					const R = factory({ a: s.pipe(make(), refuses) });
+					const M = factory({ a: s.pipe(make(), mapped) });
+					for (const [input, received] of [
+						[{ a: undefined }, 'undefined'],
+						[inherited(), 'undefined'],
+						[hidden(), 'undefined'],
+						[{ a: 'x' }, 'string']
+					] as const) {
+						calls = 0;
+						assert.deepEqual(issues_of(R, input), [{ ...refused, received }], at);
+						assert(!s.is(R, input), at);
+						assert.strictEqual(calls, 2, at);
+					}
+					assert.deepEqual(s.parse_or_throw(M, { a: undefined }), { a: 'T' }, at);
+					assert.deepEqual(s.parse_or_throw(M, inherited()), { a: 'T' }, at);
+					assert.deepEqual(s.parse_or_throw(M, hidden()), { a: 'T' }, at);
+					const present = { a: 'x' };
+					assert.strictEqual(s.parse_or_throw(M, present), present, at);
+				}
+			}
+		});
+
+		test('a first schema that fills a default has the steps run on it', () => {
+			for (const factory of factories) {
+				for (const head of [
+					s.with_default(s.string, 'd'),
+					s.lazy(() => s.with_default(s.string, 'd')),
+					s.nullable(s.with_default(s.string, 'd'))
+				]) {
+					const at = `${factory({}).kind}: ${head.kind}`;
+					const R = factory({ a: s.pipe(head, refuses) });
+					const M = factory({
+						a: s.pipe(
+							head,
+							s.transform((v) => v + '!')
+						)
+					});
+					for (const input of [{}, { a: undefined }, inherited(), { a: 'x' }]) {
+						calls = 0;
+						assert.deepEqual(issues_of(R, input), [{ ...refused, received: 'string' }], at);
+						assert(!s.is(R, input), at);
+						assert.strictEqual(calls, 2, at);
+					}
+					assert.deepEqual(s.parse_or_throw(M, {}), { a: 'd!' }, at);
+					assert.deepEqual(s.parse_or_throw(M, { a: undefined }), { a: 'd!' }, at);
+					assert.deepEqual(s.parse_or_throw(M, inherited()), { a: 'd!' }, at);
+					assert.deepEqual(s.parse_or_throw(M, { a: 'x' }), { a: 'x!' }, at);
+				}
+			}
+		});
+
+		test('after any other schema that let the key through, the steps run on `undefined`', () => {
+			for (const factory of factories) {
+				for (const [name, make] of passing) {
+					const at = `${factory({}).kind}: ${name}`;
+					const R = factory({ a: s.pipe(make(), refuses) });
+					const M = factory({ a: s.pipe(make(), mapped) });
+					// twice, a `lazy` having its schema by the second
+					for (let i = 0; i < 2; i++) {
+						calls = 0;
+						assert.deepEqual(issues_of(R, {}), [refused], at);
+						assert(!s.is(R, {}), at);
+						assert.strictEqual(calls, 2, at);
+						assert.deepEqual(s.parse_or_throw(M, {}), { a: 'T' }, at);
+					}
+				}
+			}
+		});
+
+		// a `nullable`, a `lazy`, a `union`, and a `message` hand it the object and the key
+		test('under a schema that hands it the object it runs no step either', () => {
+			const wrappers: Array<[name: string, wrap: (schema: s.AnySchema) => s.AnySchema]> = [
+				['nullable', (schema) => s.nullable(schema)],
+				['lazy', (schema) => s.lazy(() => schema)],
+				['union', (schema) => s.union([s.number, schema])],
+				['message', (schema) => s.message(schema, 'm')],
+				['nullable lazy', (schema) => s.nullable(s.lazy(() => schema))]
+			];
+			for (const factory of factories) {
+				for (const [name, wrap] of wrappers) {
+					for (const step of [refuses, mapped] as Array<s.AnySchema>) {
+						const O = factory({ a: wrap(s.pipe(s.optional(s.string), step)) });
+						const at = `${factory({}).kind}: ${name}, ${step.kind}`;
+						for (let i = 0; i < 2; i++) {
+							calls = 0;
+							const input = {};
+							assert.strictEqual(s.parse_or_throw(O, input), input, at);
+							assert(s.is(O, input), at);
+							assert.strictEqual(calls, 0, at);
+						}
+						// and every step with the key there
+						assert.strictEqual(s.is(O, { a: undefined }), step === mapped, at);
+						assert.strictEqual(calls, 1, at);
+					}
+				}
+				// under one that takes `undefined` first, it is never asked
+				const D = factory({ a: s.with_default(s.pipe(s.optional(s.string), refuses), 'd') });
+				assert.deepEqual(s.parse_or_throw(D, {}), { a: 'd' });
+			}
+		});
+
+		test('outside an object a pipe runs its steps on `undefined`', () => {
+			for (const [name, make] of stopping) {
+				const R = s.pipe(make(), refuses);
+				const M = s.pipe(make(), mapped);
+				calls = 0;
+				// at the top level
+				assert.deepEqual(issues_of(R, undefined), [{ ...refused, path: [] }], name);
+				assert(!s.is(R, undefined), name);
+				assert.strictEqual(s.parse_or_throw(M, undefined), 'T', name);
+				// as an array's item, a hole among them
+				// eslint-disable-next-line no-sparse-arrays
+				assert.deepEqual(s.parse_or_throw(s.array(M), [undefined, , 'x']), ['T', 'T', 'x'], name);
+				assert.deepEqual(issues_of(s.array(R), [undefined]), [{ ...refused, path: [0] }], name);
+				// as a record's value
+				assert.deepEqual(s.parse_or_throw(s.record(M), { a: undefined }), { a: 'T' }, name);
+				// under a wrapper that takes neither the object nor the key
+				assert.deepEqual(
+					s.parse_or_throw(s.object({ a: s.with_default(M, 'd') }), { a: 'x' }),
+					{ a: 'x' },
+					name
+				);
+				// and as a step after the first
+				assert.deepEqual(
+					s.parse_or_throw(s.object({ a: s.pipe(s.optional(s.string), M) }), { a: undefined }),
+					{ a: 'T' },
+					name
+				);
+				assert(calls > 0, name);
+			}
+		});
+
+		test('a message around it labels nothing for a missing key', () => {
+			for (const factory of factories) {
+				const O = factory({
+					a: s.message(s.pipe(s.optional(s.string), refuses), 'm'),
+					b: s.string
+				});
+				assert.deepEqual(issues_of(O, {}), [
+					{
+						kind: 'string',
+						expected: 'string',
+						received: 'undefined',
+						path: ['b'],
+						message: undefined
+					}
+				]);
+				assert.deepEqual(issues_of(O, { a: undefined, b: '' }), [{ ...refused, message: 'm' }]);
+			}
+		});
+
+		test('the context is as the first schema left it', () => {
+			const O = s.object({ z: s.string, a: s.pipe(s.optional(s.string), refuses) });
+			const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+			O.run({}, ctx);
+			assert.strictEqual(ctx.fails, 1);
+			assert.strictEqual(ctx.issues?.length, 1);
+			const probe: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+			s.object({ a: s.pipe(s.optional(s.string), refuses) }).run({}, probe);
+			assert.strictEqual(probe.fails, 0);
+			assert.strictEqual(probe.issues, undefined);
+		});
 	});
 
 	test('a union tries every option with the key missing, and reports itself', () => {

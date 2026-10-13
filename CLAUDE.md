@@ -194,6 +194,13 @@ Things that are easy to break without a test noticing:
   or four, by the length of its `arguments`. A schema that calls what it
   holds with two arguments, as every other does, lets a missing key through
   to it as `undefined`.
+- **A `pipe` that starts with an `optional` runs no step for a key that is
+  missing**, and the key stays out. It is a third closure, chosen when the
+  pipe is made by the kind of the schema it starts with, through every pipe
+  that is its first schema. The other two look for no key: after a `lazy`, a
+  `nullable`, or a `union` that reaches an `optional` the steps run on the
+  `undefined`, which keeps a step that fails there reported where Zod and
+  Valibot both refuse the input.
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and

@@ -63,6 +63,28 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 	},
 	{
 		reason:
+			'a `pipe` that starts with an `optional` runs no step for a missing key under a `nullable`, a `lazy`, or a `union` too, which hand it the object and the key, where both refuse: valibot for the key, zod for a step that fails beside a `transform`',
+		status: 'declared',
+		docs: 'runs no step for a missing key under a `nullable`, a `lazy`, or a `union` too',
+		rows: {
+			'nullable(optional(string) then a transform, then a check that fails) entry, key missing / *':
+				{ both: 'fail at a', ours: 'ok {}' },
+			'lazy(optional(string) then a check that fails, then a transform) entry, key missing / *': {
+				both: 'fail at a',
+				ours: 'ok {}'
+			},
+			'union[number, optional(string) then a transform, then a check that fails] entry, key missing / *':
+				{ both: 'fail at a', ours: 'ok {}' },
+			// the transform a step of a pipe around the nullable or the lazy: it runs
+			// on the `undefined`, and what it gives is written
+			'nullable(optional(string) then a check that fails) then a transform to "T" entry, key missing / *':
+				{ both: 'fail at a', ours: 'ok {a: "T"}' },
+			'lazy(optional(string) then a check that fails) then a transform to "T" entry, key missing / *':
+				{ both: 'fail at a', ours: 'ok {a: "T"}' }
+		}
+	},
+	{
+		reason:
 			'a key read through the prototype stays inherited in an input that comes back, where a copy has it as an own key',
 		status: 'declared',
 		docs: 'A key read through the prototype stays inherited in an input that comes back',
@@ -94,6 +116,10 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 				ours: 'ok {} proto=other'
 			},
 			'literal(undefined) then a check entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'optional(string) then a check entry, key inherited / *': {
 				both: 'ok {a: undefined}',
 				ours: 'ok {} proto=other'
 			},
@@ -328,8 +354,92 @@ const SIDES: Record<string, ConformanceSide> = {
 		zod: 'ok {a: "T"}',
 		valibot: 'fail at a'
 	},
-	// valibot leaves the key out without running the steps after the optional
+
+	// steps after an optional, with the key missing: valibot runs none and
+	// leaves the key out, as here. zod runs them on the `undefined`, keeps what a
+	// transform gave, and reports a step that fails beside one
 	'optional(string) then a transform to "T" entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "T"}',
+		valibot: 'ok {}'
+	},
+	'message(optional(string)) then a transform to "T" entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "T"}',
+		valibot: 'ok {}'
+	},
+	'optional(string) then a check, then a transform to "T" entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "T"}',
+		valibot: 'ok {}'
+	},
+	'optional(default) then a transform to "T" entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "T"}',
+		valibot: 'ok {}'
+	},
+	'optional(string) then a transform, then a check that fails entry, key missing / *': {
+		side: 'valibot',
+		zod: 'fail at a',
+		valibot: 'ok {}'
+	},
+	// such a pipe under a schema that hands it the object and the key runs no
+	// step either, where valibot needs the key
+	'nullable(optional(string) then a check that fails) entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'union[number, optional(string) then a check that fails] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'lazy(optional(string) then a transform to "T") entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
+	},
+	// after a nullable, a lazy, or a union that reaches an optional, and after
+	// a default of `undefined`, the steps run on the `undefined`: a transform's
+	// output is kept, as in zod, and a failure is reported, which zod drops
+	'nullable(optional(string)) then a check that fails entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'nullable(optional(string)) then a transform to "T" entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	'lazy(optional(string)) then a check that fails entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'lazy(optional(string)) then a transform to "T" entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	'union[number, optional(string)] then a check that fails entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'union[number, optional(string)] then a transform to "T" entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	'default of undefined then a check that fails entry, key missing / *': {
+		side: 'zod',
+		zod: 'fail at a',
+		valibot: 'ok {}'
+	},
+	'default of undefined then a transform to "T" entry, key missing / *': {
 		side: 'zod',
 		zod: 'ok {a: "T"}',
 		valibot: 'ok {}'

@@ -1220,34 +1220,66 @@ export interface SchemaPipeFactory {
  * As an object entry it hands `schema` the object and the key when `schema`
  * takes them, so `pipe(unknown, ...)` fails a missing key and runs no action.
  * The actions are handed neither.
+ *
+ * As an object entry whose key is missing, a pipe that starts with an
+ * `optional` runs no action, and the key stays out of the output:
+ * `object({a: pipe(optional(string), check(...))})` accepts `{}` whatever the
+ * check says, and a `transform` there writes no key. `with_default` is what
+ * fills a missing key in. With the key there every action runs, on
+ * `undefined` too.
+ *
+ * That is of an `optional` itself, and of a pipe that starts with such a
+ * pipe. After a `nullable`, a `lazy`, or a `union` that reaches an
+ * `optional`, the actions run on the `undefined` a missing key reads as.
  */
 // @__NO_SIDE_EFFECTS__
 export const pipe: SchemaPipeFactory = (
 	...schemas: Array<AnySchema>
-): PipeSchema<any, AnySchema> => ({
-	kind: 'pipe',
-	// the overloads take any schema, and `def` is typed as the contract has it
-	def: schemas as Array<SchemaNode>,
-	// two closures chosen once here, as in `message`
-	run:
-		schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
-			? (value, ctx, parent, key) => {
-					const count = ctx.fails;
-					let output = schemas[0]!.run(value, ctx, parent, key);
-					for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
-						output = schemas[i]!.run(output, ctx);
+): PipeSchema<any, AnySchema> => {
+	// what a value reaches first, through every pipe this one starts with.
+	// The kind is read, as `message`, `flavor`, `brand`, and `meta` keep it
+	let first = schemas[0]!;
+	while (first.kind === 'pipe') first = first.def[0];
+	return {
+		kind: 'pipe',
+		// the overloads take any schema, and `def` is typed as the contract has it
+		def: schemas as Array<SchemaNode>,
+		// three closures chosen once here, as in `message`. The first is of a
+		// pipe that starts with an `optional`: it looks for the key when its
+		// first schema gave `undefined`, and passes the object and the key on,
+		// which a pipe it starts with looks for the key by
+		run:
+			first.kind === 'optional'
+				? (value, ctx, parent, key) => {
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx, parent, key);
+						// a key that is missing stays out, and no action runs
+						if (output !== undefined || !parent || (key as string) in parent) {
+							for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
+								output = schemas[i]!.run(output, ctx);
+							}
+						}
+						return output;
 					}
-					return output;
-				}
-			: (value, ctx) => {
-					const count = ctx.fails;
-					let output = value;
-					for (let i = 0; i < schemas.length && ctx.fails === count; i++) {
-						output = schemas[i]!.run(output, ctx);
-					}
-					return output;
-				}
-});
+				: schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
+					? (value, ctx, parent, key) => {
+							const count = ctx.fails;
+							let output = schemas[0]!.run(value, ctx, parent, key);
+							for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
+								output = schemas[i]!.run(output, ctx);
+							}
+							return output;
+						}
+					: (value, ctx) => {
+							const count = ctx.fails;
+							let output = value;
+							for (let i = 0; i < schemas.length && ctx.fails === count; i++) {
+								output = schemas[i]!.run(output, ctx);
+							}
+							return output;
+						}
+	};
+};
 
 //
 // Actions

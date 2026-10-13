@@ -573,6 +573,15 @@ const fixed: CaseGroup = (s) => [
 	to_probe_case(s, 'fixed/is_string/invalid', s.string, 42, false)
 ];
 
+// an object whose one entry is a `pipe` that starts with an `optional`
+const to_optional_checked = (s: SchemaLib): schema_lib.AnySchema =>
+	to_object(s)({
+		a: s.pipe(
+			s.optional(s.string),
+			s.check((v: string | undefined) => v !== '')
+		)
+	});
+
 // a hundred items through one schema, so the schema's cost shows over a parse's
 const each: CaseGroup = (s) => {
 	const Name = create_name(s);
@@ -677,6 +686,10 @@ const each: CaseGroup = (s) => {
 			}),
 			{ a: 1 }
 		),
+		// a `pipe` whose first schema is an `optional`, as an entry: with the key,
+		// where its check runs, and without it, where no step after the first does
+		of('entry_pipe_optional_check_present/valid', to_optional_checked(s), { a: 'x' }),
+		of('entry_pipe_optional_check_absent/valid', to_optional_checked(s), {}),
 		// an entry that looks for its key itself, as the closure of each that does:
 		// a `literal` of `undefined`, and a `one_of` with `undefined` among its
 		// values. `JSON.stringify` leaves a key that is `undefined` out, so the

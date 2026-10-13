@@ -130,6 +130,12 @@ so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either.
 Write `s.optional(s.unknown)` for a key that may be missing.
 `s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
 
+A `pipe` that starts with an `optional` runs none of its steps for a key that is missing,
+and leaves the key out, as in Valibot:
+`{}` matches `s.object({a: s.pipe(s.optional(s.string), s.check(...))})` whatever the check says,
+and a `transform` there writes no key. `s.with_default` is what fills a missing key in.
+With the key there, as `undefined` too, every step runs.
+
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
 `is` answers yes or no without building issues.

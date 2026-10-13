@@ -142,12 +142,48 @@ For `union`, `pipe`, `nullable`, and `message`: one `run` that always passes
 the object and the key on, in place of two closures chosen when the schema is
 made.
 
-- **Gave**: fewer bytes, 42 gzip on `union`.
+- **Gave**: fewer bytes, 42 gzip on `union`, and 30 on the `pipe` scenario.
 - **Cost**: slower on valid input, as it hands two arguments to a `run` that
-  doesn't take them.
+  doesn't take them. For `pipe`, a hundred numbers each through three
+  actions 1.11x in the matrix, and each through a `check` 1.15x.
 - **Why**: time on the valid path, for bytes that only the bundles with the
   kind pay.
 - **Reopens**: nothing known.
+
+### A `pipe` that looks for the key wherever it has the object
+
+The closure that passes the object and the key on looking for the key too,
+when its first schema gave `undefined`, in place of reading whether the pipe
+starts with an `optional` when it is made. So after a `lazy` that defers to
+an `optional` as after the `optional`.
+
+- **Gave**: 29 gzip fewer on the `pipe` scenario with a pipe that starts
+  with an `optional` on that closure, and 21 fewer with it on one of its own.
+- **Cost**: an input both Zod and Valibot refuse is accepted: a missing key
+  after a `lazy` that defers to an `optional`, where a step fails and another
+  is a `transform`. And on the one closure a `pipe` that starts with an
+  `unknown`, as an entry, 1.09x in the matrix, where one that starts with an
+  `optional` had run too: the closure's call to its first schema is then a
+  call site of both. On a closure of its own it read 1.00x.
+- **Why**: a difference from both where they agree, for bytes that only the
+  bundles with a `pipe` pay.
+- **Reopens**: nothing known.
+
+### A `pipe` that looks for the key after any first schema
+
+A walk of the first schema when the pipe is made, for whether it could give
+`undefined` for a key that is missing: through `nullable`, the options of a
+`union`, and a `with_default` of `undefined`, and at a `check` or a
+`transform`. So that no step runs after any schema that let a missing key
+through, and not only after the ones the pipe has the object for.
+
+- **Gave**: one rule for every first schema.
+- **Cost**: +97 gzip on the `pipe` scenario and +85 on all the scenarios
+  together, which at 0.7502 of Valibot's is over the ceiling of rule 5.
+- **Why**: bytes in every bundle with a `pipe`, for first schemas on which
+  Zod and Valibot disagree with each other.
+- **Reopens**: a way to tell that costs a pipe that starts with a `string`
+  nothing.
 
 ### `literal` with four parameters
 

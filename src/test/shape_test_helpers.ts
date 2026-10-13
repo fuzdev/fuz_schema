@@ -155,6 +155,15 @@ export const SHAPE_SAMPLES: Record<
 	],
 	pipe: () => [
 		{ schema: s.pipe(s.string, s.min_length(2)), valid: ['ab'], invalid: ['a', 1] },
+		// one that starts with an `optional`, which has a closure of its own
+		{
+			schema: s.pipe(
+				s.optional(s.string),
+				s.check(() => true)
+			),
+			valid: ['a', undefined],
+			invalid: [1]
+		},
 		{
 			schema: s.pipe(
 				s.unknown,
