@@ -44,7 +44,8 @@
  * exports through helpers in `cases.ts`; the bundle, heap, and cold-start
  * comparisons use the baseline's own scenario module, taken from the same git
  * ref or given with `--against-libs-file`. Without one they use the working
- * tree's, which is only right when the two versions share an API.
+ * tree's, which is only right when the two versions share an API. A scenario
+ * the baseline's module lacks is measured for the graded version alone.
  *
  * Usage:
  *   npm run grade
@@ -286,6 +287,18 @@ const new_variant: EntryVariant | undefined = args['new-file']
 	? { id: 'new', schema_path: new_path }
 	: undefined;
 const identical = readFileSync(baseline_path).equals(readFileSync(new_path));
+// The scenarios the baseline's module has a factory for, read from its source:
+// one from before a scenario was added lacks it. Such a scenario is measured
+// for the graded version alone, and compared on nothing.
+const baseline_lib_source = baseline_lib_path && readFileSync(baseline_lib_path, 'utf8');
+const shared_scenarios: Array<string> = SCENARIOS.map((s) => s.name).filter(
+	(name) =>
+		!baseline_lib_source ||
+		new RegExp(String.raw`^export const scenario_${name}\b`, 'm').test(baseline_lib_source)
+);
+const unshared_scenarios: Array<string> = SCENARIOS.map((s) => s.name).filter(
+	(name) => !shared_scenarios.includes(name)
+);
 
 const new_lib: SchemaLib = await import(pathToFileURL(new_path).href);
 // strict: the graded version has every case, or the grade does not run
@@ -915,30 +928,44 @@ for (const regime of REGIMES) {
 
 let core_delta = 0;
 let all_vs_valibot = NaN;
+let all_sizes = { new: NaN, valibot: NaN };
 
 if (args.bundle) {
-	const columns = [...SCENARIOS.map((s) => [s.name]), SCENARIOS.map((s) => s.name)];
-	const headers = [...SCENARIOS.map((s) => s.name), 'all'];
+	const all_names = SCENARIOS.map((s) => s.name);
+	// `all` compares the two versions on the scenarios both have, so its delta
+	// is the change's. The ceiling is read on every scenario, below.
+	const columns: Array<Array<string>> = [...all_names.map((name) => [name]), shared_scenarios];
+	const headers = [...all_names, 'all'];
 	const base_sizes: Array<number> = [];
 	const sizes: Array<number> = [];
 	for (const column of columns) {
 		base_sizes.push(
-			(
-				await measure_bundle_size('fuz_schema', column, {
-					schema_path: baseline_path,
-					lib_path: baseline_lib_path
-				})
-			).gzip
+			column.every((name) => shared_scenarios.includes(name))
+				? (
+						await measure_bundle_size('fuz_schema', column, {
+							schema_path: baseline_path,
+							lib_path: baseline_lib_path
+						})
+					).gzip
+				: NaN
 		);
 		sizes.push(
 			(await measure_bundle_size('fuz_schema', column, { schema_path: new_variant?.schema_path }))
 				.gzip
 		);
 	}
-	const valibot_all = (await measure_bundle_size('valibot', columns.at(-1)!)).gzip;
+	const new_all = unshared_scenarios.length
+		? (
+				await measure_bundle_size('fuz_schema', all_names, {
+					schema_path: new_variant?.schema_path
+				})
+			).gzip
+		: sizes.at(-1)!;
+	const valibot_all = (await measure_bundle_size('valibot', all_names)).gzip;
 	const core_index = headers.indexOf(CORE_SCENARIO);
 	core_delta = sizes[core_index]! - base_sizes[core_index]!;
-	all_vs_valibot = sizes.at(-1)! / valibot_all;
+	all_vs_valibot = new_all / valibot_all;
+	all_sizes = { new: new_all, valibot: valibot_all };
 	// every export of each version's own module, which no rule reads
 	headers.push('library');
 	base_sizes.push((await measure_library_size(baseline_path)).gzip);
@@ -948,14 +975,25 @@ if (args.bundle) {
 	console.log(
 		format_table([
 			['', ...headers],
-			['base', ...base_sizes.map(String)],
+			['base', ...base_sizes.map((s) => (Number.isNaN(s) ? '-' : String(s)))],
 			['new', ...sizes.map(String)],
 			[
 				'delta',
-				...sizes.map((s, i) => `${s - base_sizes[i]! >= 0 ? '+' : ''}${s - base_sizes[i]!}`)
+				...sizes.map((s, i) =>
+					Number.isNaN(base_sizes[i]!)
+						? '-'
+						: `${s - base_sizes[i]! >= 0 ? '+' : ''}${s - base_sizes[i]!}`
+				)
 			]
 		])
 	);
+	if (unshared_scenarios.length) {
+		console.log(
+			`\nthe baseline's scenario module has no ${unshared_scenarios.join(', ')}: ` +
+				`${unshared_scenarios.length === 1 ? 'it is' : 'they are'} measured for the new version alone, and \`all\` is of the\n` +
+				'scenarios both have. The size ceiling is read on every scenario.'
+		);
+	}
 }
 
 //
@@ -975,9 +1013,21 @@ if (args.process) {
 
 	const heap_rows: Array<Array<string>> = [];
 	for (const scenario of SCENARIOS) {
-		const base = await measure_retained_heap('fuz_schema', scenario.name, variant);
 		const current = await measure_retained_heap('fuz_schema', scenario.name, new_variant);
 		const format_delta = (delta: number): string => `${delta >= 0 ? '+' : ''}${delta}`;
+		if (!shared_scenarios.includes(scenario.name)) {
+			heap_rows.push([
+				scenario.name,
+				'-',
+				(current.total_bytes / 1024).toFixed(1),
+				'-',
+				'-',
+				String(current.further_schema_bytes),
+				'-'
+			]);
+			continue;
+		}
+		const base = await measure_retained_heap('fuz_schema', scenario.name, variant);
 		heap_rows.push([
 			scenario.name,
 			(base.total_bytes / 1024).toFixed(1),
@@ -1006,18 +1056,20 @@ if (args.process) {
 		])
 	);
 
+	// a baseline's module may be from before one of them
+	const coldstart_scenarios = COLDSTART_SCENARIOS.filter((name) => shared_scenarios.includes(name));
 	const plan = await plan_coldstart(
 		[
 			{ id: 'fuz_schema.new', lib: 'fuz_schema', variant: new_variant },
 			{ id: 'fuz_schema.base', lib: 'fuz_schema', variant }
 		],
-		COLDSTART_SCENARIOS,
+		coldstart_scenarios,
 		ENTRY_FORMS
 	);
 	sample_coldstart(plan, args.samples, COLDSTART_DISCARD);
 	const coldstart_rows: Array<Array<string>> = [];
 	const ratios: Array<number> = [];
-	for (const scenario of COLDSTART_SCENARIOS) {
+	for (const scenario of coldstart_scenarios) {
 		for (const form of ENTRY_FORMS) {
 			for (const stage of COLDSTART_STAGES) {
 				const find = (target: string): (typeof plan.processes)[number] =>
@@ -1152,7 +1204,7 @@ if (args.bundle) {
 			`or with it not slower on the invalid: ${verdict}`
 	);
 	console.log(
-		`size ceiling: all scenarios are ${all_vs_valibot.toFixed(2)}x valibot, ` +
+		`size ceiling: all scenarios are ${all_sizes.new} gzip, ${all_vs_valibot.toFixed(2)}x valibot's ${all_sizes.valibot}, ` +
 			`limit ${CEILING_VS_VALIBOT.toFixed(2)}x: ${all_vs_valibot <= CEILING_VS_VALIBOT ? 'pass' : 'FAIL'}`
 	);
 }

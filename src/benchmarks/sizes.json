@@ -2,14 +2,16 @@
 	"scenarios": {
 		"string": 291,
 		"object_flat": 787,
+		"extra_keys": 787,
 		"strict_nested": 871,
 		"pipe": 1007,
 		"union": 697,
+		"list": 917,
 		"type_json": 1623
 	},
-	"all": 2009,
-	"valibot_all": 2797,
-	"all_vs_valibot": 0.7183,
+	"all": 2035,
+	"valibot_all": 2826,
+	"all_vs_valibot": 0.7201,
 	"parse": 132,
 	"library": 2730,
 	"exports": {

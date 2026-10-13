@@ -20,6 +20,8 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
+export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
 		s.object({
@@ -41,6 +43,20 @@ export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 
 export const scenario_union: ScenarioModule['scenario_union'] = () =>
 	to_runner(s.array(s.union([s.string, s.number, s.boolean])));
+
+export const scenario_list: ScenarioModule['scenario_list'] = () =>
+	to_runner(
+		s.array(
+			s.object({
+				id: s.number,
+				name: s.string,
+				email: s.string,
+				active: s.boolean,
+				role: s.optional(s.string),
+				tags: s.array(s.string)
+			})
+		)
+	);
 
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	const TypeJson: s.Schema = s.variant('kind', [

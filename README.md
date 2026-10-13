@@ -27,7 +27,7 @@ else result.issues; // [{kind, expected, received, path, message}]
 The question is whether the gap is worth owning a validation library for.
 So far, on this repo's benchmarks, it is about 0.7x Valibot's size gzipped with every scenario bundled together
 and less on each alone,
-faster on every scenario measured, and allocates nothing for a valid value
+faster on every scenario measured, and allocates nothing for a valid value it returns as it came
 beyond a fixed cost per parse.
 Those numbers come from one shared workstation and a small set of scenarios,
 and Valibot's bytes pay for features this doesn't have.
@@ -385,12 +385,15 @@ npm run benchmark:survey      # many small shapes against Valibot and Zod, by wh
 What they've shown so far, read with the caveats below:
 
 - **Size:** about 0.7x Valibot gzipped with the scenarios bundled together, and far below the rest.
-  Most of the gap is fixed cost, a bit over a kilobyte, which is small in absolute terms.
+  The gap is about 0.8 kB with every scenario together and nearly 0.5 kB on a lone string schema,
+  so most of it is fixed cost, which is small in absolute terms.
 - **Warm speed:** faster than Valibot on every scenario,
-  by about 2x on flat objects and more on recursive and union-heavy ones.
-  Not the fastest: Zod's generated object parser wins on flat objects,
+  by about 2x on a flat object, 3x on a list of records, and more on recursive and union-heavy ones,
+  and by about a tenth where an object's unknown keys are dropped.
+  Not the fastest: Zod's generated object parser wins on flat objects, by 3x where keys are dropped,
   and TypeBox and ArkType, which compile validators, win flat shapes by a wide margin.
-- **Allocation:** a valid parse allocates a small fixed amount whatever the size of the value.
+- **Allocation:** a valid parse that returns its input allocates a small fixed amount whatever the size of the value,
+  the same for a hundred records as for one. One that drops keys allocates its copy as well.
 - **Cold start:** under a millisecond to import, build a schema, and parse once, bundled.
   The libraries that compile validators pay here, by one to two orders of magnitude.
 - **Retained memory and type-checking cost:** the lowest or near it of the six.

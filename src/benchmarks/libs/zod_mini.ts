@@ -20,6 +20,8 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
+export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
 		z.strictObject({
@@ -41,6 +43,20 @@ export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 
 export const scenario_union: ScenarioModule['scenario_union'] = () =>
 	to_runner(z.array(z.union([z.string(), z.number(), z.boolean()])));
+
+export const scenario_list: ScenarioModule['scenario_list'] = () =>
+	to_runner(
+		z.array(
+			z.strictObject({
+				id: z.number(),
+				name: z.string(),
+				email: z.string(),
+				active: z.boolean(),
+				role: z.optional(z.string()),
+				tags: z.array(z.string())
+			})
+		)
+	);
 
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	const TypeJson: z.ZodMiniType = z.discriminatedUnion('kind', [

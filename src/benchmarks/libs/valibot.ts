@@ -20,6 +20,8 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
+export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
 		v.strictObject({
@@ -41,6 +43,20 @@ export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 
 export const scenario_union: ScenarioModule['scenario_union'] = () =>
 	to_runner(v.array(v.union([v.string(), v.number(), v.boolean()])));
+
+export const scenario_list: ScenarioModule['scenario_list'] = () =>
+	to_runner(
+		v.array(
+			v.strictObject({
+				id: v.number(),
+				name: v.string(),
+				email: v.string(),
+				active: v.boolean(),
+				role: v.optional(v.string()),
+				tags: v.array(v.string())
+			})
+		)
+	);
 
 // svelte-docinfo's `TypeJson` and `TupleElementJson`, verbatim
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {

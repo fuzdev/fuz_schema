@@ -21,6 +21,8 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
+export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
 		type({
@@ -43,6 +45,19 @@ export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 
 export const scenario_union: ScenarioModule['scenario_union'] = () =>
 	to_runner(type('(string | number | boolean)[]'));
+
+export const scenario_list: ScenarioModule['scenario_list'] = () =>
+	to_runner(
+		type({
+			'+': 'reject',
+			id: 'number',
+			name: 'string',
+			email: 'string',
+			active: 'boolean',
+			'role?': 'string',
+			tags: 'string[]'
+		}).array()
+	);
 
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () =>
 	to_runner(

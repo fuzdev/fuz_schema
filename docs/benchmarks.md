@@ -21,7 +21,13 @@ Zod Mini, TypeBox, and ArkType.
 - **Scenarios** (`scenarios.ts`, `libs/`) are written for every library: a
   schema, a valid input, an invalid input. `type_json` is a real recursive
   schema from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo); the
-  rest are synthetic. A test holds every library to the same answer on each.
+  rest are synthetic. `list` is a hundred strict records, and its invalid
+  input has several of them wrong, each at another field, so its issues have
+  an index in their path and some a level below that. `extra_keys` is the
+  schema of `object_flat`, which drops what it doesn't name, given keys it
+  doesn't name: its factory is that scenario's under a second name, so its
+  bundle is the same bytes and it adds a call to a bundle of every scenario
+  and no definition. A test holds every library to the same answer on each.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
   - `real` is what a consumer has. Some are written for the purpose: an
@@ -413,7 +419,8 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   `benchmark:wasm` time in one process, once, so a small gap on a single row
   there is not a finding.
 - It isn't like-for-like: TypeBox's check builds no output, ArkType keeps
-  unknown keys, and Valibot's bytes pay for more features.
+  unknown keys, and Valibot's bytes pay for more features. On `extra_keys`
+  those two drop nothing, which is the work the scenario is of.
 - Cold start reports work inside the process, which resolves sub-millisecond
   gaps. The whole process over bare is also reported, but can't be told from
   zero inside the bare process's own spread.

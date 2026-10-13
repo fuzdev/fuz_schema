@@ -26,6 +26,8 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
+export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(
 		Type.Object(
@@ -53,6 +55,23 @@ export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 
 export const scenario_union: ScenarioModule['scenario_union'] = () =>
 	to_runner(Type.Array(Type.Union([Type.String(), Type.Number(), Type.Boolean()])));
+
+export const scenario_list: ScenarioModule['scenario_list'] = () =>
+	to_runner(
+		Type.Array(
+			Type.Object(
+				{
+					id: Type.Number(),
+					name: Type.String(),
+					email: Type.String(),
+					active: Type.Boolean(),
+					role: Type.Optional(Type.String()),
+					tags: Type.Array(Type.String())
+				},
+				STRICT
+			)
+		)
+	);
 
 export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	const text = (kind: string): TSchema =>

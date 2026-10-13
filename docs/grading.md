@@ -27,7 +27,11 @@ cold start, and a verdict against the rules.
 
 The bundle table has a column for each scenario, `all` for the scenarios
 together, and `library` for every runtime export of each version's own
-`schema.ts` in one bundle. `library` is reported only: no rule reads it. It
+`schema.ts` in one bundle. A scenario the baseline's scenario module has no
+factory for, as one added since, is measured for the graded version alone, in
+the bundle table and in retained heap: `all` is then of the scenarios both
+have, so its delta is the change's, and the size ceiling is still read on
+every scenario. `library` is reported only: no rule reads it. It
 shows what a change costs the exports the scenarios don't reach, and
 [`npm run benchmark:bundle`](benchmarks.md#the-whole-library) says which.
 
