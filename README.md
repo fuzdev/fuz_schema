@@ -316,8 +316,8 @@ The types follow version 1.1 of the spec and are copied from it, so there's no d
 and the input and output types are carried by the result's type, for the spec's own inference to read.
 
 It's an adapter so that schemas don't each carry a `~standard` property.
-Whether schemas should be Standard Schemas natively, at a flat cost to every bundle,
-is an open question.
+Schemas that are Standard Schemas natively were measured and declined, as a flat cost
+to every bundle: see [`docs/declined.md`](docs/declined.md#standard-schema).
 
 ### Serializing
 
@@ -456,6 +456,8 @@ npm run benchmark:wasm
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and what isn't measured
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
+- [`docs/declined.md`](docs/declined.md) — trades that were measured and not taken, each with
+  what it gave, what it cost, and what would reopen it
 - [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the interchange form,
   the two evaluators, the issues, where they differ from this library, what is
   refused, and the wasm build

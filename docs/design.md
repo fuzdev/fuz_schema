@@ -75,7 +75,8 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   many keys. Given up: an issue allocates an array a level, and the engine
   gives each one past the first room to grow. So a path of one key takes
   fewer bytes than the grown array did, and a deeper one more, by about that
-  array again a level. It measured faster at every depth tried.
+  array again a level. It measured faster at every depth tried. The other
+  ways to build a path are in [declined.md](declined.md#issue-paths).
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
 - **`ctx.issues` is `undefined` until the first failure** outside probe mode,
@@ -100,7 +101,8 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   One `run` of four parameters is fewer bytes, and measured slower on valid
   input for `union`, for `pipe`, and for a `message` around every schema: it
   hands two arguments to a `run` that doesn't take them. So what passing them
-  on costs is bytes, in the bundles that have the kind.
+  on costs is bytes, in the bundles that have the kind. See
+  [declined.md](declined.md#passing-the-object-and-the-key-on).
 - **A `lazy` passes on what it is given**, two arguments or four, which it
   tells on each call by the length of its `arguments`. Its schema isn't known
   when it is made, so it can't choose a closure then, and a `run` of four
@@ -108,7 +110,8 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   and the four tell a lazy by its `kind` where its `length` can't say: around
   one they pass the object and the key on, whatever it defers to. Until the
   engine's last tier has the call, its `arguments` is an object a call, which
-  a parse of settled code doesn't allocate.
+  a parse of settled code doesn't allocate. The other forms of a lazy are
+  in [declined.md](declined.md#lazy).
 
 ## Copy-on-write output
 
@@ -333,7 +336,11 @@ never reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
 unused definition is dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry
-a `~standard` property. Whether they should, natively, is undecided.
+a `~standard` property.
+
+What was built and measured against this, and against the rest of this page,
+and not taken is in [declined.md](declined.md): each trade with what it gave,
+what it cost, and what would reopen it.
 
 ## Behavior that differs from Valibot and Zod
 

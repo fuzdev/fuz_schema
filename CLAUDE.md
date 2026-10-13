@@ -135,6 +135,8 @@ dev server.
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
+- `docs/declined.md` - trades that were built, measured, and not taken: what
+  each gave and cost, why it was declined, and what would reopen it
 - `docs/rust.md` - the Rust side: the model, the interchange form, the two
   evaluators, the issues, the declared divergences, what is refused, the
   fixtures, and the wasm build
@@ -217,6 +219,16 @@ code the engine is running, see `docs/benchmarks.md`.
 A change's diff of `src/benchmarks/sizes.json` is its byte cost across the
 library, every export and not only the scenarios: regenerate it with the
 change, and read the diff.
+
+- **Measure before stating.** What the engine allocates, inlines, or folds is
+  measured before it is said, in a comment, a doc, or a proposal.
+- **The grader's two versions share a process**, so it can't see a cost one
+  of them puts on both. A change that writes to a schema, adds a field or a
+  second shape, or adds module-level state is checked in separate processes,
+  and by `src/test/schema.shape.test.ts`, whatever the grade says.
+- **Read the grade's lists with its verdict lines**: what allocates more,
+  what retains more, and the cases marked. Read both regimes.
+- **A declined trade gets an entry in `docs/declined.md`**, with its numbers.
 
 Easy to break in the grader without a test noticing: an instance shares no
 function with another, every instance is called the same number of times in
