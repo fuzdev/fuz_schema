@@ -33,6 +33,7 @@
     "benchmark:heap": "gro run src/benchmarks/run_heap.ts",
     "benchmark:wasm": "node src/benchmarks/wasm.ts",
     "benchmark:harvest": "node src/benchmarks/harvest.ts",
+    "benchmark:survey": "node src/benchmarks/survey.ts",
     "build:wasm": "wasm-pack build crates/fuz_schema_wasm --target web --release --out-dir ../../target/fuz_schema_wasm",
     "grade": "node src/benchmarks/grade.ts"
   },

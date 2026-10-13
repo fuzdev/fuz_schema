@@ -29,6 +29,7 @@ npm run benchmark:heap        # memory still held after building and parsing
 npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_wasm
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
+npm run benchmark:survey      # many small shapes against valibot and zod, by what a parse does
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 gro src/test/fixtures/json/update # regenerate the JSON fixtures' expected.json
 gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
@@ -40,7 +41,8 @@ gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
 `--against-file`, `--against-libs-file`, `--new-file`, `--filter`, `--runs`,
 `--alone`, `--no-alone`, `--apart`, `--no-apart`, `--slice`, `--no-bundle`,
 `--no-process`, and `--samples`, see `docs/grading.md`. `npm run benchmark:harvest` takes
-`--set`, `--passes`, and `--duration`.
+`--set`, `--passes`, and `--duration`. `npm run benchmark:survey` takes
+`--filter`, `--lib`, `--passes`, `--duration`, and `--alone`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
 dev server.
@@ -67,6 +69,9 @@ dev server.
   says and takes the path it names
 - `src/test/program.test.ts` - the program of the grader's `apart` regime has
   every kind of schema and runs
+- `src/test/survey.test.ts` - every library gives the verdict each input of
+  a survey shape names, and one output where it matches, and a row named for
+  the depth of its issue has its first issue that deep
 - `src/test/docinfo.test.ts`, `src/test/harvest.test.ts` - a harvested set's
   two forms, the consumer's and this library's, give the same answers on its
   data: the first for the valibot set, the second for the zod ones, with its
@@ -92,13 +97,15 @@ dev server.
   - `run.ts`, `bundle.ts`, `allocations.ts`, `types.ts` - parse time, bundle
     size, allocation, type-checking cost
   - `timing_passes.ts`, `timing_child.ts`, `timing_job.ts`, `timing.ts` -
-    timing across libraries, for `run.ts` and `harvest.ts`: the passes of
+    timing across libraries, for `run.ts`, `harvest.ts`, and `survey.ts`: the passes of
     processes and their pooling, one process, what those two share, and the
     loops a function is called and timed from, which the grader's processes
     load too
-  - `run_rows.ts`, `harvest_sets.ts` - what a timing process loads its rows
-    through: one library's scenarios, and one side of a harvested set, with
-    the sets' declarations
+  - `run_rows.ts`, `harvest_sets.ts`, `survey_rows.ts` - what a timing
+    process loads its rows through: one library's scenarios, one side of a
+    harvested set, with the sets' declarations, and one library's survey rows
+  - `survey.ts`, `survey_shapes.ts` - many small shapes in this library,
+    Valibot, and Zod, timed row by row and summarized by what a parse does
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
@@ -259,7 +266,7 @@ erasable syntax only, imports with explicit `.ts` extensions that Node
 resolves on its own (relative paths, packages, `#lib/*`), and `import type`
 for types. `allocations.ts` measures allocation, which needs the node flags
 for a large young generation: its npm script passes them, and it refuses to
-run without. `run.ts`, `harvest.ts`, and `grade.ts` time, so they run under
+run without. `run.ts`, `survey.ts`, `harvest.ts`, and `grade.ts` time, so they run under
 none and refuse them, and the last two pass them to the processes that
 measure their bytes.
 

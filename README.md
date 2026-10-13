@@ -379,6 +379,7 @@ npm run benchmark:allocations # heap bytes per parse and per schema built
 npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
 npm run benchmark:heap        # memory still held after building and parsing
 npm run benchmark:types       # what each library costs the TypeScript checker
+npm run benchmark:survey      # many small shapes against Valibot and Zod, by what a parse does
 ```
 
 What they've shown so far, read with the caveats below:

@@ -13,6 +13,7 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:types` | cost to the TypeScript checker |
 | `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
+| `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot and Zod, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 
 ## Scenarios and cases
@@ -130,6 +131,54 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
   records with checked keys are Zod's own on one side and a `record` between
   two checks on the other.
 
+### Survey
+
+`npm run benchmark:survey` times this library against Valibot and Zod over
+many small shapes (`survey_shapes.ts`), a row for each input of each: a
+primitive, a wrapper, an object returned as it came or copied, a union, a
+variant, a pipe, a recursive schema, and issues by how many there are and how
+deep their paths go. The scenarios give a library one figure for a match and
+one for a miss, on a few schemas, and a library that is ahead on one kind of
+work can hide in them. It is a benchmark and no gate: nothing reads it but
+whoever runs it.
+
+- **A shape is written three times**, taking its library as a parameter, so a
+  process that times one library loads no other. Zod is as its scenario
+  module has it, compiling where the environment lets it. A shape one library
+  has no equivalent of leaves it out and says why: Zod has no guard.
+- **Objects are matched by what they do with a key the schema doesn't name**:
+  this library's `object` with `strictObject` and `z.strictObject`, its
+  `strip_object` with Valibot's `object` and `z.object`, and its
+  `loose_object` with `looseObject` and `z.looseObject`.
+- **Agreement comes first.** Every input names its verdict, and every library
+  must give it, or the shape declares which doesn't and that row is not timed
+  for it. The libraries that match an input must return one output, which
+  nothing declares otherwise. The run checks before it times, each process checks its own again,
+  and `src/test/survey.test.ts` holds it.
+- **It is timed as `npm run benchmark` is**, [below](#timing-across-libraries),
+  in the same two regimes: a process for each library that runs every row
+  before it times any, and with `--alone` a process for each row. `--filter`
+  picks the rows timed, `--lib` the libraries compared with, and `--passes`
+  and `--duration` are as there, with smaller defaults: the rows are many.
+- **A row's ratio is this library's time over the other's.** A row is marked
+  `<` where the other library is faster by more than the two spreads
+  together, this library's and its own, and neither time is at the call
+  floor. One pass has no spread, so it marks nothing. The summary is by what
+  a row does: the geometric mean of the ratios, without the rows at the call
+  floor, and how many rows the other library is ahead on.
+- **The smallest rows are mostly a call.** A primitive's row is a few
+  nanoseconds, of which the call through the timing loop is most, in every
+  library alike. The run prints what that call takes. A row where either
+  library takes twice that or less is at the call floor: it is marked `~`
+  and never `<`, as a ratio of two such rows says little, and alone the
+  engine can remove what is left of the parse.
+- **Outputs are held as well as verdicts.** On an input that matches, the
+  libraries that match it must return what this one does, so a shape that
+  drops a key in one library and keeps it in another fails. A guard returns a
+  verdict and no output, and its shape says so. The order of a union's
+  options is not held where every order gives one output: that changes the
+  work and no answer.
+
 ## Method
 
 - **Parse time**: a process for each library, in passes. See
@@ -201,11 +250,12 @@ too.
 
 ### Timing across libraries
 
-`npm run benchmark` (`run.ts`) and `npm run benchmark:harvest` (`harvest.ts`)
-time the same way. `timing_passes.ts` plans the processes and pools them,
-`timing_child.ts` is one process, `timing_job.ts` is what those two share,
-and `timing.ts` is the loops a function is called and timed from. `run_rows.ts`
-and `harvest_sets.ts` are what a process loads its rows through.
+`npm run benchmark` (`run.ts`), `npm run benchmark:harvest` (`harvest.ts`),
+and `npm run benchmark:survey` (`survey.ts`) time the same way.
+`timing_passes.ts` plans the processes and pools them, `timing_child.ts` is
+one process, `timing_job.ts` is what those two share, and `timing.ts` is the
+loops a function is called and timed from. `run_rows.ts`, `harvest_sets.ts`,
+and `survey_rows.ts` are what a process loads its rows through.
 
 - **A process holds one library.** What a library takes depends on what its
   process ran before. Call sites that two libraries reach have seen both, the
@@ -356,8 +406,8 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   one function is a draw: the same code loaded twice can settle several
   percent apart on a case and stay there. `grade` measures that beside every
   figure, as a case's floor and a summary's A/A, among instances in a process
-  and, for the cases it times apart, among processes. `benchmark` and
-  `benchmark:harvest` repeat the whole in fresh processes and print each
+  and, for the cases it times apart, among processes. `benchmark`,
+  `benchmark:harvest`, and `benchmark:survey` repeat the whole in fresh processes and print each
   figure's spread, which is of a few passes: a gap inside it is not a finding,
   and one just outside it is not much of one. `benchmark:allocations` and
   `benchmark:wasm` time in one process, once, so a small gap on a single row
@@ -420,6 +470,9 @@ and never a table.
   `scenario_<name>` export in every module under `libs/`.
 - A library: a module in `libs/`, an entry in `LIBS`, and its name in the
   lists the process and type benchmarks keep.
+- A survey shape: an entry in `SURVEY_SHAPES`, with a builder for each
+  library or a reason one has none, and for every input its verdict and what
+  the parse of it does.
 - A case: an entry in a group in `cases.ts`, with the path it takes, which
   `grade` and `src/test/cases.test.ts` check. Add to `real` only what is a
   shape of its own: every case there moves what speed is judged on. A path
