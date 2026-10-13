@@ -1,0 +1,5 @@
+---
+'@fuzdev/fuz_schema': minor
+---
+
+**breaking** feat: a copy `loose_object` makes has the keys Zod's and Valibot's loose objects give, in their order: the schema's keys first, in the schema's order and as `object` and `strip_object` copy them, then the input's own enumerable string keys the schema doesn't name, in the input's order; it was a spread of the input with the changed entries written over it, so the input's order with a new key last. A schema key the input inherits or has as a non-enumerable key is now in the copy as an own key, where it was left out, and a symbol key and a `__proto__` key the schema doesn't name are now left out, where they were copied. An unknown key the input inherits is left out as before, which is Valibot's behavior and not Zod's. The input still comes back as it is when no entry changed, and unknown keys are still not looked at then. A copy costs more than it did, most where the input has many keys the schema doesn't name. A schema entry named `__proto__` was kept in a copy as an own key and is now left out of it, while still validated

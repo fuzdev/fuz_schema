@@ -142,16 +142,17 @@ describe('object', () => {
 		assert.strictEqual(s.parse_or_throw(Loose, same), same);
 		const input = { a: 'x', extra: true };
 		const output = s.parse_or_throw(Loose, input);
-		assert.deepEqual(output, { a: 'x', extra: true, b: 1 });
+		assert.deepEqual(output, { a: 'x', b: 1, extra: true });
+		assert.deepEqual(Object.keys(output), ['a', 'b', 'extra']);
 		assert.deepEqual(input, { a: 'x', extra: true });
 		assert.deepEqual(issues_of(Loose, { a: 1, extra: true }), [
 			{ kind: 'string', expected: 'string', received: 'number', path: ['a'], message: undefined }
 		]);
 		assert(!s.is(Loose, null));
-		// a `__proto__` key in the input stays an own key of the copy
+		// a `__proto__` key in the input is left out of the copy
 		const proto_output = s.parse_or_throw(Loose, JSON.parse('{"a": "x", "__proto__": {"p": 1}}'));
 		assert.strictEqual(Object.getPrototypeOf(proto_output), Object.prototype);
-		assert(Object.hasOwn(proto_output, '__proto__'));
+		assert(!Object.hasOwn(proto_output, '__proto__'));
 	});
 
 	test('the three object schemas differ only on unknown keys', () => {
@@ -453,8 +454,8 @@ describe('copy on write', () => {
 });
 
 describe('object keys', () => {
-	// the two object schemas that look at keys the schema doesn't name
-	const factories = [s.object, s.strip_object] as const;
+	// all three, which copy the schema's keys the same way
+	const factories = [s.object, s.strip_object, s.loose_object] as const;
 
 	// the own keys of `value`, symbols included, in order
 	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
@@ -863,6 +864,336 @@ describe('object keys', () => {
 		// and when the copy is made to drop a key
 		const O = s.strip_object({ a: s.optional(s.string), b: s.string });
 		assert.deepEqual(keys_of(s.parse_or_throw(O, create_input({ b: 'x', z: 1 }))), ['a', 'b']);
+	});
+});
+
+describe('loose_object copy', () => {
+	// the own keys of `value`, symbols included, in order
+	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
+
+	const sym = Symbol('sym');
+	const upper = s.pipe(
+		s.string,
+		s.transform((v) => v.toUpperCase())
+	);
+	// nothing changes in the first, and each of the others has an entry that does
+	const Same = s.loose_object({ a: s.optional(s.string), b: s.optional(s.string) });
+	const Defaulted = s.loose_object({ a: s.string, d: s.with_default(s.string, 'D') });
+	const Transformed = s.loose_object({ a: s.string, b: upper, c: s.string });
+
+	class Point {
+		u = 1;
+		get a(): string {
+			return 'x'.repeat(this.u);
+		}
+	}
+
+	test('the schema keys come first in the schema order, then the unknown keys in the input order', () => {
+		// unknown keys before, between, and after the schema's
+		const input = { y: 1, c: 'c', m: 2, a: 'a', b: 'b', z: 3 };
+		const output = s.parse_or_throw(Transformed, input);
+		assert.deepEqual(keys_of(output), ['a', 'b', 'c', 'y', 'm', 'z']);
+		assert.deepEqual(output, { a: 'a', b: 'B', c: 'c', y: 1, m: 2, z: 3 });
+		assert.deepEqual(keys_of(input), ['y', 'c', 'm', 'a', 'b', 'z']);
+		assert.strictEqual(input.b, 'b');
+		// a default, written at its entry's place and not after the unknown keys
+		assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, { x: 1, a: 'a', w: 2 })), [
+			'a',
+			'd',
+			'x',
+			'w'
+		]);
+		// an unknown key whose value is `undefined` is kept
+		const kept = s.parse_or_throw(Defaulted, { u: undefined, a: 'a' });
+		assert.deepEqual(keys_of(kept), ['a', 'd', 'u']);
+		assert.strictEqual(kept.u, undefined);
+		// the first, a middle, and the last entry changing
+		const O = s.loose_object({
+			a: s.with_default(s.string, 'd'),
+			b: s.string,
+			c: s.with_default(s.string, 'd'),
+			e: s.with_default(s.string, 'd')
+		});
+		for (const changed of [
+			{ z: 1, b: 'x', c: 'y', e: 'w' },
+			{ a: 'v', z: 1, b: 'x', e: 'w' },
+			{ a: 'v', b: 'x', c: 'y', z: 1 },
+			{ z: 1, b: 'x' }
+		]) {
+			const copy = s.parse_or_throw(O, changed);
+			assert.deepEqual(keys_of(copy), ['a', 'b', 'c', 'e', 'z']);
+			assert.deepEqual(copy, { a: 'd', c: 'd', e: 'd', ...changed });
+		}
+	});
+
+	test('a schema key the input inherits or hides is copied as an own key', () => {
+		const inherits = Object.assign(Object.create({ a: 'x' }), { u: 1 });
+		const output = s.parse_or_throw(Defaulted, inherits);
+		assert.deepEqual(keys_of(output), ['a', 'd', 'u']);
+		assert.deepEqual(output, { a: 'x', d: 'D', u: 1 });
+		assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, Object.create({ a: 'x' }))), ['a', 'd']);
+		const hidden = Object.defineProperty({ u: 1 }, 'a', { value: 'x' });
+		const copy = s.parse_or_throw(Defaulted, hidden);
+		assert.deepEqual(keys_of(copy), ['a', 'd', 'u']);
+		assert(Object.getOwnPropertyDescriptor(copy, 'a')!.enumerable);
+		// through a getter on a class
+		assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, new Point())), ['a', 'd', 'u']);
+	});
+
+	test('an unknown key is copied only when it is an own enumerable string key', () => {
+		const input = Object.defineProperty(
+			Object.assign(Object.create({ inherited: 1 }), { a: 'x', [sym]: 1, u: 1 }),
+			'hidden',
+			{ value: 2 }
+		);
+		const output: object = s.parse_or_throw(Defaulted, input);
+		assert.deepEqual(keys_of(output), ['a', 'd', 'u']);
+		assert(!('inherited' in output));
+		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+	});
+
+	test('a __proto__ key the schema does not name is left out of a copy', () => {
+		for (const text of [
+			'{"a": "x", "__proto__": {"p": 1}, "u": 1}',
+			'{"__proto__": {"p": 1}, "a": "x", "u": 1}',
+			'{"a": "x", "u": 1, "__proto__": 1}'
+		]) {
+			const output: object = s.parse_or_throw(Defaulted, JSON.parse(text));
+			assert.deepEqual(keys_of(output), ['a', 'd', 'u']);
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			assert(!('p' in output));
+		}
+		assert.strictEqual(({} as any).p, undefined);
+	});
+
+	test('a missing optional key stays out and an undefined one stays in', () => {
+		const O = s.loose_object({
+			o: s.optional(s.string),
+			a: s.string,
+			d: s.with_default(s.string, 'D'),
+			p: s.optional(s.string)
+		});
+		assert.deepEqual(keys_of(s.parse_or_throw(O, { u: 1, a: 'x' })), ['a', 'd', 'u']);
+		const output = s.parse_or_throw(O, { u: 1, p: undefined, a: 'x', o: undefined });
+		assert.deepEqual(keys_of(output), ['o', 'a', 'd', 'p', 'u']);
+		assert.deepEqual(output, { o: undefined, a: 'x', d: 'D', p: undefined, u: 1 });
+	});
+
+	test('a copy has a plain prototype whatever the input has', () => {
+		const bare = Object.assign(Object.create(null), { u: 1, a: 'x' });
+		const from_bare: object = s.parse_or_throw(Defaulted, bare);
+		assert.strictEqual(Object.getPrototypeOf(from_bare), Object.prototype);
+		assert.deepEqual(keys_of(from_bare), ['a', 'd', 'u']);
+		const from_instance: object = s.parse_or_throw(Defaulted, new Point());
+		assert.strictEqual(Object.getPrototypeOf(from_instance), Object.prototype);
+		assert.deepEqual(from_instance, { a: 'x', d: 'D', u: 1 });
+	});
+
+	test('the input comes back, whatever its keys, when no entry changed', () => {
+		const inputs: Array<object> = [
+			{ y: 1, b: 'b', m: 2, a: 'a', z: 3 },
+			{ u: undefined },
+			Object.assign(Object.create({ a: 'x', inherited: 1 }), { u: 1 }),
+			Object.defineProperty(Object.defineProperty({ u: 1 }, 'a', { value: 'x' }), 'hidden', {
+				value: 2
+			}),
+			{ a: 'x', [sym]: 1 },
+			JSON.parse('{"a": "x", "__proto__": {"p": 1}, "u": 1}'),
+			{ a: undefined, b: undefined, u: 1 },
+			Object.assign(Object.create(null), { u: 1, a: 'x' }),
+			new Point(),
+			{ 1: 'n', a: 'x' }
+		];
+		for (const input of inputs) {
+			const keys = keys_of(input);
+			assert.strictEqual<unknown>(s.parse_or_throw(Same, input), input);
+			assert(s.is(Same, input));
+			assert.deepEqual(keys_of(input), keys);
+			// as an option of a union, which takes the output of a probe
+			assert.strictEqual<unknown>(s.parse_or_throw(s.union([s.number, Same]), input), input);
+		}
+		// a default that is there, and a transform that returns what it was given
+		const present = { x: 1, d: 'd', a: 'a' };
+		assert.strictEqual<unknown>(s.parse_or_throw(Defaulted, present), present);
+		const upper_already = { z: 1, c: 'c', b: 'B', a: 'a' };
+		assert.strictEqual<unknown>(s.parse_or_throw(Transformed, upper_already), upper_already);
+	});
+
+	test('unknown keys are not looked at unless a copy is made, and then are read once', () => {
+		let reads = 0;
+		let entry_reads = 0;
+		const create_input = (): Record<string, unknown> => ({
+			get u() {
+				reads++;
+				return 1;
+			},
+			get a() {
+				entry_reads++;
+				return 'x';
+			}
+		});
+		const traps: Array<string> = [];
+		const watched = new Proxy(create_input(), {
+			ownKeys: (target) => {
+				traps.push('ownKeys');
+				return Reflect.ownKeys(target);
+			}
+		});
+		assert.strictEqual<unknown>(s.parse_or_throw(Same, watched), watched);
+		assert.deepEqual([reads, entry_reads, traps.length], [0, 1, 0]);
+		// a failed probe doesn't enumerate either, though an entry changed before the failure
+		assert(!s.is(s.loose_object({ d: s.with_default(s.string, 'D'), a: s.number }), watched));
+		assert.deepEqual([reads, traps.length], [0, 0]);
+		reads = entry_reads = 0;
+		// the entry before the one that changed is read again for the copy
+		assert.deepEqual(s.parse_or_throw(Defaulted, create_input()), { a: 'x', d: 'D', u: 1 });
+		assert.deepEqual([reads, entry_reads], [1, 2]);
+		reads = entry_reads = 0;
+		// and the one after it is not
+		const After = s.loose_object({ d: s.with_default(s.string, 'D'), a: s.string });
+		assert.deepEqual(s.parse_or_throw(After, create_input()), { d: 'D', a: 'x', u: 1 });
+		assert.deepEqual([reads, entry_reads], [1, 1]);
+	});
+
+	test('a key the input adds while it is parsed is in the copy, after the schema keys', () => {
+		const input: Record<string, unknown> = {
+			u: 1,
+			get a() {
+				input.added = 2;
+				return 'x';
+			}
+		};
+		assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, input)), ['a', 'd', 'u', 'added']);
+	});
+
+	test('an integer-like key comes first, as it does in any object', () => {
+		const O = s.loose_object({ a: s.string, 1: s.string, d: s.with_default(s.string, 'D') });
+		const output = s.parse_or_throw(O, { z: 1, a: 'x', 1: 'n', 0: 'm' });
+		assert.deepEqual(keys_of(output), ['0', '1', 'a', 'd', 'z']);
+		assert.deepEqual(output, { 0: 'm', 1: 'n', a: 'x', d: 'D', z: 1 });
+	});
+
+	test('an unknown key named like a member of Object.prototype is kept', () => {
+		const output = s.parse_or_throw(Defaulted, { toString: 1, a: 'x', constructor: 2 });
+		assert.deepEqual(keys_of(output), ['a', 'd', 'toString', 'constructor']);
+		assert.deepEqual<unknown>(output, { a: 'x', d: 'D', toString: 1, constructor: 2 });
+		// `constructor` and `prototype` too, which Valibot drops and Zod keeps
+		const named = s.parse_or_throw(Defaulted, { prototype: 1, a: 'x', constructor: 2 });
+		assert.deepEqual(keys_of(named), ['a', 'd', 'prototype', 'constructor']);
+	});
+
+	test('a __proto__ key the schema names never sets the prototype of a copy', () => {
+		const entry = { ['__proto__']: s.unknown };
+		const text = '{"a": "x", "__proto__": {"p": 1}, "u": 1}';
+		// the copy begun before the entry, at it, and after it
+		for (const O of [
+			s.loose_object({ d: s.with_default(s.string, 'D'), ...entry, a: s.string }),
+			s.loose_object({
+				a: s.string,
+				['__proto__']: s.loose_object({ q: s.with_default(s.string, 'Q') })
+			}),
+			s.loose_object({ a: s.string, ...entry, d: s.with_default(s.string, 'D') })
+		]) {
+			assert(Object.hasOwn(O.def, '__proto__'));
+			const output: object = s.parse_or_throw(O, JSON.parse(text));
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			assert(!('p' in output));
+			assert(!Object.hasOwn(output, '__proto__'));
+			assert.deepEqual(
+				Object.keys(output).sort(),
+				Object.keys(O.def)
+					.filter((k) => k !== '__proto__')
+					.concat('u')
+					.sort()
+			);
+		}
+		// the entry is still run
+		assert(!s.is(s.loose_object({ a: s.string, ['__proto__']: s.string }), JSON.parse(text)));
+	});
+
+	test('a nested loose object copies the path to the change and shares the rest', () => {
+		const Inner = s.loose_object({ x: s.string, d: s.with_default(s.string, 'D') });
+		const Outer = s.loose_object({ same: Inner, changed: Inner, items: s.array(Inner) });
+		const same = { u: 1, x: 'x', d: 'd' };
+		const item = { w: 4, x: 'x' };
+		const sibling = { deep: true };
+		const input = { first: sibling, items: [item], changed: { v: 2, x: 'y' }, same, last: 3 };
+		const output = s.parse_or_throw(Outer, input);
+		assert.deepEqual(keys_of(output), ['same', 'changed', 'items', 'first', 'last']);
+		assert.strictEqual<unknown>(output.same, same);
+		assert.strictEqual(output.first, sibling);
+		assert.deepEqual(keys_of(output.changed), ['x', 'd', 'v']);
+		assert.deepEqual(output.changed, { x: 'y', d: 'D', v: 2 });
+		assert.deepEqual(keys_of(output.items[0]!), ['x', 'd', 'w']);
+		assert.deepEqual(input.changed, { v: 2, x: 'y' });
+		assert.deepEqual(item, { w: 4, x: 'x' });
+		// under an object that rejects unknown keys of its own
+		const Strict = s.object({ inner: Inner });
+		assert.deepEqual(keys_of(s.parse_or_throw(Strict, { inner: { v: 2, x: 'y' } }).inner), [
+			'x',
+			'd',
+			'v'
+		]);
+	});
+
+	test('a failed probe has no output, and a union takes the copy of a probe that passed', () => {
+		const O = s.union([
+			s.loose_object({ a: s.number, d: s.with_default(s.string, 'D') }),
+			Defaulted
+		]);
+		const output: object = s.parse_or_throw(O, { u: 1, a: 'x' });
+		assert.deepEqual(keys_of(output), ['a', 'd', 'u']);
+		assert(!s.is(Defaulted, { u: 1, a: 1 }));
+		assert(!s.is(Defaulted, { u: 1 }));
+		// issues are the entries' alone, with a changed entry before or after the failed one
+		assert.deepEqual(
+			issues_of(s.loose_object({ d: s.with_default(s.string, 'D'), a: s.string }), { u: 1 }).map(
+				(i) => [i.kind, i.path]
+			),
+			[['string', ['a']]]
+		);
+		assert.deepEqual(
+			issues_of(Defaulted, { u: 1 }).map((i) => [i.kind, i.path]),
+			[['string', ['a']]]
+		);
+	});
+
+	test('the three object schemas copy the schema keys the same way', () => {
+		const entries = {
+			o: s.optional(s.string),
+			a: s.string,
+			b: upper,
+			d: s.with_default(s.string, 'D'),
+			p: s.optional(s.string)
+		};
+		const Loose = s.loose_object(entries);
+		const Strip = s.strip_object(entries);
+		const Strict = s.object(entries);
+		const create_inputs = (): Array<Record<string, unknown>> => [
+			{ b: 'b', a: 'a' },
+			{ p: undefined, b: 'b', a: 'a', o: undefined },
+			{ a: 'a', b: 'B' },
+			{ d: 'd', b: 'b', a: 'a', o: 'o', p: 'p' },
+			Object.assign(Object.create({ a: 'a', o: undefined }), { b: 'b' }),
+			Object.defineProperty({ b: 'b' }, 'a', { value: 'a' }),
+			Object.assign(Object.create(null), { b: 'b', a: 'a' })
+		];
+		for (const [i, input] of create_inputs().entries()) {
+			const strict: object = s.parse_or_throw(Strict, input);
+			const stripped: object = s.parse_or_throw(Strip, input);
+			const loose: object = s.parse_or_throw(Loose, input);
+			assert.notStrictEqual(strict, input);
+			for (const output of [stripped, loose]) {
+				assert.deepEqual(keys_of(output), keys_of(strict));
+				assert.deepEqual(output, strict);
+				assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			}
+			// with unknown keys, the loose copy is the stripped one and then those keys
+			const more = Object.assign(create_inputs()[i]!, { z: 1, y: undefined });
+			(more as Record<PropertyKey, unknown>)[sym] = 2;
+			assert.deepEqual(keys_of(s.parse_or_throw(Loose, more)), [...keys_of(strict), 'z', 'y']);
+			assert.deepEqual(keys_of(s.parse_or_throw(Strip, more)), keys_of(strict));
+		}
 	});
 });
 

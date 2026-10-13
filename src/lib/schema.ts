@@ -817,8 +817,18 @@ export const object = <T extends SchemaEntries>(
 
 /**
  * Matches an object with `entries`, keeping unknown keys as they are.
- * The cheapest of the object schemas: unknown keys are never looked at, and
- * the output is the input itself when no entry changed.
+ * The cheapest of the object schemas on input that comes back as it is:
+ * unknown keys are never looked at, and the output is the input itself when no
+ * entry changed.
+ *
+ * When an entry changed the output is a copy: the schema's keys as `object`
+ * copies them, then the input's other own enumerable string keys in the
+ * input's order. Of the keys the schema doesn't name, a symbol key, an
+ * inherited key, a non-enumerable key, and a `__proto__` key are left out of it.
+ * A `__proto__` key is left out whether or not the schema names it: an entry
+ * named `__proto__` still runs, but its key is not written to a copy, as
+ * assigning it would set the copy's prototype. `object` and `strip_object` do
+ * write such an entry.
  */
 // @__NO_SIDE_EFFECTS__
 export const loose_object = <T extends SchemaEntries>(
@@ -847,7 +857,36 @@ export const loose_object = <T extends SchemaEntries>(
 				if (ctx.fails > count) {
 					if (ctx.probe) return undefined;
 					prefix_path(ctx.issues!, count, key);
-				} else if (v !== input) (output ??= { ...value })[key] = v;
+				} else if (output) {
+					// a key the input doesn't have stays out of the output, and a schema entry
+					// named `__proto__` runs but isn't written, as assigning it sets the prototype
+					if ((v !== undefined || key in value) && key !== '__proto__') output[key] = v;
+				} else if (v !== input) {
+					output = {};
+					// this schema's keys first, in its order, as `run_entries` copies them
+					for (let j = 0; j < i; j++) {
+						const k = keys[j]!;
+						const u = value[k];
+						if ((u !== undefined || k in value) && k !== '__proto__') output[k] = u;
+					}
+					if (key !== '__proto__') output[key] = v;
+				}
+			}
+			// only a copy looks at the unknown keys, which follow the schema's
+			if (output) {
+				let i = 0;
+				for (const key in value) {
+					// a key in the schema's order is known without a lookup
+					if (key === keys[i]) i++;
+					else if (
+						Object.hasOwn(value, key) &&
+						!Object.hasOwn(entries, key) &&
+						// assigning a `__proto__` key would set the prototype, so it's dropped
+						key !== '__proto__'
+					) {
+						output[key] = value[key];
+					}
+				}
 			}
 			return output ?? value;
 		}
@@ -856,9 +895,9 @@ export const loose_object = <T extends SchemaEntries>(
 
 /**
  * Matches an object with `entries`, dropping unknown keys from the output.
- * Dropping means copying, so this costs more than `object` or `loose_object`
- * whenever there is a key to drop. The output is the input itself when no
- * entry changed and there was nothing to drop.
+ * Dropping means copying, so where no entry changed this costs more than
+ * `object` or `loose_object` whenever there is a key to drop. The output is
+ * the input itself when no entry changed and there was nothing to drop.
  */
 // @__NO_SIDE_EFFECTS__
 export const strip_object = <T extends SchemaEntries>(

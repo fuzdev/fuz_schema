@@ -114,7 +114,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
 
 The three object schemas differ only on keys the schema doesn't name:
-`object` rejects them, `loose_object` keeps them and is the cheapest,
+`object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
 `strip_object` drops them and pays for a copy when there are any.
 None of them accepts an array, and neither do `record` and `variant`.
 

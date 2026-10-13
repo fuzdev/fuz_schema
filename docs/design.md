@@ -101,7 +101,9 @@ Kept:
 
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
-- `record` drops a `__proto__` key.
+- `record` drops a `__proto__` key, and so does a copy `loose_object` makes,
+  whether or not the schema names it. `object` and `strip_object` do write a
+  schema entry named `__proto__`, which sets the copy's prototype.
 - The input is never mutated.
 
 ## Object schemas
@@ -111,15 +113,15 @@ Three, differing only in what they do with keys the schema doesn't name:
 | | Unknown keys | Cost on valid input |
 |---|---|---|
 | `object` | an error | one pass over the input's keys |
-| `loose_object` | kept | none; they are never looked at |
+| `loose_object` | kept | none; they are looked at only to copy them |
 | `strip_object` | dropped | one pass, then a copy when there are any |
 
 An array is not an object: all three reject one, as do `record` and
 `variant`, with the one issue any non-object gets.
 
 `object` is the default name because rejecting is the safe default.
-`loose_object` is the cheapest, and `strip_object` is the one that works for
-its result.
+`loose_object` is the cheapest on input that comes back as it is, and
+`strip_object` is the one that works for its result.
 
 `object` and `strip_object` share a loop over the entries:
 
@@ -137,8 +139,24 @@ its result.
   drop means enumerating the input's keys. That is what a key to drop, or a
   change late in a wide object, costs over building every output.
 
-`loose_object` copies with a spread instead: the input's own keys, in the
-input's order.
+`loose_object` has a loop of its own, which copies the schema's keys by the
+same rule and never looks at the input's keys unless it made a copy:
+
+- **A copy then takes the unknown keys**: the input's own enumerable string
+  keys the schema doesn't name, in the input's order, after the schema's.
+  So the three copy the schema's keys alike, and a loose copy is a stripped
+  one with the unknown keys after it.
+- **Of the unknown keys, a symbol key, an inherited key, and a non-enumerable
+  key are left out**, and so is a `__proto__` key, which would set the
+  prototype if assigned. The input returned as it is keeps them all. A
+  schema entry named `__proto__` runs, but its key is left out of the copy
+  too; `object` and `strip_object` write it.
+- **The loop is not the shared one**, though it repeats it. A bundle without
+  `loose_object` carries none of this, and a parse of one loose schema, where
+  the engine inlines the loop and removes the context, measured slower on
+  valid input when the loop was a call to the shared one.
+- **Every key of a copy is a keyed write.** A change in a wide loose object
+  costs in proportion to its width, and more than a spread of it would.
 
 ### Missing keys
 
@@ -261,6 +279,12 @@ a `~standard` property. Whether they should, natively, is undecided.
   and so does a `transform` that is the entry itself, as Zod's does.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   Dropping is `strip_object`, and keeping is `loose_object`.
+- A `loose_object` copy has the keys Valibot's and Zod's loose objects give,
+  in their order, where the two agree. They differ on an unknown key the input
+  inherits: Zod copies an enumerable one and Valibot doesn't, and here it is
+  left out, as in Valibot. And on an unknown key named `constructor` or
+  `prototype`: Valibot drops it and Zod keeps it, and here it is kept, as in
+  Zod.
 - `variant` dispatches by map; its options need a `literal` discriminator.
 - Output is copy-on-write.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.

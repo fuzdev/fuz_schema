@@ -822,7 +822,9 @@ const strip: CaseGroup = (s) => {
 // `loose_object`, which has a loop of its own
 const loose: CaseGroup = (s) => {
 	const O = s.loose_object(to_six(s.string));
+	const Last = s.loose_object({ ...to_six(s.string), k5: s.with_default(s.string, 'd') });
 	const input = to_six('v');
+	const { k5: _k5, ...wide } = to_record(20);
 	return [
 		to_case(s, 'loose/6_keys/valid', O, to_json(input), 'identity'),
 		// unknown keys are never looked at, so they cost nothing
@@ -835,6 +837,10 @@ const loose: CaseGroup = (s) => {
 			to_json({ x: 1, y: 2, z: 3 }),
 			'copy'
 		),
+		// the last entry changes, so a copy rereads the five before it
+		to_case(s, 'loose/6_keys_last_default_absent/valid', Last, to_record(5), 'copy'),
+		// and in a wide input, where a copy also carries every unknown key across
+		to_case(s, 'loose/6_keys_last_default_absent_14_unknown/valid', Last, to_json(wide), 'copy'),
 		to_case(s, 'loose/6_keys_first_bad/invalid', O, to_json({ ...input, k0: 1 }), 'issues')
 	];
 };
