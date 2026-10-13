@@ -677,6 +677,22 @@ const each: CaseGroup = (s) => {
 			}),
 			{ a: 1 }
 		),
+		// an entry that looks for its key itself, as the closure of each that does:
+		// a `literal` of `undefined`, and a `one_of` with `undefined` among its
+		// values. `JSON.stringify` leaves a key that is `undefined` out, so the
+		// first is not parsed
+		to_case(
+			s,
+			'each/entry_literal_undefined/valid',
+			s.array(to_object(s)({ a: s.literal(undefined) })),
+			range(100).map(() => ({ a: undefined })),
+			'identity'
+		),
+		of(
+			'entry_one_of_undefined_present/valid',
+			to_object(s)({ a: to_one_of(s)(['x', undefined]) }),
+			{ a: 'x' }
+		),
 		// a hundred issues, each with an index for its path
 		of('string/invalid', s.string, 42, 'issues'),
 		of('message/invalid', s.message(s.string, 'must be text'), 42, 'issues'),

@@ -51,26 +51,6 @@ interface ConformanceDifference {
 const DIFFERENCES: Array<ConformanceDifference> = [
 	{
 		reason:
-			'`literal(undefined)` and a `one_of` with `undefined` take a missing key as `undefined`',
-		status: 'declared',
-		docs: '`literal(undefined)`, and a `one_of` with `undefined` among its values',
-		rows: {
-			'literal(undefined) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'one_of with undefined entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'union[string, undefined] entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'nullable(literal(undefined)) entry, key missing / *': { both: 'fail at a', ours: 'ok {}' },
-			'literal(undefined) then a check entry, key missing / *': {
-				both: 'fail at a',
-				ours: 'ok {}'
-			},
-			'variant, a literal(undefined) discriminator, key missing': {
-				both: 'fail at t',
-				ours: 'ok {x: "x"}'
-			}
-		}
-	},
-	{
-		reason:
 			'a `check` that is the entry itself, or that another schema holds as one, takes a missing key as `undefined`',
 		status: 'declared',
 		docs: 'a `check` that is the entry itself, or that another schema holds in one of those places',
@@ -93,6 +73,54 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 				ours: 'ok {a: "x"} proto=other'
 			},
 			'unknown entry, key inherited / *': { both: 'ok {a: undefined}', ours: 'ok {} proto=other' },
+			'literal(undefined) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'one_of with undefined entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'nullable(literal(undefined)) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'lazy(literal(undefined)) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'message(literal(undefined)) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'literal(undefined) then a check entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'union[number, undefined] entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'nullable(one_of with undefined) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'lazy(one_of with undefined) entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'union[number, one_of with undefined] entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'one_of with undefined then a check entry, key inherited / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {} proto=other'
+			},
+			'variant, a literal(undefined) discriminator, key inherited': {
+				both: 'ok {t: undefined, x: "x"}',
+				ours: 'ok {x: "x"} proto=other'
+			},
 			'optional inherited undefined + unknown key / loose': {
 				both: 'ok {a: "x", b: undefined, z: 1}',
 				ours: 'ok {a: "x", z: 1} proto=other'
@@ -217,6 +245,14 @@ const SIDES: Record<string, ConformanceSide> = {
 		valibot: 'ok {t: "b", d: "D"}'
 	},
 
+	// a discriminator that is missing, of an option that has other entries:
+	// valibot stops at the discriminator
+	'variant, a literal(undefined) discriminator, key missing, an entry wrong': {
+		side: 'zod',
+		zod: 'fail at t, x',
+		valibot: 'fail at t'
+	},
+
 	// the unknown keys of a loose object. An enumerable one the input inherits
 	// zod copies and valibot drops: a copy here drops it, and an input that
 	// comes back is neither's, as the key is still read through it, and not as
@@ -260,6 +296,11 @@ const SIDES: Record<string, ConformanceSide> = {
 		valibot: 'fail at a'
 	},
 	'union[unknown, optional(string)] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {}',
+		valibot: 'fail at a'
+	},
+	'union[literal(undefined), optional(string)] entry, key missing / *': {
 		side: 'zod',
 		zod: 'ok {}',
 		valibot: 'fail at a'

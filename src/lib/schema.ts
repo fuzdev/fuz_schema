@@ -521,6 +521,12 @@ const format_literals = (values: Iterable<unknown>): string =>
 /**
  * Matches a single value by `===`, so `0` and `-0` match each other, and
  * matches `NaN` when the value is `NaN`, which `===` alone never would.
+ *
+ * `literal(undefined)` as an object entry needs its key, as `unknown` does and
+ * wherever `unknown` is handed the object and the key: `undefined` at a key
+ * the object has, own or inherited, is accepted, and a key that is missing
+ * fails as a `missing_key`. Write `optional(literal(undefined))` to let the
+ * key be missing.
  */
 // @__NO_SIDE_EFFECTS__
 export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, 'literal', T> => {
@@ -529,18 +535,34 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
 	return {
 		kind: 'literal',
 		def: value,
-		run: (v, ctx) =>
-			// `NaN` is the one value that isn't itself, and is looked for only after a miss
-			// eslint-disable-next-line no-self-compare
-			v === value || (v !== v && value !== value)
-				? v
-				: fail(ctx, 'literal', v, (expected ??= format_literals([value])))
+		// two closures chosen once here, as in `message`. Only `undefined` is what
+		// a missing key reads as, so only its literal takes the object and the
+		// key: a `run` of four parameters measured slower for every literal
+		run:
+			value === undefined
+				? (v, ctx, parent, key) =>
+						v === value
+							? // the key comes with the object
+								parent && !((key as string) in parent)
+								? fail(ctx, 'missing_key', v, 'a required key')
+								: v
+							: fail(ctx, 'literal', v, (expected ??= format_literals([value])))
+				: (v, ctx) =>
+						// `NaN` is the one value that isn't itself, and is looked for only after a miss
+						// eslint-disable-next-line no-self-compare
+						v === value || (v !== v && value !== value)
+							? v
+							: fail(ctx, 'literal', v, (expected ??= format_literals([value])))
 	};
 };
 
 /**
  * Matches any of `values` as `literal` matches one: by `===`, so `0` and `-0`
  * match each other, and `NaN` when it is among them.
+ *
+ * With `undefined` among `values` it needs its key as an object entry, as
+ * `literal(undefined)` does. Whether it is among them is read once, when the
+ * schema is made.
  */
 // @__NO_SIDE_EFFECTS__
 export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
@@ -550,8 +572,18 @@ export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
 	return {
 		kind: 'one_of',
 		def: values,
-		run: (v, ctx) =>
-			values.includes(v) ? v : fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
+		// two closures chosen once here, as in `literal`
+		run: values.includes(undefined)
+			? (v, ctx, parent, key) =>
+					v === undefined
+						? parent && !((key as string) in parent)
+							? fail(ctx, 'missing_key', v, 'a required key')
+							: v
+						: values.includes(v)
+							? v
+							: fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
+			: (v, ctx) =>
+					values.includes(v) ? v : fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
 	};
 };
 
@@ -840,8 +872,9 @@ const run_entries = (
  * The output is the input itself when no entry changed.
  *
  * A key the input lacks reads as `undefined`, so it fails unless its entry
- * accepts that. `unknown` accepts `undefined` and still needs its key, failing
- * as a `missing_key` without it. This holds for `loose_object` and
+ * accepts that. `unknown`, `literal(undefined)`, and a `one_of` with
+ * `undefined` among its values accept `undefined` and still need their key,
+ * failing as a `missing_key` without it. This holds for `loose_object` and
  * `strip_object` too.
  */
 // @__NO_SIDE_EFFECTS__
@@ -1117,6 +1150,10 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 /**
  * Matches the object schema in `options` whose `key` literal equals the value's,
  * a discriminated union with constant-time dispatch.
+ *
+ * An input without the key reads as `undefined` there, so it selects an option
+ * whose literal is `undefined`, and that option's entry then fails it as a
+ * `missing_key`.
  *
  * @param key - the discriminator, which must be a `literal` entry in every option
  */

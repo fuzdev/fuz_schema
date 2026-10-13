@@ -434,6 +434,26 @@ const missing_and_undefined = (
 	}
 ];
 
+// the same entry with the key inherited as `undefined`, and with another value
+const inherited_and_present = (
+	name: string,
+	entry: (l: ConformanceLib) => any
+): Array<ConformanceCase> => [
+	{
+		name: `${name}, key inherited`,
+		entries: (l) => ({ a: entry(l) }),
+		input: () => inheriting({ a: undefined })
+	},
+	{ name: `${name}, key "x"`, entries: (l) => ({ a: entry(l) }), input: () => ({ a: 'x' }) }
+];
+
+// an entry that accepts `undefined` and needs its key: with the key missing,
+// `undefined`, inherited as `undefined`, and another value
+const needs_key = (name: string, entry: (l: ConformanceLib) => any): Array<ConformanceCase> => [
+	...missing_and_undefined(name, entry),
+	...inherited_and_present(name, entry)
+];
+
 export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	// known keys
 	{ name: 'exact', entries: AB, input: () => ({ a: 'x', b: 'y' }), also: BOTH },
@@ -705,19 +725,41 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		l.message(l.refine(l.unknown, () => true))
 	),
 	...missing_and_undefined('default(unknown) entry', (l) => l.with_default(l.unknown, 'D')),
-	...missing_and_undefined('literal(undefined) entry', (l) => l.undef),
-	...missing_and_undefined('one_of with undefined entry', (l) => l.one_of(['x', undefined])),
+	// a `literal` of `undefined` and a `one_of` with it need their key too, as
+	// the entry and where another schema hands them the object
+	...needs_key('literal(undefined) entry', (l) => l.undef),
+	...needs_key('one_of with undefined entry', (l) => l.one_of(['x', undefined])),
+	...needs_key('nullable(literal(undefined)) entry', (l) => l.nullable(l.undef)),
+	...needs_key('lazy(literal(undefined)) entry', (l) => l.lazy(() => l.undef)),
+	...needs_key('message(literal(undefined)) entry', (l) => l.message(l.undef)),
+	...needs_key('literal(undefined) then a check entry', (l) => l.refine(l.undef, () => true)),
+	...needs_key('literal(undefined) then a transform to "T" entry', (l) =>
+		l.map(l.undef, () => 'T')
+	),
+	...needs_key('union[number, undefined] entry', (l) => l.union([l.number, l.undef])),
+	...needs_key('nullable(one_of with undefined) entry', (l) =>
+		l.nullable(l.one_of(['x', undefined]))
+	),
+	...needs_key('lazy(one_of with undefined) entry', (l) =>
+		l.lazy(() => l.one_of(['x', undefined]))
+	),
+	...needs_key('union[number, one_of with undefined] entry', (l) =>
+		l.union([l.number, l.one_of(['x', undefined])])
+	),
+	...needs_key('one_of with undefined then a check entry', (l) =>
+		l.refine(l.one_of(['x', undefined]), () => true)
+	),
+	...missing_and_undefined('optional(literal(undefined)) entry', (l) => l.optional(l.undef)),
+	...missing_and_undefined('union[literal(undefined), optional(string)] entry', (l) =>
+		l.union([l.undef, l.optional(l.string)])
+	),
 	...missing_and_undefined('bare check entry', (l) => l.check(() => true)),
 	...missing_and_undefined('bare transform entry', (l) => l.transform((x) => x)),
-	// a `check` or a `literal(undefined)` that another schema holds: it is handed the object, and doesn't look
+	// a `check` that another schema holds: it is handed the object, and doesn't look
 	...missing_and_undefined('nullable(check) entry', (l) => l.nullable(l.check(() => true))),
 	...missing_and_undefined('lazy(check) entry', (l) => l.lazy(() => l.check(() => true))),
 	...missing_and_undefined('union[string, check] entry', (l) =>
 		l.union([l.string, l.check(() => true)])
-	),
-	...missing_and_undefined('nullable(literal(undefined)) entry', (l) => l.nullable(l.undef)),
-	...missing_and_undefined('literal(undefined) then a check entry', (l) =>
-		l.refine(l.undef, () => true)
 	),
 	...missing_and_undefined('bare transform to "T" entry', (l) => l.transform(() => 'T')),
 	...missing_and_undefined('string entry', (l) => l.string),
@@ -1102,6 +1144,21 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'variant, a literal(undefined) discriminator, key undefined',
 		schema: VARIANT_UNDEFINED,
 		input: () => ({ t: undefined, x: 'x' })
+	},
+	{
+		name: 'variant, a literal(undefined) discriminator, key inherited',
+		schema: VARIANT_UNDEFINED,
+		input: () => inheriting({ t: undefined }, { x: 'x' })
+	},
+	{
+		name: 'variant, a literal(undefined) discriminator, the other option',
+		schema: VARIANT_UNDEFINED,
+		input: () => ({ t: 'b' })
+	},
+	{
+		name: 'variant, a literal(undefined) discriminator, key missing, an entry wrong',
+		schema: VARIANT_UNDEFINED,
+		input: () => ({ x: 1 })
 	},
 	{ name: 'variant, key inherited', schema: VARIANT, input: () => inheriting({ t: 'b' }) },
 	{ name: 'variant, an entry wrong', schema: VARIANT, input: () => ({ t: 'a', x: 1 }) },

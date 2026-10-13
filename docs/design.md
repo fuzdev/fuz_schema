@@ -88,7 +88,8 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 - **An entry's `run` gets two more arguments**: the object schemas call
   `run(value, ctx, parent, key)`, with the object being read and the entry's
   key. Both are optional in `Schema.run`'s type, so a `run` of two parameters
-  is an entry like any other. `unknown` reads them.
+  is an entry like any other. `unknown` reads them, and so do
+  `literal(undefined)` and a `one_of` with `undefined` among its values.
 - **`nullable`, `union`, `pipe`, and `message` pass them on to a `run` that
   takes them**, which each tells once, when it is made, by the `length` of
   that `run` or by the kind `'lazy'`: `nullable` and `message` by the schema
@@ -97,6 +98,11 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   plain parameters, with no default and not as a rest. Around anything else
   each has a `run` of two parameters and calls with two, as `optional`,
   `with_default`, `array`, `record`, and `variant` always do.
+- **`literal` and `one_of` are two closures too**, chosen when the schema is
+  made by whether `undefined` is what it matches. The one that is reads the
+  object and the key, and has four parameters. Every other literal and
+  `one_of` has the `run` of two it would have without it, so what looking for
+  the key costs them is bytes, in the bundles that have the kind.
 - **Each of the four is two closures** that differ only in what they pass on.
   One `run` of four parameters is fewer bytes, and measured slower on valid
   input for `union`, for `pipe`, and for a `message` around every schema: it
@@ -234,12 +240,22 @@ all a missing key costs an object that has no schema asking.
   so an inherited or non-enumerable key is there, and fails as a
   `missing_key` without it. `{}` doesn't match `object({a: unknown})` and
   `{a: undefined}` does.
+- **`literal(undefined)` and a `one_of` with `undefined` need their key the
+  same way**, and fail as the same `missing_key` without it: `{}` doesn't
+  match `object({a: literal(undefined)})` and `{a: undefined}` does. The three
+  are the schemas that need a key, and what follows of `unknown` holds for
+  each. A `one_of` reads whether `undefined` is among its values once, when it
+  is made.
 - **It is handed the object wherever the entry reaches it**: as the entry
   itself, through `flavor`, `brand`, and `meta`, which keep its `run`, and
   through `message`, `nullable`, `lazy`, an option of a `union`, and the first
   schema of a `pipe`, which pass the object on. So `nullable(unknown)`,
   `lazy(() => unknown)`, and `pipe(unknown, ...)` fail a missing key as a
   `missing_key`, and the pipe runs no step after it.
+- **A `variant` finds its option by the value at the discriminator**, which a
+  missing key reads as `undefined`, so an input without the key selects an
+  option whose discriminator is `literal(undefined)`. That option's entry
+  then fails it as a `missing_key`, at the discriminator.
 - **An `optional` or a `with_default` on the way takes the `undefined`
   first**, so `nullable(optional(unknown))` lets its key be missing.
 - **A `union` hands the object to every option**, and a missing key matches
@@ -249,10 +265,10 @@ all a missing key costs an object that has no schema asking.
 - **Anywhere else `unknown` is told nothing of a key**, and accepts
   `undefined`: at the top level, as an array's item, as a record's value, and
   as a step of a `pipe` after the first.
-- **The other kinds that accept `undefined` don't look for the key**:
-  `literal(undefined)`, a `one_of` with `undefined`, and a `check` or a
-  `transform` that is the entry itself take a missing key as the `undefined`
-  it reads as. Why is [below](#behavior-that-differs-from-valibot-and-zod).
+- **The other kinds that accept `undefined` don't look for the key**: a
+  `check` or a `transform` that is the entry itself takes a missing key as
+  the `undefined` it reads as. Why is
+  [below](#behavior-that-differs-from-valibot-and-zod).
 - **The inferred types are narrower than this**: a key is optional in the
   input type only where its entry's `kind` is `optional` or `with_default`,
   and in the output type only where it is `optional`.
@@ -272,13 +288,14 @@ is only bundled when used. There is no message registry.
 - **`path` is each issue's own array**, shared with no other issue. While the
   parse unwinds it is replaced, not changed, so a `message` function that
   keeps the `path` it was handed keeps an empty array.
-- **A `missing_key` issue is the `unknown`'s**, where an `unknown_key` is
-  the object's. It is `{kind: 'missing_key', expected: 'a required key',
-  received: 'undefined'}` with the key as its last path element, at the
-  entry's place in the order. So a `message` around the `unknown`, or around
-  a `nullable`, a `lazy`, or a `pipe` that reaches it, labels it, and one
-  around the object doesn't, as it labels only what has no path. A `union`
-  reports its own issue in its place.
+- **A `missing_key` issue is the entry's**, where an `unknown_key` is the
+  object's: it is reported by the `unknown`, the `literal(undefined)`, or the
+  `one_of` that needs the key. It is `{kind: 'missing_key', expected: 'a
+  required key', received: 'undefined'}` with the key as its last path
+  element, at the entry's place in the order. So a `message` around that
+  schema, or around a `nullable`, a `lazy`, or a `pipe` that reaches it,
+  labels it, and one around the object doesn't, as it labels only what has no
+  path. A `union` reports its own issue in its place.
 - **`format_issue` quotes a key that isn't only word characters**, as JSON.
   A key with a `.` can't read as two keys, and one with a newline can't add
   a line to a `SchemaError`'s message, which is one issue per line.
@@ -393,19 +410,19 @@ issues. These it holds:
   Rust crate does.
 - Valibot and Zod need the key of every entry that isn't optional. Here a key
   is needed by an entry that refuses `undefined`, and by one that reaches an
-  `unknown`, see [Missing keys](#missing-keys). For the other entries that
-  accept `undefined` a missing key is the `undefined` it reads as:
-  - `literal(undefined)`, and a `one_of` with `undefined` among its values,
-    as the entry and where another schema holds one: under a `nullable`, a
-    `lazy`, or a `message`, as an option of a `union`, at the start of a
-    `pipe`, or as the discriminator of a `variant` option, which an input
-    without the key then selects
-  - a `check` that is the entry itself, or that another schema holds in one
-    of those places
+  `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` among its
+  values, see [Missing keys](#missing-keys). For the one other entry that
+  accepts `undefined` a missing key is the `undefined` it reads as: a `check`
+  that is the entry itself, or that another schema holds in one of those
+  places, under a `nullable`, a `lazy`, or a `message`, as an option of a
+  `union`, or at the start of a `pipe`.
 
-  Cost declined: looking for the key takes a `run` of four parameters, on
-  kinds whose `run` is called with two nearly everywhere, which measured
-  slower on valid input.
+  Cost declined: looking for the key takes a `run` of four parameters, on a
+  kind whose `run` is called with two nearly everywhere, which measured
+  slower on valid input for `literal` and for `lazy`, see
+  [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
+  can't choose its closure when it is made, as a `literal` does: what its
+  function accepts isn't known until it is called.
 
 Where the two disagree, this library goes with:
 
@@ -415,8 +432,12 @@ Where the two disagree, this library goes with:
   too, as in both, and the steps after it run on the `undefined`, as in Zod,
   where Valibot leaves the key out. A `transform` that is the entry itself
   lets the key be missing too, as Zod's does. By design: a missing key is the
-  `undefined` it reads as to every schema but an `unknown`, so the object
-  schemas look for no key to reach a verdict.
+  `undefined` it reads as to every schema but the three that need their key,
+  so the object schemas look for no key to reach a verdict.
+- **Zod on the entries of a `variant` option whose discriminator is missing.**
+  An option whose discriminator is `literal(undefined)` is selected by an
+  input without the key, and refused for it by both. Its other entries run
+  too, as in Zod, where Valibot stops at the discriminator.
 - **Valibot on a default under an `optional`.** `optional(with_default(...))`
   leaves `undefined` and a missing key as they are, where Zod fills the
   default in. And a `with_default` whose value is `undefined` leaves a
@@ -462,7 +483,7 @@ API, or in the names:
   design: rejecting is the safe default, so it has the default name.
 - `variant` dispatches by map; its options need a `literal` discriminator.
   What it does with an input is in the matrix, and is what both do but for
-  an array, and for an option whose discriminator is `literal(undefined)`.
+  an array.
   By design: the option is found in constant time.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result

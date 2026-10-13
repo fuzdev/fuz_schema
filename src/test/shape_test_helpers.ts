@@ -62,7 +62,10 @@ export const SHAPE_SAMPLES: Record<
 		{ schema: s.literal('a'), valid: ['a'], invalid: ['b'] },
 		{ schema: s.literal(undefined), valid: [undefined], invalid: [1] }
 	],
-	one_of: () => [{ schema: s.one_of(['a', 1]), valid: ['a', 1], invalid: ['b'] }],
+	one_of: () => [
+		{ schema: s.one_of(['a', 1]), valid: ['a', 1], invalid: ['b'] },
+		{ schema: s.one_of(['a', undefined]), valid: ['a', undefined], invalid: ['b'] }
+	],
 	optional: () => [
 		{ schema: s.optional(s.string), valid: ['a', undefined], invalid: [1] },
 		{ schema: s.optional(s.unknown), valid: [1, undefined], invalid: [] }

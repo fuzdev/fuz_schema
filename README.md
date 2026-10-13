@@ -87,11 +87,12 @@ and the input is never mutated.
 
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options' issues.
-- A missing object key is the `undefined` it reads as, except to an `unknown`, which needs its key
-  wherever its entry reaches it, as in Valibot and Zod.
-  They also need the key of the other entries that accept `undefined`,
-  `literal(undefined)` and a `check` with no schema before it,
-  and here those accept a missing key. [`docs/design.md`](docs/design.md#missing-keys) lists them.
+- A missing object key is the `undefined` it reads as, except to an `unknown`, a `literal(undefined)`,
+  and a `one_of` with `undefined` among its values, which need their key
+  wherever their entry reaches them, as in Valibot and Zod.
+  They also need the key of the one other entry that accepts `undefined`,
+  a `check` with no schema before it,
+  and here that accepts a missing key. See [`docs/design.md`](docs/design.md#missing-keys).
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
@@ -127,6 +128,7 @@ A key the input lacks reads as `undefined`, so it fails unless its entry accepts
 It needs it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
 so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either.
 Write `s.optional(s.unknown)` for a key that may be missing.
+`s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
@@ -212,7 +214,7 @@ and when what it finds isn't of the type in `issue.received`.
 It reads own keys only, so it never returns an inherited value,
 and a missing key is found as `undefined`, which is what the schema saw.
 
-A key an `unknown` needs and the input lacks is a `missing_key`, which reads
+A key an `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` needs and the input lacks is a `missing_key`, which reads
 `a: expected a required key, received undefined`.
 A missing key whose schema refuses `undefined` has that schema's issue.
 
@@ -422,7 +424,7 @@ and checks the result against the rules a change is accepted by:
 - a time difference is read against its A/A, and inside it is noise
 - bytes that tree-shake away unless imported only have to pay for themselves
 - bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
-- the whole stays under 0.72 of Valibot's gzipped size, on all the benchmark scenarios bundled together
+- the whole stays under 0.75 of Valibot's gzipped size, on all the benchmark scenarios bundled together
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP
 

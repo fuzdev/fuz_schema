@@ -94,7 +94,8 @@ The loops looking for each entry's key, so that every schema that accepts
   0.68 of Valibot's, over the ceiling rule 5 had then, and a list of flat
   objects 1.10x.
 - **Why**: every object pays for a check few entries need. The opt-in form
-  was taken: an entry is handed the object and its key, and `unknown` looks.
+  was taken: an entry is handed the object and its key, and the schemas that
+  need a key look.
   See [design.md](design.md#missing-keys).
 - **Reopens**: a check that costs an object with no such entry nothing.
 
@@ -150,15 +151,39 @@ made.
 
 ### `literal` with four parameters
 
-So that `literal(undefined)` needs its key, as `unknown` does.
+One `run` of four parameters for every `literal`, so that `literal(undefined)`
+needs its key, as `unknown` does.
 
 - **Cost**: slower on valid input for every literal.
-- **Why**: every literal's valid path, for one literal. The difference is
-  declared in
-  [design.md](design.md#behavior-that-differs-from-valibot-and-zod).
-- **Reopens**: a `literal(undefined)` that chooses its closure when it is
-  made, as `nullable` does, which is bytes in the bundles with a literal and
-  has not been timed.
+- **Why**: every literal's valid path, for one literal. Two closures chosen
+  when the literal is made were taken: only `literal(undefined)` has the
+  four parameters, and so for `one_of`. That is +45 gzip on all the scenarios
+  together and none on the core. See [design.md](design.md#missing-keys).
+- **Reopens**: nothing known.
+
+### A shared wrapper for the schemas that need a key
+
+One function that takes a `run` of two parameters and returns one of four
+that looks for the key first, for `literal` and `one_of`, in place of a
+second closure in each.
+
+- **Cost**: +65 gzip on all the scenarios together where the two closures are
+  +45, which at 0.725 of Valibot's was over the ceiling rule 5 had then, and
+  6 gzip more over the whole library. A call more a parse for a schema that needs its key.
+- **Why**: more bytes, where it was built for fewer.
+- **Reopens**: nothing known.
+
+### A missing key as the `literal`'s own issue
+
+A `literal(undefined)` without its key failing as a `literal` that expected
+`undefined`, in place of the `missing_key` an `unknown` reports.
+
+- **Gave**: 22 gzip fewer on all the scenarios together: a bundle with a
+  `literal` and no `unknown` has the text of a `missing_key` for it alone.
+- **Cost**: an issue that reads `expected undefined, received undefined`, and
+  a second kind for a missing key.
+- **Why**: the issue has to say what is wrong.
+- **Reopens**: nothing known.
 
 ## The parse context
 

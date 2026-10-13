@@ -1383,6 +1383,8 @@ describe('missing keys', () => {
 	});
 
 	const passes = s.check(() => true);
+	// the same for a value of any type
+	const accepts = s.check<any>(() => true);
 
 	// each entry with whether its key may be missing, whether it accepts
 	// `undefined`, the output's value at the key when it was missing, and the
@@ -1604,9 +1606,103 @@ describe('missing keys', () => {
 		['pipe of an optional unknown', s.pipe(s.optional(s.unknown), passes), true, true],
 		// a step of a `pipe` after its first is handed neither
 		['pipe with unknown as an action', s.pipe(s.optional(s.unknown), s.unknown), true, true],
+		// a `literal` of `undefined` and a `one_of` with it look for their key as
+		// `unknown` does, as the entry and wherever they are handed the object
+		['undefined literal', s.literal(undefined), false, true],
+		['one_of with undefined', s.one_of(['x', undefined]), false, true],
+		['one_of of undefined alone', s.one_of([undefined]), false, true],
+		['flavor undefined literal', s.flavor(s.literal(undefined), 'F'), false, true],
+		['brand one_of with undefined', s.brand(s.one_of(['x', undefined]), 'B'), false, true],
+		['nullable undefined literal', s.nullable(s.literal(undefined)), false, true],
+		['nullable one_of with undefined', s.nullable(s.one_of(['x', undefined])), false, true],
+		['lazy undefined literal', s.lazy(() => s.literal(undefined)), false, true],
+		['lazy one_of with undefined', s.lazy(() => s.one_of(['x', undefined])), false, true],
+		['pipe of an undefined literal', s.pipe(s.literal(undefined), accepts), false, true],
+		['pipe of a one_of with undefined', s.pipe(s.one_of(['x', undefined]), accepts), false, true],
+		[
+			'nullable lazy pipe of an undefined literal',
+			s.nullable(s.lazy(() => s.pipe(s.literal(undefined), accepts))),
+			false,
+			true
+		],
+		[
+			'message undefined literal',
+			s.message(s.literal(undefined), 'm'),
+			false,
+			true,
+			undefined,
+			{ ...MISSING_KEY, message: 'm' }
+		],
+		[
+			'message one_of with undefined',
+			s.message(s.one_of(['x', undefined]), 'm'),
+			false,
+			true,
+			undefined,
+			{ ...MISSING_KEY, message: 'm' }
+		],
+		[
+			'message nullable undefined literal',
+			s.message(s.nullable(s.literal(undefined)), 'm'),
+			false,
+			true,
+			undefined,
+			{ ...MISSING_KEY, message: 'm' }
+		],
+		[
+			'union with an undefined literal',
+			s.union([s.string, s.literal(undefined)]),
+			false,
+			true,
+			undefined,
+			union_issue('string | literal')
+		],
+		[
+			'union with a one_of with undefined',
+			s.union([s.number, s.one_of(['x', undefined])]),
+			false,
+			true,
+			undefined,
+			union_issue('number | one_of')
+		],
+		[
+			'union with an undefined literal and unknown',
+			s.union([s.literal(undefined), s.unknown]),
+			false,
+			true,
+			undefined,
+			union_issue('literal | unknown')
+		],
+		// an `optional` or a `with_default` takes the `undefined` first
+		['optional undefined literal', s.optional(s.literal(undefined)), true, true],
+		['optional one_of with undefined', s.optional(s.one_of(['x', undefined])), true, true],
+		[
+			'with_default one_of with undefined',
+			s.with_default(s.one_of(['x', undefined]), 'x'),
+			true,
+			true,
+			'x'
+		],
+		[
+			'nullable optional undefined literal',
+			s.nullable(s.optional(s.literal(undefined))),
+			true,
+			true
+		],
+		[
+			'union with an undefined literal and an optional',
+			s.union([s.literal(undefined), s.optional(s.string)]),
+			true,
+			true
+		],
+		// a step of a `pipe` after its first is handed neither
+		[
+			'pipe with an undefined literal as an action',
+			s.pipe(s.optional(s.unknown), s.literal(undefined)),
+			true,
+			true
+		],
 		// and these accept `undefined` without looking for the key
-		['undefined literal', s.literal(undefined), true, true],
-		['one_of with undefined', s.one_of(['x', undefined]), true, true],
 		['check', s.check(() => true), true, true],
 		['transform', s.transform((v) => v), true, true]
 	];
@@ -1685,6 +1781,232 @@ describe('missing keys', () => {
 			assert.deepEqual(issues_of(O, Object.create(null)), [MISSING_KEY], O.kind);
 			// and a key named like a member of `Object.prototype` is inherited
 			assert(s.is(factory({ toString: s.unknown }), {}), O.kind);
+		}
+	});
+
+	test('a literal of undefined and a one_of with it need their key, as unknown does', () => {
+		const literal_issue: s.SchemaIssue = {
+			kind: 'literal',
+			expected: 'undefined',
+			received: 'string',
+			path: ['a'],
+			message: undefined
+		};
+		const one_of_issue: s.SchemaIssue = {
+			kind: 'one_of',
+			expected: '"x" | undefined',
+			received: 'string',
+			path: ['a'],
+			message: undefined
+		};
+		for (const factory of factories) {
+			const L = factory({ a: s.literal(undefined) });
+			const O = factory({ a: s.one_of(['x', undefined]) });
+			for (const schema of [L, O]) {
+				const at = `${schema.kind}: ${schema.def.a.kind}`;
+				// missing
+				assert(!s.is(schema, {}), at);
+				assert.deepEqual(issues_of(schema, {}), [MISSING_KEY], at);
+				assert.strictEqual(
+					s.format_issue(issues_of(schema, {})[0]!),
+					'a: expected a required key, received undefined',
+					at
+				);
+				assert.deepEqual(s.get_issue_value(issues_of(schema, {})[0]!, {}), {
+					ok: true,
+					value: undefined
+				});
+				// an object with no prototype has only its own keys
+				assert(!s.is(schema, Object.create(null)), at);
+				assert.deepEqual(issues_of(schema, Object.create(null)), [MISSING_KEY], at);
+				// there, as its own, inherited, not enumerable, or a getter's: the input comes back
+				for (const input of [
+					{ a: undefined },
+					Object.create({ a: undefined }),
+					Object.defineProperty({}, 'a', { value: undefined, enumerable: false }),
+					new (class {
+						a = undefined;
+					})(),
+					new (class {
+						get a(): undefined {
+							return undefined;
+						}
+					})()
+				]) {
+					assert(s.is(schema, input), at);
+					assert.strictEqual(s.parse_or_throw(schema, input), input, at);
+				}
+			}
+			// another value is the schema's own issue, as it was
+			assert(!s.is(L, { a: 'x' }));
+			assert.deepEqual(issues_of(L, { a: 'x' }), [literal_issue]);
+			assert.deepEqual(issues_of(L, { a: null }), [{ ...literal_issue, received: 'null' }]);
+			const present: unknown = { a: 'x' };
+			assert.strictEqual(s.parse_or_throw(O, present), present);
+			assert(!s.is(O, { a: 'y' }));
+			assert.deepEqual(issues_of(O, { a: 'y' }), [one_of_issue]);
+			// in the order of the entries, before an unknown key, and a probe builds nothing
+			const Three = factory({ a: s.string, b: s.literal(undefined), c: s.one_of([1, undefined]) });
+			assert.deepEqual(
+				issues_of(Three, { a: 1 }).map((issue) => [issue.kind, issue.path]),
+				[
+					['string', ['a']],
+					['missing_key', ['b']],
+					['missing_key', ['c']]
+				]
+			);
+			const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+			Three.run({ a: 'a', c: 1 }, ctx);
+			assert.strictEqual(ctx.fails, 1);
+			assert.strictEqual(ctx.issues, undefined);
+		}
+		// a `message` function is handed the issue and the value the entry was given
+		const calls: Array<[kind: string, value: unknown]> = [];
+		const Labeled = s.object({
+			a: s.message(s.literal(undefined), (issue, value) => {
+				calls.push([issue.kind, value]);
+				return `no ${issue.kind}`;
+			})
+		});
+		assert.deepEqual(issues_of(Labeled, {}), [{ ...MISSING_KEY, message: 'no missing_key' }]);
+		assert.deepEqual(issues_of(Labeled, { a: 1 }), [
+			{ ...literal_issue, received: 'number', message: 'no literal' }
+		]);
+		assert.deepEqual(calls, [
+			['missing_key', undefined],
+			['literal', 1]
+		]);
+	});
+
+	test('a one_of needs its key wherever undefined is among its values', () => {
+		for (const factory of factories) {
+			const First = factory({ a: s.one_of([undefined, 'x']) });
+			assert.strictEqual(First.def.a.run.length, 4);
+			assert(!s.is(First, {}));
+			assert.deepEqual(issues_of(First, {}), [MISSING_KEY]);
+			for (const input of [{ a: undefined }, { a: 'x' }]) {
+				assert(s.is(First, input));
+				assert.strictEqual(s.parse_or_throw(First, input), input);
+			}
+			assert(!s.is(First, { a: 'y' }));
+		}
+	});
+
+	test('a literal of undefined and a one_of with it outside an object accept undefined', () => {
+		const schemas: Array<[schema: s.AnySchema, input: unknown]> = [
+			[s.literal(undefined), undefined],
+			[s.one_of(['x', undefined]), undefined],
+			[s.array(s.literal(undefined)), [undefined]],
+			// a hole, which is no key of the array
+			[s.array(s.literal(undefined)), new Array(1)],
+			[s.array(s.one_of(['x', undefined])), new Array(1)],
+			[s.record(s.literal(undefined)), { a: undefined }],
+			[s.record(s.one_of(['x', undefined])), { a: undefined }],
+			[s.union([s.string, s.literal(undefined)]), undefined],
+			[
+				s.pipe(
+					s.literal(undefined),
+					s.check(() => true)
+				),
+				undefined
+			],
+			[s.message(s.one_of(['x', undefined]), 'm'), undefined],
+			[s.nullable(s.literal(undefined)), undefined],
+			[s.lazy(() => s.literal(undefined)), undefined]
+		];
+		for (const [schema, input] of schemas) {
+			assert(s.is(schema, input), schema.kind);
+			const result = s.parse(schema, input);
+			assert(result.ok, schema.kind);
+			assert.strictEqual(result.value, input, schema.kind);
+		}
+		// and called as anything but an object schema calls them
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+		const bare: Array<s.AnySchema> = [s.literal(undefined), s.one_of([undefined])];
+		for (const schema of bare) assert.strictEqual(schema.run(undefined, ctx), undefined);
+		assert.strictEqual(ctx.fails, 0);
+	});
+
+	test('only a literal of undefined and a one_of with it take the object and the key', () => {
+		assert.strictEqual(s.literal(undefined).run.length, 4);
+		assert.strictEqual(s.one_of(['x', undefined]).run.length, 4);
+		assert.strictEqual(s.one_of([undefined]).run.length, 4);
+		// so the schemas that pass them on do around either
+		assert.strictEqual(s.nullable(s.literal(undefined)).run.length, 4);
+		assert.strictEqual(s.union([s.string, s.one_of(['x', undefined])]).run.length, 4);
+		assert.strictEqual(
+			s.pipe(
+				s.literal(undefined),
+				s.check(() => true)
+			).run.length,
+			4
+		);
+		assert.strictEqual(s.message(s.literal(undefined), 'm').run.length, 4);
+		// every other one is called as it was, and so is what holds it
+		for (const schema of [
+			s.literal('a'),
+			s.literal(0),
+			s.literal(NaN),
+			s.literal(null),
+			s.literal(false),
+			s.literal(''),
+			s.one_of(['x', 'y']),
+			s.one_of([null, 0, '', false, NaN]),
+			s.one_of([])
+		]) {
+			assert.strictEqual(schema.run.length, 2, String(schema.def));
+			assert.strictEqual(s.nullable(schema).run.length, 2, String(schema.def));
+			assert.strictEqual(s.union([s.string, schema]).run.length, 2, String(schema.def));
+			assert.strictEqual(
+				s.pipe(
+					schema,
+					s.check(() => true)
+				).run.length,
+				2,
+				String(schema.def)
+			);
+			assert.strictEqual(s.message(schema, 'm').run.length, 2, String(schema.def));
+		}
+	});
+
+	test('a variant option whose discriminator is a literal of undefined needs the key', () => {
+		for (const factory of factories) {
+			const V = s.variant('t', [
+				factory({ t: s.literal(undefined), x: s.string }),
+				factory({ t: s.literal('b') })
+			]);
+			// an input without the key selects the option, whose entry then refuses it
+			assert(!s.is(V, { x: 'x' }));
+			assert.deepEqual(issues_of(V, { x: 'x' }), [{ ...MISSING_KEY, path: ['t'] }]);
+			// and the option's other entries run
+			assert.deepEqual(
+				issues_of(V, { x: 1 }).map((issue) => [issue.kind, issue.path]),
+				[
+					['missing_key', ['t']],
+					['string', ['x']]
+				]
+			);
+			// own or inherited, the key is there
+			for (const input of [
+				{ t: undefined, x: 'x' },
+				Object.assign(Object.create({ t: undefined }), { x: 'x' })
+			]) {
+				assert(s.is(V, input));
+				assert.strictEqual(s.parse_or_throw(V, input), input);
+			}
+			const other: unknown = { t: 'b' };
+			assert.strictEqual(s.parse_or_throw(V, other), other);
+			// with no such option a missing key is the variant's own issue, as it was
+			const W = s.variant('t', [factory({ t: s.literal('a') }), factory({ t: s.literal('b') })]);
+			assert.deepEqual(issues_of(W, {}), [
+				{
+					kind: 'variant',
+					expected: '"a" | "b"',
+					received: 'undefined',
+					path: ['t'],
+					message: undefined
+				}
+			]);
 		}
 	});
 
