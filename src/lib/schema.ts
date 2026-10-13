@@ -714,6 +714,11 @@ export const message = <T extends AnySchema>(
 declare const FlavoredSymbol: unique symbol;
 declare const BrandedSymbol: unique symbol;
 
+// `Flavored` and `Branded` are an intersection of the value with a union: the
+// marker, and the `null` and `undefined` of the value, which the marker alone
+// would drop. With the union on the outside they resolve to the same types
+// and print as what they resolve to, not by name
+
 /** The marker `Flavored` adds: an optional property, so unmarked values still fit. */
 export interface Flavor<T> {
 	readonly [FlavoredSymbol]?: T;
@@ -736,8 +741,11 @@ export interface Brand<T> {
  * const email: Email = 'a@b.c'; // ok
  * const address: Address = email; // error!
  * ```
+ *
+ * `null` and `undefined` pass through unmarked: `Flavored<string | null, 'Email'>`
+ * is the flavored string or `null`.
  */
-export type Flavored<TValue, TName> = TValue & Flavor<TName>;
+export type Flavored<TValue, TName> = TValue & (Flavor<TName> | Extract<TValue, null | undefined>);
 
 /**
  * Strict nominal typing. A plain value of the base type is not assignable to the branded type,
@@ -749,8 +757,11 @@ export type Flavored<TValue, TName> = TValue & Flavor<TName>;
  * const a: Uuid = 'abc'; // error!
  * const b: Uuid = 'abc' as Uuid; // ok
  * ```
+ *
+ * `null` and `undefined` pass through unmarked: `Branded<string | null, 'Uuid'>`
+ * is the branded string or `null`, and a plain `null` is assignable to it.
  */
-export type Branded<TValue, TName> = TValue & Brand<TName>;
+export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, null | undefined>);
 
 /**
  * Flavors the output type of `schema` with `name`, see `Flavored`.

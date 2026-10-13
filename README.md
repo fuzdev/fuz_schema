@@ -156,6 +156,7 @@ const uuid: s.Infer<typeof Uuid> = 'abc'; // error, parse it instead
 `flavor` and `brand` change only the output type.
 A plain value assigns to a flavored type but not to a branded one,
 and a branded value comes from parsing or a cast.
+`null` and `undefined` are left unmarked, so `flavor(nullable(string), 'Email')` is the flavored string or `null`.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
 

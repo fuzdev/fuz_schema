@@ -310,6 +310,20 @@ through the input, and refuses instead of guessing:
 itself. They add no wrapper and no second shape, so `kind` and `def` are the
 wrapped schema's and nothing is stored at runtime.
 
+- **`Flavored` and `Branded` leave `null` and `undefined` unmarked.** The
+  marker is an intersection with an object type, which `null` and `undefined`
+  don't survive, so each is a member of the result as it was:
+  `flavor(nullable(string), 'N')` is the flavored string or `null`, the type
+  `nullable(flavor(string, 'N'))` has. A plain `null` is therefore assignable
+  to a branded type that has one.
+- **Every other type is marked as an intersection**, `TValue & Flavor<TName>`,
+  and prints by the name `Flavored` or `Branded`.
+- **Of a type parameter neither is known to lack `null` and `undefined`**, as
+  `Extract` waits for the parameter. `Branded<T, 'N'>` with `T extends string`
+  doesn't assign to `Branded<string, 'N'>`, one with an unconstrained `T` is
+  possibly `null`, and two flavors of one constrained `T` assign to each
+  other, where two brands don't.
+
 ## Metadata
 
 `meta(schema, data)` is in `src/lib/meta.ts`, a module of its own that holds a

@@ -3995,9 +3995,7 @@ describe('types', () => {
 		type Address = s.Infer<typeof Address>;
 		const _plain: Email = 'plain';
 		expectTypeOf(_plain).toEqualTypeOf<Email>();
-		const _address = 'x' as Address;
-		// @ts-expect-error a different flavor does not assign
-		const _email: Email = _address;
+		expectTypeOf<Address>().not.toExtend<Email>();
 		expectTypeOf<s.InferInput<typeof Email>>().toEqualTypeOf<string>();
 		expectTypeOf<s.Infer<typeof Email>>().toEqualTypeOf<s.Flavored<string, 'Email'>>();
 
@@ -4020,14 +4018,195 @@ describe('types', () => {
 		const _Other = s.brand(s.string, 'Other');
 		type Uuid = s.Infer<typeof Uuid>;
 		type Other = s.Infer<typeof _Other>;
-		// @ts-expect-error a plain string does not assign
-		const _plain: Uuid = 'x';
+		expectTypeOf<string>().not.toExtend<Uuid>();
 		const _parsed: Uuid = s.parse_or_throw(Uuid, 'x');
 		expectTypeOf(_parsed).toEqualTypeOf<Uuid>();
-		// @ts-expect-error a different brand does not assign
-		const _other: Uuid = {} as Other;
+		expectTypeOf<Other>().not.toExtend<Uuid>();
 		expectTypeOf<s.InferInput<typeof Uuid>>().toEqualTypeOf<string>();
 		expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
+	});
+
+	test('a flavor and a brand leave null and undefined unmarked', () => {
+		type F = s.Flavored<string, 'N'>;
+		type B = s.Branded<string, 'N'>;
+		// written by hand
+		expectTypeOf<s.Flavored<string | null, 'N'>>().toEqualTypeOf<F | null>();
+		expectTypeOf<s.Flavored<string | undefined, 'N'>>().toEqualTypeOf<F | undefined>();
+		expectTypeOf<s.Flavored<string | null | undefined, 'N'>>().toEqualTypeOf<
+			F | null | undefined
+		>();
+		expectTypeOf<s.Flavored<null, 'N'>>().toEqualTypeOf<null>();
+		expectTypeOf<s.Flavored<undefined, 'N'>>().toEqualTypeOf<undefined>();
+		expectTypeOf<s.Branded<string | null, 'N'>>().toEqualTypeOf<B | null>();
+		expectTypeOf<s.Branded<string | undefined, 'N'>>().toEqualTypeOf<B | undefined>();
+		expectTypeOf<s.Branded<string | null | undefined, 'N'>>().toEqualTypeOf<B | null | undefined>();
+		expectTypeOf<s.Branded<null, 'N'>>().toEqualTypeOf<null>();
+		expectTypeOf<s.Branded<undefined, 'N'>>().toEqualTypeOf<undefined>();
+		expectTypeOf<null>().toExtend<s.Flavored<string | null, 'N'>>();
+		expectTypeOf<null>().toExtend<s.Branded<string | null, 'N'>>();
+		expectTypeOf<undefined>().toExtend<s.Branded<string | undefined, 'N'>>();
+		// a type without them still refuses them
+		expectTypeOf<null>().not.toExtend<F>();
+		expectTypeOf<undefined>().not.toExtend<B>();
+		expectTypeOf<undefined>().not.toExtend<s.Branded<string | null, 'N'>>();
+		// and what isn't one of the two is marked as before
+		expectTypeOf<string>().toExtend<s.Flavored<string | null, 'N'>>();
+		expectTypeOf<string>().not.toExtend<s.Branded<string | null, 'N'>>();
+		expectTypeOf<s.Flavored<string | null, 'M'>>().not.toExtend<s.Flavored<string | null, 'N'>>();
+		expectTypeOf<s.Branded<string | null, 'M'>>().not.toExtend<s.Branded<string | null, 'N'>>();
+
+		// under every wrapper that adds one
+		const _f_nullable = s.flavor(s.nullable(s.string), 'N');
+		expectTypeOf<s.Infer<typeof _f_nullable>>().toEqualTypeOf<F | null>();
+		expectTypeOf<s.InferInput<typeof _f_nullable>>().toEqualTypeOf<string | null>();
+		const _f_optional = s.flavor(s.optional(s.string), 'N');
+		expectTypeOf<s.Infer<typeof _f_optional>>().toEqualTypeOf<F | undefined>();
+		const _f_both = s.flavor(s.nullable(s.optional(s.string)), 'N');
+		expectTypeOf<s.Infer<typeof _f_both>>().toEqualTypeOf<F | null | undefined>();
+		const _f_default = s.flavor(s.with_default(s.nullable(s.string), null), 'N');
+		expectTypeOf<s.Infer<typeof _f_default>>().toEqualTypeOf<F | null>();
+		const _f_lazy = s.flavor(
+			s.lazy(() => s.nullable(s.string)),
+			'N'
+		);
+		expectTypeOf<s.Infer<typeof _f_lazy>>().toEqualTypeOf<F | null>();
+		const _f_union = s.flavor(s.union([s.string, s.literal(null), s.literal(undefined)]), 'N');
+		expectTypeOf<s.Infer<typeof _f_union>>().toEqualTypeOf<F | null | undefined>();
+		const _f_one_of = s.flavor(s.one_of(['a', null]), 'N');
+		expectTypeOf<s.Infer<typeof _f_one_of>>().toEqualTypeOf<s.Flavored<'a', 'N'> | null>();
+		const _f_pipe = s.flavor(
+			s.pipe(
+				s.nullable(s.string),
+				s.check<string | null>(() => true)
+			),
+			'N'
+		);
+		expectTypeOf<s.Infer<typeof _f_pipe>>().toEqualTypeOf<F | null>();
+		const _f_null = s.flavor(s.literal(null), 'N');
+		expectTypeOf<s.Infer<typeof _f_null>>().toEqualTypeOf<null>();
+		const _f_undefined = s.flavor(s.literal(undefined), 'N');
+		expectTypeOf<s.Infer<typeof _f_undefined>>().toEqualTypeOf<undefined>();
+
+		const _b_nullable = s.brand(s.nullable(s.string), 'N');
+		expectTypeOf<s.Infer<typeof _b_nullable>>().toEqualTypeOf<B | null>();
+		expectTypeOf<s.InferInput<typeof _b_nullable>>().toEqualTypeOf<string | null>();
+		const _b_optional = s.brand(s.optional(s.string), 'N');
+		expectTypeOf<s.Infer<typeof _b_optional>>().toEqualTypeOf<B | undefined>();
+		const _b_both = s.brand(s.nullable(s.optional(s.string)), 'N');
+		expectTypeOf<s.Infer<typeof _b_both>>().toEqualTypeOf<B | null | undefined>();
+		const _b_default = s.brand(s.with_default(s.nullable(s.string), null), 'N');
+		expectTypeOf<s.Infer<typeof _b_default>>().toEqualTypeOf<B | null>();
+		const _b_lazy = s.brand(
+			s.lazy(() => s.nullable(s.string)),
+			'N'
+		);
+		expectTypeOf<s.Infer<typeof _b_lazy>>().toEqualTypeOf<B | null>();
+		const _b_union = s.brand(s.union([s.string, s.literal(null), s.literal(undefined)]), 'N');
+		expectTypeOf<s.Infer<typeof _b_union>>().toEqualTypeOf<B | null | undefined>();
+		const _b_one_of = s.brand(s.one_of(['a', null]), 'N');
+		expectTypeOf<s.Infer<typeof _b_one_of>>().toEqualTypeOf<s.Branded<'a', 'N'> | null>();
+		const _b_pipe = s.brand(
+			s.pipe(
+				s.nullable(s.string),
+				s.check<string | null>(() => true)
+			),
+			'N'
+		);
+		expectTypeOf<s.Infer<typeof _b_pipe>>().toEqualTypeOf<B | null>();
+		const _b_null = s.brand(s.literal(null), 'N');
+		expectTypeOf<s.Infer<typeof _b_null>>().toEqualTypeOf<null>();
+		const _b_undefined = s.brand(s.literal(undefined), 'N');
+		expectTypeOf<s.Infer<typeof _b_undefined>>().toEqualTypeOf<undefined>();
+		// what the parse returns is what the type says
+		assert.strictEqual(s.parse_or_throw(_b_nullable, null), null);
+		assert.strictEqual(s.parse_or_throw(_f_optional, undefined), undefined);
+
+		// the wrapper outside the flavor is the same type
+		const _outside = s.nullable(s.flavor(s.string, 'N'));
+		expectTypeOf<s.Infer<typeof _f_nullable>>().toEqualTypeOf<s.Infer<typeof _outside>>();
+
+		// as entries, where the key is optional by the entry's kind
+		const _Entries = s.object({
+			nullable: s.flavor(s.nullable(s.string), 'N'),
+			optional: s.brand(s.optional(s.string), 'N'),
+			defaulted: s.flavor(s.with_default(s.nullable(s.string), null), 'N'),
+			absent: s.brand(s.literal(undefined), 'N')
+		});
+		expectTypeOf<s.Infer<typeof _Entries>>().toEqualTypeOf<{
+			nullable: F | null;
+			defaulted: F | null;
+			absent: undefined;
+			optional?: B | undefined;
+		}>();
+		expectTypeOf<s.InferInput<typeof _Entries>>().toEqualTypeOf<{
+			nullable: string | null;
+			absent: undefined;
+			optional?: string | undefined;
+			defaulted?: string | null | undefined;
+		}>();
+
+		// stacked
+		expectTypeOf<s.Flavored<s.Flavored<string | null, 'A'>, 'B'>>().toEqualTypeOf<
+			s.Flavored<s.Flavored<string, 'A'>, 'B'> | null
+		>();
+		const _stacked = s.brand(s.flavor(s.nullable(s.string), 'A'), 'B');
+		expectTypeOf<s.Infer<typeof _stacked>>().toEqualTypeOf<
+			(string & s.Flavor<'A'> & s.Brand<'B'>) | null
+		>();
+	});
+
+	test('a flavor and a brand mark every other type as an intersection', () => {
+		expectTypeOf<s.Flavored<string, 'N'>>().toEqualTypeOf<string & s.Flavor<'N'>>();
+		expectTypeOf<s.Branded<string, 'N'>>().toEqualTypeOf<string & s.Brand<'N'>>();
+		expectTypeOf<s.Flavored<string | number, 'N'>>().toEqualTypeOf<
+			(string | number) & s.Flavor<'N'>
+		>();
+		expectTypeOf<s.Branded<'a' | 'b', 'N'>>().toEqualTypeOf<('a' | 'b') & s.Brand<'N'>>();
+		expectTypeOf<s.Flavored<boolean, 'N'>>().toEqualTypeOf<boolean & s.Flavor<'N'>>();
+		expectTypeOf<s.Flavored<{ a: 1 }, 'N'>>().toEqualTypeOf<{ a: 1 } & s.Flavor<'N'>>();
+		expectTypeOf<s.Branded<Array<string>, 'N'>>().toEqualTypeOf<Array<string> & s.Brand<'N'>>();
+		expectTypeOf<s.Flavored<unknown, 'N'>>().toEqualTypeOf<s.Flavor<'N'>>();
+		expectTypeOf<s.Branded<unknown, 'N'>>().toEqualTypeOf<s.Brand<'N'>>();
+		expectTypeOf<s.Flavored<any, 'N'>>().toBeAny();
+		expectTypeOf<s.Branded<any, 'N'>>().toBeAny();
+		expectTypeOf<s.Flavored<never, 'N'>>().toBeNever();
+		expectTypeOf<s.Branded<never, 'N'>>().toBeNever();
+	});
+
+	test('a flavor and a brand of a type parameter assign as the parameter does', () => {
+		const flavor_of = <T extends string>(value: T): s.Flavored<T, 'N'> => value;
+		const unflavor = <T extends string | null>(value: s.Flavored<T, 'N'>): string | null => value;
+		const flavor_base = <T>(value: s.Flavored<T, 'N'>): T => value;
+		const brand_base = <T>(value: s.Branded<T, 'N'>): T => value;
+		const brand_of = <T extends string>(value: T): s.Branded<T, 'N'> =>
+			// @ts-expect-error a plain value of a type parameter is not a branded one
+			value;
+		expectTypeOf(flavor_of('a')).toEqualTypeOf<s.Flavored<'a', 'N'>>();
+		expectTypeOf(unflavor<string | null>(null)).toEqualTypeOf<string | null>();
+		expectTypeOf(brand_of('a')).toEqualTypeOf<s.Branded<'a', 'N'>>();
+		// the parameter is inferred through either
+		expectTypeOf(flavor_base('a' as string | null)).toEqualTypeOf<string | null>();
+		expectTypeOf(brand_base('a' as s.Branded<string, 'N'> | null)).toEqualTypeOf<string | null>();
+	});
+
+	test('a flavor and a brand of a type parameter are not known to lack null and undefined', () => {
+		// `Extract` of a type parameter waits for the parameter, so what the
+		// intersection alone allowed here is given up
+		const widen = <T extends string>(value: s.Branded<T, 'N'>): s.Branded<string, 'N'> =>
+			// @ts-expect-error not the brand of its constraint
+			value;
+		const marker = <T>(value: s.Branded<T, 'N'>): s.Brand<'N'> =>
+			// @ts-expect-error possibly null or undefined
+			value;
+		// and two flavors of one constrained parameter assign to each other, where two brands don't
+		const mix = <T extends string>(value: s.Flavored<T, 'M'>): s.Flavored<T, 'N'> => value;
+		const mix_brand = <T extends string>(value: s.Branded<T, 'M'>): s.Branded<T, 'N'> =>
+			// @ts-expect-error a different brand does not assign
+			value;
+		expectTypeOf(widen<'a'>).returns.toEqualTypeOf<s.Branded<string, 'N'>>();
+		expectTypeOf(marker<string>).returns.toEqualTypeOf<s.Brand<'N'>>();
+		expectTypeOf(mix<'a'>).returns.toEqualTypeOf<s.Flavored<'a', 'N'>>();
+		expectTypeOf(mix_brand<'a'>).returns.toEqualTypeOf<s.Branded<'a', 'N'>>();
 	});
 
 	test('each bound holds a number or a bigint', () => {
