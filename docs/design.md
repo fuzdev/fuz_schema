@@ -88,14 +88,18 @@ Given up:
 - Output may alias input. Mutating one mutates the other.
 - Validation is not a snapshot: a getter, a proxy, or an object someone else
   holds can pass and then differ. Parsed JSON can't.
-- A class instance that matches comes back as that instance.
-- Non-enumerable and symbol keys survive.
+- A class instance that matches comes back as that instance. An input that
+  comes back keeps its prototype, whatever that is.
+- Non-enumerable and symbol keys survive, and the keys are in the input's
+  order, not the schema's.
 - Entries are read through the prototype, which is what lets a class instance
   match. An entry named like a member of `Object.prototype`, such as
   `toString` or `constructor`, therefore sees that member when the input
   lacks the key: the input is rejected unless the entry accepts a function,
   and a copy carries the member as an own key. Inputs with no prototype are
   unaffected.
+- A key read through the prototype stays inherited in an input that comes
+  back, where a copy has it as an own key.
 
 Kept:
 
@@ -104,8 +108,17 @@ Kept:
 - `record` drops a `__proto__` key, and so does a copy `loose_object` makes
   of one the schema doesn't name. A schema entry named `__proto__` is not
   guarded in any object schema: a copy writes it, which sets the copy's
-  prototype from the input.
+  prototype from the input, and an input that comes back keeps its own
+  `__proto__` key.
 - The input is never mutated.
+
+Zod and Valibot build every output. `src/test/schema.conformance.test.ts`
+compares this library with both, and allows an object of the output that is
+the input's own to differ from their copy in the ways above that are the
+input's alone: its prototype and what it inherits, its key order, and its
+symbol keys and keys that aren't enumerable. A key read through the prototype
+and an own `__proto__` key are rows of its table, see
+[below](#behavior-that-differs-from-valibot-and-zod).
 
 ## Object schemas
 
@@ -259,10 +272,21 @@ unused definition is dropped.
 `to_standard_schema` is an adapter for this reason: schemas don't each carry
 a `~standard` property. Whether they should, natively, is undecided.
 
-## Behavior that differs from Valibot
+## Behavior that differs from Valibot and Zod
 
-- `pipe` stops at its first failing step.
-- A failed `union` reports one issue, not its options'.
+Where Zod 4 and Valibot 1 agree on what a schema does with an input, this
+library does the same, unless the difference is one of these. The rule is
+held by `src/test/schema.conformance.test.ts`: it runs a matrix of schemas
+and inputs through the three and fails on a difference that its table doesn't
+declare, and on a declared one that is no longer there. Where the two
+disagree, the table records which this library goes with. This list is that
+table in words.
+
+What the test compares is the verdict, the output, and the paths of the
+issues. These it holds:
+
+- Output is copy-on-write, where both always copy. What an input that comes
+  back keeps is under [Copy-on-write output](#copy-on-write-output).
 - Valibot and Zod need the key of every entry that isn't optional. Here only
   an `unknown` entry needs its key, and for the other entries that accept
   `undefined` a missing key is the `undefined` it reads as:
@@ -272,20 +296,49 @@ a `~standard` property. Whether they should, natively, is undecided.
     `nullable(unknown)`, `lazy(() => unknown)`, `union([string, unknown])`,
     `pipe(unknown, ...)`
 
-  Where the two differ nothing is followed: an `optional` or a `with_default`
-  under a `nullable`, a `lazy`, or a `union` lets the key be missing, as in
-  Zod and not in Valibot. One at the start of a `pipe` does too, as in both,
-  and so does a `transform` that is the entry itself, as Zod's does.
+Where the two disagree, this library goes with:
+
+- **Zod on an optional key under another schema.** An `optional` or a
+  `with_default` under a `nullable`, a `lazy`, or a `union` lets the key be
+  missing, as in Zod and not in Valibot. One at the start of a `pipe` does
+  too, as in both, and the steps after it run on the `undefined`, as in Zod,
+  where Valibot leaves the key out. A `transform` that is the entry itself
+  lets the key be missing too, as Zod's does.
+- **Valibot on a default under an `optional`.** `optional(with_default(...))`
+  leaves `undefined` and a missing key as they are, where Zod fills the
+  default in. And a `with_default` whose value is `undefined` leaves a
+  missing key out, where Zod writes it.
+- **Valibot on an unknown key the input inherits**, in a `loose_object` copy:
+  Zod copies an enumerable one and Valibot doesn't, and here it is left out.
+  The copy otherwise has the keys Valibot's and Zod's loose objects give, in
+  their order.
+- **Zod on an unknown key named `constructor` or `prototype`**, in a
+  `loose_object`: Valibot drops it and Zod keeps it, and here it is kept.
+- **Valibot on an entry named `__proto__`.** Zod leaves it out of the output
+  and reads nothing for it. Valibot and this library read and write it as any
+  other key, so it sees `Object.prototype` when the input lacks the key, and
+  writing it sets the output's prototype.
+- **Zod on an array.** Valibot's object, record, and variant schemas take an
+  array as an object. Zod's refuse it, as these do.
+- **Valibot on what a `record` is given.** Zod refuses a class instance and
+  a symbol key. Valibot takes both, as this library does, and leaves the
+  symbol key out of its copy.
+- **Valibot on numbers.** `number` takes the infinities and `integer` takes
+  an integer past the safe ones, where Zod's refuse both.
+
+These the test doesn't see, as they are in the count of the issues, in the
+API, or in the names:
+
+- `pipe` stops at its first failing step.
+- A failed `union` reports one issue, not its options'.
+- An unknown key is one issue each, at the key. Zod reports every unknown
+  key of an object in one issue at the object, and Valibot the first alone.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
-  Dropping is `strip_object`, and keeping is `loose_object`.
-- A `loose_object` copy has the keys Valibot's and Zod's loose objects give,
-  in their order, where the two agree. They differ on an unknown key the input
-  inherits: Zod copies an enumerable one and Valibot doesn't, and here it is
-  left out, as in Valibot. And on an unknown key named `constructor` or
-  `prototype`: Valibot drops it and Zod keeps it, and here it is kept, as in
-  Zod.
+  Dropping is `strip_object`, and keeping is `loose_object`. The test
+  compares each with the other libraries' schema that does the same.
 - `variant` dispatches by map; its options need a `literal` discriminator.
-- Output is copy-on-write.
+  What it does with an input is in the matrix, and is what both do but for
+  an array.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.
