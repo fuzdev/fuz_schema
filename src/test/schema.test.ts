@@ -1082,30 +1082,20 @@ describe('loose_object copy', () => {
 		assert.deepEqual(keys_of(named), ['a', 'd', 'prototype', 'constructor']);
 	});
 
-	test('a __proto__ key the schema names never sets the prototype of a copy', () => {
-		const entry = { ['__proto__']: s.unknown };
+	test('a __proto__ entry is written to a copy as the other object schemas write it', () => {
 		const text = '{"a": "x", "__proto__": {"p": 1}, "u": 1}';
-		// the copy begun before the entry, at it, and after it
-		for (const O of [
-			s.loose_object({ d: s.with_default(s.string, 'D'), ...entry, a: s.string }),
-			s.loose_object({
+		for (const factory of [s.object, s.strip_object, s.loose_object] as const) {
+			const O = factory({
 				a: s.string,
-				['__proto__']: s.loose_object({ q: s.with_default(s.string, 'Q') })
-			}),
-			s.loose_object({ a: s.string, ...entry, d: s.with_default(s.string, 'D') })
-		]) {
+				['__proto__']: s.unknown,
+				u: s.number,
+				d: s.with_default(s.string, 'D')
+			});
 			assert(Object.hasOwn(O.def, '__proto__'));
 			const output: object = s.parse_or_throw(O, JSON.parse(text));
-			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
-			assert(!('p' in output));
-			assert(!Object.hasOwn(output, '__proto__'));
-			assert.deepEqual(
-				Object.keys(output).sort(),
-				Object.keys(O.def)
-					.filter((k) => k !== '__proto__')
-					.concat('u')
-					.sort()
-			);
+			// not guarded: the entry's value becomes the copy's prototype
+			assert.deepEqual(Object.getPrototypeOf(output), { p: 1 });
+			assert.deepEqual(Object.keys(output), ['a', 'u', 'd']);
 		}
 		// the entry is still run
 		assert(!s.is(s.loose_object({ a: s.string, ['__proto__']: s.string }), JSON.parse(text)));

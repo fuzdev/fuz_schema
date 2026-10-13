@@ -101,9 +101,10 @@ Kept:
 
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
-- `record` drops a `__proto__` key, and so does a copy `loose_object` makes,
-  whether or not the schema names it. `object` and `strip_object` do write a
-  schema entry named `__proto__`, which sets the copy's prototype.
+- `record` drops a `__proto__` key, and so does a copy `loose_object` makes
+  of one the schema doesn't name. A schema entry named `__proto__` is not
+  guarded in any object schema: a copy writes it, which sets the copy's
+  prototype from the input.
 - The input is never mutated.
 
 ## Object schemas
@@ -148,9 +149,7 @@ same rule and never looks at the input's keys unless it made a copy:
   one with the unknown keys after it.
 - **Of the unknown keys, a symbol key, an inherited key, and a non-enumerable
   key are left out**, and so is a `__proto__` key, which would set the
-  prototype if assigned. The input returned as it is keeps them all. A
-  schema entry named `__proto__` runs, but its key is left out of the copy
-  too; `object` and `strip_object` write it.
+  prototype if assigned. The input returned as it is keeps them all.
 - **The loop is not the shared one**, though it repeats it. A bundle without
   `loose_object` carries none of this, and a parse of one loose schema, where
   the engine inlines the loop and removes the context, measured slower on
