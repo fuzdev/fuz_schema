@@ -81,11 +81,9 @@ describe('primitives', () => {
 			s.object({ t: s.literal(NaN), a: s.string }),
 			s.object({ t: s.literal(0), b: s.string })
 		]);
-		// a copy: a `NaN` that passes reads as a change to the container holding it
+		// the input: a `NaN` that passes is no change to the container holding it
 		const nan = { t: NaN, a: 'x' };
-		const output = s.parse_or_throw(V, nan);
-		assert.deepEqual(output, nan);
-		assert.notStrictEqual(output, nan);
+		assert.strictEqual(s.parse_or_throw(V, nan), nan);
 		const negative_zero: unknown = { t: -0, b: 'x' };
 		assert.strictEqual(s.parse_or_throw(V, negative_zero), negative_zero);
 		assert.deepEqual(issues_of(V, { t: NaN, a: 1 }), [
@@ -503,6 +501,120 @@ describe('copy on write', () => {
 		const same = { a: 1 };
 		assert.strictEqual(s.parse_or_throw(Counts, same), same);
 		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: undefined, c: 3 }), { a: 1, b: 0, c: 3 });
+	});
+
+	// every container, each holding one child at `a` or at the first index
+	describe('a child changed when its output is not its input by Object.is', () => {
+		const containers: Record<
+			string,
+			{
+				of: (child: s.AnySchema) => s.AnySchema;
+				holding: (value: unknown) => any;
+				held: (container: any) => unknown;
+			}
+		> = {
+			object: {
+				of: (child) => s.object({ a: child }),
+				holding: (a) => ({ a }),
+				held: (o) => o.a
+			},
+			strip_object: {
+				of: (child) => s.strip_object({ a: child }),
+				holding: (a) => ({ a }),
+				held: (o) => o.a
+			},
+			loose_object: {
+				of: (child) => s.loose_object({ a: child }),
+				holding: (a) => ({ a }),
+				held: (o) => o.a
+			},
+			record: { of: (child) => s.record(child), holding: (a) => ({ a }), held: (o) => o.a },
+			array: { of: (child) => s.array(child), holding: (a) => [a], held: (o) => o[0] }
+		};
+		const negated = s.pipe(
+			s.number,
+			s.transform((x) => -x)
+		);
+		// each passes a `NaN` through as it is
+		const passing: Record<string, s.AnySchema> = {
+			unknown: s.unknown,
+			number_or_nan: s.union([s.number, s.literal(NaN)]),
+			literal: s.literal(NaN),
+			one_of: s.one_of([1, NaN]),
+			check: s.check(() => true),
+			transform: s.transform((x) => x)
+		};
+
+		for (const [name, { of, holding, held }] of Object.entries(containers)) {
+			describe(name, () => {
+				test('a transform between the two zeros is in the output, which is a copy', () => {
+					for (const zero of [0, -0]) {
+						const input = holding(zero);
+						const output = s.parse_or_throw(of(negated), input);
+						assert.notStrictEqual(output, input);
+						assert(Object.is(held(output), -zero), inspect(output));
+						// and the input is as it was
+						assert(Object.is(held(input), zero));
+					}
+				});
+
+				test('a zero that passes as it is returns the input', () => {
+					for (const zero of [0, -0]) {
+						const input = holding(zero);
+						assert.strictEqual(s.parse_or_throw(of(s.number), input), input);
+						assert(Object.is(held(input), zero));
+					}
+				});
+
+				test('a NaN that passes returns the input', () => {
+					for (const [child_name, child] of Object.entries(passing)) {
+						const input = holding(NaN);
+						assert.strictEqual(s.parse_or_throw(of(child), input), input, child_name);
+					}
+				});
+
+				test('a NaN made of another value, or made another, copies', () => {
+					const to_nan = holding(1);
+					const made = s.parse_or_throw(of(s.transform(() => NaN)), to_nan);
+					assert.notStrictEqual(made, to_nan);
+					assert(Number.isNaN(held(made)));
+					assert.strictEqual(held(to_nan), 1);
+					const from_nan = holding(NaN);
+					const unmade = s.parse_or_throw(of(s.transform(() => 1)), from_nan);
+					assert.notStrictEqual(unmade, from_nan);
+					assert.strictEqual(held(unmade), 1);
+					assert(Number.isNaN(held(from_nan)));
+				});
+
+				test('a value that changes copies', () => {
+					const input = holding(1);
+					const output = s.parse_or_throw(of(negated), input);
+					assert.notStrictEqual(output, input);
+					assert.strictEqual(held(output), -1);
+					assert.strictEqual(held(input), 1);
+				});
+			});
+		}
+
+		test('a zero transform after the first change is written too', () => {
+			assert(Object.is(s.parse_or_throw(s.array(negated), [1, 0])[1], -0));
+			assert(Object.is(s.parse_or_throw(s.record(negated), { a: 1, b: -0 }).b, 0));
+			for (const factory of [s.object, s.strip_object, s.loose_object]) {
+				assert(
+					Object.is(s.parse_or_throw(factory({ a: negated, b: negated }), { a: 1, b: 0 }).b, -0)
+				);
+			}
+		});
+
+		test('a NaN among items that pass keeps the input, and beside a change is shared', () => {
+			const nans = [NaN, 1, NaN];
+			assert.strictEqual(s.parse_or_throw(s.array(s.unknown), nans), nans);
+			const Nested = s.object({ list: s.array(s.unknown), d: s.with_default(s.number, 0) });
+			const input: unknown = { list: nans };
+			const output = s.parse_or_throw(Nested, input);
+			assert.notStrictEqual(output, input);
+			assert.strictEqual(output.list, nans);
+		});
 	});
 });
 

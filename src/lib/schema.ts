@@ -15,6 +15,7 @@
  *   changed, so a valid value with no defaults, transforms, or keys to drop
  *   comes back as the same object. Callers must not assume a fresh copy, and
  *   a changed subtree still shares its unchanged siblings with the input.
+ *   Changed is as `Object.is` tells: a `0` made `-0` is, a `NaN` kept is not.
  * - Issue paths are built on unwind: a container prefixes its key onto the
  *   issues its child added, so valid input never touches a path.
  * - Schemas with no options are constants (`string`, not `string()`).
@@ -749,8 +750,10 @@ export const brand: <T extends AnySchema, const TName extends string>(
 
 // runs every entry and returns the output, or `undefined` when a probe failed,
 // the output being `value` itself until an entry's output differs from its input,
-// which copies the entries before it. An entry is handed `value` and its key
-// too, for a schema that accepts `undefined` and still needs its key to be there
+// which copies the entries before it. Every container tells that by `Object.is`:
+// `===` reads a `0` made `-0` as no change, and a `NaN` passed through as one.
+// An entry is handed `value` and its key too, for a schema that accepts
+// `undefined` and still needs its key to be there
 const run_entries = (
 	keys: Array<string>,
 	schemas: Array<AnySchema>,
@@ -769,7 +772,7 @@ const run_entries = (
 		} else if (output) {
 			// a key the input doesn't have stays out of the output
 			if (v !== undefined || key in value) output[key] = v;
-		} else if (v !== input) {
+		} else if (!Object.is(v, input)) {
 			output = {};
 			// only this schema's keys, in its order
 			for (let j = 0; j < i; j++) {
@@ -862,7 +865,7 @@ export const loose_object = <T extends SchemaEntries>(
 				} else if (output) {
 					// a key the input doesn't have stays out of the output
 					if (v !== undefined || key in value) output[key] = v;
-				} else if (v !== input) {
+				} else if (!Object.is(v, input)) {
 					output = {};
 					// this schema's keys first, in its order, as `run_entries` copies them
 					for (let j = 0; j < i; j++) {
@@ -959,7 +962,7 @@ export const record = <T extends AnySchema>(
 				prefix_path(ctx.issues!, count, key);
 			} else if (output) {
 				if (keep) output[key] = v;
-			} else if (v !== input || !keep) {
+			} else if (!Object.is(v, input) || !keep) {
 				output = {};
 				for (const k in value) {
 					if (k === key) break;
@@ -995,7 +998,7 @@ export const array = <T extends AnySchema>(
 				if (ctx.probe) break;
 				prefix_path(ctx.issues!, count, i);
 			} else if (output) output[i] = v;
-			else if (v !== input) {
+			else if (!Object.is(v, input)) {
 				// one allocation of the whole length, where a prefix would be regrown,
 				// with both bounds given: the no-argument form measured slower on the
 				// valid path

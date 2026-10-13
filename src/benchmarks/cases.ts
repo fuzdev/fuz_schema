@@ -879,6 +879,14 @@ const array: CaseGroup = (s) => {
 		// one change in a large value: the whole is copied once, wherever the change is
 		to_case(s, 'array/100_first_defaulted/valid', Defaulted, [undefined, ...range(99)], 'copy'),
 		to_case(s, 'array/100_last_defaulted/valid', Defaulted, [...range(99), undefined], 'copy'),
+		// no item changed, though none is `===` itself
+		to_case(
+			s,
+			'array/100_nan/valid',
+			s.array(s.unknown),
+			range(100).map(() => NaN),
+			'identity'
+		),
 		to_case(
 			s,
 			'array/100_last_bad/invalid',

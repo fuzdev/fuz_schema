@@ -408,6 +408,8 @@ const AD: Entries = (l) => ({ a: l.string, d: l.with_default(l.string, 'D') });
 const B: Entries = (l) => ({ b: l.optional(l.string) });
 const DB: Entries = (l) => ({ d: l.with_default(l.string, 'D'), b: l.optional(l.string) });
 
+const NEGATED: Entries = (l) => ({ a: l.map(l.number, (x) => -x) });
+
 // two strict objects told apart by the key `t`, the second with a default to fill
 const VARIANT = (l: ConformanceLib): any =>
 	l.variant('t', [
@@ -928,6 +930,28 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => ({ 0: 'x', length: 1 })
 	},
 	{ name: 'array, an item wrong', schema: (l) => l.array(l.string), input: () => ['x', 1] },
+
+	// a transform between the two zeros, and a `NaN` that passes, in each container
+	{ name: 'entry negated, 0', entries: NEGATED, input: () => ({ a: 0 }) },
+	{ name: 'entry negated, -0', entries: NEGATED, input: () => ({ a: -0 }) },
+	{
+		name: 'entry negated, 0 after one that changes',
+		entries: (l) => ({ b: l.map(l.number, (x) => -x), a: l.map(l.number, (x) => -x) }),
+		input: () => ({ b: 1, a: 0 })
+	},
+	{ name: 'entry unknown, NaN', entries: (l) => ({ a: l.unknown }), input: () => ({ a: NaN }) },
+	{
+		name: 'record negated, both zeros',
+		schema: (l) => l.record(l.map(l.number, (x) => -x)),
+		input: () => ({ a: 0, b: -0 })
+	},
+	{ name: 'record of unknown, NaN', schema: (l) => l.record(l.unknown), input: () => ({ a: NaN }) },
+	{
+		name: 'array negated, both zeros',
+		schema: (l) => l.array(l.map(l.number, (x) => -x)),
+		input: () => [0, -0]
+	},
+	{ name: 'array of unknown, NaN', schema: (l) => l.array(l.unknown), input: () => [NaN] },
 
 	// primitives
 	{ name: 'number, NaN', schema: (l) => l.number, input: () => NaN },

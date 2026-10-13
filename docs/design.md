@@ -83,6 +83,10 @@ A container returns its input when no child changed and nothing had to be
 dropped. A change copies only the path to it; unchanged siblings stay shared
 with the input.
 
+A child changed when its output is not its input by `Object.is`. So a
+transform between `0` and `-0` is a change, which `===` would lose, and a
+`NaN` that passes is none, which `===` would copy for.
+
 Given up:
 
 - Output may alias input. Mutating one mutates the other.
@@ -108,8 +112,6 @@ Given up:
   `slice` with the changed items written to it: it has none of those keys, a
   hole before the first item that changed stays a hole in it, and it is an
   instance of the input's `Array` subclass.
-- A `NaN` that passes reads as a change, as it isn't `===` itself, so the
-  container holding it is copied.
 
 Kept:
 
