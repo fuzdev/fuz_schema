@@ -456,6 +456,13 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'optional undefined', entries: AB, input: () => ({ a: 'x', b: undefined }), also: BOTH },
 	{ name: 'optional null', entries: AB, input: () => ({ a: 'x', b: null }) },
 	{ name: 'input in another key order', entries: AB, input: () => ({ b: 'y', a: 'x' }) },
+	// an object each library keeps as it is, under an input this library returns
+	// and the others copy, which reads a key through its prototype
+	{
+		name: 'input in another key order, an object that inherits a key',
+		entries: (l) => ({ a: l.string, n: l.unknown }),
+		input: () => ({ n: inheriting({ z: 'x' }), a: 'x' })
+	},
 	{ name: 'required missing', entries: AB, input: () => ({ b: 'y' }), also: BOTH },
 	{ name: 'required undefined', entries: AB, input: () => ({ a: undefined }) },
 	{ name: 'required inherited', entries: AB, input: () => inheriting({ a: 'x' }) },
@@ -1635,8 +1642,45 @@ const collect_objects = (value: unknown, found: Set<object> = new Set()): Set<ob
 	return found;
 };
 
-const same_output = (ours: unknown, theirs: unknown, of_input: Set<object>): boolean => {
+// everything of `value` that can be read: every own key, whether it is
+// enumerable, and its value, the same of its prototype where that isn't the
+// plain one, and of every object it reaches
+const render_whole = (value: unknown): string => {
+	if (!is_object(value)) return render_value(value);
+	const keys = Reflect.ownKeys(value).map(
+		(key) =>
+			render_key(key) +
+			(Object.prototype.propertyIsEnumerable.call(value, key) ? '' : ' hidden') +
+			': ' +
+			render_whole((value as any)[key])
+	);
+	const proto = Object.getPrototypeOf(value);
+	return (
+		(Array.isArray(value) ? `[${keys.join(', ')}]` : `{${keys.join(', ')}}`) +
+		(proto === null
+			? ' ^null'
+			: proto === Object.prototype || proto === Array.prototype
+				? ''
+				: ' ^' + render_whole(proto))
+	);
+};
+
+const same_output = (
+	ours: unknown,
+	theirs: unknown,
+	of_input: Set<object>,
+	of_their_input: Set<object>
+): boolean => {
 	if (!is_object(ours) || !is_object(theirs)) return render_value(ours) === render_value(theirs);
+	// an object of each input that both kept as it is: the same when the two
+	// are the same whole, as each library parsed its own copy of the input
+	if (
+		of_input.has(ours) &&
+		of_their_input.has(theirs) &&
+		render_whole(ours) === render_whole(theirs)
+	) {
+		return true;
+	}
 	if (Array.isArray(ours) !== Array.isArray(theirs)) return false;
 	const keys = Reflect.ownKeys(theirs);
 	if (of_input.has(ours)) {
@@ -1657,7 +1701,9 @@ const same_output = (ours: unknown, theirs: unknown, of_input: Set<object>): boo
 			return false;
 		}
 	}
-	return keys.every((key) => same_output((ours as any)[key], (theirs as any)[key], of_input));
+	return keys.every((key) =>
+		same_output((ours as any)[key], (theirs as any)[key], of_input, of_their_input)
+	);
 };
 
 /**
@@ -1672,8 +1718,17 @@ const same_output = (ours: unknown, theirs: unknown, of_input: Set<object>): boo
  * the input's and not this library's doing: its key order, its prototype and
  * what of it isn't enumerable, its symbol keys, and which of its keys are
  * enumerable. An object this library built is compared in full, as the texts
- * are.
+ * are. An object of the input that the other library kept as it is too is the
+ * same where the two are the same whole, prototypes and all, as each library
+ * is given its own copy of the input.
  */
 export const is_same_result = (ours: ConformanceResult, theirs: ConformanceResult): boolean =>
 	ours.text === theirs.text ||
-	(ours.ok && theirs.ok && same_output(ours.value, theirs.value, collect_objects(ours.input)));
+	(ours.ok &&
+		theirs.ok &&
+		same_output(
+			ours.value,
+			theirs.value,
+			collect_objects(ours.input),
+			collect_objects(theirs.input)
+		));
