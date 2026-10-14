@@ -180,6 +180,7 @@
 	"modules": {
 		"meta.ts": 62,
 		"standard_schema.ts": 94,
-		"schema_json.ts": 2213
+		"schema_json.ts": 2213,
+		"introspect.ts": 632
 	}
 }

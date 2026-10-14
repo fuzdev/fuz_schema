@@ -15,7 +15,7 @@ const LIB_DIR = fileURLToPath(new URL('../lib/', import.meta.url));
 const SCHEMA_PATH = `${LIB_DIR}schema.ts`;
 
 /** The library's modules beside `schema.ts`, each a cost a consumer opts into. */
-export const LIBRARY_MODULES = ['meta.ts', 'standard_schema.ts', 'schema_json.ts'];
+export const LIBRARY_MODULES = ['meta.ts', 'standard_schema.ts', 'schema_json.ts', 'introspect.ts'];
 
 export interface BundleSize {
 	minified: number;

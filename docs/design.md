@@ -444,12 +444,33 @@ nothing until it imports the module.
   by declaration merging. The library names no application's keys.
 - The registry holds its keys weakly: metadata lives as long as its schema.
 
+## Reading a schema
+
+`src/lib/introspect.ts` reads a schema as data, through the `def` fields
+`SchemaDefs` declares. It makes no schema and writes to none.
+
+- **A layer is a schema a walk passes through** to reach what the value is:
+  `optional`, `nullable`, and `with_default` lead to their `def.schema`, a
+  `pipe` to its first schema, and a `lazy` to what its function returns.
+  `message`, `flavor`, and `brand` are no layer, as what they return has the
+  `kind` and `def` they were given.
+- **Metadata is read from the outermost layer that has the key**, as `meta`
+  attaches it to one object. Metadata inside a `message` is out of reach.
+- **A default is the outermost `with_default`'s**, unless an `optional` is
+  outside it, which answers `undefined` before the default is asked. A
+  `union` is not looked into.
+- **Nothing is called but a `lazy`'s function.** A `check` or a `transform`
+  is read as its kind, and never run.
+- **A new kind is a row** in the kind table of `src/test/introspect.test.ts`,
+  typed over `SchemaKind`, so the test doesn't typecheck until the kind says
+  how it renders and whether `unwrap_schema` walks through it.
+
 ## Costs are opt-in
 
 A feature not every consumer needs is a separate export or module the core
 never reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
-`to_standard_schema`. Factories are marked `// @__NO_SIDE_EFFECTS__` so an
-unused definition is dropped.
+`to_standard_schema`, `introspect.ts`. Factories are marked
+`// @__NO_SIDE_EFFECTS__` so an unused definition is dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry
 a `~standard` property.

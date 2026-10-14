@@ -236,7 +236,8 @@ them. So
   a helper two exports share moves bytes out of both, and into `alone` for
   each.
 - **A module beside `schema.ts`** (`meta.ts`, `standard_schema.ts`,
-  `schema_json.ts`) is one row: what all its exports add to the library.
+  `schema_json.ts`, `introspect.ts`) is one row: what all its exports add to
+  the library.
 
 Gzip is not additive, so the `last in` figures don't sum to the library, and
 an export can read a few bytes either way from what its source suggests: in a

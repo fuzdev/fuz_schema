@@ -2,8 +2,9 @@
  * One of every schema the library makes, for `schema.shape.test.ts`: the
  * samples, what they are run through, and which exports they must cover.
  *
- * Imported by the test and by `shape_test_child.ts`, the process that asks
- * the engine about them, so it is erasable syntax only.
+ * Imported by the test, by `introspect.test.ts`, which reads every sample, and
+ * by `shape_test_child.ts`, the process that asks the engine about them, so
+ * it is erasable syntax only.
  *
  * @module
  */

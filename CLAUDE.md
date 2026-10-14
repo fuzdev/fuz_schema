@@ -58,6 +58,9 @@ dev server.
 - `src/lib/schema_json.ts` - `to_schema_json`, which serializes a schema to
   the interchange form the Rust crate loads, separate so the core never
   carries it
+- `src/lib/introspect.ts` - `unwrap_schema`, `get_schema_meta`,
+  `get_schema_entries`, `get_schema_fields`, `format_schema_type`, reading a
+  schema as data, separate so the core never carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
   behavior and type inference
 - `src/test/schema.shape.test.ts` - every schema the library makes has one
@@ -77,6 +80,8 @@ dev server.
   data: the first for the valibot set, the second for the zod ones, with its
   helpers in `harvest_test_helpers.ts`
 - `src/test/schema_json.test.ts` - what `to_schema_json` writes and refuses
+- `src/test/introspect.test.ts` - the readers, with a row for every kind
+  that the types require
 - `src/test/schema.conformance.test.ts` - where zod and valibot agree this
   library does the same, or the difference is in its table: the declared
   differences, which of the two it goes with where they disagree, and what
@@ -177,7 +182,8 @@ Things that are easy to break without a test noticing:
   input but the keys in `path`.
 - **Every kind has an entry in `SchemaDefs`** saying what its `def` holds.
   `optional`, `nullable`, and `with_default` hold their schema as `def.schema`.
-  The types don't force a new kind to be added there.
+  The types don't force a new kind to be added there. Once it is, they force
+  a row for it in the kind table of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
 - **Outside probe mode `ctx.fails === ctx.issues.length`.** `issues` is

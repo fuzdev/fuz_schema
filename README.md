@@ -105,7 +105,7 @@ and the input is never mutated.
 ## API
 
 Everything here is a named export of `schema.ts`, used through a namespace import.
-[Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, and the [serializer](#serializing) are modules of their own.
+[Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, the [serializer](#serializing), and the [readers of a schema](#introspection) are modules of their own.
 
 | | |
 |---|---|
@@ -275,6 +275,23 @@ The narrowed type is for reading a schema as data: a schema typed with its kind 
 while one typed as a bare `Schema` or `AnySchema` (as recursive schemas usually are) reads as `SchemaNode`,
 whose output type is `unknown`.
 
+`introspect.ts` has the walks a consumer would otherwise write:
+`unwrap_schema` goes through `optional`, `nullable`, `with_default`, `pipe`, and `lazy`;
+`get_schema_meta` finds a key on the outermost layer that has it;
+`get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
+with each one's default and description;
+`format_schema_type` renders the type a schema accepts, for help output.
+
+```ts
+import {meta} from '@fuzdev/fuz_schema/meta.ts';
+import {get_schema_fields, format_schema_type} from '@fuzdev/fuz_schema/introspect.ts';
+
+const Args = s.object({port: meta(s.with_default(s.number, 3000), {description: 'the port'})});
+
+get_schema_fields(Args); // [{name: 'port', schema, has_default: true, default: 3000, description: 'the port'}]
+format_schema_type(Args); // '{port?: number}'
+```
+
 ### Metadata
 
 `meta` attaches metadata to a schema and `get_meta` reads it back.
@@ -298,7 +315,7 @@ and as an object entry `meta(s.optional(...), ...)` still makes the key optional
 - Calling `meta` on a schema that has metadata merges the two, the new keys winning.
 - `get_meta` reads the object it is given and nothing inside it.
   For `s.optional(Port)` that is `undefined`, and `get_meta(schema.def.schema)` finds it:
-  metadata on a nested schema is reached by [walking](#introspection).
+  metadata on a nested schema is reached by [walking](#introspection). `get_schema_meta` walks the layers.
 - `flavor` and `brand` return the schema itself, so its metadata is still there.
   `message` builds a new schema, so attach metadata last: `meta(s.message(...), ...)`.
 
