@@ -164,8 +164,6 @@ pub enum SchemaIssueKind {
     Integer,
     /// `safe_integer`.
     SafeInteger,
-    /// `finite`.
-    Finite,
     /// `unknown_key`: the value is at a key an `object` has no entry for.
     UnknownKey,
     /// `missing_key`: the value has no key for an entry of an object schema
@@ -196,7 +194,6 @@ impl SchemaIssueKind {
         Self::MaxValue,
         Self::Integer,
         Self::SafeInteger,
-        Self::Finite,
         Self::UnknownKey,
         Self::MissingKey,
     ];
@@ -223,7 +220,6 @@ impl SchemaIssueKind {
             Self::MaxValue => "max_value",
             Self::Integer => "integer",
             Self::SafeInteger => "safe_integer",
-            Self::Finite => "finite",
             Self::UnknownKey => "unknown_key",
             Self::MissingKey => "missing_key",
         }
@@ -253,7 +249,6 @@ impl SchemaIssueKind {
             SchemaKind::MaxValue => Some(Self::MaxValue),
             SchemaKind::Integer => Some(Self::Integer),
             SchemaKind::SafeInteger => Some(Self::SafeInteger),
-            SchemaKind::Finite => Some(Self::Finite),
             SchemaKind::Unknown
             | SchemaKind::Optional
             | SchemaKind::Nullable
@@ -312,9 +307,8 @@ mod tests {
             SchemaIssueKind::MaxValue => 16,
             SchemaIssueKind::Integer => 17,
             SchemaIssueKind::SafeInteger => 18,
-            SchemaIssueKind::Finite => 19,
-            SchemaIssueKind::UnknownKey => 20,
-            SchemaIssueKind::MissingKey => 21,
+            SchemaIssueKind::UnknownKey => 19,
+            SchemaIssueKind::MissingKey => 20,
         }
     }
 

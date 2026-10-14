@@ -100,9 +100,6 @@
 								"safe_integer": {
 									"kind": "safe_integer"
 								},
-								"finite": {
-									"kind": "finite"
-								},
 								"long_string": {
 									"kind": "pipe",
 									"def": [
@@ -360,9 +357,6 @@
 								"safe_integer": {
 									"kind": "safe_integer"
 								},
-								"finite": {
-									"kind": "finite"
-								},
 								"long_string": {
 									"kind": "pipe",
 									"def": [
@@ -619,9 +613,6 @@
 								},
 								"safe_integer": {
 									"kind": "safe_integer"
-								},
-								"finite": {
-									"kind": "finite"
 								},
 								"long_string": {
 									"kind": "pipe",
@@ -1059,15 +1050,6 @@
 					]
 				},
 				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "undefined",
-					"path": [
-						"strict",
-						"finite"
-					]
-				},
-				{
 					"kind": "string",
 					"expected": "string",
 					"received": "undefined",
@@ -1325,15 +1307,6 @@
 					"path": [
 						"loose",
 						"safe_integer"
-					]
-				},
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "undefined",
-					"path": [
-						"loose",
-						"finite"
 					]
 				},
 				{
@@ -1597,15 +1570,6 @@
 					]
 				},
 				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "undefined",
-					"path": [
-						"strip",
-						"finite"
-					]
-				},
-				{
 					"kind": "string",
 					"expected": "string",
 					"received": "undefined",
@@ -1717,7 +1681,7 @@
 		},
 		{
 			"name": "strict_all_but_bigint",
-			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0}}",
+			"text": "{\"strict\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1734,7 +1698,7 @@
 		},
 		{
 			"name": "loose_all_but_bigint",
-			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"finite\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0,\"other\":1}}",
+			"text": "{\"loose\":{\"string\":\"\",\"number\":0,\"boolean\":false,\"literal\":\"a\",\"literal_null\":null,\"one_of\":1,\"object\":{},\"loose_object\":{},\"strip_object\":{},\"record\":{},\"array\":[],\"union\":null,\"variant\":{\"k\":\"a\"},\"integer\":0,\"safe_integer\":0,\"long_string\":\"a\",\"bounded_number\":0,\"bounded_integer\":0,\"short_array\":[],\"nullable\":null,\"lazy\":\"\",\"unknown\":null,\"nullable_unknown\":null,\"lazy_unknown\":1,\"nullable_lazy_unknown\":[],\"union_unknown\":{},\"lazy_union_unknown\":0,\"other\":1}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1897,15 +1861,6 @@
 					"path": [
 						"strict",
 						"safe_integer"
-					]
-				},
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "undefined",
-					"path": [
-						"strict",
-						"finite"
 					]
 				},
 				{
@@ -2175,15 +2130,6 @@
 					"path": [
 						"strict",
 						"safe_integer"
-					]
-				},
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "undefined",
-					"path": [
-						"strict",
-						"finite"
 					]
 				},
 				{

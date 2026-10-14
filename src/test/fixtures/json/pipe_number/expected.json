@@ -35,22 +35,6 @@
 						}
 					}
 				},
-				"finite": {
-					"kind": "optional",
-					"def": {
-						"schema": {
-							"kind": "pipe",
-							"def": [
-								{
-									"kind": "number"
-								},
-								{
-									"kind": "finite"
-								}
-							]
-						}
-					}
-				},
 				"range": {
 					"kind": "optional",
 					"def": {
@@ -152,9 +136,6 @@
 								{
 									"kind": "max_value",
 									"def": 1.7976931348623157e+308
-								},
-								{
-									"kind": "finite"
 								}
 							]
 						}
@@ -202,14 +183,6 @@
 					"def": {
 						"schema": {
 							"kind": "safe_integer"
-						}
-					}
-				},
-				"bare_finite": {
-					"kind": "optional",
-					"def": {
-						"schema": {
-							"kind": "finite"
 						}
 					}
 				},
@@ -1111,66 +1084,6 @@
 			]
 		},
 		{
-			"name": "finite_0",
-			"text": "{\"finite\":0}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "finite_1",
-			"text": "{\"finite\":1.5}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "finite_2",
-			"text": "{\"finite\":1e308}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "finite_3",
-			"text": "{\"finite\":-1.7976931348623157e308}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "finite_4",
-			"text": "{\"finite\":\"1\"}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "string",
-					"path": [
-						"finite"
-					]
-				}
-			]
-		},
-		{
-			"name": "finite_5",
-			"text": "{\"finite\":null}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "null",
-					"path": [
-						"finite"
-					]
-				}
-			]
-		},
-		{
 			"name": "range_0",
 			"text": "{\"range\":0.1}",
 			"json": true,
@@ -1892,61 +1805,6 @@
 			]
 		},
 		{
-			"name": "bare_finite_0",
-			"text": "{\"bare_finite\":1.5}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "bare_finite_1",
-			"text": "{\"bare_finite\":\"1\"}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "string",
-					"path": [
-						"bare_finite"
-					]
-				}
-			]
-		},
-		{
-			"name": "bare_finite_2",
-			"text": "{\"bare_finite\":null}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "null",
-					"path": [
-						"bare_finite"
-					]
-				}
-			]
-		},
-		{
-			"name": "bare_finite_3",
-			"text": "{\"bare_finite\":[]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "finite",
-					"expected": "finite",
-					"received": "array",
-					"path": [
-						"bare_finite"
-					]
-				}
-			]
-		},
-		{
 			"name": "from_integer_0",
 			"text": "{\"from_integer\":1}",
 			"json": true,
@@ -2026,23 +1884,6 @@
 			"diverges": "number_overflow"
 		},
 		{
-			"name": "finite_overflow",
-			"text": "{\"finite\":1e400}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "number",
-					"path": [
-						"finite"
-					]
-				}
-			],
-			"diverges": "number_overflow"
-		},
-		{
 			"name": "at_most_large_overflow",
 			"text": "{\"at_most_large\":1e400}",
 			"json": true,
@@ -2105,23 +1946,6 @@
 					"received": "number",
 					"path": [
 						"integer"
-					]
-				}
-			],
-			"diverges": "number_overflow"
-		},
-		{
-			"name": "finite_negative_overflow",
-			"text": "{\"finite\":-1e400}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "number",
-					"path": [
-						"finite"
 					]
 				}
 			],
@@ -2196,23 +2020,6 @@
 			"diverges": "number_overflow"
 		},
 		{
-			"name": "finite_overflow_by_digits",
-			"text": "{\"finite\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "number",
-					"path": [
-						"finite"
-					]
-				}
-			],
-			"diverges": "number_overflow"
-		},
-		{
 			"name": "at_most_large_overflow_by_digits",
 			"text": "{\"at_most_large\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
 			"json": true,
@@ -2281,23 +2088,6 @@
 			"diverges": "number_overflow"
 		},
 		{
-			"name": "finite_just_past_max",
-			"text": "{\"finite\":1.7976931348623159e308}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "number",
-					"path": [
-						"finite"
-					]
-				}
-			],
-			"diverges": "number_overflow"
-		},
-		{
 			"name": "at_most_large_just_past_max",
 			"text": "{\"at_most_large\":1.7976931348623159e308}",
 			"json": true,
@@ -2360,23 +2150,6 @@
 					"received": "number",
 					"path": [
 						"integer"
-					]
-				}
-			],
-			"diverges": "number_overflow"
-		},
-		{
-			"name": "finite_twice_max",
-			"text": "{\"finite\":2e308}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "number",
-					"expected": "number",
-					"received": "number",
-					"path": [
-						"finite"
 					]
 				}
 			],

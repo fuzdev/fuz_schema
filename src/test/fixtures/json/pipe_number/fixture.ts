@@ -5,18 +5,16 @@ import type { JsonFixture, JsonFixtureText } from '../json_test_helpers.ts';
 const entries = {
 	integer: s.optional(s.pipe(s.number, s.integer)),
 	safe: s.optional(s.pipe(s.number, s.safe_integer)),
-	finite: s.optional(s.pipe(s.number, s.finite)),
 	range: s.optional(s.pipe(s.number, s.min_value(0.1), s.max_value(0.3))),
 	at_most_large: s.optional(s.pipe(s.number, s.max_value(1e21))),
 	at_least_large: s.optional(s.pipe(s.number, s.min_value(1e21))),
 	at_least_zero: s.optional(s.pipe(s.number, s.min_value(-0))),
 	at_least_tiny: s.optional(s.pipe(s.number, s.min_value(Number.MIN_VALUE))),
-	at_most_max: s.optional(s.pipe(s.number, s.max_value(Number.MAX_VALUE), s.finite)),
+	at_most_max: s.optional(s.pipe(s.number, s.max_value(Number.MAX_VALUE))),
 	whole_percent: s.optional(s.pipe(s.pipe(s.number, s.integer), s.min_value(0), s.max_value(100))),
 	// the number tests answer for any value, so they stand alone too
 	bare_integer: s.optional(s.integer),
 	bare_safe: s.optional(s.safe_integer),
-	bare_finite: s.optional(s.finite),
 	from_integer: s.optional(s.pipe(s.integer, s.min_value(1)))
 };
 
@@ -68,7 +66,6 @@ const integers = [
 const values: Record<keyof typeof entries, Array<string>> = {
 	integer: integers,
 	safe: integers,
-	finite: ['0', '1.5', '1e308', '-1.7976931348623157e308', '"1"', 'null'],
 	range: [
 		'0.1',
 		'0.3',
@@ -113,7 +110,6 @@ const values: Record<keyof typeof entries, Array<string>> = {
 	whole_percent: ['0', '100', '100.0', '1e2', '50.5', '-1', '101', '-0', '"50"'],
 	bare_integer: ['1', '1.0', '1.5', '"1"', 'null', 'true', '[]', '{}'],
 	bare_safe: ['1', '9007199254740992', '1.5', '"1"', 'null'],
-	bare_finite: ['1.5', '"1"', 'null', '[]'],
 	from_integer: ['1', '2.0', '0', '1.5', '"1"']
 };
 
@@ -132,7 +128,7 @@ for (const [name, text] of Object.entries({
 	just_past_max: '1.7976931348623159e308',
 	twice_max: '2e308'
 })) {
-	for (const key of ['integer', 'finite', 'at_most_large', 'at_least_zero', 'at_most_max']) {
+	for (const key of ['integer', 'at_most_large', 'at_least_zero', 'at_most_max']) {
 		cases[`${key}_${name}`] = { text: `{"${key}":${text}}`, diverges: 'number_overflow' };
 	}
 }

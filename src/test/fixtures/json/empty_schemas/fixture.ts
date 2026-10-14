@@ -14,7 +14,7 @@ const entries = {
 	bigint: s.optional(s.bigint),
 	nullable_bigint: s.optional(s.nullable(s.bigint)),
 	default_bigint: s.with_default(s.nullable(s.bigint), null),
-	safe: s.optional(s.pipe(s.safe_integer, s.finite, s.integer))
+	safe: s.optional(s.pipe(s.safe_integer, s.integer))
 };
 
 const values = ['null', 'true', '0', '1.5', '""', '"a"', '[]', '[null]', '{}', '{"k":"k"}'];

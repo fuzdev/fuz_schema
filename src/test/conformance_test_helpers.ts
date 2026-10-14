@@ -48,8 +48,6 @@ export interface ConformanceLib {
 	string: any;
 	/** The library's own `number`, whatever it does with `NaN` and the infinities. */
 	number: any;
-	/** A number that isn't `NaN` or an infinity. */
-	finite: any;
 	/** A number with no fraction. */
 	integer: any;
 	boolean: any;
@@ -88,7 +86,6 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 	zod: {
 		string: z.string(),
 		number: z.number(),
-		finite: z.number(),
 		integer: z.int(),
 		boolean: z.boolean(),
 		bigint: z.bigint(),
@@ -127,7 +124,6 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 	valibot: {
 		string: v.string(),
 		number: v.number(),
-		finite: v.pipe(v.number(), v.finite()),
 		integer: v.pipe(v.number(), v.integer()),
 		boolean: v.boolean(),
 		bigint: v.bigint(),
@@ -174,7 +170,6 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 	fuz_schema: {
 		string: s.string,
 		number: s.number,
-		finite: s.pipe(s.number, s.finite),
 		integer: s.pipe(s.number, s.integer),
 		boolean: s.boolean,
 		bigint: s.bigint,
@@ -1324,8 +1319,6 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'number, -0', schema: (l) => l.number, input: () => -0 },
 	{ name: 'number, a string of one', schema: (l) => l.number, input: () => '1' },
 	{ name: 'number, a Number object', schema: (l) => l.number, input: () => Object(1) },
-	{ name: 'finite, Infinity', schema: (l) => l.finite, input: () => Infinity },
-	{ name: 'finite, NaN', schema: (l) => l.finite, input: () => NaN },
 	{ name: 'integer, a fraction', schema: (l) => l.integer, input: () => 1.5 },
 	{ name: 'integer, past the safe ones', schema: (l) => l.integer, input: () => 2 ** 53 },
 	{ name: 'integer, Infinity', schema: (l) => l.integer, input: () => Infinity },

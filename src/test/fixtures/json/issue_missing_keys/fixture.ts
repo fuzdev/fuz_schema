@@ -18,7 +18,6 @@ const entries = {
 	variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 	integer: s.integer,
 	safe_integer: s.safe_integer,
-	finite: s.finite,
 	long_string: s.pipe(s.string, s.min_length(1)),
 	bounded_number: s.pipe(s.number, s.min_value(0), s.max_value(1)),
 	bounded_integer: s.pipe(s.integer, s.min_value(0)),
@@ -45,7 +44,7 @@ const entries = {
 const all =
 	'"string":"","number":0,"boolean":false,"literal":"a","literal_null":null,"one_of":1,"object":{},' +
 	'"loose_object":{},"strip_object":{},"record":{},"array":[],"union":null,"variant":{"k":"a"},' +
-	'"integer":0,"safe_integer":0,"finite":0,"long_string":"a","bounded_number":0,"bounded_integer":0,' +
+	'"integer":0,"safe_integer":0,"long_string":"a","bounded_number":0,"bounded_integer":0,' +
 	'"short_array":[],"nullable":null,"lazy":"","unknown":null,"nullable_unknown":null,' +
 	'"lazy_unknown":1,"nullable_lazy_unknown":[],"union_unknown":{},"lazy_union_unknown":0';
 

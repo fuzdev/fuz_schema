@@ -33,7 +33,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 
 | `def` | Kinds |
 |---|---|
-| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer`, `finite` |
+| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer` |
 | the value given | `literal`, `one_of`, `min_length`, `max_length`, `min_value`, `max_value`, `regex` |
 | the function given | `check`, `transform`, `lazy` |
 | `{schema}` | `optional`, `nullable` |

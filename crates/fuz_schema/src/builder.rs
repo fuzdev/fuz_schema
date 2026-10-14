@@ -246,11 +246,6 @@ impl SchemaBuilder {
         self.push(SchemaNode::SafeInteger)
     }
 
-    /// Matches a number that is not an infinity. An action too.
-    pub fn finite(&mut self) -> NodeId {
-        self.push(SchemaNode::Finite)
-    }
-
     /// Checks the nodes reachable from `root` and from every defined `lazy`,
     /// and makes the schema that starts at `root`.
     ///
@@ -704,8 +699,7 @@ impl<'a> Checker<'a> {
             | SchemaNode::Bigint
             | SchemaNode::Unknown
             | SchemaNode::Integer
-            | SchemaNode::SafeInteger
-            | SchemaNode::Finite => {}
+            | SchemaNode::SafeInteger => {}
         }
         Ok(())
     }
@@ -745,10 +739,7 @@ impl<'a> Checker<'a> {
         loop {
             match &self.nodes[id.index()] {
                 SchemaNode::String => return Some(ValueType::String),
-                SchemaNode::Number
-                | SchemaNode::Integer
-                | SchemaNode::SafeInteger
-                | SchemaNode::Finite => {
+                SchemaNode::Number | SchemaNode::Integer | SchemaNode::SafeInteger => {
                     return Some(ValueType::Number);
                 }
                 SchemaNode::Array(_) => return Some(ValueType::Array),
@@ -886,8 +877,7 @@ fn for_each_child(node: &SchemaNode, mut visit: impl FnMut(Step, NodeId)) {
         | SchemaNode::MinValue(_)
         | SchemaNode::MaxValue(_)
         | SchemaNode::Integer
-        | SchemaNode::SafeInteger
-        | SchemaNode::Finite => {}
+        | SchemaNode::SafeInteger => {}
     }
 }
 
@@ -1071,8 +1061,8 @@ mod tests {
                     let item = b.string();
                     b.array(item)
                 },
-                SchemaBuilder::finite,
-                SchemaKind::Finite,
+                SchemaBuilder::safe_integer,
+                SchemaKind::SafeInteger,
             ),
             (
                 |b| {
@@ -1088,7 +1078,7 @@ mod tests {
                 let head = head(b);
                 let ok = match b.nodes[head.index()].kind() {
                     SchemaKind::String | SchemaKind::Array => b.min_length(0.0),
-                    _ => b.finite(),
+                    _ => b.integer(),
                 };
                 let action = action(b);
                 b.pipe([head, ok, action])

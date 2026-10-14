@@ -44,7 +44,7 @@ export const fixture: JsonFixture = {
 			])
 		),
 		none: s.optional(s.union([])),
-		one: s.optional(s.union([s.finite])),
+		one: s.optional(s.union([s.integer])),
 		nested: s.optional(
 			s.array(
 				s.union([

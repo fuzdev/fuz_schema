@@ -194,7 +194,7 @@ pub enum SchemaBuildErrorKind {
     /// A `pipe` with no schema.
     EmptyPipe,
     /// A `pipe` whose first schema does not fix the type of its value: only
-    /// `string`, `number`, `array`, `integer`, `safe_integer`, `finite`, or a
+    /// `string`, `number`, `array`, `integer`, `safe_integer`, or a
     /// `pipe` of one of those can start a pipe.
     PipeHead {
         /// The kind found.

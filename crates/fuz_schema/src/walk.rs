@@ -388,11 +388,10 @@ fn select<'a>(variant: &VariantDef, value: Value<'a>) -> Selected<'a> {
 fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
     match node {
         SchemaNode::String => matches!(value, Value::String(_)),
-        // `number` rejects `NaN` and the infinities, as `finite` does. JSON
-        // has no `NaN`, and a number past a double is the parser's error, so
-        // no text hands an evaluator either: the test is the library's all
-        // the same
-        SchemaNode::Number | SchemaNode::Finite => {
+        // `number` rejects `NaN` and the infinities. JSON has no `NaN`, and a
+        // number past a double is the parser's error, so no text hands an
+        // evaluator either: the test is the library's all the same
+        SchemaNode::Number => {
             matches!(value, Value::Number(number) if number.is_finite())
         }
         SchemaNode::Boolean => matches!(value, Value::Bool(_)),
@@ -1155,8 +1154,7 @@ pub mod tests {
             let number = b.number();
             let min = b.min_value(0.1);
             let max = b.max_value(0.3);
-            let finite = b.finite();
-            b.pipe([number, min, max, finite])
+            b.pipe([number, min, max])
         });
         check(
             &bounded,
@@ -1232,7 +1230,6 @@ pub mod tests {
     fn number_tests_stand_alone() {
         check_types(&build(SchemaBuilder::integer), &["0"]);
         check_types(&build(SchemaBuilder::safe_integer), &["0"]);
-        check_types(&build(SchemaBuilder::finite), &["0", "1.5"]);
         let items = build(|b| {
             let integer = b.integer();
             let min = b.min_value(1.0);
@@ -1367,14 +1364,13 @@ pub mod tests {
     fn issues_say_what_was_expected() {
         // the kind's own name
         type Make = fn(&mut SchemaBuilder) -> NodeId;
-        let kinds: [(Make, &str); 7] = [
+        let kinds: [(Make, &str); 6] = [
             (SchemaBuilder::string, "string"),
             (SchemaBuilder::number, "number"),
             (SchemaBuilder::boolean, "boolean"),
             (SchemaBuilder::bigint, "bigint"),
             (SchemaBuilder::integer, "integer"),
             (SchemaBuilder::safe_integer, "safe_integer"),
-            (SchemaBuilder::finite, "finite"),
         ];
         for (make, kind) in kinds {
             let schema = build(make);

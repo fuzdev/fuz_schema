@@ -45,7 +45,7 @@ out where that is `undefined`:
 
 ```json
 {"kind":"string"}  {"kind":"number"}  {"kind":"boolean"}  {"kind":"bigint"}  {"kind":"unknown"}
-{"kind":"integer"}  {"kind":"safe_integer"}  {"kind":"finite"}
+{"kind":"integer"}  {"kind":"safe_integer"}
 {"kind":"literal","def":"a"}  {"kind":"literal","def":null}
 {"kind":"one_of","def":["a",1,null]}
 {"kind":"optional","def":{"schema":{"kind":"string"}}}
@@ -223,8 +223,7 @@ it in the interchange form. Nothing is guessed at.
 
 A pipe's first schema fixes the type when it is `string`, `number`, `array`,
 one of the number tests, or a pipe of one of those. The number tests
-(`integer`, `safe_integer`, `finite`) answer for any value, so they also
-stand alone.
+(`integer`, `safe_integer`) answer for any value, so they also stand alone.
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest

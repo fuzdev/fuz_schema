@@ -311,7 +311,6 @@ impl<'a> Loader<'a> {
             SchemaKind::Unknown => self.bare(def, SchemaBuilder::unknown),
             SchemaKind::Integer => self.bare(def, SchemaBuilder::integer),
             SchemaKind::SafeInteger => self.bare(def, SchemaBuilder::safe_integer),
-            SchemaKind::Finite => self.bare(def, SchemaBuilder::finite),
             SchemaKind::Literal => {
                 // with no `def` the TypeScript literal is `undefined`
                 let Some(def) = def else {
@@ -515,7 +514,7 @@ mod tests {
     }
 
     /// One schema of every kind, a text it matches, and one it does not.
-    const EVERY_KIND: [(&str, &str, &str); 26] = [
+    const EVERY_KIND: [(&str, &str, &str); 25] = [
         (r#"{"kind":"string"}"#, r#""a""#, "1"),
         (r#"{"kind":"number"}"#, "1.5", r#""1""#),
         (r#"{"kind":"boolean"}"#, "false", "0"),
@@ -609,7 +608,6 @@ mod tests {
             "9007199254740991",
             "9007199254740992",
         ),
-        (r#"{"kind":"finite"}"#, "1.5", r#""1.5""#),
     ];
 
     #[test]

@@ -127,9 +127,6 @@
 									"kind": "safe_integer"
 								},
 								{
-									"kind": "finite"
-								},
-								{
 									"kind": "integer"
 								}
 							]

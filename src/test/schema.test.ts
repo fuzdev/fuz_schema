@@ -102,10 +102,9 @@ describe('primitives', () => {
 		for (const value of [2 ** 53, 2 ** 53 + 2, -(2 ** 60), Number.MAX_VALUE, 1e21]) {
 			assert(s.is(s.pipe(s.number, s.integer), value), inspect(value));
 			assert(!s.is(s.pipe(s.number, s.safe_integer), value), inspect(value));
-			assert(s.is(s.pipe(s.number, s.finite), value), inspect(value));
 		}
-		// after `number` an infinity fails as a `number`, and `finite` has nothing left to fail
-		for (const action of [s.integer, s.safe_integer, s.finite]) {
+		// after `number` an infinity fails as a `number`, and the action has nothing left to fail
+		for (const action of [s.integer, s.safe_integer]) {
 			for (const value of [Infinity, -Infinity, NaN]) {
 				assert.deepEqual(
 					issues_of(s.pipe(s.number, action), value).map((i) => i.kind),
@@ -3843,7 +3842,6 @@ describe('def', () => {
 		max_value: s.max_value(4n),
 		integer: s.integer,
 		safe_integer: s.safe_integer,
-		finite: s.finite,
 		regex: s.regex(pattern),
 		check: s.check(check_fn),
 		transform: s.transform(transform_fn)
@@ -3889,7 +3887,6 @@ describe('def', () => {
 			max_value: 4n,
 			integer: undefined,
 			safe_integer: undefined,
-			finite: undefined,
 			regex: pattern,
 			check: check_fn,
 			transform: transform_fn
@@ -5287,7 +5284,6 @@ describe('types', () => {
 				case 'unknown':
 				case 'integer':
 				case 'safe_integer':
-				case 'finite':
 					expectTypeOf(schema.def).toEqualTypeOf<undefined>();
 					break;
 				case 'literal':

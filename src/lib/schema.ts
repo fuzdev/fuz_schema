@@ -189,7 +189,6 @@ export interface SchemaDefs {
 	max_value: number | bigint;
 	integer: undefined;
 	safe_integer: undefined;
-	finite: undefined;
 	regex: RegExp;
 	check: (value: any) => boolean;
 	transform: (value: any) => unknown;
@@ -1420,17 +1419,6 @@ export const safe_integer: Schema<number, number, 'safe_integer', undefined> = {
 	kind: 'safe_integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isSafeInteger(value) ? value : fail(ctx, 'safe_integer', value))
-};
-
-/**
- * Fails `NaN` and the infinities. After `number` it never fails, as `number`
- * refuses both: it is for a number that came another way, as through
- * `unknown` or a schema defined outside this module.
- */
-export const finite: Schema<number, number, 'finite', undefined> = {
-	kind: 'finite',
-	def: undefined,
-	run: (value, ctx) => (Number.isFinite(value) ? value : fail(ctx, 'finite', value))
 };
 
 /**

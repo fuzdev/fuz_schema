@@ -199,7 +199,6 @@ export const SHAPE_SAMPLES: Record<
 	],
 	integer: () => [{ action: true, schema: s.integer, valid: [1], invalid: [1.5] }],
 	safe_integer: () => [{ action: true, schema: s.safe_integer, valid: [1], invalid: [2 ** 60] }],
-	finite: () => [{ action: true, schema: s.finite, valid: [1], invalid: [Infinity] }],
 	regex: () => [{ action: true, schema: s.regex(/^a/), valid: ['a'], invalid: ['b'] }],
 	check: () => [
 		{

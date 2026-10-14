@@ -92,8 +92,6 @@ pub enum SchemaKind {
     Integer,
     /// `safe_integer`.
     SafeInteger,
-    /// `finite`.
-    Finite,
 }
 
 impl SchemaKind {
@@ -124,7 +122,6 @@ impl SchemaKind {
         Self::MaxValue,
         Self::Integer,
         Self::SafeInteger,
-        Self::Finite,
     ];
 
     /// The kind's name, the `kind` of the TypeScript schema.
@@ -155,7 +152,6 @@ impl SchemaKind {
             Self::MaxValue => "max_value",
             Self::Integer => "integer",
             Self::SafeInteger => "safe_integer",
-            Self::Finite => "finite",
         }
     }
 
@@ -175,7 +171,6 @@ impl SchemaKind {
                 | Self::MaxValue
                 | Self::Integer
                 | Self::SafeInteger
-                | Self::Finite
         )
     }
 
@@ -316,9 +311,6 @@ pub enum SchemaNode {
     Integer,
     /// An integer every neighbor of which is a distinct double.
     SafeInteger,
-    /// A number that is not an infinity, which every number `Number`
-    /// matches is.
-    Finite,
 }
 
 impl SchemaNode {
@@ -350,7 +342,6 @@ impl SchemaNode {
             Self::MaxValue(_) => SchemaKind::MaxValue,
             Self::Integer => SchemaKind::Integer,
             Self::SafeInteger => SchemaKind::SafeInteger,
-            Self::Finite => SchemaKind::Finite,
         }
     }
 
@@ -645,7 +636,6 @@ mod tests {
             SchemaKind::MaxValue => 22,
             SchemaKind::Integer => 23,
             SchemaKind::SafeInteger => 24,
-            SchemaKind::Finite => 25,
         }
     }
 
@@ -655,7 +645,7 @@ mod tests {
             assert_eq!(place(kind), index, "{kind}");
         }
         // the last place is the last of the list, so none is past its end
-        assert_eq!(place(SchemaKind::Finite) + 1, SchemaKind::ALL.len());
+        assert_eq!(place(SchemaKind::SafeInteger) + 1, SchemaKind::ALL.len());
     }
 
     #[test]

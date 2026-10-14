@@ -39,8 +39,7 @@ describe('to_schema_json', () => {
 			s.bigint,
 			s.unknown,
 			s.integer,
-			s.safe_integer,
-			s.finite
+			s.safe_integer
 		]) {
 			assert.deepEqual(to_schema_json(schema), { schema: { kind: schema.kind } });
 		}
@@ -568,7 +567,7 @@ describe('to_schema_json refuses', () => {
 			'cannot serialize `pipe` at /schema/def/1: the action is not for a number'
 		);
 		refuses(
-			() => s.pipe(s.array(s.string), s.finite as any),
+			() => s.pipe(s.array(s.string), s.safe_integer as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for a array'
 		);
 	});

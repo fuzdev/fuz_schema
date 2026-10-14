@@ -78,8 +78,7 @@ const BARE_KINDS: ReadonlySet<string> = new Set([
 	'bigint',
 	'unknown',
 	'integer',
-	'safe_integer',
-	'finite'
+	'safe_integer'
 ]);
 
 /** The kinds that hold a JavaScript value, which the form has no way to write. */
@@ -95,8 +94,7 @@ const NUMBER_ACTIONS: ReadonlySet<string> = new Set([
 	'min_value',
 	'max_value',
 	'integer',
-	'safe_integer',
-	'finite'
+	'safe_integer'
 ]);
 
 /** The actions that mean something only in a `pipe`, where the library would coerce or throw. */
@@ -118,7 +116,6 @@ const value_type = (schema: AnySchema): 'string' | 'number' | 'array' | undefine
 		case 'number':
 		case 'integer':
 		case 'safe_integer':
-		case 'finite':
 			return 'number';
 		case 'array':
 			return 'array';

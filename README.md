@@ -113,7 +113,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
-| refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer`, `finite` |
+| refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |

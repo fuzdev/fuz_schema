@@ -140,7 +140,7 @@
 							"kind": "union",
 							"def": [
 								{
-									"kind": "finite"
+									"kind": "integer"
 								}
 							]
 						}
@@ -896,7 +896,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "finite",
+					"expected": "integer",
 					"received": "string",
 					"path": [
 						"one"
@@ -1766,7 +1766,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "finite",
+					"expected": "integer",
 					"received": "string",
 					"path": [
 						"one"
