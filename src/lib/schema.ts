@@ -615,29 +615,37 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
  * match each other, and `NaN` when it is among them.
  *
  * With `undefined` among `values` it needs its key as an object entry, as
- * `literal(undefined)` does. Whether it is among them is read once, when the
- * schema is made.
+ * `literal(undefined)` does. `values` are read once, when the schema is made:
+ * changing the array afterwards changes `def` and not what the schema matches.
  */
 // @__NO_SIDE_EFFECTS__
 export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
 	values: T
 ): Schema<T[number], T[number], 'one_of', T> => {
 	let expected: string | undefined;
+	// built once here and kept in the closure, so `def` stays the array. `has`
+	// matches as `includes` does, `NaN` included, in a time the length doesn't
+	// set, and the first value is looked at before it. An empty list's first is
+	// `NaN`, which `===` never matches, and not the `undefined` it would read as
+	const set = new Set(values);
+	const first = values.length ? values[0] : NaN;
 	return {
 		kind: 'one_of',
 		def: values,
 		// two closures chosen once here, as in `literal`
-		run: values.includes(undefined)
+		run: set.has(undefined)
 			? (v, ctx, parent, key) =>
 					v === undefined
 						? parent && !((key as string) in parent)
 							? fail(ctx, 'missing_key', v, 'a required key')
 							: v
-						: values.includes(v)
+						: v === first || set.has(v)
 							? v
 							: fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
 			: (v, ctx) =>
-					values.includes(v) ? v : fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
+					v === first || set.has(v)
+						? v
+						: fail(ctx, 'one_of', v, (expected ??= format_literals(values)))
 	};
 };
 

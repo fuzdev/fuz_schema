@@ -675,7 +675,10 @@ const each: CaseGroup = (s) => {
 		of('number/valid', s.number, 42),
 		of('number_fractional/valid', s.number, 3.25),
 		of('literal/valid', s.literal('a'), 'a'),
+		of('one_of_20_first/valid', to_one_of(s)(range(20)), 0),
 		of('one_of_20_last/valid', to_one_of(s)(range(20)), 19),
+		of('one_of_5_strings_first/valid', to_one_of(s)(['a', 'b', 'c', 'd', 'e']), 'a'),
+		of('one_of_5_strings_last/valid', to_one_of(s)(['a', 'b', 'c', 'd', 'e']), 'e'),
 		of('optional_present/valid', s.optional(s.string), 'x'),
 		of('nullable_null/valid', s.nullable(s.string), null),
 		of(

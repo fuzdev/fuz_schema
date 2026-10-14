@@ -111,6 +111,11 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   object and the key, and has four parameters. Every other literal and
   `one_of` has the `run` of two it would have without it, so what looking for
   the key costs them is bytes, in the bundles that have the kind.
+- **A `one_of` holds a `Set` of its values**, built when it is made and kept
+  in its closure, so `def` stays the array it was given. A value is checked
+  against the first of the list by `===`, then by `has`, which matches as
+  `includes` does, `NaN` among them, without a walk of the list. The `Set` is
+  heap every `one_of` keeps for as long as it lives.
 - **Each of the four is two closures** that differ only in what they pass on.
   One `run` of four parameters is fewer bytes, and measured slower on valid
   input for `union`, for `pipe`, and for a `message` around every schema: it
@@ -276,8 +281,8 @@ all a missing key costs an object that has no schema asking.
   same way**, and fail as the same `missing_key` without it: `{}` doesn't
   match `object({a: literal(undefined)})` and `{a: undefined}` does. The three
   are the schemas that need a key, and what follows of `unknown` holds for
-  each. A `one_of` reads whether `undefined` is among its values once, when it
-  is made.
+  each. A `one_of` reads its values once, when it is made, `undefined` among
+  them.
 - **It is handed the object wherever the entry reaches it**: as the entry
   itself, through `flavor`, `brand`, and `meta`, which keep its `run`, and
   through `message`, `nullable`, `lazy`, an option of a `union`, and the first

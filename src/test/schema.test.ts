@@ -189,6 +189,43 @@ describe('primitives', () => {
 		assert.strictEqual(issues_of(s.literal(-0), 1)[0]!.expected, '0');
 	});
 
+	test('a one_of matches what includes finds, wherever the value is in the list', () => {
+		const inputs = [0, -0, 1, NaN, '', 'a', 'NaN', null, undefined, false, true, 1n, {}, [], [NaN]];
+		const lists: Array<Array<s.SchemaLiteral>> = [
+			[],
+			[NaN],
+			[NaN, 1],
+			[1, NaN],
+			[0],
+			[-0],
+			[-0, 'a', 1],
+			['a', 1, 0],
+			['a'],
+			[null],
+			[null, 'a'],
+			[undefined],
+			[undefined, 'a'],
+			['a', undefined],
+			[false, 1n, '', null],
+			['a', 'b', 'c', 'd', 'e'],
+			Array.from({ length: 20 }, (_, i) => i)
+		];
+		for (const values of lists) {
+			const schema = s.one_of(values);
+			for (const input of inputs) {
+				const result = s.parse(schema, input);
+				assert.strictEqual(result.ok, values.includes(input as any), inspect([values, input]));
+				// the output is the input, so `-0` stays `-0`
+				if (result.ok) assert(Object.is(result.value, input), inspect([values, input]));
+			}
+		}
+		// an empty list matches nothing, `undefined` included, inside an object and out
+		assert(!s.is(s.one_of([]), undefined));
+		assert(!s.is(s.array(s.one_of([])), new Array(1)));
+		assert(!s.is(s.object({ a: s.one_of([]) }), { a: undefined }));
+		assert(!s.is(s.object({ a: s.one_of([]) }), {}));
+	});
+
 	test('variant finds an option by a NaN literal, and by either zero', () => {
 		const V = s.variant('t', [
 			s.object({ t: s.literal(NaN), a: s.string }),
