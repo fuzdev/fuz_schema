@@ -173,23 +173,23 @@ after the enumeration, as `run_entries` runs them.
 - **Why**: it is the loop driven by `for...in` above, in `strip_object`
   alone, and shares its flaw: one input in dictionary mode, through the
   enumeration the schemas share, slows every later parse, and the win of
-  running in the input's order does not survive it. Unpoisoned, it is over
-  the size ceiling and slower on some valid shapes.
+  running in the input's order does not survive it. Unpoisoned, it was over
+  the ceiling rule 5 had then, and is slower on some valid shapes.
 - **Reopens**: a form whose win on input in the schema's order survives a
   dictionary-mode input in the same program.
 
-Re-made on the current schema, in two variants, the entries run eagerly and
-a flag passed to the loop. Unpoisoned, the eager form is +44 gzip on all the
-scenarios together, over the size ceiling, and slower than the current loop
-on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
-`strip_object` (1.17x alone); the flag form is +100. Poisoned by one input
-in dictionary mode, a parse of a `strip_object` of 200 keys, through the
-shared `for...in`, both were slower than the current loop poisoned the same
-way on every strip case but one whose first optional key is absent: a
-geometric mean of 2.2x on the valid cases in the matrix and 2.8x to 3.1x
-alone and apart, and up to 12x on a probe that fails. The eager form's
-realistic valid path was 26% slower in the matrix and 36% alone. The current
-loop itself, on an input with nothing to drop, moved from 111 to 121 ns.
+Re-made on the current schema, in two variants, the entries run eagerly and a
+flag passed to the loop. Unpoisoned, the eager form is +44 gzip on all the
+scenarios together, over the ceiling rule 5 had then, and slower than the
+current loop on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
+`strip_object` (1.17x alone); the flag form is +100. Poisoned by one input in
+dictionary mode, a parse of a `strip_object` of 200 keys, through the shared
+`for...in`, both were slower than the current loop poisoned the same way on
+every strip case but one whose first optional key is absent: a geometric mean
+of 2.2x on the valid cases in the matrix and 2.8x to 3.1x alone and apart, and
+up to 12x on a probe that fails. The eager form's realistic valid path was 26%
+slower in the matrix and 36% alone. The current loop itself, on an input with
+nothing to drop, moved from 111 to 121 ns.
 
 ## `lazy`
 
@@ -271,7 +271,7 @@ through, and not only after the ones the pipe has the object for.
 
 - **Gave**: one rule for every first schema.
 - **Cost**: +97 gzip on the `pipe` scenario and +85 on all the scenarios
-  together, which at 0.7502 of Valibot's is over the ceiling of rule 5.
+  together, which at 0.7502 of Valibot's was over the ceiling rule 5 had then.
 - **Why**: bytes in every bundle with a `pipe`, for first schemas on which
   Zod and Valibot disagree with each other.
 - **Reopens**: a way to tell that costs a pipe that starts with a `string`
@@ -288,11 +288,14 @@ closure of two parameters, which it shares them with.
   the shared closure. That is the path that calling the shared closure costs
   in the matrix, 1.14x and 1.16x against a pipe that hands its `optional` the
   object and the key and loops itself.
-- **Cost**: +8 gzip on all the scenarios together, which at 2126 is over the
-  ceiling of rule 5, and +11 on the `pipe` scenario. Without the key, alone,
-  1.16x, allocating 48 bytes a parse where the shared closure allocates none.
-- **Why**: over the ceiling. The present-key path keeps the cost of the call.
-- **Reopens**: bytes found under the ceiling to pay for it.
+- **Cost**: +8 gzip on all the scenarios together, which at 2126 was over the
+  ceiling rule 5 had then, and +11 on the `pipe` scenario. Without the key,
+  alone, 1.16x, allocating 48 bytes a parse where the shared closure allocates
+  none.
+- **Why**: over the ceiling rule 5 had then. The present-key path keeps the
+  cost of the call.
+- **Reopens**: open under rule 5's price per class: its +11 on the `pipe`
+  scenario, weighed by rule 3 against its speed, and its 1.16x without the key.
 
 ### The steps of a `pipe` in one loop from its first schema
 
@@ -328,8 +331,9 @@ that looks for the key first, for `literal` and `one_of`, in place of a
 second closure in each.
 
 - **Cost**: +65 gzip on all the scenarios together where the two closures are
-  +45, which at 0.725 of Valibot's was over the ceiling rule 5 had then, and
-  6 gzip more over the whole library. A call more a parse for a schema that needs its key.
+  +45, which at 0.725 of Valibot's was over the ceiling rule 5 had then, and 6
+  gzip more over the whole library. A call more a parse for a schema that
+  needs its key.
 - **Why**: more bytes, where it was built for fewer.
 - **Reopens**: nothing known.
 

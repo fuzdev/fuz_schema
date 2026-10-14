@@ -2,7 +2,7 @@
  * Grades a version of `schema.ts`, by default the working tree's, against
  * another, across every factor the acceptance rules weigh: time and allocation
  * per case, whether the output is the input itself, bundle size per scenario
- * and of every export together, retained heap, and cold start.
+ * and per export, priced by `grade_bytes.ts`, retained heap, and cold start.
  *
  * This module measures nothing itself. It plans the processes, runs them one
  * at a time where they are timed, and reads the verdict from all of them
@@ -70,7 +70,30 @@ import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
 import { PROGRAM } from './program.ts';
 import { SCENARIOS } from './scenarios.ts';
-import { measure_bundle_size, measure_library_size } from './bundle_size.ts';
+import {
+	measure_bundle_size,
+	measure_export_sizes,
+	type ExportSize,
+	type ExportSizes
+} from './bundle_size.ts';
+import {
+	BACKSTOP_VS_VALIBOT,
+	CHANGE_CLASSES,
+	CORE_SCENARIO,
+	CORRECTNESS_PRICE,
+	SIZE_JITTER,
+	format_opt_in_line,
+	format_size_delta,
+	format_size_figures,
+	judge_backstop,
+	judge_core_correctness,
+	judge_opt_in,
+	to_size_delta,
+	to_vs_valibot,
+	type BackstopRow,
+	type SizeFigure
+} from './grade_bytes.ts';
+import { BASELINE_LIB } from './libs.ts';
 import { ENTRY_FORMS, start_child, type EntryVariant } from './child.ts';
 import {
 	COLDSTART_STAGES,
@@ -146,6 +169,14 @@ const Args = z.strictObject({
 		.positive()
 		.default(1)
 		.meta({ description: 'milliseconds one timing slice of one instance lasts' }),
+	class: z
+		.enum(CHANGE_CLASSES)
+		.default('speed')
+		.meta({
+			description:
+				'what the change is for, which sets the price of its bytes: speed, or correctness ' +
+				'for a fix of correctness or conformance'
+		}),
 	bundle: z.boolean().default(true).meta({ description: 'also measure bundle sizes' }),
 	'no-bundle': z.boolean().default(false).meta({ description: 'opt out of bundle' }),
 	process: z
@@ -235,11 +266,6 @@ const ALLOC_FLOOR = { bytes: 8, share: 0.002 };
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 // the least speedup any added core bytes need, the rule's second sentence
 const LEAST_SPEEDUP_FOR_BYTES = 0.05;
-// of all the scenarios bundled together, this library's gzip bytes over valibot's
-const CEILING_VS_VALIBOT = 0.75;
-// the scenario standing in for "what `parse` plus an object schema reaches":
-// the one built from `object`, the default object schema
-const CORE_SCENARIO = 'strict_nested';
 // the scenarios cold start samples: one small schema, one large
 const COLDSTART_SCENARIOS = ['object_flat', 'type_json'];
 const COLDSTART_DISCARD = 2;
@@ -927,73 +953,188 @@ for (const regime of REGIMES) {
 //
 
 let core_delta = 0;
-let all_vs_valibot = NaN;
+// the bundle of every export, reported beside the opt-in verdict
+let library_delta = 0;
+// every figure rules 4 and 5 read, and each scenario beside valibot's
+let size_figures: Array<SizeFigure> = [];
+let backstop_rows: Array<BackstopRow> = [];
 let all_sizes = { new: NaN, valibot: NaN };
 
 if (args.bundle) {
+	const since = performance.now();
 	const all_names = SCENARIOS.map((s) => s.name);
+	const measure_base = async (names: Array<string>): Promise<number> =>
+		(
+			await measure_bundle_size('fuz_schema', names, {
+				schema_path: baseline_path,
+				lib_path: baseline_lib_path
+			})
+		).gzip;
+	const measure_new = async (names: Array<string>): Promise<number> =>
+		(await measure_bundle_size('fuz_schema', names, { schema_path: new_variant?.schema_path }))
+			.gzip;
+	const measure_valibot = async (names: Array<string>): Promise<number> =>
+		(await measure_bundle_size(BASELINE_LIB, names)).gzip;
 	// `all` compares the two versions on the scenarios both have, so its delta
-	// is the change's. The ceiling is read on every scenario, below.
-	const columns: Array<Array<string>> = [...all_names.map((name) => [name]), shared_scenarios];
-	const headers = [...all_names, 'all'];
-	const base_sizes: Array<number> = [];
-	const sizes: Array<number> = [];
-	for (const column of columns) {
-		base_sizes.push(
-			column.every((name) => shared_scenarios.includes(name))
-				? (
-						await measure_bundle_size('fuz_schema', column, {
-							schema_path: baseline_path,
-							lib_path: baseline_lib_path
-						})
-					).gzip
-				: NaN
-		);
-		sizes.push(
-			(await measure_bundle_size('fuz_schema', column, { schema_path: new_variant?.schema_path }))
-				.gzip
-		);
-	}
-	const new_all = unshared_scenarios.length
-		? (
-				await measure_bundle_size('fuz_schema', all_names, {
-					schema_path: new_variant?.schema_path
-				})
-			).gzip
-		: sizes.at(-1)!;
-	const valibot_all = (await measure_bundle_size('valibot', all_names)).gzip;
-	const core_index = headers.indexOf(CORE_SCENARIO);
-	core_delta = sizes[core_index]! - base_sizes[core_index]!;
-	all_vs_valibot = new_all / valibot_all;
-	all_sizes = { new: new_all, valibot: valibot_all };
-	// every export of each version's own module, which no rule reads
-	headers.push('library');
-	base_sizes.push((await measure_library_size(baseline_path)).gzip);
-	sizes.push((await measure_library_size(new_path)).gzip);
+	// is the change's, and is read beside valibot's on every scenario
+	const [scenario_rows, all_row, export_sizes] = await Promise.all([
+		Promise.all(
+			all_names.map(async (name) => ({
+				name,
+				base: shared_scenarios.includes(name) ? await measure_base([name]) : NaN,
+				new: await measure_new([name]),
+				valibot: await measure_valibot([name])
+			}))
+		),
+		Promise.all([
+			measure_base(shared_scenarios),
+			measure_new(shared_scenarios),
+			unshared_scenarios.length ? measure_new(all_names) : undefined,
+			measure_valibot(all_names)
+		]),
+		Promise.all([
+			measure_export_sizes(baseline_path),
+			// the working tree's own file unless one is given, as `sizes.json` measures it
+			measure_export_sizes(new_variant?.schema_path)
+		])
+	]);
+	const [base_all, new_shared, new_every, valibot_all] = all_row;
+	all_sizes = { new: new_every ?? new_shared, valibot: valibot_all };
+	backstop_rows = scenario_rows.map((r) => ({ name: r.name, gzip: r.new, valibot: r.valibot }));
+	const over_backstop = judge_backstop(backstop_rows);
+	const [base_exports, new_exports] = export_sizes;
+	library_delta = new_exports.library - base_exports.library;
+	const to_by_name = (sizes: ExportSizes): Map<string, ExportSize> =>
+		new Map(sizes.exports.map((e) => [e.name, e]));
+	const base_by_name = to_by_name(base_exports);
+	const new_by_name = to_by_name(new_exports);
+	const export_names = [...new Set([...new_by_name.keys(), ...base_by_name.keys()])];
+	const scenario_figures: Array<SizeFigure> = scenario_rows.map((r) => ({
+		name: r.name,
+		kind: 'scenario',
+		core: r.name === CORE_SCENARIO,
+		base: r.base,
+		new: r.new
+	}));
+	const export_figures: Array<SizeFigure> = [
+		{ name: 'parse', kind: 'export', core: true, base: base_exports.parse, new: new_exports.parse },
+		// each export's last in, then its alone, which sees a helper it shares
+		...(['export', 'alone'] as const).flatMap((kind) =>
+			export_names.map((name): SizeFigure => {
+				const field = kind === 'export' ? 'last_in' : 'alone';
+				return {
+					name,
+					kind,
+					core: false,
+					base: base_by_name.get(name)?.[field] ?? NaN,
+					new: new_by_name.get(name)?.[field] ?? NaN
+				};
+			})
+		)
+	];
+	// a scenario the baseline's module lacks is compared on nothing
+	size_figures = [...scenario_figures.filter((f) => !Number.isNaN(f.base)), ...export_figures];
+	const core_figure = size_figures.find((f) => f.kind === 'scenario' && f.core);
+	core_delta = core_figure ? to_size_delta(core_figure) : 0;
 
-	console.log('\nbundle size: minified + gzip bytes per scenario, and of every export together\n');
+	const format_size = (size: number): string => (Number.isNaN(size) ? '-' : String(size));
+	const format_class = (f: SizeFigure): string => (f.core ? 'core' : 'opt-in');
+	// under the correctness class, a figure over its price
+	const over_price = new Set(
+		args.class === 'correctness'
+			? [...judge_core_correctness(size_figures), ...judge_opt_in(size_figures, 'correctness').over]
+			: []
+	);
+	const format_figure_delta = (f: SizeFigure): string =>
+		(Number.isNaN(f.base) ? '-' : format_size_delta(to_size_delta(f))) +
+		(over_price.has(f) ? '!' : ' ');
+	const format_vs_valibot = (ratio: number, over: boolean): string =>
+		`${ratio.toFixed(2)}x${over ? '*' : ' '}`;
+
+	console.log(
+		'\nbundle size: minified + gzip bytes. Core is what every consumer pays, opt-in what one pays who uses it\n'
+	);
 	console.log(
 		format_table([
-			['', ...headers],
-			['base', ...base_sizes.map((s) => (Number.isNaN(s) ? '-' : String(s)))],
-			['new', ...sizes.map(String)],
-			[
-				'delta',
-				...sizes.map((s, i) =>
-					Number.isNaN(base_sizes[i]!)
-						? '-'
-						: `${s - base_sizes[i]! >= 0 ? '+' : ''}${s - base_sizes[i]!}`
+			['scenario', 'class', 'base', 'new', 'delta', 'valibot', 'vs valibot'],
+			...scenario_figures.map((f, i) => [
+				f.name,
+				format_class(f),
+				format_size(f.base),
+				format_size(f.new),
+				format_figure_delta(f),
+				String(backstop_rows[i]!.valibot),
+				format_vs_valibot(
+					to_vs_valibot(backstop_rows[i]!),
+					over_backstop.includes(backstop_rows[i]!)
 				)
+			]),
+			[
+				'all',
+				'reported',
+				String(base_all),
+				String(new_shared),
+				format_size_delta(new_shared - base_all) + ' ',
+				String(valibot_all),
+				format_vs_valibot(all_sizes.new / valibot_all, false)
 			]
 		])
+	);
+	console.log(
+		`* over ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's, the backstop` +
+			(args.class === 'correctness' ? ', ! over the price of a correctness change' : '')
+	);
+	// the figures a reader needs: core, any that moved past the jitter, and any one side lacks,
+	// each export's figures together
+	const is_listed = (f: SizeFigure): boolean =>
+		f.core ||
+		Math.abs(to_size_delta(f)) > SIZE_JITTER ||
+		Number.isNaN(f.base) ||
+		Number.isNaN(f.new);
+	const listed_names = new Set(export_figures.filter(is_listed).map((f) => f.name));
+	const listed = [...listed_names].flatMap((name) =>
+		export_figures.filter((f) => f.name === name && is_listed(f))
+	);
+	const format_figure_kind = (f: SizeFigure): string =>
+		f.kind === 'alone' || f.core ? 'alone' : 'last in';
+	console.log(
+		`\nexports: \`parse\` alone, and each other's last in, what it costs a consumer who has the rest, and alone,\n` +
+			`what it costs over \`parse\` a consumer who has only it, with the library whole. An opt-in figure that\n` +
+			`moved by ${SIZE_JITTER} or less is gzip and not the change, and is not listed\n`
+	);
+	console.log(
+		format_table([
+			['export', 'figure', 'class', 'base', 'new', 'delta'],
+			...listed.map((f) => [
+				f.name,
+				format_figure_kind(f),
+				format_class(f),
+				format_size(f.base),
+				format_size(f.new),
+				format_figure_delta(f)
+			]),
+			[
+				'library',
+				'every export',
+				'reported',
+				String(base_exports.library),
+				String(new_exports.library),
+				format_size_delta(library_delta) + ' '
+			]
+		])
+	);
+	console.log(
+		`${export_names.length + 1 - listed_names.size} other exports within ±${SIZE_JITTER}, last in and alone`
 	);
 	if (unshared_scenarios.length) {
 		console.log(
 			`\nthe baseline's scenario module has no ${unshared_scenarios.join(', ')}: ` +
-				`${unshared_scenarios.length === 1 ? 'it is' : 'they are'} measured for the new version alone, and \`all\` is of the\n` +
-				'scenarios both have. The size ceiling is read on every scenario.'
+				`${unshared_scenarios.length === 1 ? 'it is' : 'they are'} measured for the new version alone. ` +
+				'`all` is of the scenarios\n' +
+				'both have, and its ratio of every scenario.'
 		);
 	}
+	console.log(`\nbundles: ${to_elapsed(since)}`);
 }
 
 //
@@ -1163,49 +1304,76 @@ for (const { regime, whole, paths } of valid_by_regime) {
 	);
 }
 if (args.bundle) {
-	const matrix_valid = valid_by_regime.find((v) => v.regime === 'matrix')?.whole;
-	const required =
-		core_delta > 0
-			? Math.max(
-					LEAST_SPEEDUP_FOR_BYTES,
-					(core_delta / SPEEDUP_PER_CORE_BYTES.bytes) * SPEEDUP_PER_CORE_BYTES.speedup
-				)
-			: 0;
-	// the return may be on the invalid cases when the valid path is not slower
-	const matrix_invalid = summarize(
-		graded.filter((g) => g.c.realistic && !g.c.valid && g.matrix && !Number.isNaN(g.matrix.ratio)),
-		'matrix'
+	console.log(
+		args.class === 'correctness'
+			? 'bytes, priced as a fix of correctness or conformance (--class correctness):'
+			: 'bytes, priced as a change for speed (--class correctness for a fix of correctness or conformance):'
 	);
-	const is_return = (s: Summary): boolean =>
-		is_outside(s) && s.ratio < 0 && to_speed(s) >= required;
-	let verdict: string;
-	if (core_delta <= 0) verdict = 'pass, no bytes added';
-	else if (!confirmable) verdict = NOT_JUDGED;
-	else if (!matrix_valid) verdict = 'not judged, no realistic valid cases in this run';
-	else if (is_return(matrix_valid)) verdict = `pass, valid ${format_speed(matrix_valid)}`;
-	else if (is_outside(matrix_valid) && matrix_valid.ratio > 0) {
-		verdict = `FAIL, valid ${format_speed(matrix_valid)} is slower past its A/A`;
-	} else if (matrix_invalid.cases && is_return(matrix_invalid)) {
-		verdict =
-			`pass, invalid ${format_speed(matrix_invalid)}, ` +
-			`with valid ${format_speed(matrix_valid)} ${format_standing(matrix_valid)}`;
+	if (args.class === 'correctness') {
+		const over = judge_core_correctness(size_figures);
+		console.log(
+			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
+				`which may be up to +${CORRECTNESS_PRICE.core} with no return: ` +
+				(over.length ? `ASK, ${format_size_figures(over)} over it, the user rules` : 'pass')
+		);
 	} else {
-		const to_shortfall = (s: Summary): string =>
-			`${format_speed(s)} is ${is_outside(s) && s.ratio < 0 ? 'short of it' : 'no speedup past its A/A'}`;
-		verdict =
-			`FAIL, valid ${to_shortfall(matrix_valid)}` +
-			(matrix_invalid.cases
-				? `, and invalid ${to_shortfall(matrix_invalid)}`
-				: ', and there are no realistic invalid cases in this run');
+		const matrix_valid = valid_by_regime.find((v) => v.regime === 'matrix')?.whole;
+		const required =
+			core_delta > 0
+				? Math.max(
+						LEAST_SPEEDUP_FOR_BYTES,
+						(core_delta / SPEEDUP_PER_CORE_BYTES.bytes) * SPEEDUP_PER_CORE_BYTES.speedup
+					)
+				: 0;
+		// the return may be on the invalid cases when the valid path is not slower
+		const matrix_invalid = summarize(
+			graded.filter(
+				(g) => g.c.realistic && !g.c.valid && g.matrix && !Number.isNaN(g.matrix.ratio)
+			),
+			'matrix'
+		);
+		const is_return = (s: Summary): boolean =>
+			is_outside(s) && s.ratio < 0 && to_speed(s) >= required;
+		let verdict: string;
+		if (core_delta <= 0) verdict = 'pass, no bytes added';
+		else if (!confirmable) verdict = NOT_JUDGED;
+		else if (!matrix_valid) verdict = 'not judged, no realistic valid cases in this run';
+		else if (is_return(matrix_valid)) verdict = `pass, valid ${format_speed(matrix_valid)}`;
+		else if (is_outside(matrix_valid) && matrix_valid.ratio > 0) {
+			verdict = `FAIL, valid ${format_speed(matrix_valid)} is slower past its A/A`;
+		} else if (matrix_invalid.cases && is_return(matrix_invalid)) {
+			verdict =
+				`pass, invalid ${format_speed(matrix_invalid)}, ` +
+				`with valid ${format_speed(matrix_valid)} ${format_standing(matrix_valid)}`;
+		} else {
+			const to_shortfall = (s: Summary): string =>
+				`${format_speed(s)} is ${is_outside(s) && s.ratio < 0 ? 'short of it' : 'no speedup past its A/A'}`;
+			verdict =
+				`FAIL, valid ${to_shortfall(matrix_valid)}` +
+				(matrix_invalid.cases
+					? `, and invalid ${to_shortfall(matrix_invalid)}`
+					: ', and there are no realistic invalid cases in this run');
+		}
+		console.log(
+			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
+				`which needs ${format_percent(required)} realistic speed in the matrix, on the valid path ` +
+				`or with it not slower on the invalid: ${verdict}`
+		);
 	}
 	console.log(
-		`core bytes (${CORE_SCENARIO}): ${core_delta >= 0 ? '+' : ''}${core_delta} gzip, ` +
-			`which needs ${format_percent(required)} realistic speed in the matrix, on the valid path ` +
-			`or with it not slower on the invalid: ${verdict}`
+		'  ' + format_opt_in_line(judge_opt_in(size_figures, args.class), args.class, library_delta)
+	);
+	const over_backstop = judge_backstop(backstop_rows);
+	const most = backstop_rows.reduce((a, b) => (to_vs_valibot(b) > to_vs_valibot(a) ? b : a));
+	console.log(
+		`  backstop, every scenario at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ` +
+			(over_backstop.length
+				? `FAIL, ${over_backstop.map((r) => `${r.name} ${to_vs_valibot(r).toFixed(2)}x`).join(', ')}`
+				: `pass, the most ${most.name} ${to_vs_valibot(most).toFixed(2)}x`)
 	);
 	console.log(
-		`size ceiling: all scenarios are ${all_sizes.new} gzip, ${all_vs_valibot.toFixed(2)}x valibot's ${all_sizes.valibot}, ` +
-			`limit ${CEILING_VS_VALIBOT.toFixed(2)}x: ${all_vs_valibot <= CEILING_VS_VALIBOT ? 'pass' : 'FAIL'}`
+		`  all scenarios together, reported: ${all_sizes.new} gzip, ` +
+			`${(all_sizes.new / all_sizes.valibot).toFixed(2)}x valibot's ${all_sizes.valibot}`
 	);
 }
 

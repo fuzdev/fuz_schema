@@ -10,6 +10,7 @@ npm run grade -- --alone object/                # which cases also run alone
 npm run grade -- --apart each/                  # which cases also run a version to a process
 npm run grade -- --slice 2                      # longer timing slices
 npm run grade -- --no-process                   # skip retained heap and cold start
+npm run grade -- --class correctness            # price the bytes as a fix of correctness
 ```
 
 `grade` compares a version of `schema.ts`, the working tree's unless
@@ -25,15 +26,19 @@ each summarized by group and by path (what the parse does: return the input,
 return a copy, build issues, or probe), then bundle size, retained heap, and
 cold start, and a verdict against the rules.
 
-The bundle table has a column for each scenario, `all` for the scenarios
-together, and `library` for every runtime export of each version's own
-`schema.ts` in one bundle. A scenario the baseline's scenario module has no
-factory for, as one added since, is measured for the graded version alone, in
-the bundle table and in retained heap: `all` is then of the scenarios both
-have, so its delta is the change's, and the size ceiling is still read on
-every scenario. `library` is reported only: no rule reads it. It
-shows what a change costs the exports the scenarios don't reach, and
-[`npm run benchmark:bundle`](benchmarks.md#the-whole-library) says which.
+Bytes are the figures of [`sizes.json`](benchmarks.md#the-whole-library), of
+both versions: a table of the scenarios, each beside Valibot's bundle of the
+same scenario and `all` for the scenarios together, and a table of the
+exports, `parse` alone and each other export's `last in` and `alone`, with
+`library`, every runtime export in one bundle. Each figure is core or opt-in,
+[below](#bytes). The export table lists `parse` and each figure of an export
+that moved past the jitter, or that one version lacks, and counts the exports
+it leaves out. `all` and `library` are reported only: no rule reads them, and
+the opt-in verdict prints `library`'s delta beside it. A scenario the
+baseline's scenario module has no factory for, as one added since, is measured
+for the graded version alone, in the bundle table and in retained heap, and
+compared on nothing: `all` is then of the scenarios both have, so its delta is
+the change's, and the backstop is still read on every scenario.
 
 When a change targets a path no case isolates, add the case first.
 
@@ -53,6 +58,7 @@ When a change targets a path no case isolates, add the case first.
 | `--no-apart`                 | off                            | no case runs apart                                                                                                             |
 | `--slice <ms>`               | 1                              | milliseconds one timing slice of one instance lasts                                                                            |
 | `--samples <n>`              | 15                             | the cold-start rounds kept                                                                                                     |
+| `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, or `correctness` for a fix of correctness or conformance              |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
 | `--no-process`               | off                            | skip retained heap and cold start                                                                                              |
 
@@ -224,14 +230,17 @@ now and then be graded against an older ref (`--against <ref>`).
    Bundle bytes are exact. Allocations are exact for the code the engine is
    running, and need no quiet machine: see
    [benchmarks.md](benchmarks.md#reading-the-numbers).
-3. **Opt-in bytes only have to pay for themselves.**
+3. **Opt-in bytes for speed only have to pay for themselves.**
 4. **Bytes every user pays need a return**: roughly a 10% speedup on the
    realistic cases per 50 gzipped bytes of core. Under 5% for any bytes is a no.
    The return is on the valid path, or on the invalid one when the valid path
-   is not slower.
-5. **The whole stays under 0.75 of Valibot's gzipped size**, measured on all
-   the benchmark scenarios bundled together, this library's bundle against
-   Valibot's.
+   is not slower. A fix of correctness or conformance may add up to 4 bytes
+   of core with no return, and past that the user rules.
+5. **Bytes have a price per class.** Core is rule 4's. A fix of correctness
+   or conformance may add up to about 50 gzipped bytes to any one opt-in
+   figure, and past that the user rules. A change for speed pays for opt-in
+   bytes by rule 3. Whatever the change, every scenario stays at or under 0.75
+   of Valibot's gzipped size for the same scenario: the backstop.
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
@@ -239,25 +248,69 @@ now and then be graded against an older ref (`--against <ref>`).
 `grade` checks 2, 4, 5, and 6, and lists what allocates more, retains more, or
 starts slower. The rest is judgment.
 
-- **Rule 4** reads the realistic cases in the matrix, all the runs together,
-  the valid ones and the invalid ones each as one figure beside its own A/A.
-  "Core" is the `strict_nested` scenario's bundle, the one built from
-  `object`. No bytes added is a pass. Added bytes pass when the valid speed is
+- **Rule 4**, for speed, reads the realistic cases in the matrix, all the
+  runs together, the valid ones and the invalid ones each as one figure beside
+  its own A/A. No bytes added is a pass. Added bytes pass when the valid speed is
   past its A/A and is the return the rule asks, which is never under its 5%.
   When it is not, and the valid path does not read slower past its A/A, they
   pass when the invalid speed is that return, at the same price and past its
   own A/A. A speedup inside its A/A has not been shown.
+- **Rules 4 and 5**, for correctness, read the bytes alone, [below](#bytes).
+  A figure over its price reads `ASK`: the user rules on it, and it is not
+  a failure.
 - **Rule 6** fails when the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in `matrix` or
   `alone`, or when a valid case, realistic or not, is confirmed slower in any
   regime, `apart` among them. The summary of the cases timed apart is printed
   and no rule reads it: they are a few chosen cases, read one at a time.
-- **Below three runs** rule 6, and rule 4 when bytes were added, are not
-  judged: their lines say so in place of a pass or a fail, and the figures
-  are still printed. Rule 5 is of bytes alone and is judged at any run count.
+- **Below three runs** rule 6, and rule 4 for speed when bytes were added,
+  are not judged: their lines say so in place of a pass or a fail, and the figures
+  are still printed. What is of bytes alone is judged at any run count.
 - A case is listed as allocating more when it does by eight bytes or more to
   the nearest byte, a word, and by at least a fifth of a percent, which is
   what two readings of one parse can differ by on a large case: a smaller rise
   on a large case is in the table and not in the list.
 
 A pass doesn't mean nothing regressed. Read the lists.
+
+### Bytes
+
+A change is of one class, given with `--class`: `speed`, the default, or
+`correctness`, a fix of correctness or conformance and not of speed. The class
+sets only what its bytes cost: a `FAIL` of any other rule stays a failure
+under either, and a correctness change is not failed for bringing no speed.
+
+Each figure is of one class too:
+
+- **Core** is what every consumer pays: the `strict_nested` scenario's
+  bundle, the one built from `object`, the default object schema, which is
+  the figure rule 4 reads, and `parse` alone.
+- **Opt-in** is what a consumer pays who uses it: every other scenario's
+  bundle, and each other export's `last in` and its `alone`.
+
+Both figures of an export are priced, because each misses what the other
+sees. `last in` is what the export costs a consumer who has the rest, so it
+can't see bytes added to a helper two exports share: remove either and the
+helper stays for the other. `alone` is what the export costs over `parse` a
+consumer who has only it, and pays for every helper it reaches. A change that
+saves bytes in a shared helper's callers and grows the helper can read smaller
+on the scenarios together while every bundle of one kind grows, and `alone`
+is where that shows. Growth split across many exports, none past the jitter,
+shows in neither and only in `library`, which the opt-in verdict prints and
+no price reads.
+
+| change        | core                                   | opt-in                                        |
+| ------------- | -------------------------------------- | --------------------------------------------- |
+| `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3 |
+| `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`    |
+
+Core is read exactly, to the byte. An opt-in figure moves by a byte or a few
+with no change to what it measures, as a byte changed elsewhere in a bundle
+moves how the rest compresses, so a rise of 3 or less is not read as growth,
+and the price is read 3 past its figure. An export one version lacks is read as
+0 there.
+
+The backstop is read on every scenario under either class, against
+Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it. The
+scenarios together, `all`, are no bundle a consumer ships, and are reported
+beside Valibot's without a verdict.

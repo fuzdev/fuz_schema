@@ -246,9 +246,12 @@ doesn't carry: under a tenth of the library, and the same in both sides of a
 diff.
 
 `src/benchmarks/sizes.json` is a committed snapshot of the gzipped figures:
-each scenario's bundle, all of them together beside Valibot's and the ratio
-[rule 5](grading.md#rules) reads, `parse` alone, the library, each export's
-`last in`, and what each module beside `schema.ts` adds.
+each scenario's bundle and all of them together, the latter beside Valibot's,
+each scenario's ratio to Valibot's bundle of it, which the backstop of
+[rule 5](grading.md#bytes) reads, `parse` alone, the library, each export's
+`last in` and `alone` side by side, and what each module beside `schema.ts`
+adds. `grade` measures the same figures of both versions, except the modules,
+and prices them by class.
 `gro src/benchmarks/update_sizes` regenerates it and `src/test/sizes.test.ts`
 fails when it is stale, so the diff of a change shows its bytes wherever they
 fell. An upgrade of Rolldown, of Valibot, or of Node's zlib can make it stale

@@ -6,7 +6,7 @@
  */
 
 import { gzipSync } from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const ENTRY_ID = 'virtual:entry';
@@ -113,15 +113,6 @@ export const measure_bundle_size = async (
 	return to_bundle_size(await build_scenario_bundle(lib, scenario_names, options));
 };
 
-/**
- * Measures every runtime export of a version of `schema.ts` bundled together:
- * the whole library, as no consumer has it.
- *
- * @param schema_path - the version's file, by default the working tree's
- */
-export const measure_library_size = async (schema_path?: string): Promise<BundleSize> =>
-	to_bundle_size(await build_bundle(`export * from '${SCHEMA_ID}';`, schema_path, 'the library'));
-
 /** What one export of `schema.ts` costs, in bytes of one of `BundleSize`'s measures. */
 export interface ExportSize {
 	name: string;
@@ -134,46 +125,78 @@ export interface ExportSize {
 	last_in: number;
 }
 
-export interface LibrarySizes {
+export interface ExportSizes {
 	/** A bundle of `parse`, which every other figure of an export has in it. */
 	parse: number;
 	/** A bundle of every runtime export of `schema.ts`. */
 	library: number;
 	/** Every runtime export but `parse`, the largest `last_in` first, then by name. */
 	exports: Array<ExportSize>;
+}
+
+export interface LibrarySizes extends ExportSizes {
 	/** What every export of each of `LIBRARY_MODULES` adds to `library`. */
 	modules: Array<{ name: string; added: number }>;
 }
 
 /**
- * Measures this library export by export, in the working tree: every bundle
- * is built at once.
+ * Measures a version of `schema.ts` export by export: every bundle is built at
+ * once.
+ *
+ * @param schema_path - the version's file, by default the working tree's
  */
-export const measure_library_sizes = async (
+export const measure_export_sizes = async (
+	schema_path: string = SCHEMA_PATH,
 	metric: keyof BundleSize = 'gzip'
-): Promise<LibrarySizes> => {
-	const names = Object.keys(await import(SCHEMA_PATH)).filter((n) => n !== 'parse');
-	const measure = async (entry: string): Promise<number> =>
-		to_bundle_size(await build_bundle(entry))[metric];
-	const measure_exports = (list: Array<string>): Promise<number> =>
-		measure(`export {${['parse', ...list].join(', ')}} from '${SCHEMA_ID}';`);
-	const [parse, library, alone, without, modules] = await Promise.all([
+): Promise<ExportSizes> => {
+	const names = Object.keys(await import(pathToFileURL(schema_path).href)).filter(
+		(n) => n !== 'parse'
+	);
+	const measure_exports = async (list: Array<string>): Promise<number> =>
+		to_bundle_size(
+			await build_bundle(
+				`export {${['parse', ...list].join(', ')}} from '${SCHEMA_ID}';`,
+				schema_path
+			)
+		)[metric];
+	const [parse, library, alone, without] = await Promise.all([
 		measure_exports([]),
 		measure_exports(names),
 		Promise.all(names.map((name) => measure_exports([name]))),
-		Promise.all(names.map((name) => measure_exports(names.filter((n) => n !== name)))),
-		Promise.all(
-			LIBRARY_MODULES.map((name) =>
-				measure(`export * from '${SCHEMA_ID}';\nexport * from ${JSON.stringify(LIB_DIR + name)};`)
-			)
-		)
+		Promise.all(names.map((name) => measure_exports(names.filter((n) => n !== name))))
 	]);
 	return {
 		parse,
 		library,
 		exports: names
 			.map((name, i) => ({ name, alone: alone[i]! - parse, last_in: library - without[i]! }))
-			.sort((a, b) => b.last_in - a.last_in || (a.name < b.name ? -1 : 1)),
-		modules: LIBRARY_MODULES.map((name, i) => ({ name, added: modules[i]! - library }))
+			.sort((a, b) => b.last_in - a.last_in || (a.name < b.name ? -1 : 1))
+	};
+};
+
+/**
+ * Measures this library export by export, and module by module, in the
+ * working tree: every bundle is built at once. A module beside `schema.ts`
+ * imports the working tree's, so only the working tree's has modules.
+ */
+export const measure_library_sizes = async (
+	metric: keyof BundleSize = 'gzip'
+): Promise<LibrarySizes> => {
+	const [sizes, modules] = await Promise.all([
+		measure_export_sizes(SCHEMA_PATH, metric),
+		Promise.all(
+			LIBRARY_MODULES.map(
+				async (name) =>
+					to_bundle_size(
+						await build_bundle(
+							`export * from '${SCHEMA_ID}';\nexport * from ${JSON.stringify(LIB_DIR + name)};`
+						)
+					)[metric]
+			)
+		)
+	]);
+	return {
+		...sizes,
+		modules: LIBRARY_MODULES.map((name, i) => ({ name, added: modules[i]! - sizes.library }))
 	};
 };

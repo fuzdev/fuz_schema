@@ -37,12 +37,12 @@ gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
 
 `npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`,
 `--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
-`npm run grade` takes `--against`,
-`--against-file`, `--against-libs-file`, `--new-file`, `--filter`, `--runs`,
-`--alone`, `--no-alone`, `--apart`, `--no-apart`, `--slice`, `--no-bundle`,
-`--no-process`, and `--samples`, see `docs/grading.md`. `npm run benchmark:harvest` takes
-`--set`, `--passes`, and `--duration`. `npm run benchmark:survey` takes
-`--filter`, `--lib`, `--passes`, `--duration`, and `--alone`.
+`npm run grade` takes `--against`, `--against-file`, `--against-libs-file`,
+`--new-file`, `--filter`, `--runs`, `--alone`, `--no-alone`, `--apart`,
+`--no-apart`, `--slice`, `--no-bundle`, `--no-process`, `--samples`, and
+`--class`, see `docs/grading.md`. `npm run benchmark:harvest` takes `--set`,
+`--passes`, and `--duration`. `npm run benchmark:survey` takes `--filter`,
+`--lib`, `--passes`, `--duration`, and `--alone`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
 dev server.
@@ -91,6 +91,8 @@ dev server.
   - `json_syntax_texts.ts` - texts several groups share
 - `src/test/json.fixtures.test.ts` - fails when a generated file is stale
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
+- `src/test/grade_bytes.test.ts` - the grader's prices of bytes, over
+  figures made up for it
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
   - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
     module per library
@@ -110,6 +112,8 @@ dev server.
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
+  - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
+    class of a change, and the backstop against Valibot
   - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
     grader, what it loads once for each instance of a version, and what the
     grader and its processes share
@@ -252,8 +256,11 @@ narrows the A/A. Bundle bytes are exact, and allocations are exact for the
 code the engine is running, see `docs/benchmarks.md`.
 
 A change's diff of `src/benchmarks/sizes.json` is its byte cost across the
-library, every export and not only the scenarios: regenerate it with the
-change, and read the diff.
+library, every export, last in and alone, and not only the scenarios:
+regenerate it with the change, and read the diff. `grade` prints the same
+figures of both versions, core and opt-in, and prices them by the change's
+class: `--class correctness` for a fix of correctness or conformance, whose
+bytes need no speedup, and speed by default, see `docs/grading.md`.
 
 - **Measure before stating.** What the engine allocates, inlines, or folds is
   measured before it is said, in a comment, a doc, or a proposal.

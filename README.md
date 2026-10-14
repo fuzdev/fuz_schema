@@ -443,7 +443,8 @@ and checks the result against the rules a change is accepted by:
 - a time difference is read against its A/A, and inside it is noise
 - bytes that tree-shake away unless imported only have to pay for themselves
 - bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
-- the whole stays under 0.75 of Valibot's gzipped size, on all the benchmark scenarios bundled together
+- a fix of correctness or conformance has a price instead: 4 gzipped bytes every user pays, 50 on any one export or scenario
+- every scenario stays under 0.75 of Valibot's gzipped size for the same scenario
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP
 

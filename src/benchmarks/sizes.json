@@ -11,48 +11,171 @@
 	},
 	"all": 2099,
 	"valibot_all": 2826,
-	"all_vs_valibot": 0.7427,
+	"vs_valibot": {
+		"string": 0.3829,
+		"object_flat": 0.6108,
+		"extra_keys": 0.6108,
+		"strict_nested": 0.6404,
+		"pipe": 0.6745,
+		"union": 0.6031,
+		"list": 0.6299,
+		"type_json": 0.6449
+	},
 	"parse": 132,
 	"library": 2786,
 	"exports": {
-		"SchemaError": 6,
-		"array": 96,
-		"bigint": 23,
-		"boolean": 24,
-		"brand": 10,
-		"check": 26,
-		"fail": 4,
-		"flavor": 11,
-		"format_issue": 7,
-		"get_issue_value": 69,
-		"integer": 17,
-		"is": 18,
-		"is_schema": 45,
-		"lazy": 56,
-		"literal": 47,
-		"loose_object": 152,
-		"max_length": 19,
-		"max_value": 18,
-		"message": 112,
-		"min_length": 19,
-		"min_value": 18,
-		"nullable": 34,
-		"number": 24,
-		"object": 77,
-		"one_of": 49,
-		"optional": 20,
-		"parse_or_throw": 33,
-		"pipe": 132,
-		"record": 128,
-		"regex": 29,
-		"safe_integer": 24,
-		"string": 18,
-		"strip_object": 111,
-		"transform": 25,
-		"union": 148,
-		"unknown": 29,
-		"variant": 110,
-		"with_default": 35
+		"SchemaError": {
+			"last_in": 6,
+			"alone": 177
+		},
+		"array": {
+			"last_in": 96,
+			"alone": 322
+		},
+		"bigint": {
+			"last_in": 23,
+			"alone": 149
+		},
+		"boolean": {
+			"last_in": 24,
+			"alone": 151
+		},
+		"brand": {
+			"last_in": 10,
+			"alone": 41
+		},
+		"check": {
+			"last_in": 26,
+			"alone": 188
+		},
+		"fail": {
+			"last_in": 4,
+			"alone": 116
+		},
+		"flavor": {
+			"last_in": 11,
+			"alone": 41
+		},
+		"format_issue": {
+			"last_in": 7,
+			"alone": 116
+		},
+		"get_issue_value": {
+			"last_in": 69,
+			"alone": 125
+		},
+		"integer": {
+			"last_in": 17,
+			"alone": 158
+		},
+		"is": {
+			"last_in": 18,
+			"alone": 20
+		},
+		"is_schema": {
+			"last_in": 45,
+			"alone": 67
+		},
+		"lazy": {
+			"last_in": 56,
+			"alone": 107
+		},
+		"literal": {
+			"last_in": 47,
+			"alone": 304
+		},
+		"loose_object": {
+			"last_in": 152,
+			"alone": 462
+		},
+		"max_length": {
+			"last_in": 19,
+			"alone": 205
+		},
+		"max_value": {
+			"last_in": 18,
+			"alone": 199
+		},
+		"message": {
+			"last_in": 112,
+			"alone": 217
+		},
+		"min_length": {
+			"last_in": 19,
+			"alone": 204
+		},
+		"min_value": {
+			"last_in": 18,
+			"alone": 199
+		},
+		"nullable": {
+			"last_in": 34,
+			"alone": 124
+		},
+		"number": {
+			"last_in": 24,
+			"alone": 156
+		},
+		"object": {
+			"last_in": 77,
+			"alone": 516
+		},
+		"one_of": {
+			"last_in": 49,
+			"alone": 304
+		},
+		"optional": {
+			"last_in": 20,
+			"alone": 84
+		},
+		"parse_or_throw": {
+			"last_in": 33,
+			"alone": 209
+		},
+		"pipe": {
+			"last_in": 132,
+			"alone": 218
+		},
+		"record": {
+			"last_in": 128,
+			"alone": 393
+		},
+		"regex": {
+			"last_in": 29,
+			"alone": 194
+		},
+		"safe_integer": {
+			"last_in": 24,
+			"alone": 166
+		},
+		"string": {
+			"last_in": 18,
+			"alone": 149
+		},
+		"strip_object": {
+			"last_in": 111,
+			"alone": 500
+		},
+		"transform": {
+			"last_in": 25,
+			"alone": 68
+		},
+		"union": {
+			"last_in": 148,
+			"alone": 392
+		},
+		"unknown": {
+			"last_in": 29,
+			"alone": 180
+		},
+		"variant": {
+			"last_in": 110,
+			"alone": 417
+		},
+		"with_default": {
+			"last_in": 35,
+			"alone": 92
+		}
 	},
 	"modules": {
 		"meta.ts": 64,

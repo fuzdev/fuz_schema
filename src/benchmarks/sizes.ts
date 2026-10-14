@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB } from './libs.ts';
-import { measure_bundle_size, measure_library_sizes } from './bundle_size.ts';
+import { measure_bundle_size, measure_library_sizes, type ExportSize } from './bundle_size.ts';
 
 const SIZES_PATH = fileURLToPath(new URL('./sizes.json', import.meta.url));
 
@@ -26,14 +26,14 @@ export interface Sizes {
 	all: number;
 	/** Valibot's bundle of every scenario together. */
 	valibot_all: number;
-	/** `all` over `valibot_all`, which the size ceiling of `docs/grading.md` is read on. */
-	all_vs_valibot: number;
+	/** Each scenario's bundle over Valibot's, which the backstop of `docs/grading.md` is read on. */
+	vs_valibot: Record<string, number>;
 	/** `parse` alone. */
 	parse: number;
 	/** Every runtime export of `schema.ts` together. */
 	library: number;
-	/** Each export's `last_in`, see `ExportSize`, by name. */
-	exports: Record<string, number>;
+	/** Each export's `last_in` and `alone`, see `ExportSize`, by name. */
+	exports: Record<string, Omit<ExportSize, 'name'>>;
 	/** What each module beside `schema.ts` adds to `library`. */
 	modules: Record<string, number>;
 }
@@ -43,8 +43,9 @@ export interface Sizes {
  */
 export const measure_sizes = async (): Promise<Sizes> => {
 	const names = SCENARIOS.map((s) => s.name);
-	const [scenarios, all, valibot_all, library] = await Promise.all([
+	const [scenarios, valibot, all, valibot_all, library] = await Promise.all([
 		Promise.all(names.map((name) => measure_bundle_size('fuz_schema', [name]))),
+		Promise.all(names.map((name) => measure_bundle_size(BASELINE_LIB, [name]))),
 		measure_bundle_size('fuz_schema', names),
 		measure_bundle_size(BASELINE_LIB, names),
 		measure_library_sizes()
@@ -53,12 +54,17 @@ export const measure_sizes = async (): Promise<Sizes> => {
 		scenarios: Object.fromEntries(names.map((name, i) => [name, scenarios[i]!.gzip])),
 		all: all.gzip,
 		valibot_all: valibot_all.gzip,
-		all_vs_valibot: Number((all.gzip / valibot_all.gzip).toFixed(4)),
+		vs_valibot: Object.fromEntries(
+			names.map((name, i) => [name, Number((scenarios[i]!.gzip / valibot[i]!.gzip).toFixed(4))])
+		),
 		parse: library.parse,
 		library: library.library,
 		exports: Object.fromEntries(
 			library.exports
-				.map((e): [string, number] => [e.name, e.last_in])
+				.map((e): [string, Omit<ExportSize, 'name'>] => [
+					e.name,
+					{ last_in: e.last_in, alone: e.alone }
+				])
 				.sort((a, b) => (a[0] < b[0] ? -1 : 1))
 		),
 		modules: Object.fromEntries(library.modules.map((m) => [m.name, m.added]))

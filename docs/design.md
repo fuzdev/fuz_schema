@@ -122,7 +122,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   `optional` takes two. Past that it runs the steps as the closure of two
   does, which it shares, so a pipe it starts with is handed neither the object
   nor the key. The call costs the path with the key there, and a loop of its
-  own was over the size ceiling, see
+  own was over the size ceiling rule 5 had then, see
   [declined.md](declined.md#a-pipe-that-starts-with-an-optional-with-a-loop-of-its-own). The closure that passes them on to an `unknown` or a `lazy`
   looks for no key: the forms that had one closure for both are in
   [declined.md](declined.md#a-pipe-that-looks-for-the-key-wherever-it-has-the-object).
