@@ -280,6 +280,47 @@ export type SchemaLiteral = string | number | bigint | boolean | null | undefine
 // Core
 //
 
+// runs every entry and returns the output, or `undefined` when a probe failed,
+// the output being `value` itself until an entry's output differs from its input,
+// which copies the entries before it. Every container tells that by `Object.is`:
+// `===` reads a `0` made `-0` as no change, and a `NaN` passed through as one.
+// An entry is handed `value`, its key, and `1` too, for a schema that accepts
+// `undefined` and still needs its key to be there, and for a `pipe` that
+// starts with an `optional`, which runs no step for a key that is missing.
+// It is first in the module, where the core bundle measured smaller than
+// beside the object schemas
+const run_entries = (
+	keys: Array<string>,
+	schemas: Array<AnySchema>,
+	value: Record<string, unknown>,
+	ctx: SchemaContext
+): Record<string, unknown> | undefined => {
+	let output: Record<string, unknown> | undefined;
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]!;
+		const input = value[key];
+		const count = ctx.fails;
+		const v = schemas[i]!.run(input, ctx, value, key, 1);
+		if (ctx.fails > count) {
+			if (ctx.probe) return;
+			prefix_path(ctx.issues!, count, key);
+		} else if (output) {
+			// a key the input doesn't have stays out of the output
+			if (v !== undefined || key in value) output[key] = v;
+		} else if (!Object.is(v, input)) {
+			output = {};
+			// only this schema's keys, in its order
+			for (let j = 0; j < i; j++) {
+				const k = keys[j]!;
+				const u = value[k];
+				if (u !== undefined || k in value) output[k] = u;
+			}
+			output[key] = v;
+		}
+	}
+	return output ?? value;
+};
+
 /**
  * Records an issue. Returns `value` so a `run` can fail in expression position.
  *
@@ -840,45 +881,6 @@ export const brand: <T extends AnySchema, const TName extends string>(
 //
 // Containers
 //
-
-// runs every entry and returns the output, or `undefined` when a probe failed,
-// the output being `value` itself until an entry's output differs from its input,
-// which copies the entries before it. Every container tells that by `Object.is`:
-// `===` reads a `0` made `-0` as no change, and a `NaN` passed through as one.
-// An entry is handed `value`, its key, and `1` too, for a schema that accepts
-// `undefined` and still needs its key to be there, and for a `pipe` that
-// starts with an `optional`, which runs no step for a key that is missing
-const run_entries = (
-	keys: Array<string>,
-	schemas: Array<AnySchema>,
-	value: Record<string, unknown>,
-	ctx: SchemaContext
-): Record<string, unknown> | undefined => {
-	let output: Record<string, unknown> | undefined;
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]!;
-		const input = value[key];
-		const count = ctx.fails;
-		const v = schemas[i]!.run(input, ctx, value, key, 1);
-		if (ctx.fails > count) {
-			if (ctx.probe) return;
-			prefix_path(ctx.issues!, count, key);
-		} else if (output) {
-			// a key the input doesn't have stays out of the output
-			if (v !== undefined || key in value) output[key] = v;
-		} else if (!Object.is(v, input)) {
-			output = {};
-			// only this schema's keys, in its order
-			for (let j = 0; j < i; j++) {
-				const k = keys[j]!;
-				const u = value[k];
-				if (u !== undefined || k in value) output[k] = u;
-			}
-			output[key] = v;
-		}
-	}
-	return output ?? value;
-};
 
 /**
  * Matches an object with `entries`, failing on unknown keys.
