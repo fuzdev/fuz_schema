@@ -191,8 +191,8 @@ Things that are easy to break without a test noticing:
   fails to it. A schema that accepts `undefined` and should refuse a missing
   key checks the object itself, as `unknown` does. `nullable`, `union`, `pipe`
   to its first schema, and `message` pass the object and the key on only to a
-  `run` whose `length` is past two or to a schema of kind `'lazy'`, read by
-  `takes_key` once when each is made, so a `run` that reads them declares them
+  `run` whose `length` is past two or to a schema of kind `'lazy'`, tested
+  once when each is made, so a `run` that reads them declares them
   as plain parameters. Each is two closures, one for either answer: a single
   `run` of four parameters measured slower. A `lazy` declares two parameters and passes
   on the object and the key when it is called with more, by the length of its
@@ -217,7 +217,7 @@ Things that are easy to break without a test noticing:
   the first option that matches a missing key gives anything but `undefined`;
   one that gives `undefined`, as an `optional` does, is the union's, and none
   is tried again. Only an option before it that takes the object and the key,
-  by `takes_key`, is run again, and never the one that matched. So an option
+  by that test, is run again, and never the one that matched. So an option
   that takes them and fails for a reason other than the key, before one that
   fills the key in, runs twice in one parse, and a `transform` in it that the
   first run reached with it, once more for each enclosing union that tries it

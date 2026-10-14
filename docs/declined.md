@@ -360,6 +360,22 @@ needs its key, as `unknown` does.
   together and none on the core. See [design.md](design.md#missing-keys).
 - **Reopens**: nothing known.
 
+### One function for whether a schema takes the key
+
+One function asked by `union`, `pipe`, `nullable`, and `message` whether
+what they hold takes the object and the key, in place of the test written out
+at each.
+
+- **Gave**: smaller where the four are together: `last in` 9 gzip on `union`
+  and 8 on `pipe`, and 4 on all the scenarios together.
+- **Cost**: larger where one is alone: `alone` +14 gzip on `union`, +7 on
+  `pipe`, +6 on `message` and on `nullable`, and the `union` and `pipe`
+  scenarios +10 and +7. Core and time the same.
+- **Why**: `alone` is what a consumer of the kind ships, see
+  [grading.md](grading.md#bytes).
+- **Reopens**: more places that ask, enough that the function is smaller
+  alone too.
+
 ### A shared wrapper for the schemas that need a key
 
 One function that takes a `run` of two parameters and returns one of four

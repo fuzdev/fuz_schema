@@ -681,9 +681,10 @@ export const nullable = <T extends AnySchema>(
 	kind: 'nullable',
 	def: { schema },
 	// two closures chosen once here, as in `message`
-	run: takes_key(schema)
-		? (value, ctx, parent, key) => (value === null ? null : schema.run(value, ctx, parent, key))
-		: (value, ctx) => (value === null ? null : schema.run(value, ctx))
+	run:
+		schema.run.length > 2 || schema.kind === 'lazy'
+			? (value, ctx, parent, key) => (value === null ? null : schema.run(value, ctx, parent, key))
+			: (value, ctx) => (value === null ? null : schema.run(value, ctx))
 });
 
 /**
@@ -775,21 +776,25 @@ export const message = <T extends AnySchema>(
 		// handing the object and the key to a `run` that doesn't take them
 		// measured slower on valid input, and so did choosing on every call
 		// and sharing the body below as one call. A `lazy` declares two
-		// parameters and passes on what it is given, so it is named. What this
-		// holds is the entry wherever this is, so `entry` is passed on too
-		run: takes_key(schema)
-			? (value, ctx, parent, key, entry) => {
-					const count = ctx.fails;
-					const output = schema.run(value, ctx, parent, key, entry);
-					if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
-					return output;
-				}
-			: (value, ctx) => {
-					const count = ctx.fails;
-					const output = schema.run(value, ctx);
-					if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
-					return output;
-				}
+		// parameters and passes on what it is given, so it is named. The test
+		// is written out here and in `nullable`, `union`, and `pipe`: one
+		// function for all of them measured larger in the bundle of each alone.
+		// What this holds is the entry wherever this is, so `entry` is passed
+		// on too
+		run:
+			schema.run.length > 2 || schema.kind === 'lazy'
+				? (value, ctx, parent, key, entry) => {
+						const count = ctx.fails;
+						const output = schema.run(value, ctx, parent, key, entry);
+						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						return output;
+					}
+				: (value, ctx) => {
+						const count = ctx.fails;
+						const output = schema.run(value, ctx);
+						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						return output;
+					}
 	}) as AnySchema as T;
 
 //
@@ -1121,13 +1126,6 @@ export const array = <T extends AnySchema>(
 	}
 });
 
-// whether `schema` takes the object and the key as an entry: a `run` that
-// declares them, or a `lazy`, which declares two parameters and passes on what
-// it is given. One function for every place that asks measured smaller in the
-// bundle of the scenarios together than the test written out at each, and
-// larger in one of a `union` or a `pipe` alone
-const takes_key = (schema: AnySchema): boolean => schema.run.length > 2 || schema.kind === 'lazy';
-
 /**
  * Matches the first of `options` that accepts the value.
  * On failure reports one issue, not the options' own.
@@ -1160,7 +1158,7 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 		def: options,
 		// two closures chosen once here, as in `message`. Options are only
 		// probed, so a failed one costs no allocation
-		run: options.some(takes_key)
+		run: options.some((o) => o.run.length > 2 || o.kind === 'lazy')
 			? (value, ctx, parent, key) => {
 					const { probe } = ctx;
 					const count = ctx.fails;
@@ -1176,7 +1174,7 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 							// that isn't in the object is missing, and its value `undefined`
 							if (output !== undefined && parent && !((key as string) in parent)) {
 								for (let j = 0; j < i; j++) {
-									if (takes_key(options[j]!)) {
+									if (options[j]!.run.length > 2 || options[j]!.kind === 'lazy') {
 										const v = options[j]!.run(value, ctx);
 										if (ctx.fails === count) {
 											ctx.probe = probe;
@@ -1334,7 +1332,7 @@ export const pipe: SchemaPipeFactory = (
 			first.kind === 'optional'
 				? (value, ctx, parent, key, entry) =>
 						entry && !((key as string) in parent!) ? value : run(value, ctx)
-				: takes_key(schemas[0]!)
+				: schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
 					? (value, ctx, parent, key) => {
 							const count = ctx.fails;
 							let output = schemas[0]!.run(value, ctx, parent, key);

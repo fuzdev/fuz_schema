@@ -299,6 +299,11 @@ is where that shows. Growth split across many exports, none past the jitter,
 shows in neither and only in `library`, which the opt-in verdict prints and
 no price reads.
 
+Where an export's two figures move in opposite directions, `alone` wins: it is
+what a consumer of that one kind ships, where `last in` prices adding the
+export to a bundle that has every other. The grader prices each figure on its
+own; where they disagree, this is how its verdict is read.
+
 | change        | core                                   | opt-in                                        |
 | ------------- | -------------------------------------- | --------------------------------------------- |
 | `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3 |

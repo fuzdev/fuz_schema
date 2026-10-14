@@ -4,32 +4,32 @@
 		"object_flat": 789,
 		"extra_keys": 789,
 		"strict_nested": 869,
-		"pipe": 1070,
-		"union": 766,
+		"pipe": 1063,
+		"union": 756,
 		"list": 922,
-		"type_json": 1535
+		"type_json": 1536
 	},
-	"all": 2071,
+	"all": 2075,
 	"valibot_all": 2826,
 	"vs_valibot": {
 		"string": 0.3829,
 		"object_flat": 0.6069,
 		"extra_keys": 0.6069,
 		"strict_nested": 0.6352,
-		"pipe": 0.6764,
-		"union": 0.6031,
+		"pipe": 0.6719,
+		"union": 0.5953,
 		"list": 0.6285,
-		"type_json": 0.6383
+		"type_json": 0.6387
 	},
 	"parse": 132,
-	"library": 2770,
+	"library": 2776,
 	"exports": {
 		"SchemaError": {
-			"last_in": 6,
+			"last_in": 7,
 			"alone": 177
 		},
 		"array": {
-			"last_in": 89,
+			"last_in": 91,
 			"alone": 322
 		},
 		"bigint": {
@@ -37,15 +37,15 @@
 			"alone": 149
 		},
 		"boolean": {
-			"last_in": 23,
+			"last_in": 24,
 			"alone": 151
 		},
 		"brand": {
-			"last_in": 10,
+			"last_in": 11,
 			"alone": 41
 		},
 		"check": {
-			"last_in": 25,
+			"last_in": 26,
 			"alone": 188
 		},
 		"fail": {
@@ -53,7 +53,7 @@
 			"alone": 116
 		},
 		"flavor": {
-			"last_in": 11,
+			"last_in": 12,
 			"alone": 41
 		},
 		"format_issue": {
@@ -61,67 +61,67 @@
 			"alone": 116
 		},
 		"get_issue_value": {
-			"last_in": 63,
+			"last_in": 65,
 			"alone": 125
 		},
 		"integer": {
-			"last_in": 17,
+			"last_in": 18,
 			"alone": 158
 		},
 		"is": {
-			"last_in": 18,
+			"last_in": 19,
 			"alone": 20
 		},
 		"is_schema": {
-			"last_in": 46,
+			"last_in": 49,
 			"alone": 67
 		},
 		"lazy": {
-			"last_in": 54,
+			"last_in": 56,
 			"alone": 107
 		},
 		"literal": {
-			"last_in": 49,
+			"last_in": 50,
 			"alone": 304
 		},
 		"loose_object": {
-			"last_in": 170,
+			"last_in": 172,
 			"alone": 462
 		},
 		"max_length": {
-			"last_in": 19,
+			"last_in": 21,
 			"alone": 205
 		},
 		"max_value": {
-			"last_in": 18,
+			"last_in": 19,
 			"alone": 199
 		},
 		"message": {
 			"last_in": 108,
-			"alone": 217
+			"alone": 211
 		},
 		"min_length": {
-			"last_in": 20,
+			"last_in": 21,
 			"alone": 204
 		},
 		"min_value": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 199
 		},
 		"nullable": {
-			"last_in": 33,
-			"alone": 124
+			"last_in": 36,
+			"alone": 118
 		},
 		"number": {
 			"last_in": 23,
 			"alone": 156
 		},
 		"object": {
-			"last_in": 99,
+			"last_in": 100,
 			"alone": 517
 		},
 		"one_of": {
-			"last_in": 48,
+			"last_in": 49,
 			"alone": 304
 		},
 		"optional": {
@@ -129,23 +129,23 @@
 			"alone": 84
 		},
 		"parse_or_throw": {
-			"last_in": 34,
+			"last_in": 35,
 			"alone": 209
 		},
 		"pipe": {
-			"last_in": 128,
-			"alone": 218
+			"last_in": 136,
+			"alone": 211
 		},
 		"record": {
-			"last_in": 128,
+			"last_in": 129,
 			"alone": 393
 		},
 		"regex": {
-			"last_in": 27,
+			"last_in": 28,
 			"alone": 194
 		},
 		"safe_integer": {
-			"last_in": 24,
+			"last_in": 25,
 			"alone": 166
 		},
 		"string": {
@@ -153,33 +153,33 @@
 			"alone": 149
 		},
 		"strip_object": {
-			"last_in": 98,
+			"last_in": 101,
 			"alone": 506
 		},
 		"transform": {
-			"last_in": 24,
+			"last_in": 25,
 			"alone": 68
 		},
 		"union": {
-			"last_in": 147,
-			"alone": 392
+			"last_in": 156,
+			"alone": 378
 		},
 		"unknown": {
 			"last_in": 29,
 			"alone": 180
 		},
 		"variant": {
-			"last_in": 109,
+			"last_in": 110,
 			"alone": 417
 		},
 		"with_default": {
-			"last_in": 35,
+			"last_in": 36,
 			"alone": 92
 		}
 	},
 	"modules": {
-		"meta.ts": 64,
-		"standard_schema.ts": 93,
-		"schema_json.ts": 2209
+		"meta.ts": 61,
+		"standard_schema.ts": 92,
+		"schema_json.ts": 2208
 	}
 }

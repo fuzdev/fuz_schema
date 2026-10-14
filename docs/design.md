@@ -95,8 +95,10 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   by `message` alone, see [Missing keys](#missing-keys).
 - **`nullable`, `union`, `pipe`, and `message` pass them on to a `run` that
   takes them**, which each tells once, when it is made, by the `length` of
-  that `run` or by the kind `'lazy'`, one function asking it for all: `nullable` and `message` by the schema
-  they hold, `union` by any of its options, and `pipe` by its first schema,
+  that `run` or by the kind `'lazy'`, a test written out at each, as
+  [one function for all four](declined.md#one-function-for-whether-a-schema-takes-the-key)
+  was larger in the bundle of each alone: `nullable`
+  and `message` by the schema they hold, `union` by any of its options, and `pipe` by its first schema,
   the only step it hands them to. So a schema that reads the object and the key declares them as
   plain parameters, with no default and not as a rest. Around anything else
   each has a `run` of two parameters and calls with two, as `optional`,
