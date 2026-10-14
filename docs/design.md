@@ -403,8 +403,9 @@ wrapped schema's and nothing is stored at runtime.
 - **Of a type parameter neither is known to lack `null` and `undefined`**, as
   `Extract` waits for the parameter. `Branded<T, 'N'>` with `T extends string`
   doesn't assign to `Branded<string, 'N'>`, one with an unconstrained `T` is
-  possibly `null`, and two flavors of one constrained `T` assign to each
-  other, where two brands don't.
+  possibly `null`, and two flavors of a `T` constrained to rule out `null` and
+  `undefined` assign to each other, where two brands don't. Flavoring the constraint keeps them apart:
+  `T & Flavored<string, 'N'>`.
 
 ## Metadata
 

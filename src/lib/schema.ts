@@ -829,6 +829,20 @@ export interface Brand<T> {
  *
  * `null` and `undefined` pass through unmarked: `Flavored<string | null, 'Email'>`
  * is the flavored string or `null`.
+ *
+ * Of a type parameter whose constraint rules out `null` and `undefined`, as
+ * `T extends string` and `T extends {}` do, two flavors assign to each other.
+ * Generic code that keeps them apart flavors the constraint and intersects it
+ * with the parameter, which a plain `T` still assigns to:
+ *
+ * ```ts
+ * // compiles: the two flavors of `T` mix
+ * const f = <T extends string>(x: Flavored<T, 'UserId'>): Flavored<T, 'PostId'> => x;
+ * // error!
+ * const g = <T extends string>(
+ * 	x: T & Flavored<string, 'UserId'>
+ * ): T & Flavored<string, 'PostId'> => x;
+ * ```
  */
 export type Flavored<TValue, TName> = TValue & (Flavor<TName> | Extract<TValue, null | undefined>);
 

@@ -5163,6 +5163,37 @@ describe('types', () => {
 		expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
 	});
 
+	test('two flavors of one type parameter mix where its constraint rules out null', () => {
+		// what the TSDoc of `Flavored` says: these compile
+		const _mix = <T extends string>(x: s.Flavored<T, 'A'>): s.Flavored<T, 'B'> => x;
+		// and these keep them apart
+		const _apart_non_nullable = <T>(
+			x: s.Flavored<NonNullable<T>, 'A'>
+		): s.Flavored<NonNullable<T>, 'B'> =>
+			// @ts-expect-error `NonNullable` of an unconstrained `T` keeps them apart
+			x;
+		const _apart_unconstrained = <T>(x: s.Flavored<T, 'A'>): s.Flavored<T, 'B'> =>
+			// @ts-expect-error the flavors of an unconstrained `T` don't mix
+			x;
+		const _apart = <T extends string>(
+			x: T & s.Flavored<string, 'A'>
+		): T & s.Flavored<string, 'B'> =>
+			// @ts-expect-error the form the TSDoc gives keeps them apart
+			x;
+		const _brands = <T extends string>(x: s.Branded<T, 'A'>): s.Branded<T, 'B'> =>
+			// @ts-expect-error brands don't mix
+			x;
+		// a plain value still assigns to the flavored constraint
+		const _plain = <T extends string>(x: T): T & s.Flavored<string, 'B'> => x;
+		for (const f of [_mix, _apart_non_nullable, _apart_unconstrained, _apart, _brands, _plain]) {
+			assert.strictEqual(f('x' as never), 'x');
+		}
+		// and keeps `T`
+		expectTypeOf(_apart<'x'>)
+			.parameter(0)
+			.toEqualTypeOf<'x' & s.Flavored<string, 'A'>>();
+	});
+
 	test('a flavor and a brand leave null and undefined unmarked', () => {
 		type F = s.Flavored<string, 'N'>;
 		type B = s.Branded<string, 'N'>;
