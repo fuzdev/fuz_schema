@@ -170,10 +170,26 @@ after the enumeration, as `run_entries` runs them.
   transforms and keys to drop 1.22x, past its A/A in the matrix and alone. A
   failure with a key to drop 2.10x, and through `is` with one ahead of the
   entry that fails 1.42x.
-- **Not ruled on**: it is the loop driven by `for...in` above, in
-  `strip_object` alone, and is to be measured in a program that has parsed
-  an object in dictionary mode, which made that loop generic for every
-  schema.
+- **Why**: it is the loop driven by `for...in` above, in `strip_object`
+  alone, and shares its flaw: one input in dictionary mode, through the
+  enumeration the schemas share, slows every later parse, and the win of
+  running in the input's order does not survive it. Unpoisoned, it is over
+  the size ceiling and slower on some valid shapes.
+- **Reopens**: a form whose win on input in the schema's order survives a
+  dictionary-mode input in the same program.
+
+Re-made on the current schema, in two variants, the entries run eagerly and
+a flag passed to the loop. Unpoisoned, the eager form is +44 gzip on all the
+scenarios together, over the size ceiling, and slower than the current loop
+on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
+`strip_object` (1.17x alone); the flag form is +100. Poisoned by one input
+in dictionary mode, a parse of a `strip_object` of 200 keys, through the
+shared `for...in`, both were slower than the current loop poisoned the same
+way on every strip case but one whose first optional key is absent: a
+geometric mean of 2.2x on the valid cases in the matrix and 2.8x to 3.1x
+alone and apart, and up to 12x on a probe that fails. The eager form's
+realistic valid path was 26% slower in the matrix and 36% alone. The current
+loop itself, on an input with nothing to drop, moved from 111 to 121 ns.
 
 ## `lazy`
 
