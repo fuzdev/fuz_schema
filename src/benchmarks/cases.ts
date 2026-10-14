@@ -646,6 +646,15 @@ const to_default_checked = (s: SchemaLib): schema_lib.AnySchema =>
 		)
 	});
 
+// the same with a step that gives `undefined`
+const to_default_undefined = (s: SchemaLib): schema_lib.AnySchema =>
+	to_object(s)({
+		a: s.pipe(
+			s.with_default(s.string, 'd'),
+			s.transform((v: string) => (v === 'd' ? undefined : v))
+		)
+	});
+
 // a hundred items through one schema, so the schema's cost shows over a parse's
 const each: CaseGroup = (s) => {
 	const Name = create_name(s);
@@ -770,6 +779,11 @@ const each: CaseGroup = (s) => {
 		// written
 		of('entry_pipe_default_check_present/valid', to_default_checked(s), { a: 'x' }),
 		of('entry_pipe_default_check_absent/valid', to_default_checked(s), {}, 'copy'),
+		// the same with a step that gives `undefined` for the default: with the
+		// key, and without it, where the steps run on the default and the key
+		// stays out
+		of('entry_pipe_default_undefined_present/valid', to_default_undefined(s), { a: 'x' }),
+		of('entry_pipe_default_undefined_absent/valid', to_default_undefined(s), {}),
 		// a `union` whose first option needs its key and whose second lets it be
 		// missing, as an entry: without the key, where the second matches, and with
 		// it as `undefined`, where the first does. Neither input is parsed, as

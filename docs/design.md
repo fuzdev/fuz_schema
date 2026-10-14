@@ -296,6 +296,10 @@ all a missing key costs an object that has no schema asking.
   reaches an `optional`, after a `with_default` whose value is `undefined`,
   and after a `check` or a `transform`. After any other `with_default` they
   run on its value.
+- **A missing key whose entry gives `undefined` stays out of the output**,
+  whatever gave it: a `pipe` that starts with a `with_default` and whose
+  steps make `undefined` of the default writes no key, where Zod and Valibot
+  write it, see [below](#behavior-that-differs-from-valibot-and-zod).
 - **A `union` hands the object to every option**, and a missing key matches
   only where an option lets its key be missing. With none it fails as it does
   on any value, with its own issue: `union([string, unknown])` without its key
@@ -311,10 +315,8 @@ all a missing key costs an object that has no schema asking.
   the only ones that can have failed for the key, are run again without
   them, and the first of them that matches is the union's.
   `union([unknown, with_default(string, 'D')])` matches a missing key with
-  the `unknown` and fills no default in, and leaves the key out, as a `pipe`
-  that starts with a `with_default` and whose steps give `undefined` does
-  for a missing key, which Zod writes, and Zod and Valibot both write for the
-  pipe. That is not yet ruled on, and the two stand or fall together.
+  the `unknown` and fills no default in, and leaves the key out, where Zod
+  writes it: a missing key whose entry gives `undefined` stays out.
 - **An option is run a second time only there**: one that takes the object
   and the key runs twice in one parse, and a `transform` in it that the
   first run reached with it, once more for each enclosing union that tries
@@ -486,6 +488,15 @@ issues. These it holds:
   [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
   can't choose its closure when it is made, as a `literal` does: what its
   function accepts isn't known until it is called.
+- a `pipe` that starts with a `with_default` and whose steps give `undefined`
+  leaves a missing key out, where both write the key as `undefined`: as the
+  entry itself, under a `message`, and as the first schema of another pipe.
+
+  Cost declined: the object loops leave out a missing key whose entry gives
+  `undefined`, and telling them that this one is written took bytes in the
+  loop every object schema's bundle carries, or a loop swapped in when such
+  a pipe is made, which slowed every object parse of the program, see
+  [declined.md](declined.md#a-default-whose-steps-give-undefined-written-for-a-missing-key).
 
 Where the two disagree, this library goes with:
 
@@ -495,6 +506,8 @@ Where the two disagree, this library goes with:
   itself lets the key be missing too, as Zod's does. By design: a missing key
   is the `undefined` it reads as to every schema but the three that need
   their key, so the object schemas look for no key to reach a verdict.
+  Where a `pipe` that starts with a `with_default` under one of them gives
+  `undefined`, the key stays out, where Zod writes it.
 - **Zod or neither on the options of a `union` before one that fills the key
   in.** Where the option that matches a missing key gives a value, as a
   `with_default` does, an option before it that needs its key is tried on the
@@ -508,10 +521,8 @@ Where the two disagree, this library goes with:
   this library leaves the key out. A union that fills the key in, inside
   another, gives that one `undefined` when an option before its default
   matches, and the outer tries none again, unlike the same options in one
-  union. Those are not yet ruled on, and stand or fall with a `pipe` that
-  starts with a `with_default` and whose steps give `undefined`. By design:
-  the key is optional, and a key the input lacks is left out unless what the
-  entry gives fills it in.
+  union. By design: the key is optional, and a key the input lacks is left
+  out unless what the entry gives fills it in.
 - **Valibot on the steps after an `optional`.** A `pipe` that starts with an
   `optional` lets the key be missing, as in both, and a step that fails then
   is not reported, as in both where no step is a `transform`. As the entry

@@ -349,6 +349,50 @@ A `literal(undefined)` without its key failing as a `literal` that expected
 - **Why**: the issue has to say what is wrong.
 - **Reopens**: nothing known.
 
+## Writing a missing key
+
+Zod and Valibot write a missing key as `undefined` where a `pipe` that
+starts with a `with_default` makes `undefined` of the default. Here the key
+stays out, as for any missing key whose entry gives `undefined`, see
+[design.md](design.md#behavior-that-differs-from-valibot-and-zod).
+
+### A default whose steps give `undefined`, written for a missing key
+
+A `pipe` that starts with a `with_default` gets a closure of its own for when
+it is the entry and the key is missing; when its steps give `undefined` it
+sets the failure count one short, which the object loops read as a key to
+write.
+
+- **Gave**: conformance, as the entry itself, under a `message`, and as the
+  first schema of another pipe.
+- **Cost**: +21 gzip on the core, +62 on the `pipe` scenario, and +75 on the
+  library. Alone, `pipe` +48, and `object`, `strip_object` and
+  `loose_object` +20 to +22 each. The closure takes the object and the key,
+  so a `union` that fills a missing key in runs such a pipe before it again
+  without them. The other forms that decide in the object loops measured
+  +16 to +24 on the core: the cheapest, +16, reads the count with one compare
+  more on every entry that comes back unchanged.
+- **Why**: core bytes, which every consumer of an object schema pays, for a
+  shape few write.
+- **Reopens**: a form at most +4 on the core, with nothing on the path of an
+  ordinary entry.
+
+### The same by a loop that `pipe` swaps in
+
+The object loop held in a module variable, which making a pipe that starts
+with a `with_default` replaces with one that writes the key.
+
+- **Gave**: conformance at about no cost on the core: -4 gzip, with the
+  loop moved to the top of the module, where the move alone is -7.
+- **Cost**: +94 gzip on the `pipe` scenario, and `pipe` +68 last in and +44
+  alone. In a program that has made such a pipe every object parse runs the
+  other loop: in the matrix, the `object` cases 1.05x together (A/A
+  ±0.034), and two ordinary ones marked slower, which fails rule 6. A
+  schema made anywhere changes how every object in the program parses.
+- **Why**: time on every object parse of a program that writes the shape
+  once, and bytes over the opt-in price, for a shape few write.
+- **Reopens**: as above.
+
 ## The parse context
 
 ### One context kept between parses

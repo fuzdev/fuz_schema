@@ -63,10 +63,19 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 	},
 	{
 		reason:
-			'a `pipe` that starts with a `with_default` leaves a missing key out when its steps give `undefined`, where both write the key as `undefined`, and so do arktype and typebox. `union[unknown, default]` leaving a missing key out, where zod writes it as `undefined`, stands or falls with this: both are a missing key whose entry gives `undefined`. So do the rows of `SIDES` where a union leaves a missing key out and zod tries the options before the one that matched again',
-		status: 'undecided',
+			'a `pipe` that starts with a `with_default` leaves a missing key out when its steps give `undefined`, where both write the key as `undefined`, and so do arktype and typebox. Cost declined: each form that writes it costs every object bundle bytes in its loop, or slows the object parses of a program that builds such a pipe',
+		status: 'declared',
+		docs: 'a `pipe` that starts with a `with_default` and whose steps give `undefined` leaves a missing key out',
 		rows: {
 			'default then a transform to undefined entry, key missing / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {}'
+			},
+			'message(default then a transform to undefined) entry, key missing / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {}'
+			},
+			'default then a transform to undefined, then a transform entry, key missing / *': {
 				both: 'ok {a: undefined}',
 				ours: 'ok {}'
 			}
@@ -323,8 +332,8 @@ const SIDES: Record<string, ConformanceSide> = {
 	// an option that fills a missing key in makes it optional, as in zod, so one
 	// before it that needs the key is tried on the `undefined`, and the first
 	// that matches is the union's, where valibot needs the key. An `undefined`
-	// it gives leaves the key out, where zod writes it, as the undecided
-	// difference of a default whose steps give `undefined` does
+	// it gives leaves the key out, where zod writes it, as a missing key whose
+	// entry gives `undefined` stays out of the output wherever it is
 	'union[unknown, default] entry, key missing / *': {
 		side: 'neither',
 		zod: 'ok {a: undefined}',
@@ -357,8 +366,7 @@ const SIDES: Record<string, ConformanceSide> = {
 	// is tried again and the key stays out, where zod tries the options before
 	// it again when any option is a default, a default inside another union
 	// among them, or when a transform follows the union, and keeps what they
-	// give. Undecided with the difference of a default whose steps give
-	// `undefined`, and ruled on with it
+	// give
 	'union[unknown then a transform to "U", optional(string), default] entry, key missing / *': {
 		side: 'neither',
 		zod: 'ok {a: "U"}',
@@ -544,6 +552,35 @@ const SIDES: Record<string, ConformanceSide> = {
 		side: 'valibot',
 		zod: 'ok {a: undefined}',
 		valibot: 'ok {}'
+	},
+	// a pipe that starts with one leaves the key out when its steps give
+	// `undefined`, as valibot does here, where zod writes it
+	'default of undefined then a transform to undefined entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: undefined}',
+		valibot: 'ok {}'
+	},
+	// a default whose steps give `undefined`, under a schema that lets the key
+	// be missing in zod and not in valibot: the key stays out, as it does for
+	// the pipe as the entry itself, where zod writes it and valibot refuses the
+	// missing key
+	'nullable(default then a transform to undefined) entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
+	},
+	'lazy(default then a transform to undefined) entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
+	},
+	'union[number, default then a transform to undefined] entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
 	},
 
 	// an entry named `__proto__`: zod neither reads nor writes it. The others

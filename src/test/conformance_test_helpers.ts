@@ -1023,6 +1023,31 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('default then a transform to undefined entry', (l) =>
 		l.map(l.with_default(l.string, 'D'), () => undefined)
 	),
+	...missing_and_undefined('message(default then a transform to undefined) entry', (l) =>
+		l.message(l.map(l.with_default(l.string, 'D'), () => undefined))
+	),
+	// a pipe that starts with that pipe
+	...missing_and_undefined('default then a transform to undefined, then a transform entry', (l) =>
+		l.map(
+			l.map(l.with_default(l.string, 'D'), () => undefined),
+			(x) => x
+		)
+	),
+	...missing_and_undefined('default then a transform to "D" entry', (l) =>
+		l.map(l.with_default(l.string, 'D'), (x) => x)
+	),
+	...missing_and_undefined('default of undefined then a transform to undefined entry', (l) =>
+		l.map(l.with_default(l.optional(l.string), undefined), () => undefined)
+	),
+	...missing_and_undefined('nullable(default then a transform to undefined) entry', (l) =>
+		l.nullable(l.map(l.with_default(l.string, 'D'), () => undefined))
+	),
+	...missing_and_undefined('lazy(default then a transform to undefined) entry', (l) =>
+		l.lazy(() => l.map(l.with_default(l.string, 'D'), () => undefined))
+	),
+	...missing_and_undefined('union[number, default then a transform to undefined] entry', (l) =>
+		l.union([l.number, l.map(l.with_default(l.string, 'D'), () => undefined)])
+	),
 	...missing_and_undefined('optional(default) entry', (l) =>
 		l.optional(l.with_default(l.string, 'D'))
 	),

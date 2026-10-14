@@ -2882,6 +2882,99 @@ describe('missing keys', () => {
 		});
 	});
 
+	// a declared difference as the entry itself, under a message, and as the first
+	// schema of another pipe: zod and valibot write the key as `undefined`
+	describe('a pipe that starts with a default leaves a missing key out when its steps give `undefined`', () => {
+		const factories = [s.object, s.strip_object, s.loose_object] as const;
+		// a default whose steps give `undefined`, each made anew
+		const gone = (): s.AnySchema =>
+			s.pipe(
+				s.with_default(s.string, 'D'),
+				s.transform(() => undefined)
+			);
+		const refuses = s.check<any>(() => false, 'never');
+
+		test('as the entry itself, and in a copy begun by another key', () => {
+			for (const factory of factories) {
+				const input = {};
+				assert.strictEqual(s.parse_or_throw(factory({ a: gone() }), input), input);
+				assert.ok(s.is(factory({ a: gone() }), {}));
+				// with the key there the input comes back
+				const present = { a: undefined };
+				assert.strictEqual(s.parse_or_throw(factory({ a: gone() }), present), present);
+				const copied = s.parse_or_throw(
+					factory({ d: s.with_default(s.string, 'D'), a: gone() }),
+					{}
+				);
+				assert.deepEqual<unknown>(copied, { d: 'D' });
+				assert.ok(!Object.hasOwn(copied, 'a'));
+			}
+		});
+
+		test('under a message, a nullable, a lazy, or a union, and as the first schema of another pipe', () => {
+			for (const entry of [
+				s.message(gone(), 'm'),
+				s.nullable(gone()),
+				s.lazy(() => gone()),
+				s.union([s.number, gone()]),
+				s.pipe(
+					gone(),
+					s.transform((v: unknown) => v)
+				)
+			]) {
+				const output = s.parse_or_throw(s.object({ a: entry }), {});
+				assert.deepEqual<unknown>(output, {});
+				assert.ok(!Object.hasOwn(output, 'a'));
+			}
+		});
+
+		test('a default that its steps keep is written, and a step that fails is reported', () => {
+			const kept = s.object({
+				a: s.pipe(
+					s.with_default(s.string, 'D'),
+					s.transform((v: string) => v + '!')
+				)
+			});
+			assert.deepEqual(s.parse_or_throw(kept, {}), { a: 'D!' });
+			const failing = s.object({
+				a: s.pipe(s.with_default(s.optional(s.string), undefined), refuses)
+			});
+			assert.deepEqual(
+				issues_of(failing, {}).map((issue) => issue.path),
+				[['a']]
+			);
+			assert.ok(!s.is(failing, {}));
+		});
+
+		test('outside an object it gives what its steps give', () => {
+			assert.strictEqual(s.parse_or_throw(gone(), undefined), undefined);
+			assert.deepEqual(s.parse_or_throw(s.array(gone()), [undefined]), [undefined]);
+			assert.deepEqual(s.parse_or_throw(s.record(gone()), { a: undefined }), { a: undefined });
+		});
+	});
+
+	test('a union run again runs an option once more for each enclosing union, and no more', () => {
+		for (let depth = 1; depth <= 4; depth++) {
+			let calls = 0;
+			// takes the object and the key (a `lazy`), runs its transform on a missing
+			// key, and fails for another reason, so each union that fills the key in
+			// runs it again without the key
+			const option = s.pipe(
+				s.lazy(() => s.optional(s.string)),
+				s.transform((value: string | undefined) => {
+					calls++;
+					return value;
+				}),
+				s.check(() => false)
+			);
+			let schema: s.AnySchema = s.with_default(s.string, 'D');
+			for (let i = 0; i < depth; i++) schema = s.union([option, schema]);
+			assert.deepEqual(s.parse_or_throw(s.object({ a: schema }), {}), { a: 'D' });
+			// once with the key at every depth, and once more as each union retries
+			assert.strictEqual(calls, 2 * depth);
+		}
+	});
+
 	test('a union that matches a missing key with `undefined` tries no option again', () => {
 		const U = (): s.AnySchema =>
 			s.pipe(
