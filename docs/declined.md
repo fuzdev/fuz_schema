@@ -261,6 +261,38 @@ through, and not only after the ones the pipe has the object for.
 - **Reopens**: a way to tell that costs a pipe that starts with a `string`
   nothing.
 
+### A `pipe` that starts with an `optional` with a loop of its own
+
+The closure of a pipe that starts with an `optional` running its steps in a
+loop of its own once it has looked for the key, in place of calling the
+closure of two parameters, which it shares them with.
+
+- **Gave**: with the key there, a pipe of an `optional` and a `check` 0.88x
+  in the matrix, and the same under a `message` 0.89x, and alone the same as
+  the shared closure. That is the path that calling the shared closure costs
+  in the matrix, 1.14x and 1.16x against a pipe that hands its `optional` the
+  object and the key and loops itself.
+- **Cost**: +8 gzip on all the scenarios together, which at 2126 is over the
+  ceiling of rule 5, and +11 on the `pipe` scenario. Without the key, alone,
+  1.16x, allocating 48 bytes a parse where the shared closure allocates none.
+- **Why**: over the ceiling. The present-key path keeps the cost of the call.
+- **Reopens**: bytes found under the ceiling to pay for it.
+
+### The steps of a `pipe` in one loop from its first schema
+
+The closure of two parameters running every schema of the pipe in one loop,
+the output starting as the value, in place of calling the first schema apart
+from the rest. It is the closure a pipe that starts with an `optional` calls
+once it has looked for the key.
+
+- **Gave**: 1 gzip fewer on all the scenarios together.
+- **Cost**: with the key there, a pipe of an `optional` and a `check` 1.545x
+  alone, and the same under a `message` 1.548x, against a pipe that hands its
+  `optional` the object and the key and loops itself. Calling the first
+  schema apart reads 0.985x and 0.970x there.
+- **Why**: a program of one such pipe pays half again on valid input.
+- **Reopens**: nothing known.
+
 ### `literal` with four parameters
 
 One `run` of four parameters for every `literal`, so that `literal(undefined)`

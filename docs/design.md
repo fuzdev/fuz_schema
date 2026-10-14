@@ -85,20 +85,25 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   would grow it to hold many. From then on
   `ctx.fails === ctx.issues.length` outside probe mode, and containers use
   the count as an index into `issues`.
-- **An entry's `run` gets two more arguments**: the object schemas call
-  `run(value, ctx, parent, key)`, with the object being read and the entry's
-  key. Both are optional in `Schema.run`'s type, so a `run` of two parameters
-  is an entry like any other. `unknown` reads them, and so do
-  `literal(undefined)` and a `one_of` with `undefined` among its values.
+- **An entry's `run` gets three more arguments**: the object schemas call
+  `run(value, ctx, parent, key, 1)`, with the object being read, the entry's
+  key, and `1`, which says the schema is the entry itself. All three are
+  optional in `Schema.run`'s type, so a `run` of two parameters is an entry
+  like any other. `unknown` reads the object and the key, and so do
+  `literal(undefined)` and a `one_of` with `undefined` among its values. The
+  `1` is read by a `pipe` that starts with an `optional` alone, and passed on
+  by `message` alone, see [Missing keys](#missing-keys).
 - **`nullable`, `union`, `pipe`, and `message` pass them on to a `run` that
   takes them**, which each tells once, when it is made, by the `length` of
-  that `run` or by the kind `'lazy'`: `nullable` and `message` by the schema
+  that `run` or by the kind `'lazy'`, one function asking it for all: `nullable` and `message` by the schema
   they hold, `union` by any of its options, and `pipe` by its first schema,
   the only step it hands them to. So a schema that reads the object and the key declares them as
   plain parameters, with no default and not as a rest. Around anything else
   each has a `run` of two parameters and calls with two, as `optional`,
-  `with_default`, `array`, `record`, and `variant` always do. A `pipe` that
-  starts with an `optional` is the exception, below.
+  `with_default`, `array`, `record`, and `variant` always do. `message` passes
+  the `1` on with them, as what it holds is the entry wherever it is, and the
+  other three don't. A `pipe` that starts with an `optional` is the exception,
+  below.
 - **`literal` and `one_of` are two closures too**, chosen when the schema is
   made by whether `undefined` is what it matches. The one that is reads the
   object and the key, and has four parameters. Every other literal and
@@ -112,15 +117,18 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   [declined.md](declined.md#passing-the-object-and-the-key-on).
 - **A `pipe` has a third closure**, for one that starts with an `optional`,
   through every pipe it starts with: it reads the kind of that schema when it
-  is made. This closure looks for the key when its first schema gave
-  `undefined`, see [Missing keys](#missing-keys), so it has four parameters
-  though an `optional` takes two. It passes the object and the key on, as its
-  first schema may be a pipe that looks for the key itself. The closure that
-  passes them on to an `unknown` or a `lazy` looks for no key: the forms that
-  had one closure for both are in
+  is made. This closure looks for the key when it is handed the `1`, see
+  [Missing keys](#missing-keys), so it has five parameters though an
+  `optional` takes two. Past that it runs the steps as the closure of two
+  does, which it shares, so a pipe it starts with is handed neither the object
+  nor the key. The call costs the path with the key there, and a loop of its
+  own was over the size ceiling, see
+  [declined.md](declined.md#a-pipe-that-starts-with-an-optional-with-a-loop-of-its-own). The closure that passes them on to an `unknown` or a `lazy`
+  looks for no key: the forms that had one closure for both are in
   [declined.md](declined.md#a-pipe-that-looks-for-the-key-wherever-it-has-the-object).
-- **A `lazy` passes on what it is given**, two arguments or four, which it
-  tells on each call by the length of its `arguments`. Its schema isn't known
+- **A `lazy` passes on the object and the key it is given**, which it tells
+  on each call by the length of its `arguments`, and not the `1`: what it
+  defers to is not the entry itself. Its schema isn't known
   when it is made, so it can't choose a closure then, and a `run` of four
   parameters costs every caller that passes two. So its `run` declares two,
   and the four tell a lazy by its `kind` where its `length` can't say: around
@@ -269,24 +277,50 @@ all a missing key costs an object that has no schema asking.
 - **An `optional` or a `with_default` on the way takes the `undefined`
   first**, so `nullable(optional(unknown))` lets its key be missing.
 - **A `pipe` that starts with an `optional` runs no step for a missing
-  key**, and the key stays out of the output. `{}` matches
-  `object({a: pipe(optional(string), check(...))})` whatever the check says,
-  and a `transform` there writes no key. With the key there every step runs,
-  on `undefined` too.
+  key**, as the entry itself, and the key stays out of the output. `{}`
+  matches `object({a: pipe(optional(string), check(...))})` whatever the
+  check says, and a `transform` there writes no key. With the key there every
+  step runs, on `undefined` too.
 - **It starts with an `optional` by that schema's kind**, which `message`,
   `flavor`, `brand`, and `meta` keep, and through every pipe it starts with:
   `pipe(pipe(optional(string), a), b)` runs neither `a` nor `b`. It looks for
-  the key where it has the object, so as the entry itself, and where a
-  `nullable`, a `lazy`, a `union`, or a `message` hands it the object.
+  the key where it is handed the `1`: as the entry itself, and under a
+  `message`, which passes the `1` on. A key that isn't in the object is
+  missing, and its value is then `undefined`.
+- **Under a `nullable`, a `lazy`, or a `union` its steps run**, on the
+  `undefined` a missing key reads as. Those hand it the object and the key,
+  and not the `1`: it is then a step of the schema that is the entry, and
+  does what it does there.
 - **After any other first schema the steps run**, on the `undefined` a
   missing key reads as: after a `nullable`, a `lazy`, or a `union` that
   reaches an `optional`, after a `with_default` whose value is `undefined`,
   and after a `check` or a `transform`. After any other `with_default` they
   run on its value.
 - **A `union` hands the object to every option**, and a missing key matches
-  the first that lets its key be missing. With none it fails as it does on any
-  value, with its own issue: `union([string, unknown])` without its key
+  only where an option lets its key be missing. With none it fails as it does
+  on any value, with its own issue: `union([string, unknown])` without its key
   reports a `union` that received `undefined`, and no `missing_key`.
+- **The first option that matches is the union's**, and a missing key it
+  leaves `undefined`, as an `optional` does, stays out:
+  `union([unknown, optional(string)])` accepts a missing key with the
+  `optional`, and no option is tried again.
+- **An option that fills a missing key in makes it optional**, when the
+  first that matches gives anything but `undefined`, as a `with_default`
+  does, and the key is then the `undefined` it reads as to every option
+  before it. So those before it that take the object and the key, which are
+  the only ones that can have failed for the key, are run again without
+  them, and the first of them that matches is the union's.
+  `union([unknown, with_default(string, 'D')])` matches a missing key with
+  the `unknown` and fills no default in, and leaves the key out, as a `pipe`
+  that starts with a `with_default` and whose steps give `undefined` does
+  for a missing key, which Zod writes, and Zod and Valibot both write for the
+  pipe. That is not yet ruled on, and the two stand or fall together.
+- **An option is run a second time only there**: one that takes the object
+  and the key runs twice in one parse, and a `transform` in it that the
+  first run reached with it, once more for each enclosing union that tries
+  it again, which only a `transform` or a `check` with a side effect can
+  tell. One that doesn't take the object, and the option that matched, are
+  run once.
 - **Anywhere else `unknown` is told nothing of a key**, and accepts
   `undefined`: at the top level, as an array's item, as a record's value, and
   as a step of a `pipe` after the first.
@@ -452,18 +486,6 @@ issues. These it holds:
   [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
   can't choose its closure when it is made, as a `literal` does: what its
   function accepts isn't known until it is called.
-- A `pipe` that starts with an `optional` runs no step for a missing key
-  under a `nullable`, a `lazy`, or a `union` too, and so accepts an input
-  both refuse when one of its steps fails beside a `transform`, which is
-  another of its steps or a step of a pipe that starts with that `nullable`,
-  `lazy`, or `union`: Valibot for the key, which it needs under each of
-  those, and Zod for the step, which it drops only where no step is a
-  `transform`. A `transform` of the pipe around then runs on the `undefined`,
-  and what it gives is written. By design: those three hand what they hold
-  the object and the key, and it does with a missing key what it does as the
-  entry itself. Closing it is also a cost declined: bytes in every bundle
-  with a `nullable` or a `union`, to tell such a pipe from one that needs its
-  key, or a test on every call of a `lazy`.
 
 Where the two disagree, this library goes with:
 
@@ -473,24 +495,44 @@ Where the two disagree, this library goes with:
   itself lets the key be missing too, as Zod's does. By design: a missing key
   is the `undefined` it reads as to every schema but the three that need
   their key, so the object schemas look for no key to reach a verdict.
+- **Zod or neither on the options of a `union` before one that fills the key
+  in.** Where the option that matches a missing key gives a value, as a
+  `with_default` does, an option before it that needs its key is tried on the
+  `undefined`, as in Zod, where Valibot needs the key: what it gives is kept,
+  as in Zod. Where that is `undefined` the key is left out, where Zod writes
+  it. Where the option that matches leaves the key `undefined`, as an
+  `optional` does, none is tried again and the key stays out, as in Zod
+  where no option fills the key in and nothing follows the union: Zod tries
+  the options before on the `undefined` when any option is a `with_default`,
+  or when a `transform` follows the union, and keeps what they give, where
+  this library leaves the key out. A union that fills the key in, inside
+  another, gives that one `undefined` when an option before its default
+  matches, and the outer tries none again, unlike the same options in one
+  union. Those are not yet ruled on, and stand or fall with a `pipe` that
+  starts with a `with_default` and whose steps give `undefined`. By design:
+  the key is optional, and a key the input lacks is left out unless what the
+  entry gives fills it in.
 - **Valibot on the steps after an `optional`.** A `pipe` that starts with an
   `optional` lets the key be missing, as in both, and a step that fails then
-  is not reported, as in both where no step is a `transform`. It runs no step
-  and leaves the key out, as Valibot does, where Zod runs them on the
-  `undefined`, keeps what a `transform` gives, and reports a step that fails
-  beside one. By design: a key the input lacks is left out, and
-  `with_default` is what fills one in.
+  is not reported, as in both where no step is a `transform`. As the entry
+  itself and under a `message` it runs no step and leaves the key out, as
+  Valibot does, where Zod runs them on the `undefined`, keeps what a
+  `transform` gives, and reports a step that fails beside one. By design: a
+  key the input lacks is left out, and `with_default` is what fills one in.
 - **Zod or Valibot on the steps after another schema that let the key
   through.** After a `nullable`, a `lazy`, or a `union` that reaches an
   `optional`, the steps run on the `undefined`: what a `transform` gives is
   kept, as in Zod, and a step that fails is reported, where Zod drops it and
   Valibot refuses the missing key. After a `with_default` whose value is
   `undefined` they run too, as in Zod, where Valibot leaves the key out.
-- **Zod or neither on a `pipe` that starts with an `optional` under another
-  schema.** Under a `nullable`, a `lazy`, or a `union` it runs no step for a
-  missing key, as it doesn't as the entry itself. Valibot needs the key under
-  each of those. A step that fails is not reported, as in Zod, and a
-  `transform` writes no key, which is neither's: Zod writes what it gave.
+- **Zod or Valibot on a `pipe` that starts with an `optional` under a
+  `nullable`, a `lazy`, or a `union`.** Its steps run on the `undefined`, as
+  they do after one of those: what a `transform` gives is kept, as in Zod,
+  and a step that fails is reported, as Valibot refuses the key under each of
+  those, where Zod drops it. As an option of a `union` beside an `optional`,
+  what a `transform` gives is kept where Zod leaves the key out, which goes
+  with neither. By design: those three hand it the object and the key and not
+  the `1`, so it is a step of the schema that is the entry.
 - **Zod on the entries of a `variant` option whose discriminator is missing.**
   An option whose discriminator is `literal(undefined)` is selected by an
   input without the key, and refused for it by both. Its other entries run

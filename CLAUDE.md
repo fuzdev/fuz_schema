@@ -182,25 +182,42 @@ Things that are easy to break without a test noticing:
   their first failed child.
 - **The input is never mutated**, `object` never accepts an input with unknown
   keys, and `strip_object` never returns one.
-- **The object loops hand an entry the object and its key**, as the third and
-  fourth argument of `run`, and leave whether a missing key fails to it. A schema
-  that accepts `undefined` and should refuse a missing key checks the object
-  itself, as `unknown` does. `nullable`, `union`, `pipe` to its first schema,
-  and `message` pass them on only to a `run` whose `length` is past two or to
-  a schema of kind `'lazy'`, read once when each is made, so a `run` that
-  reads them declares them as plain parameters. Each is two closures, one for
-  either answer: a single `run` of four parameters measured slower. A `lazy`
-  declares two parameters and passes on what it is called with, two arguments
-  or four, by the length of its `arguments`. A schema that calls what it
-  holds with two arguments, as every other does, lets a missing key through
-  to it as `undefined`.
+- **The object loops hand an entry the object, its key, and `1`**, as the
+  third, fourth, and fifth argument of `run`, and leave whether a missing key
+  fails to it. A schema that accepts `undefined` and should refuse a missing
+  key checks the object itself, as `unknown` does. `nullable`, `union`, `pipe`
+  to its first schema, and `message` pass the object and the key on only to a
+  `run` whose `length` is past two or to a schema of kind `'lazy'`, read by
+  `takes_key` once when each is made, so a `run` that reads them declares them
+  as plain parameters. Each is two closures, one for either answer: a single
+  `run` of four parameters measured slower. A `lazy` declares two parameters and passes
+  on the object and the key when it is called with more, by the length of its
+  `arguments`. A schema that calls what it holds with two arguments, as every
+  other does, lets a missing key through to it as `undefined`.
+- **The `1` says the schema is the entry itself.** Only `message` passes it
+  on, with the object and the key, and only the closure of a `pipe` that
+  starts with an `optional` reads it. `nullable`, `lazy`, `union`, and a `pipe`
+  to its first schema don't pass it, so what they hold is a step of the entry
+  and not the entry.
 - **A `pipe` that starts with an `optional` runs no step for a key that is
-  missing**, and the key stays out. It is a third closure, chosen when the
-  pipe is made by the kind of the schema it starts with, through every pipe
-  that is its first schema. The other two look for no key: after a `lazy`, a
-  `nullable`, or a `union` that reaches an `optional` the steps run on the
-  `undefined`, which keeps a step that fails there reported where Zod and
-  Valibot both refuse the input.
+  missing**, where it is handed the `1`, and the key stays out. It is a third
+  closure, chosen when the pipe is made by the kind of the schema it starts
+  with, through every pipe that is its first schema, and it shares the steps
+  with the closure of two. Without the `1`, under a `nullable`, a `lazy`, or a
+  `union`, its steps run on the `undefined`, as they do after any of those
+  that reaches an `optional`, which keeps a step that fails there reported
+  where Zod and Valibot both refuse the input.
+- **A `union` whose option fills a missing key in tries the options before it
+  again**, without the object and the key, and the first that matches is the
+  union's: the key is optional, and the `undefined` it reads as. That is when
+  the first option that matches a missing key gives anything but `undefined`;
+  one that gives `undefined`, as an `optional` does, is the union's, and none
+  is tried again. Only an option before it that takes the object and the key,
+  by `takes_key`, is run again, and never the one that matched. So an option
+  that takes them and fails for a reason other than the key, before one that
+  fills the key in, runs twice in one parse, and a `transform` in it that the
+  first run reached with it, once more for each enclosing union that tries it
+  again: only a `transform` or a `check` with a side effect can tell.
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and

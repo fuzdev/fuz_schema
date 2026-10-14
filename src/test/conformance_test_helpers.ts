@@ -753,6 +753,71 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('union[literal(undefined), optional(string)] entry', (l) =>
 		l.union([l.undef, l.optional(l.string)])
 	),
+	// an option that needs its key before a default that lets it be missing: the
+	// key is optional, and the first option is tried on the `undefined`
+	...missing_and_undefined('union[unknown, default] entry', (l) =>
+		l.union([l.unknown, l.with_default(l.string, 'D')])
+	),
+	...missing_and_undefined('union[unknown then a transform to "U", default] entry', (l) =>
+		l.union([l.map(l.unknown, (x) => x ?? 'U'), l.with_default(l.string, 'D')])
+	),
+	...missing_and_undefined(
+		'union[unknown then a transform, default] then a check of defined entry',
+		(l) =>
+			l.refine(
+				l.union([l.map(l.unknown, (x) => x), l.with_default(l.string, 'D')]),
+				(x) => x !== undefined
+			)
+	),
+	// before an option that leaves the key `undefined`, as an `optional` does, no
+	// option is tried again: the first that matches is the union's
+	...missing_and_undefined('union[unknown then a transform to "U", optional(string)] entry', (l) =>
+		l.union([l.map(l.unknown, (x) => x ?? 'U'), l.optional(l.string)])
+	),
+	// where zod tries the options before again and this library doesn't: a
+	// default after the option that matches, a transform after the union, a
+	// default whose value is `undefined`, and a union that fills the key in
+	// inside another, beside the same options in one union
+	...missing_and_undefined(
+		'union[unknown then a transform to "U", optional(string), default] entry',
+		(l) =>
+			l.union([
+				l.map(l.unknown, (x) => x ?? 'U'),
+				l.optional(l.string),
+				l.with_default(l.string, 'D')
+			])
+	),
+	...missing_and_undefined(
+		'union[unknown then a transform to "U", optional(string)] then a transform entry',
+		(l) => l.map(l.union([l.map(l.unknown, (x) => x ?? 'U'), l.optional(l.string)]), (x) => x)
+	),
+	...missing_and_undefined(
+		'union[unknown then a transform to "U", default(optional(string), undefined)] entry',
+		(l) =>
+			l.union([l.map(l.unknown, (x) => x ?? 'U'), l.with_default(l.optional(l.string), undefined)])
+	),
+	...missing_and_undefined(
+		'union[unknown then a transform to "U", union[string, unknown, default]] entry',
+		(l) =>
+			l.union([
+				l.map(l.unknown, (x) => x ?? 'U'),
+				l.union([l.string, l.unknown, l.with_default(l.string, 'D')])
+			])
+	),
+	...missing_and_undefined(
+		'union[unknown then a transform to "U", string, unknown, default] entry',
+		(l) =>
+			l.union([
+				l.map(l.unknown, (x) => x ?? 'U'),
+				l.string,
+				l.unknown,
+				l.with_default(l.string, 'D')
+			])
+	),
+	...missing_and_undefined(
+		'union[optional(string) then a transform to "T", optional(number)] entry',
+		(l) => l.union([l.map(l.optional(l.string), () => 'T'), l.optional(l.number)])
+	),
 	...missing_and_undefined('bare check entry', (l) => l.check(() => true)),
 	...missing_and_undefined('bare transform entry', (l) => l.transform((x) => x)),
 	// a `check` that another schema holds: it is handed the object, and doesn't look
@@ -875,6 +940,25 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 				() => 'T'
 			)
 	),
+	// under a `message`, which hands it that it is the entry itself, as the entry
+	...needs_key('message(optional(string) then a transform, then a check that fails) entry', (l) =>
+		l.message(
+			l.refine(
+				l.map(l.optional(l.string), (x) => x),
+				() => false
+			)
+		)
+	),
+	// and under a `nullable` around a `message`, or a `message` around one, which don't
+	...needs_key('nullable(message(optional(string) then a check that fails)) entry', (l) =>
+		l.nullable(l.message(l.refine(l.optional(l.string), () => false)))
+	),
+	...needs_key('message(nullable(optional(string) then a check that fails)) entry', (l) =>
+		l.message(l.nullable(l.refine(l.optional(l.string), () => false)))
+	),
+	...needs_key('union[number, optional(string) then a transform to "T"] entry', (l) =>
+		l.union([l.number, l.map(l.optional(l.string), () => 'T')])
+	),
 	// which as the entry itself valibot leaves out
 	...needs_key('optional(string) then a transform, then a check that fails entry', (l) =>
 		l.refine(
@@ -940,6 +1024,10 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		l.optional(l.map(l.string, () => 'T'))
 	),
 	...missing_and_undefined('default entry', (l) => l.with_default(l.string, 'D')),
+	// a default whose step gives `undefined`
+	...missing_and_undefined('default then a transform to undefined entry', (l) =>
+		l.map(l.with_default(l.string, 'D'), () => undefined)
+	),
 	...missing_and_undefined('optional(default) entry', (l) =>
 		l.optional(l.with_default(l.string, 'D'))
 	),

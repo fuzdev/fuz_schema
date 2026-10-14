@@ -89,12 +89,13 @@ export interface SchemaContext {
  * All schemas share this exact shape so `run` call sites stay monomorphic;
  * kind-specific data goes in `def`.
  *
- * The object schemas call an entry's `run` with two more arguments, the object
- * being read and the entry's key, so a schema that accepts `undefined` can tell
- * a key that is missing from one that is there. `nullable`, `lazy`, `union`,
- * `pipe`, and `message` pass the two on to what they hold as the entry. Every
- * other call gives the first two only, and a `run` that takes only those works
- * as an entry.
+ * The object schemas call an entry's `run` with three more arguments, the
+ * object being read, the entry's key, and `1`, so a schema that accepts
+ * `undefined` can tell a key that is missing from one that is there.
+ * `nullable`, `lazy`, `union`, `pipe`, and `message` pass the object and the
+ * key on to what they hold as the entry, and only `message` passes the third,
+ * which says that what it holds is the entry itself. Every other call gives
+ * the first two only, and a `run` that takes only those works as an entry.
  */
 export interface Schema<
 	TOutput = unknown,
@@ -109,18 +110,20 @@ export interface Schema<
 	 * with no default and not as a rest: `nullable`, `union`, `pipe`, and
 	 * `message` pass them on only to a `run` whose `length` says it takes them
 	 * or to a schema of kind `'lazy'`, read once when each is made. A `lazy`
-	 * passes on whatever it is called with.
+	 * passes on the object and the key it is called with.
 	 *
 	 * @param value - the value to validate
 	 * @param ctx - the state of the parse, where a failure is reported with `fail`
 	 * @param parent - the object `value` was read from, when an object schema is running an entry
 	 * @param key - the entry's key in `parent`, given with it
+	 * @param entry - `1` when this schema is the entry itself, as an object schema hands it and a `message` around it passes on, and absent where another schema passes the object and the key on
 	 */
 	readonly run: (
 		value: any,
 		ctx: SchemaContext,
 		parent?: Record<PropertyKey, unknown>,
-		key?: PropertyKey
+		key?: PropertyKey,
+		entry?: 1
 	) => TOutput;
 	/** Type-only, never set at runtime. */
 	readonly '~types'?: { readonly input: TInput };
@@ -511,7 +514,9 @@ export const bigint: Schema<bigint, bigint, 'bigint', undefined> = {
  * `nullable`, `lazy`, an option of a `union`, and the first schema of a
  * `pipe`. Anywhere else it is told nothing of a key and accepts `undefined`:
  * at the top level, as an array's item, as a record's value, and as a step
- * of a `pipe` after the first.
+ * of a `pipe` after the first. Under a `union` whose first option to match a
+ * missing key after it fills the key in, as a `with_default` does, the key
+ * is optional, and it accepts the `undefined`, see `union`.
  */
 export const unknown: Schema<unknown, unknown, 'unknown', undefined> = {
 	kind: 'unknown',
@@ -636,10 +641,9 @@ export const nullable = <T extends AnySchema>(
 	kind: 'nullable',
 	def: { schema },
 	// two closures chosen once here, as in `message`
-	run:
-		schema.run.length > 2 || schema.kind === 'lazy'
-			? (value, ctx, parent, key) => (value === null ? null : schema.run(value, ctx, parent, key))
-			: (value, ctx) => (value === null ? null : schema.run(value, ctx))
+	run: takes_key(schema)
+		? (value, ctx, parent, key) => (value === null ? null : schema.run(value, ctx, parent, key))
+		: (value, ctx) => (value === null ? null : schema.run(value, ctx))
 });
 
 /**
@@ -731,21 +735,21 @@ export const message = <T extends AnySchema>(
 		// handing the object and the key to a `run` that doesn't take them
 		// measured slower on valid input, and so did choosing on every call
 		// and sharing the body below as one call. A `lazy` declares two
-		// parameters and passes on what it is given, so it is named
-		run:
-			schema.run.length > 2 || schema.kind === 'lazy'
-				? (value, ctx, parent, key) => {
-						const count = ctx.fails;
-						const output = schema.run(value, ctx, parent, key);
-						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
-						return output;
-					}
-				: (value, ctx) => {
-						const count = ctx.fails;
-						const output = schema.run(value, ctx);
-						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
-						return output;
-					}
+		// parameters and passes on what it is given, so it is named. What this
+		// holds is the entry wherever this is, so `entry` is passed on too
+		run: takes_key(schema)
+			? (value, ctx, parent, key, entry) => {
+					const count = ctx.fails;
+					const output = schema.run(value, ctx, parent, key, entry);
+					if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+					return output;
+				}
+			: (value, ctx) => {
+					const count = ctx.fails;
+					const output = schema.run(value, ctx);
+					if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+					return output;
+				}
 	}) as AnySchema as T;
 
 //
@@ -842,8 +846,9 @@ export const brand: <T extends AnySchema, const TName extends string>(
 // the output being `value` itself until an entry's output differs from its input,
 // which copies the entries before it. Every container tells that by `Object.is`:
 // `===` reads a `0` made `-0` as no change, and a `NaN` passed through as one.
-// An entry is handed `value` and its key too, for a schema that accepts
-// `undefined` and still needs its key to be there
+// An entry is handed `value`, its key, and `1` too, for a schema that accepts
+// `undefined` and still needs its key to be there, and for a `pipe` that
+// starts with an `optional`, which runs no step for a key that is missing
 const run_entries = (
 	keys: Array<string>,
 	schemas: Array<AnySchema>,
@@ -855,7 +860,7 @@ const run_entries = (
 		const key = keys[i]!;
 		const input = value[key];
 		const count = ctx.fails;
-		const v = schemas[i]!.run(input, ctx, value, key);
+		const v = schemas[i]!.run(input, ctx, value, key, 1);
 		if (ctx.fails > count) {
 			if (ctx.probe) return;
 			prefix_path(ctx.issues!, count, key);
@@ -948,8 +953,8 @@ export const loose_object = <T extends SchemaEntries>(
 				const key = keys[i]!;
 				const input = value[key];
 				const count = ctx.fails;
-				// the object and the key too, as in `run_entries`
-				const v = schemas[i]!.run(input, ctx, value, key);
+				// the object, the key, and `1` too, as in `run_entries`
+				const v = schemas[i]!.run(input, ctx, value, key, 1);
 				if (ctx.fails > count) {
 					if (ctx.probe) return undefined;
 					prefix_path(ctx.issues!, count, key);
@@ -1101,14 +1106,32 @@ export const array = <T extends AnySchema>(
 	}
 });
 
+// whether `schema` takes the object and the key as an entry: a `run` that
+// declares them, or a `lazy`, which declares two parameters and passes on what
+// it is given. One function for every place that asks measured smaller in the
+// bundle of the scenarios together than the test written out at each, and
+// larger in one of a `union` or a `pipe` alone
+const takes_key = (schema: AnySchema): boolean => schema.run.length > 2 || schema.kind === 'lazy';
+
 /**
  * Matches the first of `options` that accepts the value.
  * On failure reports one issue, not the options' own.
  *
  * As an object entry it hands every option the object and the key when any of
- * them takes them. So a missing key matches only an option that lets its key
+ * them takes them. So a missing key matches only where an option lets its key
  * be missing, as an `optional` does and an `unknown` doesn't, and with none it
- * fails as any other value does, with the union's issue.
+ * fails as any other value does, with the union's issue. The first option
+ * that matches is the union's, and a missing key it leaves `undefined` stays
+ * out: `union([unknown, optional(string)])` accepts a missing key with the
+ * `optional`. When the option that matches fills a value in, as a
+ * `with_default` does, the key is optional and the `undefined` it reads as is
+ * for the options before to match: each of them that takes the object and the
+ * key is run again without them, and the first that matches is the union's.
+ * So `union([pipe(unknown, ...), with_default(...)])` runs the pipe's steps on
+ * `undefined` in place of filling the default in, and
+ * `union([unknown, with_default(...)])` leaves the key out. An option run again
+ * runs twice in the parse, and a `transform` in it that the first run reached
+ * runs twice too, once more for each enclosing union that tries it again.
  */
 // @__NO_SIDE_EFFECTS__
 export const union = <const T extends ReadonlyArray<AnySchema>>(
@@ -1122,7 +1145,7 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 		def: options,
 		// two closures chosen once here, as in `message`. Options are only
 		// probed, so a failed one costs no allocation
-		run: options.some((o) => o.run.length > 2 || o.kind === 'lazy')
+		run: options.some(takes_key)
 			? (value, ctx, parent, key) => {
 					const { probe } = ctx;
 					const count = ctx.fails;
@@ -1130,6 +1153,24 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 					for (let i = 0; i < options.length; i++) {
 						const output = options[i]!.run(value, ctx, parent, key);
 						if (ctx.fails === count) {
+							// an option that fills a missing key in makes it optional, and the
+							// key is then the `undefined` it reads as to every option. Of the
+							// options before this one, only one that takes the object and the
+							// key can have failed for the key, so each such is tried again
+							// without them, and the first that matches is the union's. A key
+							// that isn't in the object is missing, and its value `undefined`
+							if (output !== undefined && parent && !((key as string) in parent)) {
+								for (let j = 0; j < i; j++) {
+									if (takes_key(options[j]!)) {
+										const v = options[j]!.run(value, ctx);
+										if (ctx.fails === count) {
+											ctx.probe = probe;
+											return v;
+										}
+									}
+									ctx.fails = count;
+								}
+							}
 							ctx.probe = probe;
 							return output;
 						}
@@ -1238,8 +1279,10 @@ export interface SchemaPipeFactory {
  * `undefined` too.
  *
  * That is of an `optional` itself, and of a pipe that starts with such a
- * pipe. After a `nullable`, a `lazy`, or a `union` that reaches an
- * `optional`, the actions run on the `undefined` a missing key reads as.
+ * pipe, as the entry itself or under a `message`. Under a `nullable`, a
+ * `lazy`, or a `union` its actions run on the `undefined` a missing key reads
+ * as, and so do a pipe's after a `nullable`, a `lazy`, or a `union` that
+ * reaches an `optional`.
  */
 // @__NO_SIDE_EFFECTS__
 export const pipe: SchemaPipeFactory = (
@@ -1249,28 +1292,34 @@ export const pipe: SchemaPipeFactory = (
 	// The kind is read, as `message`, `flavor`, `brand`, and `meta` keep it
 	let first = schemas[0]!;
 	while (first.kind === 'pipe') first = first.def[0];
+	// the steps in order, handed no object or key. The first is called apart
+	// from the rest, as the closure that passes them on calls it: one loop from
+	// the first measured slower in a program of one pipe, whether or not it
+	// starts with an `optional`
+	const run = (value: any, ctx: SchemaContext): any => {
+		const count = ctx.fails;
+		let output = schemas[0]!.run(value, ctx);
+		for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
+			output = schemas[i]!.run(output, ctx);
+		}
+		return output;
+	};
 	return {
 		kind: 'pipe',
 		// the overloads take any schema, and `def` is typed as the contract has it
 		def: schemas as Array<SchemaNode>,
 		// three closures chosen once here, as in `message`. The first is of a
-		// pipe that starts with an `optional`: it looks for the key when its
-		// first schema gave `undefined`, and passes the object and the key on,
-		// which a pipe it starts with looks for the key by
+		// pipe that starts with an `optional`: as the entry itself, a key that
+		// isn't in the object is missing, and its value `undefined`, so it stays
+		// out and nothing runs. A key not `in` the object reads as `undefined`
+		// for every object but a Proxy that answers otherwise, whose value then
+		// passes unchecked. It shares the steps with the third, which a pipe it
+		// starts with is called with
 		run:
 			first.kind === 'optional'
-				? (value, ctx, parent, key) => {
-						const count = ctx.fails;
-						let output = schemas[0]!.run(value, ctx, parent, key);
-						// a key that is missing stays out, and no action runs
-						if (output !== undefined || !parent || (key as string) in parent) {
-							for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
-								output = schemas[i]!.run(output, ctx);
-							}
-						}
-						return output;
-					}
-				: schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
+				? (value, ctx, parent, key, entry) =>
+						entry && !((key as string) in parent!) ? value : run(value, ctx)
+				: takes_key(schemas[0]!)
 					? (value, ctx, parent, key) => {
 							const count = ctx.fails;
 							let output = schemas[0]!.run(value, ctx, parent, key);
@@ -1279,14 +1328,7 @@ export const pipe: SchemaPipeFactory = (
 							}
 							return output;
 						}
-					: (value, ctx) => {
-							const count = ctx.fails;
-							let output = value;
-							for (let i = 0; i < schemas.length && ctx.fails === count; i++) {
-								output = schemas[i]!.run(output, ctx);
-							}
-							return output;
-						}
+					: run
 	};
 };
 

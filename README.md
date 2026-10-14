@@ -130,6 +130,9 @@ A key the input lacks reads as `undefined`, so it fails unless its entry accepts
 `{}` doesn't match `s.object({a: s.unknown})` and `{a: undefined}` does.
 It needs it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
 so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either.
+A `union` with an option that lets the key be missing makes the key optional.
+Where the first option that matches a missing key fills it in, as `s.with_default` does, the options before it
+take the missing key as `undefined`, an `unknown` among them, and the first that matches is the union's.
 Write `s.optional(s.unknown)` for a key that may be missing.
 `s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
 
@@ -137,7 +140,8 @@ A `pipe` that starts with an `optional` runs none of its steps for a key that is
 and leaves the key out, as in Valibot:
 `{}` matches `s.object({a: s.pipe(s.optional(s.string), s.check(...))})` whatever the check says,
 and a `transform` there writes no key. `s.with_default` is what fills a missing key in.
-With the key there, as `undefined` too, every step runs.
+With the key there, as `undefined` too, every step runs,
+and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schema that is the entry.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
