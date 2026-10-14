@@ -236,6 +236,44 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 		rows: {
 			'array of a subclass, an item changes': { both: 'ok ["x!"]', ours: 'ok ["x!"] proto=other' }
 		}
+	},
+	{
+		reason:
+			"a failed `union` reports one issue, at its own path, where both report the issues of only one option that has the input's type at every depth and fails only a check inside, at their paths. By design: options are only probed, so one that fails builds no issue and allocates nothing",
+		status: 'declared',
+		docs: 'A failed `union` reports one issue, at its own path',
+		rows: {
+			'union, an object option fails a check inside': { both: 'fail at a', ours: 'fail at <root>' },
+			'union in an object, an object option fails a check inside': {
+				both: 'fail at u.a',
+				ours: 'fail at u'
+			},
+			'union, an array option fails a check inside': {
+				both: 'fail at [0]',
+				ours: 'fail at <root>'
+			},
+			'union, a record option fails a check inside': { both: 'fail at k', ours: 'fail at <root>' }
+		}
+	},
+	{
+		reason:
+			'a `pipe` stops at its first failing step, so a check after a container whose item fails only a check is not run, where both run it and report it too. By design: a step runs only on a value every step before it accepted',
+		status: 'declared',
+		docs: 'A `pipe` stops at its first failing step',
+		rows: {
+			'a check after an object whose entry fails a check': {
+				both: 'fail at <root>, a',
+				ours: 'fail at a'
+			},
+			'a check after an array whose item fails a check': {
+				both: 'fail at <root>, [0]',
+				ours: 'fail at [0]'
+			},
+			'a check after a record whose value fails a check': {
+				both: 'fail at <root>, k',
+				ours: 'fail at k'
+			}
+		}
 	}
 ];
 
@@ -424,6 +462,14 @@ const SIDES: Record<string, ConformanceSide> = {
 		side: 'zod',
 		zod: 'ok {a: "T"}',
 		valibot: 'fail at a'
+	},
+
+	// a check after an object with an unknown key: valibot stops at the unknown
+	// key, as here, and zod runs the check and reports it beside the key
+	'a check after an object with an unknown key': {
+		side: 'valibot',
+		zod: 'fail at <root> +unknown keys in <root>',
+		valibot: 'fail +unknown keys in <root>'
 	},
 
 	// steps after an optional, with the key missing: valibot runs none and

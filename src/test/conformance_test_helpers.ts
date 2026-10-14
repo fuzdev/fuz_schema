@@ -1417,6 +1417,35 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.union([l.strip({ a: l.string }), l.loose({ a: l.string })]),
 		input: () => ({ a: 'x', z: 1 })
 	},
+	// an option with the input's type at every depth that fails only a check
+	// inside, which both report at its path
+	{
+		name: 'union, an object option fails a check inside',
+		schema: (l) => l.union([l.string, l.strict({ a: l.refine(l.string, () => false) })]),
+		input: () => ({ a: 'x' })
+	},
+	{
+		name: 'union in an object, an object option fails a check inside',
+		schema: (l) =>
+			l.strict({ u: l.union([l.string, l.strict({ a: l.refine(l.string, () => false) })]) }),
+		input: () => ({ u: { a: 'x' } })
+	},
+	{
+		name: 'union, an array option fails a check inside',
+		schema: (l) => l.union([l.string, l.array(l.refine(l.string, () => false))]),
+		input: () => ['x']
+	},
+	{
+		name: 'union, a record option fails a check inside',
+		schema: (l) => l.union([l.string, l.record(l.refine(l.string, () => false))]),
+		input: () => ({ k: 'x' })
+	},
+	// the same option of the wrong type inside, which all three report at the union
+	{
+		name: 'union, an object option of the wrong type inside',
+		schema: (l) => l.union([l.string, l.strict({ a: l.strict({ b: l.string }) })]),
+		input: () => ({ a: { b: 1 } })
+	},
 	{ name: 'variant, the first option', schema: VARIANT, input: () => ({ t: 'a', x: 'x' }) },
 	{ name: 'variant, the second option, a default', schema: VARIANT, input: () => ({ t: 'b' }) },
 	{ name: 'variant, no option has the value', schema: VARIANT, input: () => ({ t: 'c' }) },
@@ -1470,6 +1499,35 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 				return true;
 			}),
 		input: () => 1
+	},
+	// a check after a container one of whose items fails only a check, which
+	// both run and report too
+	{
+		name: 'a check after an object whose entry fails a check',
+		schema: (l) => l.refine(l.strict({ a: l.refine(l.string, () => false) }), () => false),
+		input: () => ({ a: 'x' })
+	},
+	{
+		name: 'a check after an array whose item fails a check',
+		schema: (l) => l.refine(l.array(l.refine(l.string, () => false)), () => false),
+		input: () => ['x']
+	},
+	{
+		name: 'a check after a record whose value fails a check',
+		schema: (l) => l.refine(l.record(l.refine(l.string, () => false)), () => false),
+		input: () => ({ k: 'x' })
+	},
+	// the same with the entry of the wrong type, after which none of the three runs it
+	{
+		name: 'a check after an object whose entry is of the wrong type',
+		schema: (l) => l.refine(l.strict({ a: l.string }), () => false),
+		input: () => ({ a: 1 })
+	},
+	// and with an unknown key, after which zod runs it and valibot does not
+	{
+		name: 'a check after an object with an unknown key',
+		schema: (l) => l.refine(l.strict({ a: l.string }), () => false),
+		input: () => ({ a: 'x', z: 1 })
 	},
 	{ name: 'a transform', schema: (l) => l.map(l.string, (x) => x + '!'), input: () => 'x' },
 	{ name: 'a bare check', schema: (l) => l.check(() => true), input: () => undefined },

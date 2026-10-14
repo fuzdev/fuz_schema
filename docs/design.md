@@ -497,6 +497,16 @@ issues. These it holds:
   loop every object schema's bundle carries, or a loop swapped in when such
   a pipe is made, which slowed every object parse of the program, see
   [declined.md](declined.md#a-default-whose-steps-give-undefined-written-for-a-missing-key).
+- A failed `union` reports one issue, at its own path. Where only one option has
+  the input's type at every depth and fails only a check inside, both report
+  that option's issues at their paths: an object option whose entry's check
+  fails is reported at the entry by both, and at the union here. By design:
+  options are only probed, so one that fails builds no issue and allocates
+  nothing.
+- A `pipe` stops at its first failing step. A check after an object, an
+  array, or a record one of whose entries or items fails only a check is not
+  run, where both run it and report it too, at the container's path. By
+  design: a step runs only on a value every step before it accepted.
 
 Where the two disagree, this library goes with:
 
@@ -594,10 +604,6 @@ Where the two disagree, this library goes with:
 These the test doesn't see, as they are in the count of the issues, in the
 API, or in the names:
 
-- `pipe` stops at its first failing step. By design: an action assumes the
-  type the steps before it gave its value.
-- A failed `union` reports one issue, not its options'. By design: options
-  are only probed, so one that fails builds no issue and allocates nothing.
 - An unknown key is one issue each, at the key. Zod reports every unknown
   key of an object in one issue at the object, and Valibot the first alone.
   By design: every issue is the same five fields with a path to what is
