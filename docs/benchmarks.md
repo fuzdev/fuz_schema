@@ -212,7 +212,8 @@ whoever runs it.
   build on each other, against a bare process. Bundled and unbundled entries.
   Compile cache off, rounds interleaved, medians.
 - **Retained heap**: a fresh process builds the schema, parses once, and
-  collects until the heap settles. Read for one schema and for many.
+  collects until the heap settles. Read for one schema and for many. See
+  [below](#retained-heap).
 - **Type-checking**: `tsc` over one library's scenario module.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm).
@@ -256,6 +257,40 @@ and prices them by class.
 fails when it is stale, so the diff of a change shows its bytes wherever they
 fell. An upgrade of Rolldown, of Valibot, or of Node's zlib can make it stale
 too.
+
+### Retained heap
+
+`heap.ts` reads what a library still holds, in processes of their own, under
+`--expose-gc`, a fixed young generation, and one thread:
+
+- **the total**: one schema built and parsed once, over a bare process with
+  the same input and no library. It carries the library's own fixed memory.
+- **per further schema**: the difference per schema in heap and external
+  memory between processes holding 50 schemas and 250, what an app that
+  defines many pays for each. It is the schema object, its `def`, its
+  closures and their contexts, and its slot in the array that holds the
+  schemas, a few bytes, the same in both versions so it cancels: a constant
+  schema such as `string` reads that slot alone. A feedback vector is not in
+  it, since the closures one site makes share theirs. Machine code, and what
+  V8 keeps beside it in its trusted spaces (bytecode, deoptimization data),
+  is left out, since schemas share it and the parses keep tiering it up and
+  down past any count, by tens of bytes a schema between 50 and 250: a
+  library that compiles each schema pays for that code too, which the totals
+  show and this figure leaves out. Not from one: the parses of the first few
+  dozen schemas tier the engine's code up, which holds feedback once, and read
+  from one and 50 that is up to a hundred bytes or so a schema, from one and
+  250 tens. The figure differs by the pair of counts it is read between,
+  so only figures of one pair compare.
+
+`npm run benchmark:heap` reads both for every library on a scenario. `grade`
+reads both for both versions on every scenario, and the figure per further
+schema of each export alone too (`measure_export_heap`): a schema of the
+export's entry in `program.ts`, an action inside a `pipe`, since the
+scenarios are built of a few kinds. An export's process imports `PROGRAM`,
+which is harness, and the same at both counts, so it cancels. It prices the
+figure per further schema, see [grading.md](grading.md#retained-heap). The
+figures depend on Node's version and the machine's architecture, so none is
+committed.
 
 ### Timing across libraries
 
@@ -404,8 +439,9 @@ Their generated modules are under `node_modules/.cache/fuz_schema/`.
   `benchmark:allocations` repeats within about a percent, with one kind of
   exception: a row can settle at one of a few figures, tens of bytes apart or
   a few hundred, each process at one of them and every reading in it the
-  same. That is over a tenth of the smallest such row. Retained heap repeats
-  to about a kilobyte.
+  same. That is over a tenth of the smallest such row. A retained-heap total
+  repeats to about a kilobyte, and a figure per further schema to within a
+  byte.
 - Allocation depends on what else the process has run. A parse whose call
   sites have seen one schema can be inlined and its context removed, and
   reads less than the same parse among many schemas: see

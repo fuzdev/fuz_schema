@@ -447,6 +447,7 @@ and checks the result against the rules a change is accepted by:
 - every scenario stays under 0.75 of Valibot's gzipped size for the same scenario
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP
+- what each further schema holds may grow by 16 bytes, of a scenario or of one export alone
 
 [`docs/grading.md`](docs/grading.md) has the rules in full,
 and [`docs/benchmarks.md`](docs/benchmarks.md) the method behind every number.

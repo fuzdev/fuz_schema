@@ -2,7 +2,8 @@
  * Grades a version of `schema.ts`, by default the working tree's, against
  * another, across every factor the acceptance rules weigh: time and allocation
  * per case, whether the output is the input itself, bundle size per scenario
- * and per export, priced by `grade_bytes.ts`, retained heap, and cold start.
+ * and per export, priced by `grade_bytes.ts`, retained heap per scenario and
+ * per export, priced by `grade_heap.ts`, and cold start.
  *
  * This module measures nothing itself. It plans the processes, runs them one
  * at a time where they are timed, and reads the verdict from all of them
@@ -111,7 +112,23 @@ import {
 	type GradeJobArm,
 	type GradeRegime
 } from './grade_job.ts';
-import { HEAP_SETTLED_BELOW_BYTES, measure_retained_heap } from './heap.ts';
+import {
+	HEAP_SETTLED_BELOW_BYTES,
+	measure_export_heap,
+	measure_retained_heap,
+	type ExportHeap
+} from './heap.ts';
+import {
+	HEAP_ALLOWANCE,
+	HEAP_JITTER,
+	format_heap_delta,
+	format_heap_line,
+	is_heap_compared,
+	is_over_heap_allowance,
+	judge_heap,
+	to_heap_delta,
+	type HeapFigure
+} from './grade_heap.ts';
 import {
 	ALLOCATION_NODE_FLAGS,
 	format_table,
@@ -269,7 +286,7 @@ const LEAST_SPEEDUP_FOR_BYTES = 0.05;
 // the scenarios cold start samples: one small schema, one large
 const COLDSTART_SCENARIOS = ['object_flat', 'type_json'];
 const COLDSTART_DISCARD = 2;
-// what a cold-start stage or a schema's retained bytes must grow by to be listed
+// what a cold-start stage must grow by to be listed
 const PROCESS_FLOOR = 0.1;
 // how many byte processes run at once, of both regimes together: they are not
 // timed, so they may share the machine
@@ -436,7 +453,7 @@ const ESTIMATE = {
 	apart_process: 0.17 + GRADE_WARM_MS.apart / 1000 + (GRADE_APART_ROUNDS + 1) * slice_seconds,
 	bytes: 2 + (cases.length * 2.3 + alone_cases.length * 3.8) / BYTES_CONCURRENCY,
 	bundle: args.bundle ? 1 : 0,
-	process: args.process ? 4 + args.samples * 0.6 : 0
+	process: args.process ? 10 + args.samples * 0.6 : 0
 };
 const estimate_apart =
 	args.runs * apart_cases.length * 2 * APART_PROCESSES * ESTIMATE.apart_process;
@@ -1141,7 +1158,8 @@ if (args.bundle) {
 // Retained heap and cold start, in processes of their own
 //
 
-const heap_grew: Array<string> = [];
+const heap_figures: Array<HeapFigure> = [];
+const heap_totals_grew: Array<string> = [];
 const coldstart_slower: Array<string> = [];
 let coldstart_ratio = NaN;
 
@@ -1151,44 +1169,45 @@ if (args.process) {
 		schema_path: baseline_path,
 		lib_path: baseline_lib_path
 	};
+	const since = performance.now();
 
+	const format_kb = (bytes: number): string =>
+		Number.isNaN(bytes) ? '-' : (bytes / 1024).toFixed(1);
+	const format_bytes = (bytes: number): string => (Number.isNaN(bytes) ? '-' : String(bytes));
+	const format_figure_delta = (f: HeapFigure): string =>
+		(is_heap_compared(f) ? format_heap_delta(to_heap_delta(f)) : '-') +
+		(is_over_heap_allowance(f) ? '!' : ' ');
 	const heap_rows: Array<Array<string>> = [];
 	for (const scenario of SCENARIOS) {
 		const current = await measure_retained_heap('fuz_schema', scenario.name, new_variant);
-		const format_delta = (delta: number): string => `${delta >= 0 ? '+' : ''}${delta}`;
-		if (!shared_scenarios.includes(scenario.name)) {
-			heap_rows.push([
-				scenario.name,
-				'-',
-				(current.total_bytes / 1024).toFixed(1),
-				'-',
-				'-',
-				String(current.further_schema_bytes),
-				'-'
-			]);
-			continue;
-		}
-		const base = await measure_retained_heap('fuz_schema', scenario.name, variant);
+		// a scenario the baseline's module lacks is compared on nothing
+		const base = shared_scenarios.includes(scenario.name)
+			? await measure_retained_heap('fuz_schema', scenario.name, variant)
+			: { total_bytes: NaN, further_schema_bytes: NaN };
+		const figure: HeapFigure = {
+			name: scenario.name,
+			kind: 'scenario',
+			base: base.further_schema_bytes,
+			new: current.further_schema_bytes
+		};
+		heap_figures.push(figure);
+		const total_delta = current.total_bytes - base.total_bytes;
 		heap_rows.push([
 			scenario.name,
-			(base.total_bytes / 1024).toFixed(1),
-			(current.total_bytes / 1024).toFixed(1),
-			format_delta(current.total_bytes - base.total_bytes),
-			String(base.further_schema_bytes),
-			String(current.further_schema_bytes),
-			format_delta(current.further_schema_bytes - base.further_schema_bytes)
+			format_kb(base.total_bytes),
+			format_kb(current.total_bytes),
+			Number.isNaN(total_delta) ? '-' : format_heap_delta(total_delta),
+			format_bytes(figure.base),
+			format_bytes(figure.new),
+			format_figure_delta(figure)
 		]);
-		// a reading repeats to about the size of a collection's jitter
-		if (
-			current.total_bytes - base.total_bytes > HEAP_SETTLED_BELOW_BYTES ||
-			current.further_schema_bytes > base.further_schema_bytes * (1 + PROCESS_FLOOR)
-		) {
-			heap_grew.push(scenario.name);
-		}
+		// a total repeats to about the size of a collection's jitter
+		if (total_delta > HEAP_SETTLED_BELOW_BYTES) heap_totals_grew.push(scenario.name);
 	}
 	console.log(
-		'\nretained heap: after building one schema and parsing once, over a bare process,\n' +
-			'and what each schema past the first adds\n'
+		'\nretained heap: after building one schema and parsing once, over a bare process, reported,\n' +
+			'and what each further schema holds, machine code and the trusted spaces beside it\n' +
+			'(bytecode, deoptimization data) left out, priced\n'
 	);
 	console.log(
 		format_table([
@@ -1196,6 +1215,48 @@ if (args.process) {
 			...heap_rows
 		])
 	);
+
+	// strict for the graded version, which has every export the program names
+	const [base_exports, new_exports] = [
+		await measure_export_heap(variant),
+		await measure_export_heap(new_variant, true)
+	];
+	const base_by_name = new Map(base_exports.map((e) => [e.name, e]));
+	const export_figures = new_exports.map((e: ExportHeap): HeapFigure => ({
+		name: e.name,
+		kind: 'export',
+		base: base_by_name.get(e.name)?.further_schema_bytes ?? NaN,
+		new: e.further_schema_bytes
+	}));
+	heap_figures.push(...export_figures);
+	// the figures a reader needs: any that moved past the jitter, and any one side lacks
+	const listed = export_figures.filter(
+		(f) => !is_heap_compared(f) || Math.abs(to_heap_delta(f)) > HEAP_JITTER
+	);
+	console.log(
+		'\nretained heap per further schema of each export alone, a schema of its entry in the program,\n' +
+			`each action in a \`pipe\`, priced. A figure that moved by ${HEAP_JITTER} or less is not listed\n`
+	);
+	if (listed.length) {
+		console.log(
+			format_table([
+				['export', 'base B/schema', 'new B/schema', 'delta B'],
+				...listed.map((f) => [
+					f.name,
+					format_bytes(f.base),
+					format_bytes(f.new),
+					format_figure_delta(f)
+				])
+			])
+		);
+	}
+	console.log(
+		`${export_figures.length - listed.length} ${listed.length ? 'other ' : ''}exports within ±${HEAP_JITTER}` +
+			(heap_figures.some(is_over_heap_allowance)
+				? `, ! over the allowance of ${HEAP_ALLOWANCE}`
+				: '')
+	);
+	console.log(`\nretained heap: ${to_elapsed(since)}`);
 
 	// a baseline's module may be from before one of them
 	const coldstart_scenarios = COLDSTART_SCENARIOS.filter((name) => shared_scenarios.includes(name));
@@ -1440,6 +1501,6 @@ if (args.process) {
 		`cold start, first parse: ${format_ratio(coldstart_ratio)} the baseline's; ` +
 			`stages slower past their own spread: ${coldstart_slower.length ? coldstart_slower.join(', ') : 'none'}`
 	);
-	console.log(`scenarios retaining more: ${heap_grew.length ? heap_grew.join(', ') : 'none'}`);
+	console.log(format_heap_line(judge_heap(heap_figures), heap_totals_grew));
 }
 console.log(`\n${to_elapsed(started)}`);

@@ -23,8 +23,8 @@ what it expects to take before it starts. Per
 - whether the output is the input itself or a copy
 
 each summarized by group and by path (what the parse does: return the input,
-return a copy, build issues, or probe), then bundle size, retained heap, and
-cold start, and a verdict against the rules.
+return a copy, build issues, or probe), then bundle size, retained heap per
+scenario and per export, and cold start, and a verdict against the rules.
 
 Bytes are the figures of [`sizes.json`](benchmarks.md#the-whole-library), of
 both versions: a table of the scenarios, each beside Valibot's bundle of the
@@ -60,7 +60,7 @@ When a change targets a path no case isolates, add the case first.
 | `--samples <n>`              | 15                             | the cold-start rounds kept                                                                                                     |
 | `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, or `correctness` for a fix of correctness or conformance              |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
-| `--no-process`               | off                            | skip retained heap and cold start                                                                                              |
+| `--no-process`               | off                            | skip retained heap and cold start, and with them the verdict of rule 9                                                         |
 
 The exit code is 0 whatever the verdicts, and nonzero only when the grade
 could not run.
@@ -244,9 +244,12 @@ now and then be graded against an older ref (`--against <ref>`).
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
+9. **What each further schema holds has an allowance.** Any change may grow
+   the retained heap per further schema by up to 16 bytes on any one figure,
+   and past that the user rules, [below](#retained-heap).
 
-`grade` checks 2, 4, 5, and 6, and lists what allocates more, retains more, or
-starts slower. The rest is judgment.
+`grade` checks 2, 4, 5, 6, and 9, and lists what allocates more, retains
+more in total, or starts slower. The rest is judgment.
 
 - **Rule 4**, for speed, reads the realistic cases in the matrix, all the
   runs together, the valid ones and the invalid ones each as one figure beside
@@ -263,9 +266,11 @@ starts slower. The rest is judgment.
   `alone`, or when a valid case, realistic or not, is confirmed slower in any
   regime, `apart` among them. The summary of the cases timed apart is printed
   and no rule reads it: they are a few chosen cases, read one at a time.
+- **Rule 9** reads every figure of retained heap per further schema, under
+  either class, and one over the allowance reads `ASK`.
 - **Below three runs** rule 6, and rule 4 for speed when bytes were added,
   are not judged: their lines say so in place of a pass or a fail, and the figures
-  are still printed. What is of bytes alone is judged at any run count.
+  are still printed. What is of bytes or retained heap alone is judged at any run count.
 - A case is listed as allocating more when it does by eight bytes or more to
   the nearest byte, a word, and by at least a fifth of a percent, which is
   what two readings of one parse can differ by on a large case: a smaller rise
@@ -319,3 +324,40 @@ The backstop is read on every scenario under either class, against
 Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it. The
 scenarios together, `all`, are no bundle a consumer ships, and are reported
 beside Valibot's without a verdict.
+
+### Retained heap
+
+`--no-process` skips it, with cold start. A change's retained heap is read
+in processes of its own, by `heap.ts` (see
+[benchmarks.md](benchmarks.md#retained-heap)), for each version:
+
+- **per scenario**: the library's total with one schema, and what each
+  further schema of the scenario holds
+- **per export**: what each further schema of one export alone holds, a
+  schema of the export's entry in `src/benchmarks/program.ts`, an action
+  inside a `pipe`. The scenarios are built of a few kinds, and a change to
+  any other is read here and nowhere else: a `one_of` holds a set of its
+  values, and no scenario has one.
+
+The figure per further schema is priced, and a total is reported. A total is
+paid once, whatever an app does. What each schema holds is paid as often as
+an app defines one, for as long as it keeps them, and is the figure a change
+to a schema's construction moves.
+
+| figure                   | any change, of either class                  |
+| ------------------------ | -------------------------------------------- |
+| retained heap per schema | up to +16 B on any one figure, past it `ASK` |
+| total with one schema    | reported, listed where it grew past 1 KB     |
+
+The allowance is two words of the 64-bit heap: room for a field, or a slot of
+a closure's context, and not for an object or a closure of a schema's own.
+Speed is not a class that buys memory: a change for speed that holds more
+per schema says so, and the user rules. A figure repeats to within a byte, so
+a rise of 2 or less is not read as growth, and the allowance is read 2 past
+its figure. A figure one version lacks, as a scenario the baseline's module
+has no factory for, or an export the baseline can't build its entry with, is
+compared on nothing.
+
+The figures depend on Node's version and the machine's architecture, so they
+are read fresh in every grade, of both versions on one machine, and kept in
+no snapshot as `sizes.json` keeps the bytes.

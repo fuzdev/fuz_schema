@@ -11,7 +11,7 @@
 import { z } from 'zod';
 import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
-import { HEAP_MANY, measure_retained_heap } from './heap.ts';
+import { HEAP_COUNTS, measure_retained_heap } from './heap.ts';
 import { format_table } from './measure.ts';
 
 const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
@@ -58,6 +58,8 @@ for (const scenario of args.scenario) {
 
 console.log(
 	'\nretained heap after building one schema and parsing once, over a bare process;\n' +
-		`the last column is what each schema past the first adds, from a process holding ${HEAP_MANY}\n`
+		'the last column is what each further schema adds, read between processes holding ' +
+		`${HEAP_COUNTS.few} and ${HEAP_COUNTS.many}, past the engine's tier-up,\n` +
+		'machine code and the trusted spaces beside it (bytecode, deoptimization data) left out\n'
 );
 console.log(format_table(rows, 2));

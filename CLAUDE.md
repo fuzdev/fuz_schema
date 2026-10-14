@@ -91,8 +91,8 @@ dev server.
   - `json_syntax_texts.ts` - texts several groups share
 - `src/test/json.fixtures.test.ts` - fails when a generated file is stale
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
-- `src/test/grade_bytes.test.ts` - the grader's prices of bytes, over
-  figures made up for it
+- `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
+  of bytes and of retained heap, over figures made up for them
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
   - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
     module per library
@@ -114,6 +114,8 @@ dev server.
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
   - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
     class of a change, and the backstop against Valibot
+  - `grade_heap.ts` - how the grader prices retained heap: the figure per
+    further schema, of each scenario and each export alone, and its allowance
   - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
     grader, what it loads once for each instance of a version, and what the
     grader and its processes share
@@ -274,7 +276,8 @@ bytes need no speedup, and speed by default, see `docs/grading.md`.
   Module-level state is each instance's own, so what one schema's use does to
   it is read in `matrix` and not apart.
 - **Read the grade's lists with its verdict lines**: what allocates more,
-  what retains more, and the cases marked. Read every regime.
+  what retains more in total, the figures per further schema rule 9 prices,
+  and the cases marked. Read every regime.
 - **A declined trade gets an entry in `docs/declined.md`**, with its numbers.
 
 Easy to break in the grader without a test noticing: an instance shares no
