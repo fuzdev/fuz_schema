@@ -174,6 +174,35 @@ describe('get_schema_fields', () => {
 		assert.strictEqual(b!.default, 'l');
 	});
 
+	test('a default made by a function is computed, and never made to read it', () => {
+		let made = 0;
+		const make = (): Array<string> => (made++, []);
+		const [a, b, c, d] = get_schema_fields(
+			s.object({
+				a: meta(s.with_default_fn(s.array(s.string), make), { description: 'made' }),
+				b: s.nullable(s.lazy(() => s.with_default_fn(s.array(s.string), make))),
+				c: s.optional(s.with_default_fn(s.array(s.string), make)),
+				d: s.with_default_fn(s.with_default(s.array(s.string), ['x']), make)
+			})
+		);
+		assert.deepEqual(
+			[a, b, c, d].map((f) => [f!.has_default, f!.default_computed, f!.default]),
+			[
+				[true, true, undefined],
+				[true, true, undefined],
+				// an `optional` outside it answers first
+				[false, false, undefined],
+				// the outermost default is the one asked
+				[true, true, undefined]
+			]
+		);
+		assert.strictEqual(a!.description, 'made');
+		// a value default is not computed
+		const [v] = get_schema_fields(s.object({ v: s.with_default(s.number, 1) }));
+		assert.ok(!v!.default_computed);
+		assert.strictEqual(made, 0);
+	});
+
 	test('a union is not looked into', () => {
 		const [field] = get_schema_fields(
 			s.object({ a: s.union([s.string, s.with_default(s.number, 1)]) })
@@ -200,10 +229,16 @@ describe('format_schema_type', () => {
 		optional: [s.optional(s.string), 'string | undefined', true],
 		nullable: [s.nullable(s.string), 'string | null', true],
 		with_default: [s.with_default(s.boolean, true), 'boolean', true],
+		with_default_fn: [s.with_default_fn(s.array(s.string), () => []), 'Array<string>', true],
 		lazy: [s.lazy(() => s.number), 'number', true],
 		object: [
-			s.object({ a: s.string, 'b-c': s.optional(s.number), d: s.with_default(s.number, 1) }),
-			'{a: string; "b-c"?: number | undefined; d?: number}',
+			s.object({
+				a: s.string,
+				'b-c': s.optional(s.number),
+				d: s.with_default(s.number, 1),
+				e: s.with_default_fn(s.number, () => 1)
+			}),
+			'{a: string; "b-c"?: number | undefined; d?: number; e?: number}',
 			false
 		],
 		loose_object: [s.loose_object({ a: s.string }), '{a: string; [key: string]: unknown}', false],

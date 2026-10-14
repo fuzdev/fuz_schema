@@ -902,6 +902,19 @@ const object: CaseGroup = (s) => {
 			{},
 			'copy'
 		),
+		// the same with each default made by a function, an array as it is for:
+		// a version without `with_default_fn` goes without the case
+		...('with_default_fn' in s
+			? [
+					to_case(
+						s,
+						'object/6_default_fns_absent/valid',
+						to_object(s)(to_six(s.with_default_fn(s.array(s.string), () => []))),
+						{},
+						'copy'
+					)
+				]
+			: []),
 		// a key the input has changes: the copy is begun while its keys are enumerated,
 		// and the keys after it are written to it
 		to_case(

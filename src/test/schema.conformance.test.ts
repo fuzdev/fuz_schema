@@ -63,9 +63,9 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 	},
 	{
 		reason:
-			'a `pipe` that starts with a `with_default` leaves a missing key out when its steps give `undefined`, where both write the key as `undefined`, and so do arktype and typebox. Cost declined: each form that writes it costs every object bundle bytes in its loop, or slows the object parses of a program that builds such a pipe',
+			'a `pipe` that starts with a `with_default` or a `with_default_fn` leaves a missing key out when its steps give `undefined`, where both write the key as `undefined`, and so do arktype and typebox. Cost declined: each form that writes it costs every object bundle bytes in its loop, or slows the object parses of a program that builds such a pipe',
 		status: 'declared',
-		docs: 'a `pipe` that starts with a `with_default` and whose steps give `undefined` leaves a missing key out',
+		docs: 'a `pipe` that starts with a `with_default` or a `with_default_fn` and whose steps give `undefined` leaves a missing key out',
 		rows: {
 			'default then a transform to undefined entry, key missing / *': {
 				both: 'ok {a: undefined}',
@@ -78,7 +78,33 @@ const DIFFERENCES: Array<ConformanceDifference> = [
 			'default then a transform to undefined, then a transform entry, key missing / *': {
 				both: 'ok {a: undefined}',
 				ours: 'ok {}'
+			},
+			'default_fn then a transform to undefined entry, key missing / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {}'
 			}
+		}
+	},
+	{
+		reason:
+			'a `with_default_fn` whose `make` returns `undefined` leaves a missing key out, as a `with_default` of `undefined` does, where both write the key as `undefined`. Cost declined: the object loops leave out a missing key whose entry gives `undefined`, as for the `pipe` above',
+		status: 'declared',
+		docs: 'a `with_default_fn` whose `make` returns `undefined` leaves a missing key out',
+		rows: {
+			'default_fn of undefined entry, key missing / *': {
+				both: 'ok {a: undefined}',
+				ours: 'ok {}'
+			}
+		}
+	},
+	{
+		reason:
+			'a `with_default` fills in the value it was given, the same on every parse, where zod fills in a copy of it and valibot what its schema makes of it. By design: filling it in allocates nothing, and `with_default_fn(s, () => [])` makes a new one each time',
+		status: 'declared',
+		docs: 'a `with_default` fills in the value it was given, the same on every parse',
+		rows: {
+			'default of an array, the one given': { both: 'ok false', ours: 'ok true' },
+			'default of an array entry, the one given': { both: 'ok false', ours: 'ok true' }
 		}
 	},
 	{
@@ -627,6 +653,78 @@ const SIDES: Record<string, ConformanceSide> = {
 		zod: 'ok {a: undefined}',
 		valibot: 'fail at a',
 		ours: 'ok {}'
+	},
+
+	// a default that doesn't match its schema: zod fills it in as it is, as
+	// here, and valibot runs it through the schema
+	'default of a wrong value entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: 5}',
+		valibot: 'fail at a'
+	},
+	'default of a wrong value entry, key undefined / *': {
+		side: 'zod',
+		zod: 'ok {a: 5}',
+		valibot: 'fail at a'
+	},
+	'default_fn of a wrong value entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: 5}',
+		valibot: 'fail at a'
+	},
+	'default_fn of a wrong value entry, key undefined / *': {
+		side: 'zod',
+		zod: 'ok {a: 5}',
+		valibot: 'fail at a'
+	},
+	'default_fn of a string then a transform entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {a: "D!"}'
+	},
+	'default_fn of a string then a transform entry, key undefined / *': {
+		side: 'zod',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {a: "D!"}'
+	},
+	// so what it makes is filled in as it is, the one made, where valibot's
+	// array schema copies it
+	'default_fn of an array entry, the one made': {
+		side: 'zod',
+		zod: 'ok true',
+		valibot: 'ok false'
+	},
+	// a default made by a function, under another schema, as a `with_default` is
+	'optional(default_fn) entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {}'
+	},
+	'optional(default_fn) entry, key undefined / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {a: undefined}'
+	},
+	'nullable(default_fn) entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "D"}',
+		valibot: 'fail at a'
+	},
+	'lazy(default_fn) entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "D"}',
+		valibot: 'fail at a'
+	},
+	'union[unknown, default_fn] entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
+	},
+	'union[unknown then a transform to "U", default_fn] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "U"}',
+		valibot: 'fail at a'
 	},
 
 	// an entry named `__proto__`: zod neither reads nor writes it. The others

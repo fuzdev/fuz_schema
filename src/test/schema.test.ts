@@ -254,6 +254,134 @@ describe('wrappers', () => {
 		assert.strictEqual(s.parse_or_throw(s.with_default(s.string, 'x'), 'y'), 'y');
 	});
 
+	describe('with_default_fn', () => {
+		// a `make` that counts its calls and the arguments it was called with
+		const counting = <T>(value: () => T) => {
+			const calls: Array<number> = [];
+			return {
+				calls,
+				make: (...args: Array<unknown>): T => {
+					calls.push(args.length);
+					return value();
+				}
+			};
+		};
+
+		test('fills undefined with what make returns, once a fill, with no arguments', () => {
+			const { calls, make } = counting(() => ['m']);
+			const D = s.with_default_fn(s.array(s.string), make);
+			assert.deepEqual(s.parse_or_throw(D, undefined), ['m']);
+			assert.deepEqual(calls, [0]);
+			const input = ['x'];
+			assert.strictEqual(s.parse_or_throw(D, input), input);
+			assert(!s.is(D, null));
+			assert(!s.is(D, [1]));
+			assert.deepEqual(calls, [0], 'never called for a value that is there');
+		});
+
+		test('gives a new value on every parse, where with_default gives the same', () => {
+			const fresh = s.object({ a: s.with_default_fn(s.array(s.string), () => []) });
+			const first = s.parse_or_throw(fresh, {}).a;
+			first.push('x');
+			assert.deepEqual(s.parse_or_throw(fresh, {}).a, []);
+			assert.notStrictEqual(s.parse_or_throw(fresh, {}).a, s.parse_or_throw(fresh, {}).a);
+			const shared = s.object({ a: s.with_default(s.array(s.string), []) });
+			assert.strictEqual(s.parse_or_throw(shared, {}).a, s.parse_or_throw(shared, {}).a);
+		});
+
+		test('what make returns is not validated', () => {
+			const D = s.with_default_fn(s.string, (() => 5) as unknown as () => string);
+			assert.strictEqual<unknown>(s.parse_or_throw(D, undefined), 5);
+			// nor run through the steps of a pipe inside it
+			const P = s.with_default_fn(
+				s.pipe(
+					s.string,
+					s.transform((v: string) => v + '!')
+				),
+				() => 'd'
+			);
+			assert.strictEqual(s.parse_or_throw(P, undefined), 'd');
+			assert.strictEqual(s.parse_or_throw(P, 'x'), 'x!');
+		});
+
+		test('as an entry, a missing key and an undefined one are filled in', () => {
+			const { calls, make } = counting(() => 'm');
+			const O = s.object({ a: s.with_default_fn(s.string, make), b: s.string });
+			assert.deepEqual(s.parse_or_throw(O, { b: 'b' }), { a: 'm', b: 'b' });
+			assert.deepEqual(s.parse_or_throw(O, { a: undefined, b: 'b' }), { a: 'm', b: 'b' });
+			const input = { a: 'x', b: 'b' };
+			assert.strictEqual(s.parse_or_throw(O, input), input);
+			assert(s.is(O, { b: 'b' }));
+			assert.deepEqual(calls, [0, 0, 0]);
+			assert.deepEqual(issues_of(O, { a: 1, b: 'b' })[0]!.path, ['a']);
+		});
+
+		test('a make that returns undefined leaves a missing key out, as a default of undefined does', () => {
+			const O = s.object({ a: s.with_default_fn(s.optional(s.string), () => undefined) });
+			const V = s.object({ a: s.with_default(s.optional(s.string), undefined) });
+			for (const schema of [O, V]) {
+				const input = {};
+				assert.strictEqual(s.parse_or_throw(schema, input), input);
+				assert.deepEqual(Object.keys(s.parse_or_throw(schema, { a: undefined })), ['a']);
+			}
+		});
+
+		test('under another schema, as a with_default is', () => {
+			const make = (): string => 'm';
+			for (const a of [
+				s.nullable(s.with_default_fn(s.string, make)),
+				s.lazy(() => s.with_default_fn(s.string, make)),
+				s.message(s.with_default_fn(s.string, make), 'text'),
+				s.union([s.number, s.with_default_fn(s.string, make)])
+			]) {
+				assert.deepEqual(s.parse_or_throw(s.object({ a }), {}), { a: 'm' }, a.kind);
+			}
+			// an `optional` outside it answers first
+			const { calls, make: counted } = counting(() => 'm');
+			const input = {};
+			assert.strictEqual(
+				s.parse_or_throw(s.object({ a: s.optional(s.with_default_fn(s.string, counted)) }), input),
+				input
+			);
+			assert.deepEqual(calls, []);
+			// the steps of a pipe it starts run on what it made
+			assert.deepEqual(
+				s.parse_or_throw(
+					s.object({
+						a: s.pipe(
+							s.with_default_fn(s.string, make),
+							s.transform((v: string) => v + '!')
+						)
+					}),
+					{}
+				),
+				{ a: 'm!' }
+			);
+		});
+
+		test('in a union, the options before it are tried on the undefined, as before a with_default', () => {
+			const { calls, make } = counting(() => 'm');
+			const U = s.object({ a: s.union([s.unknown, s.with_default_fn(s.string, make)]) });
+			const D = s.object({ a: s.union([s.unknown, s.with_default(s.string, 'm')]) });
+			for (const schema of [U, D]) {
+				const input = {};
+				assert.strictEqual(s.parse_or_throw(schema, input), input);
+			}
+			// called, and what it returned dropped
+			assert.deepEqual(calls, [0]);
+			const T = s.object({
+				a: s.union([
+					s.pipe(
+						s.unknown,
+						s.transform((v: unknown) => v ?? 'U')
+					),
+					s.with_default_fn(s.string, () => 'm')
+				])
+			});
+			assert.deepEqual(s.parse_or_throw(T, {}), { a: 'U' });
+		});
+	});
+
 	test('lazy resolves once and recurses', () => {
 		interface Tree {
 			children: Array<Tree>;
@@ -4005,6 +4133,7 @@ describe('def', () => {
 	const values = ['a', 1, null] as const;
 	const options = [s.string, s.number] as const;
 	const step = s.min_length<string>(1);
+	const make = (): string => 'm';
 
 	// one schema of every kind, which fails to compile when a kind is missing
 	// or a schema is not what the contract says its kind is
@@ -4019,6 +4148,7 @@ describe('def', () => {
 		optional: s.optional(s.string),
 		nullable: s.nullable(s.string),
 		with_default: s.with_default(s.string, 'd'),
+		with_default_fn: s.with_default_fn(s.string, make),
 		lazy: s.lazy(lazy_get),
 		object: s.object(entries),
 		loose_object: s.loose_object(entries),
@@ -4064,6 +4194,7 @@ describe('def', () => {
 			optional: { schema: s.string },
 			nullable: { schema: s.string },
 			with_default: { schema: s.string, value: 'd' },
+			with_default_fn: { schema: s.string, make },
 			lazy: lazy_get,
 			object: entries,
 			loose_object: entries,
@@ -4095,15 +4226,17 @@ describe('def', () => {
 		assert.strictEqual(by_kind.regex.def, pattern);
 		assert.strictEqual(by_kind.check.def, check_fn);
 		assert.strictEqual(by_kind.transform.def, transform_fn);
+		assert.strictEqual(by_kind.with_default_fn.def.make, make);
 	});
 
 	test('a wrapper holds its schema under one key', () => {
-		for (const kind of ['optional', 'nullable', 'with_default'] as const) {
+		for (const kind of ['optional', 'nullable', 'with_default', 'with_default_fn'] as const) {
 			assert.strictEqual(by_kind[kind].def.schema, s.string);
 		}
 		assert.deepEqual(Object.keys(by_kind.optional.def), ['schema']);
 		assert.deepEqual(Object.keys(by_kind.nullable.def), ['schema']);
 		assert.deepEqual(Object.keys(by_kind.with_default.def), ['schema', 'value']);
+		assert.deepEqual(Object.keys(by_kind.with_default_fn.def), ['schema', 'make']);
 		// each wrapper has a def of its own
 		assert.notStrictEqual(s.optional(s.string).def, s.optional(s.string).def);
 	});
@@ -5164,6 +5297,24 @@ describe('types', () => {
 		}>();
 	});
 
+	test('a default made by a function is optional in the input and required in the output', () => {
+		const _D = s.with_default_fn(s.array(s.string), () => []);
+		expectTypeOf<s.Infer<typeof _D>>().toEqualTypeOf<Array<string>>();
+		expectTypeOf<s.InferInput<typeof _D>>().toEqualTypeOf<Array<string> | undefined>();
+		const _O = s.object({ tags: _D, name: s.string });
+		expectTypeOf<s.Infer<typeof _O>>().toEqualTypeOf<{ tags: Array<string>; name: string }>();
+		expectTypeOf<s.InferInput<typeof _O>>().toEqualTypeOf<{
+			name: string;
+			tags?: Array<string> | undefined;
+		}>();
+		// `make` returns the output type
+		// @ts-expect-error a number for an array
+		s.with_default_fn(s.array(s.string), () => 1);
+		// and is called with nothing
+		// @ts-expect-error a parameter it is never given
+		s.with_default_fn(s.string, (x: string) => x);
+	});
+
 	test('a value action keeps the type it is given, whatever its bound', () => {
 		const _Age = s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150));
 		expectTypeOf<s.Infer<typeof _Age>>().toEqualTypeOf<number>();
@@ -5522,6 +5673,10 @@ describe('types', () => {
 				case 'with_default':
 					expectTypeOf(schema.def.schema).toEqualTypeOf<s.SchemaNode>();
 					expectTypeOf(schema.def.value).toEqualTypeOf<unknown>();
+					break;
+				case 'with_default_fn':
+					expectTypeOf(schema.def.schema).toEqualTypeOf<s.SchemaNode>();
+					expectTypeOf(schema.def.make).toEqualTypeOf<() => unknown>();
 					break;
 				case 'lazy':
 					expectTypeOf(schema.def).toEqualTypeOf<() => s.SchemaNode>();

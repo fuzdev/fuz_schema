@@ -79,6 +79,14 @@ export const SHAPE_SAMPLES: Record<
 	with_default: () => [
 		{ schema: s.with_default(s.string, 'd'), valid: ['a', undefined], invalid: [1] }
 	],
+	with_default_fn: () => [
+		{ schema: s.with_default_fn(s.string, () => 'd'), valid: ['a', undefined], invalid: [1] },
+		{
+			schema: s.with_default_fn(s.array(s.string), () => []),
+			valid: [['x'], undefined],
+			invalid: [[1], 1]
+		}
+	],
 	lazy: () => [
 		{ schema: s.lazy(() => s.string), valid: ['a'], invalid: [1] },
 		{ schema: s.lazy(() => s.unknown), valid: [1], invalid: [] },

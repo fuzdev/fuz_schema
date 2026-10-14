@@ -22,14 +22,14 @@
 		"type_json": 0.6387
 	},
 	"parse": 132,
-	"library": 2818,
+	"library": 2843,
 	"exports": {
 		"SchemaError": {
 			"last_in": 6,
 			"alone": 177
 		},
 		"array": {
-			"last_in": 90,
+			"last_in": 89,
 			"alone": 322
 		},
 		"bigint": {
@@ -37,15 +37,15 @@
 			"alone": 149
 		},
 		"boolean": {
-			"last_in": 23,
+			"last_in": 24,
 			"alone": 151
 		},
 		"brand": {
-			"last_in": 10,
+			"last_in": 11,
 			"alone": 41
 		},
 		"check": {
-			"last_in": 26,
+			"last_in": 25,
 			"alone": 188
 		},
 		"fail": {
@@ -65,15 +65,15 @@
 			"alone": 125
 		},
 		"integer": {
-			"last_in": 18,
+			"last_in": 17,
 			"alone": 158
 		},
 		"is": {
-			"last_in": 17,
+			"last_in": 18,
 			"alone": 20
 		},
 		"is_schema": {
-			"last_in": 46,
+			"last_in": 47,
 			"alone": 67
 		},
 		"lazy": {
@@ -85,7 +85,7 @@
 			"alone": 304
 		},
 		"loose_object": {
-			"last_in": 171,
+			"last_in": 169,
 			"alone": 462
 		},
 		"max_length": {
@@ -97,23 +97,23 @@
 			"alone": 199
 		},
 		"message": {
-			"last_in": 109,
+			"last_in": 110,
 			"alone": 211
 		},
 		"min_length": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 204
 		},
 		"min_value": {
-			"last_in": 18,
+			"last_in": 19,
 			"alone": 199
 		},
 		"nullable": {
-			"last_in": 35,
+			"last_in": 36,
 			"alone": 118
 		},
 		"number": {
-			"last_in": 22,
+			"last_in": 23,
 			"alone": 156
 		},
 		"object": {
@@ -121,7 +121,7 @@
 			"alone": 517
 		},
 		"one_of": {
-			"last_in": 91,
+			"last_in": 92,
 			"alone": 328
 		},
 		"optional": {
@@ -129,11 +129,11 @@
 			"alone": 84
 		},
 		"parse_or_throw": {
-			"last_in": 33,
+			"last_in": 34,
 			"alone": 209
 		},
 		"pipe": {
-			"last_in": 130,
+			"last_in": 131,
 			"alone": 211
 		},
 		"record": {
@@ -149,11 +149,11 @@
 			"alone": 166
 		},
 		"string": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 149
 		},
 		"strip_object": {
-			"last_in": 99,
+			"last_in": 98,
 			"alone": 506
 		},
 		"transform": {
@@ -165,7 +165,7 @@
 			"alone": 378
 		},
 		"unknown": {
-			"last_in": 28,
+			"last_in": 29,
 			"alone": 180
 		},
 		"variant": {
@@ -173,14 +173,18 @@
 			"alone": 417
 		},
 		"with_default": {
-			"last_in": 36,
+			"last_in": 19,
 			"alone": 92
+		},
+		"with_default_fn": {
+			"last_in": 25,
+			"alone": 97
 		}
 	},
 	"modules": {
-		"meta.ts": 62,
+		"meta.ts": 61,
 		"standard_schema.ts": 94,
-		"schema_json.ts": 2213,
-		"introspect.ts": 632
+		"schema_json.ts": 2223,
+		"introspect.ts": 662
 	}
 }

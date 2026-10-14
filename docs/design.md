@@ -38,13 +38,14 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | the function given | `check`, `transform`, `lazy` |
 | `{schema}` | `optional`, `nullable` |
 | `{schema, value}` | `with_default` |
+| `{schema, make}` | `with_default_fn` |
 | the entries | `object`, `loose_object`, `strip_object` |
 | the schema of every value or item | `record`, `array` |
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
 
-- **`optional`, `nullable`, and `with_default` hold their schema under `schema`.**
-  Unwrapping any of the three is `kind` and that one key.
+- **`optional`, `nullable`, `with_default`, and `with_default_fn` hold their
+  schema under `schema`.** Unwrapping any of the four is `kind` and that one key.
 - **`lazy` holds the function it was given**, not a schema. Nothing is held
   until it's called, and it is where a recursive schema comes back to itself,
   so a walk treats it apart whatever its shape.
@@ -102,7 +103,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   the only step it hands them to. So a schema that reads the object and the key declares them as
   plain parameters, with no default and not as a rest. Around anything else
   each has a `run` of two parameters and calls with two, as `optional`,
-  `with_default`, `array`, `record`, and `variant` always do. `message` passes
+  `with_default`, `with_default_fn`, `array`, `record`, and `variant` always do. `message` passes
   the `1` on with them, as what it holds is the entry wherever it is, and the
   other three don't. A `pipe` that starts with an `optional` is the exception,
   below.
@@ -273,7 +274,8 @@ all a missing key costs an object that has no schema asking.
 
 - **A schema that refuses `undefined` refuses a missing key**, with its own
   issue, the one it reports for `undefined`.
-- **`optional` and `with_default` accept one**, and so make a key optional.
+- **`optional`, `with_default`, and `with_default_fn` accept one**, and so make
+  a key optional.
 - **`unknown` accepts `undefined` and needs its key.** When its value is
   `undefined` and it was handed an object, it looks for the key with `in`,
   so an inherited or non-enumerable key is there, and fails as a
@@ -295,8 +297,9 @@ all a missing key costs an object that has no schema asking.
   missing key reads as `undefined`, so an input without the key selects an
   option whose discriminator is `literal(undefined)`. That option's entry
   then fails it as a `missing_key`, at the discriminator.
-- **An `optional` or a `with_default` on the way takes the `undefined`
-  first**, so `nullable(optional(unknown))` lets its key be missing.
+- **An `optional`, a `with_default`, or a `with_default_fn` on the way takes
+  the `undefined` first**, so `nullable(optional(unknown))` lets its key be
+  missing.
 - **A `pipe` that starts with an `optional` runs no step for a missing
   key**, as the entry itself, and the key stays out of the output. `{}`
   matches `object({a: pipe(optional(string), check(...))})` whatever the
@@ -330,8 +333,8 @@ all a missing key costs an object that has no schema asking.
   `union([unknown, optional(string)])` accepts a missing key with the
   `optional`, and no option is tried again.
 - **An option that fills a missing key in makes it optional**, when the
-  first that matches gives anything but `undefined`, as a `with_default`
-  does, and the key is then the `undefined` it reads as to every option
+  first that matches gives anything but `undefined`, as a `with_default` or a
+  `with_default_fn` does, and the key is then the `undefined` it reads as to every option
   before it. So those before it that take the object and the key, which are
   the only ones that can have failed for the key, are run again without
   them, and the first of them that matches is the union's.
@@ -343,7 +346,8 @@ all a missing key costs an object that has no schema asking.
   first run reached with it, once more for each enclosing union that tries
   it again, which only a `transform` or a `check` with a side effect can
   tell. One that doesn't take the object, and the option that matched, are
-  run once.
+  run once, so a `with_default_fn` that matched has had its `make` called
+  once, and what it made is dropped when an option before it matches.
 - **Anywhere else `unknown` is told nothing of a key**, and accepts
   `undefined`: at the top level, as an array's item, as a record's value, and
   as a step of a `pipe` after the first.
@@ -352,8 +356,28 @@ all a missing key costs an object that has no schema asking.
   the `undefined` it reads as. Why is
   [below](#behavior-that-differs-from-valibot-and-zod).
 - **The inferred types are narrower than this**: a key is optional in the
-  input type only where its entry's `kind` is `optional` or `with_default`,
-  and in the output type only where it is `optional`.
+  input type only where its entry's `kind` is `optional`, `with_default`, or
+  `with_default_fn`, and in the output type only where it is `optional`.
+
+## Defaults
+
+`with_default` and `with_default_fn` fill in `undefined`, a missing key's
+included. Neither validates what it fills in, as in Zod, where Valibot runs it
+through the schema the default is of.
+
+- **`with_default` fills in the value it was given**, as it is. Every parse
+  that fills it in gives that one value, so an array or an object it gives is
+  shared by every output it was filled into, and changing it in one changes
+  it in all. Filling it in allocates nothing.
+- **`with_default_fn` fills in what its `make` returns**, called with no
+  arguments once for each value it fills in, and never to read a schema.
+  `with_default_fn(s.array(s.string), () => [])` gives a new array on every
+  parse, and is the way to a mutable default. It is a kind of its own, an
+  opt-in export: a branch in `with_default` for a function costs every
+  consumer of `with_default`, and makes a function impossible to give as a
+  value.
+- **A missing key whose default is `undefined` stays out**, whichever gives
+  it, see [Missing keys](#missing-keys).
 
 ## Issues
 
@@ -452,17 +476,19 @@ nothing until it imports the module.
 `SchemaDefs` declares. It makes no schema and writes to none.
 
 - **A layer is a schema a walk passes through** to reach what the value is:
-  `optional`, `nullable`, and `with_default` lead to their `def.schema`, a
+  `optional`, `nullable`, `with_default`, and `with_default_fn` lead to their `def.schema`, a
   `pipe` to its first schema, and a `lazy` to what its function returns.
   `message`, `flavor`, and `brand` are no layer, as what they return has the
   `kind` and `def` they were given.
 - **Metadata is read from the outermost layer that has the key**, as `meta`
   attaches it to one object. Metadata inside a `message` is out of reach.
-- **A default is the outermost `with_default`'s**, unless an `optional` is
-  outside it, which answers `undefined` before the default is asked. A
-  `union` is not looked into.
+- **A default is the outermost `with_default`'s or `with_default_fn`'s**,
+  unless an `optional` is outside it, which answers `undefined` before the
+  default is asked. A `union` is not looked into. One of a `with_default_fn`
+  is `default_computed`, and has no `default` to read.
 - **Nothing is called but a `lazy`'s function.** A `check` or a `transform`
-  is read as its kind, and never run.
+  is read as its kind, and never run, and a `with_default_fn`'s `make` is
+  never called.
 - **A new kind is a row** in the kind table of `src/test/introspect.test.ts`,
   typed over `SchemaKind`, so the test doesn't typecheck until the kind says
   how it renders and whether `unwrap_schema` walks through it.
@@ -531,15 +557,27 @@ issues. These it holds:
   [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
   can't choose its closure when it is made, as a `literal` does: what its
   function accepts isn't known until it is called.
-- a `pipe` that starts with a `with_default` and whose steps give `undefined`
-  leaves a missing key out, where both write the key as `undefined`: as the
-  entry itself, under a `message`, and as the first schema of another pipe.
+- a `pipe` that starts with a `with_default` or a `with_default_fn` and whose
+  steps give `undefined` leaves a missing key out, where both write the key as
+  `undefined`: as the entry itself, under a `message`, and as the first schema
+  of another pipe.
 
   Cost declined: the object loops leave out a missing key whose entry gives
   `undefined`, and telling them that this one is written took bytes in the
   loop every object schema's bundle carries, or a loop swapped in when such
   a pipe is made, which slowed every object parse of the program, see
   [declined.md](declined.md#a-default-whose-steps-give-undefined-written-for-a-missing-key).
+- a `with_default_fn` whose `make` returns `undefined` leaves a missing key
+  out, as a `with_default` of `undefined` does, where both write the key as
+  `undefined`: Valibot writes it for a function and not for a value.
+
+  Cost declined: the object loops leave out a missing key whose entry gives
+  `undefined`, as above.
+- a `with_default` fills in the value it was given, the same on every parse,
+  where Zod fills in a shallow copy of it and Valibot what its schema makes of
+  it, which for an array or an object is a new one. By design: filling it in
+  allocates nothing, and `with_default_fn(s, () => [])` makes a new one on
+  each parse, see [Defaults](#defaults).
 - A failed `union` reports one issue, at its own path. Where only one option has
   the input's type at every depth and fails only a check inside, both report
   that option's issues at their paths: an object option whose entry's check
@@ -553,8 +591,16 @@ issues. These it holds:
 
 Where the two disagree, this library goes with:
 
-- **Zod on an optional key under another schema.** An `optional` or a
-  `with_default` under a `nullable`, a `lazy`, or a `union` lets the key be
+- **Zod on a default that doesn't match its schema.** What a `with_default`
+  holds and what a `with_default_fn` makes are filled in as they are, as in
+  Zod, where Valibot runs them through the schema and refuses one that
+  doesn't match it. So a `with_default_fn`'s `make` gives the value it
+  returned, where Valibot's array schema copies it. By design: the default
+  is the consumer's, and running it through the schema costs every parse
+  that fills it in.
+- **Zod on an optional key under another schema.** An `optional`, a
+  `with_default`, or a `with_default_fn` under a `nullable`, a `lazy`, or a
+  `union` lets the key be
   missing, as in Zod and not in Valibot. A `transform` that is the entry
   itself lets the key be missing too, as Zod's does. By design: a missing key
   is the `undefined` it reads as to every schema but the three that need
@@ -563,7 +609,7 @@ Where the two disagree, this library goes with:
   `undefined`, the key stays out, where Zod writes it.
 - **Zod or neither on the options of a `union` before one that fills the key
   in.** Where the option that matches a missing key gives a value, as a
-  `with_default` does, an option before it that needs its key is tried on the
+  `with_default` or a `with_default_fn` does, an option before it that needs its key is tried on the
   `undefined`, as in Zod, where Valibot needs the key: what it gives is kept,
   as in Zod. Where that is `undefined` the key is left out, where Zod writes
   it. Where the option that matches leaves the key `undefined`, as an
@@ -602,8 +648,8 @@ Where the two disagree, this library goes with:
   input without the key, and refused for it by both. Its other entries run
   too, as in Zod, where Valibot stops at the discriminator.
 - **Valibot on a default under an `optional`.** `optional(with_default(...))`
-  leaves `undefined` and a missing key as they are, where Zod fills the
-  default in. And a `with_default` whose value is `undefined` leaves a
+  and `optional(with_default_fn(...))` leave `undefined` and a missing key as
+  they are, where Zod fills the default in. And a `with_default` whose value is `undefined` leaves a
   missing key out, where Zod writes it. By design: wrappers compose in the
   order written, the outer `optional` answering `undefined` before the
   default inside it is asked.

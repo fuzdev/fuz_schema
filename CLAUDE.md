@@ -181,7 +181,8 @@ Things that are easy to break without a test noticing:
   by `fail`.** It never holds the value that failed, or anything else of the
   input but the keys in `path`.
 - **Every kind has an entry in `SchemaDefs`** saying what its `def` holds.
-  `optional`, `nullable`, and `with_default` hold their schema as `def.schema`.
+  `optional`, `nullable`, `with_default`, and `with_default_fn` hold their
+  schema as `def.schema`.
   The types don't force a new kind to be added there. Once it is, they force
   a row for it in the kind table of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema

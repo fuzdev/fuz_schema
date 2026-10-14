@@ -137,8 +137,8 @@ export type AnySchema = Schema<any, any, string, any>;
  *
  * A `def` is as close to plain JSON as its kind allows. A kind that takes no
  * options has `undefined`, one that takes a single value has that value, and
- * `optional`, `nullable`, and `with_default` have an object with their schema under
- * `schema`.
+ * `optional`, `nullable`, `with_default`, and `with_default_fn` have an object
+ * with their schema under `schema`.
  *
  * `message`, `flavor`, and `brand` have no kind of their own: what they
  * return has the `kind` and `def` of the schema they were given.
@@ -160,6 +160,8 @@ export interface SchemaDefs {
 	nullable: { readonly schema: SchemaNode };
 	/** `value` replaces `undefined`, and is returned as it is. */
 	with_default: { readonly schema: SchemaNode; readonly value: unknown };
+	/** `make` is called for each `undefined`, and what it returns replaces it. */
+	with_default_fn: { readonly schema: SchemaNode; readonly make: () => unknown };
 	/**
 	 * The function given, which returns the schema deferred to. It is not a
 	 * wrapper's `schema` because nothing is held until it is called, and
@@ -213,6 +215,7 @@ export type SchemaDef<TKind extends SchemaKind = SchemaKind> = SchemaDefs[TKind]
  * 		case 'optional':
  * 		case 'nullable':
  * 		case 'with_default':
+ * 		case 'with_default_fn':
  * 			return 1 + count(schema.def.schema);
  * 		case 'array':
  * 		case 'record':
@@ -257,7 +260,9 @@ type OptionalOutputKeys<T extends SchemaEntries> = {
 }[keyof T];
 
 type OptionalInputKeys<T extends SchemaEntries> = {
-	[K in keyof T]: T[K] extends { kind: 'optional' | 'with_default' } ? K : never;
+	[K in keyof T]: T[K] extends { kind: 'optional' | 'with_default' | 'with_default_fn' }
+		? K
+		: never;
 }[keyof T];
 
 export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
@@ -653,7 +658,8 @@ export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
 // Wrappers
 //
 
-// `optional`, `nullable`, and `with_default` hold their schema as `def.schema`
+// `optional`, `nullable`, `with_default`, and `with_default_fn` hold their
+// schema as `def.schema`
 
 /**
  * The `def` of `optional` and `nullable`. An interface, so it has no index
@@ -699,7 +705,12 @@ export const nullable = <T extends AnySchema>(
  * Replaces `undefined` with `value`. As an object entry it makes the key
  * optional in the input and required in the output.
  *
- * @param value - returned as-is, so use only immutable defaults
+ * `value` is not validated, and is returned as it is: every parse that fills
+ * it in gives the same object, so an array or an object changed by one
+ * consumer is changed for every other. `with_default_fn` makes a new one each
+ * time.
+ *
+ * @param value - returned as it is, the same reference on every parse
  */
 // @__NO_SIDE_EFFECTS__
 export const with_default = <T extends AnySchema>(
@@ -709,6 +720,36 @@ export const with_default = <T extends AnySchema>(
 	kind: 'with_default',
 	def: { schema, value },
 	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
+});
+
+/**
+ * Replaces `undefined` with what `make` returns, called with no arguments once
+ * for each value it fills in. As an object entry it makes the key optional in
+ * the input and required in the output, as `with_default` does.
+ *
+ * What `make` returns is not validated, as with `with_default`, and as in Zod.
+ * It is for a default that must be new on every parse, as a mutable array or
+ * object must, or that is computed when it is filled in:
+ * `with_default_fn(s.array(s.string), () => [])`.
+ *
+ * As an object entry whose key is missing, a `make` that returns `undefined`
+ * leaves the key out, as `with_default` with a value of `undefined` does.
+ *
+ * @param make - called for each `undefined`, with no arguments, and never called otherwise
+ */
+// @__NO_SIDE_EFFECTS__
+export const with_default_fn = <T extends AnySchema>(
+	schema: T,
+	make: () => Infer<T>
+): Schema<
+	Infer<T>,
+	InferInput<T> | undefined,
+	'with_default_fn',
+	{ schema: T; make: () => Infer<T> }
+> => ({
+	kind: 'with_default_fn',
+	def: { schema, make },
+	run: (v, ctx) => (v === undefined ? make() : schema.run(v, ctx))
 });
 
 /**
@@ -1145,14 +1186,17 @@ export const array = <T extends AnySchema>(
  * that matches is the union's, and a missing key it leaves `undefined` stays
  * out: `union([unknown, optional(string)])` accepts a missing key with the
  * `optional`. When the option that matches fills a value in, as a
- * `with_default` does, the key is optional and the `undefined` it reads as is
- * for the options before to match: each of them that takes the object and the
- * key is run again without them, and the first that matches is the union's.
- * So `union([pipe(unknown, ...), with_default(...)])` runs the pipe's steps on
+ * `with_default` or a `with_default_fn` does, the key is optional and the
+ * `undefined` it reads as is for the options before to match: each of them
+ * that takes the object and the key is run again without them, and the first
+ * that matches is the union's. So
+ * `union([pipe(unknown, ...), with_default(...)])` runs the pipe's steps on
  * `undefined` in place of filling the default in, and
- * `union([unknown, with_default(...)])` leaves the key out. An option run again
- * runs twice in the parse, and a `transform` in it that the first run reached
- * runs twice too, once more for each enclosing union that tries it again.
+ * `union([unknown, with_default(...)])` leaves the key out. The `make` of a
+ * `with_default_fn` there is called, and what it returns dropped. An option
+ * run again runs twice in the parse, and a `transform` in it that the first
+ * run reached runs twice too, once more for each enclosing union that tries
+ * it again.
  */
 // @__NO_SIDE_EFFECTS__
 export const union = <const T extends ReadonlyArray<AnySchema>>(
@@ -1295,9 +1339,9 @@ export interface SchemaPipeFactory {
  * As an object entry whose key is missing, a pipe that starts with an
  * `optional` runs no action, and the key stays out of the output:
  * `object({a: pipe(optional(string), check(...))})` accepts `{}` whatever the
- * check says, and a `transform` there writes no key. `with_default` is what
- * fills a missing key in. With the key there every action runs, on
- * `undefined` too.
+ * check says, and a `transform` there writes no key. `with_default` and
+ * `with_default_fn` are what fill a missing key in. With the key there every
+ * action runs, on `undefined` too.
  *
  * That is of an `optional` itself, and of a pipe that starts with such a
  * pipe, as the entry itself or under a `message`. Under a `nullable`, a

@@ -60,6 +60,8 @@ export interface ConformanceLib {
 	optional: (schema: any) => any;
 	nullable: (schema: any) => any;
 	with_default: (schema: any, value: any) => any;
+	/** A default made by calling `make` for each value it fills in. */
+	with_default_fn: (schema: any, make: () => any) => any;
 	lazy: (get: () => any) => any;
 	union: (options: Array<any>) => any;
 	/** The object in `options` whose `key` is a literal of the input's value there. */
@@ -96,6 +98,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		optional: (schema) => schema.optional(),
 		nullable: (schema) => schema.nullable(),
 		with_default: (schema, value) => schema.default(value),
+		with_default_fn: (schema, make) => schema.default(make),
 		lazy: (get) => z.lazy(get),
 		union: (options) => z.union(options),
 		variant: (key, options) => z.discriminatedUnion(key, options as any),
@@ -135,6 +138,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		optional: (schema) => v.optional(schema),
 		nullable: (schema) => v.nullable(schema),
 		with_default: (schema, value) => v.optional(schema, value),
+		with_default_fn: (schema, make) => v.optional(schema, make),
 		lazy: (get) => v.lazy(get),
 		union: (options) => v.union(options),
 		variant: (key, options) => v.variant(key, options),
@@ -180,6 +184,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		optional: (schema) => s.optional(schema),
 		nullable: (schema) => s.nullable(schema),
 		with_default: (schema, value) => s.with_default(schema, value),
+		with_default_fn: (schema, make) => s.with_default_fn(schema, make),
 		lazy: (get) => s.lazy(get),
 		union: (options) => s.union(options),
 		variant: (key, options) => s.variant(key, options),
@@ -374,6 +379,10 @@ const inheriting = (proto: object | null, own: object = {}): object =>
 	Object.assign(Object.create(proto), own);
 
 const SYMBOL = Symbol.for('sym');
+
+// one array given as a default to every library, to tell whether a parse
+// gives it or another
+const SHARED: Array<string> = [];
 
 //
 // Cases
@@ -1068,6 +1077,57 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		l.with_default(l.optional(l.string), undefined)
 	),
 
+	// a default made by a function, for each value it fills in
+	...needs_key('default_fn entry', (l) => l.with_default_fn(l.string, () => 'D')),
+	// what it makes isn't validated, as zod has it and valibot doesn't, nor the
+	// value of a `with_default`
+	...missing_and_undefined('default of a wrong value entry', (l) => l.with_default(l.string, 5)),
+	...missing_and_undefined('default_fn of a wrong value entry', (l) =>
+		l.with_default_fn(l.string, () => 5)
+	),
+	...missing_and_undefined('default_fn of a string then a transform entry', (l) =>
+		l.with_default_fn(
+			l.map(l.string, (x) => x + '!'),
+			() => 'D'
+		)
+	),
+	...missing_and_undefined('default_fn then a transform to undefined entry', (l) =>
+		l.map(
+			l.with_default_fn(l.string, () => 'D'),
+			() => undefined
+		)
+	),
+	// what it makes is `undefined`
+	...missing_and_undefined('default_fn of undefined entry', (l) =>
+		l.with_default_fn(l.optional(l.string), () => undefined)
+	),
+	...missing_and_undefined('default_fn then a transform entry', (l) =>
+		l.map(
+			l.with_default_fn(l.string, () => 'D'),
+			(x) => x + '!'
+		)
+	),
+	...missing_and_undefined('optional(default_fn) entry', (l) =>
+		l.optional(l.with_default_fn(l.string, () => 'D'))
+	),
+	...missing_and_undefined('nullable(default_fn) entry', (l) =>
+		l.nullable(l.with_default_fn(l.string, () => 'D'))
+	),
+	...missing_and_undefined('lazy(default_fn) entry', (l) =>
+		l.lazy(() => l.with_default_fn(l.string, () => 'D'))
+	),
+	...missing_and_undefined('union[unknown, default_fn] entry', (l) =>
+		l.union([l.unknown, l.with_default_fn(l.string, () => 'D')])
+	),
+	...missing_and_undefined('union[unknown then a transform to "U", default_fn] entry', (l) =>
+		l.union([l.map(l.unknown, (x) => x ?? 'U'), l.with_default_fn(l.string, () => 'D')])
+	),
+	{
+		name: 'default_fn + unknown key',
+		entries: (l) => ({ a: l.string, d: l.with_default_fn(l.string, () => 'D') }),
+		input: () => ({ z: 1, a: 'x' })
+	},
+
 	// entries named like what an object already has
 	{
 		name: 'entry named toString, optional, missing',
@@ -1402,6 +1462,39 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => undefined
 	},
 	{ name: 'default, null', schema: (l) => l.with_default(l.string, 'D'), input: () => null },
+	{
+		name: 'default_fn, undefined',
+		schema: (l) => l.with_default_fn(l.string, () => 'D'),
+		input: () => undefined
+	},
+	{
+		name: 'default_fn, null',
+		schema: (l) => l.with_default_fn(l.string, () => 'D'),
+		input: () => null
+	},
+	// whether the default a parse fills in is the one given, an array, which
+	// would then be shared by every output it is filled into
+	{
+		name: 'default of an array, the one given',
+		schema: (l) => l.map(l.with_default(l.array(l.string), SHARED), (x) => x === SHARED),
+		input: () => undefined
+	},
+	{
+		name: 'default of an array entry, the one given',
+		schema: (l) =>
+			l.map(l.strip({ a: l.with_default(l.array(l.string), SHARED) }), (o) => o.a === SHARED),
+		input: () => ({})
+	},
+	// and of one made by a function, which is what it returned, unvalidated
+	{
+		name: 'default_fn of an array entry, the one made',
+		schema: (l) =>
+			l.map(
+				l.strip({ a: l.with_default_fn(l.array(l.string), () => SHARED) }),
+				(o) => o.a === SHARED
+			),
+		input: () => ({})
+	},
 
 	// unions, pipes, and the actions alone
 	{

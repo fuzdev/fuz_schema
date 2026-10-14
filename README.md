@@ -96,6 +96,11 @@ and the input is never mutated.
 - `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities:
   a JSON text carries one as a number too large for a double, which `JSON.parse` reads `1e999` as.
   `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
+- `with_default` fills in the value it was given, the same one on every parse,
+  where Zod fills in a copy and Valibot what its schema makes of it,
+  so an array or object default is shared by every output it fills.
+  `s.with_default_fn(s.array(s.string), () => [])` calls its function for each value it fills in.
+  Neither validates the default, as in Zod.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
@@ -110,7 +115,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | | |
 |---|---|
 | primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of` |
-| wrappers | `optional`, `nullable`, `with_default`, `lazy`, `message` |
+| wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
@@ -125,7 +130,7 @@ The three object schemas differ only on keys the schema doesn't name:
 None of them accepts an array, and neither do `record` and `variant`.
 
 A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
-`optional` and `with_default` do, which is how a key is made optional.
+`optional`, `with_default`, and `with_default_fn` do, which is how a key is made optional.
 `unknown` accepts `undefined` and still needs its key, own or inherited:
 `{}` doesn't match `s.object({a: s.unknown})` and `{a: undefined}` does.
 It needs it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
@@ -261,7 +266,8 @@ unwrap(User.def.age).kind; // 'number'
 - no options: `def` is `undefined`
 - one option: `def` is that value — a `literal`'s value, a `one_of`'s array, a `regex`'s pattern,
   the function given to `check`, `transform`, or `lazy`
-- `optional` and `nullable` hold `{schema}`, and `with_default` holds `{schema, value}`
+- `optional` and `nullable` hold `{schema}`, `with_default` holds `{schema, value}`,
+  and `with_default_fn` holds `{schema, make}`
 - the object schemas hold their entries, `array` and `record` the schema of their items,
   `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
 
@@ -276,10 +282,10 @@ while one typed as a bare `Schema` or `AnySchema` (as recursive schemas usually 
 whose output type is `unknown`.
 
 `introspect.ts` has the walks a consumer would otherwise write:
-`unwrap_schema` goes through `optional`, `nullable`, `with_default`, `pipe`, and `lazy`;
+`unwrap_schema` goes through `optional`, `nullable`, `with_default`, `with_default_fn`, `pipe`, and `lazy`;
 `get_schema_meta` finds a key on the outermost layer that has it;
 `get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
-with each one's default and description;
+with each one's default and description, and never call a `with_default_fn`'s function;
 `format_schema_type` renders the type a schema accepts, for help output.
 
 ```ts
@@ -288,7 +294,8 @@ import {get_schema_fields, format_schema_type} from '@fuzdev/fuz_schema/introspe
 
 const Args = s.object({port: meta(s.with_default(s.number, 3000), {description: 'the port'})});
 
-get_schema_fields(Args); // [{name: 'port', schema, has_default: true, default: 3000, description: 'the port'}]
+get_schema_fields(Args);
+// [{name: 'port', schema, has_default: true, default_computed: false, default: 3000, description: 'the port'}]
 format_schema_type(Args); // '{port?: number}'
 ```
 
@@ -367,7 +374,7 @@ to_schema_json(s.array(s.optional(s.number)));
 ```
 
 It throws on a schema the form can't hold, saying where:
-`regex`, `check`, and `transform`, which hold JavaScript values;
+`regex`, `check`, `transform`, and `with_default_fn`, which hold JavaScript values;
 a `bigint` or `undefined` literal; a default that isn't a JSON value;
 an entry named like a member of `Object.prototype`.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.

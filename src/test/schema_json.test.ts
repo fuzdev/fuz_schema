@@ -348,6 +348,17 @@ describe('to_schema_json refuses', () => {
 			() => s.regex(/a/),
 			'cannot serialize `regex` at /schema: it holds a JavaScript value and is not portable'
 		);
+		// not among the kinds the crate refuses by name: it refuses it as one it doesn't know
+		let made = 0;
+		refuses(
+			() => s.object({ a: s.nullable(s.with_default_fn(s.array(s.string), () => (made++, []))) }),
+			'cannot serialize `with_default_fn` at /schema/def/a/def/schema: it holds a JavaScript value and is not portable'
+		);
+		refuses(
+			() => s.with_default_fn(s.number, () => 1),
+			'cannot serialize `with_default_fn` at /schema: it holds a JavaScript value and is not portable'
+		);
+		assert.strictEqual(made, 0, '`make` is never called');
 	});
 
 	test('literals JSON does not hold', () => {

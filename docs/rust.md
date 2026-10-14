@@ -14,7 +14,8 @@ A `Schema` is an arena of `SchemaNode`s and the id of the one validation starts
 at.
 
 - **One `SchemaNode` variant per kind** of the `SchemaDefs` contract that can be
-  carried across, which is all but `regex`, `check`, and `transform`. A
+  carried across, which is all but `regex`, `check`, `transform`, and
+  `with_default_fn`. A
   node holds what the kind's `def` holds, with schemas as `NodeId`s.
 - **`lazy` is a node**, holding the id it defers to. It is where a schema
   comes back to itself, so the arena has no cycle of ownership, and a `Schema`
@@ -218,7 +219,7 @@ it in the interchange form. Nothing is guessed at.
 | Refused | `SchemaBuildErrorKind` |
 |---|---|
 | `regex`, `check`, `transform` | `UnsupportedKind` |
-| a kind that isn't the library's | `UnknownKind` |
+| `with_default_fn`, and a kind that isn't the library's | `UnknownKind` |
 | an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
 | a literal or bound that isn't finite | `NonFiniteNumber` |
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |

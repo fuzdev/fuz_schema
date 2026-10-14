@@ -61,6 +61,12 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		valid: undefined,
 		invalid: 1
 	},
+	{
+		name: 'with_default_fn',
+		create: (s) => s.with_default_fn(s.array(s.string), () => []),
+		valid: undefined,
+		invalid: 1
+	},
 	{ name: 'lazy', create: (s) => s.lazy(() => s.string), valid: 'a', invalid: 1 },
 	{ name: 'message', create: (s) => s.message(s.string, 'm'), valid: 'a', invalid: 1 },
 	{ name: 'flavor', create: (s) => s.flavor(s.string, 'Flavor'), valid: 'a', invalid: 1 },

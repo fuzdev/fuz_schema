@@ -7,9 +7,10 @@
  * and each export is dropped when unused. It reads schemas and makes none.
  *
  * The layers of a schema are the schemas a walk passes through to reach what
- * the value is: `optional`, `nullable`, and `with_default` lead to their
- * `def.schema`, a `pipe` to its first schema, and a `lazy` to the schema its
- * function returns, which is called to find it. `message`, `flavor`, and
+ * the value is: `optional`, `nullable`, `with_default`, and `with_default_fn`
+ * lead to their `def.schema`, a `pipe` to its first schema, and a `lazy` to
+ * the schema its function returns, which is called to find it. Nothing else is
+ * called: the `make` of a `with_default_fn` never is. `message`, `flavor`, and
  * `brand` are no layer: they keep the `kind` and `def` of what they were
  * given. Metadata is found on any layer, as `meta` attaches it to one object,
  * so `with_default(meta(s.boolean, {description}), true)` and
@@ -38,6 +39,7 @@ const to_layers = (schema: AnySchema): Array<SchemaNode> => {
 			case 'optional':
 			case 'nullable':
 			case 'with_default':
+			case 'with_default_fn':
 				s = s.def.schema;
 				break;
 			case 'pipe':
@@ -96,15 +98,21 @@ export interface SchemaField {
 	/** The entry as given. */
 	schema: SchemaNode;
 	/**
-	 * Whether the outermost layer that is an `optional` or a `with_default` is
-	 * a `with_default`: an `optional` outside one answers `undefined` before the
-	 * default is asked. `default` is then its value, even when that is
-	 * `undefined`.
+	 * Whether the outermost layer that is an `optional`, a `with_default`, or a
+	 * `with_default_fn` is one of the two defaults: an `optional` outside one
+	 * answers `undefined` before the default is asked. `default` is then the
+	 * value of a `with_default`, even when that is `undefined`.
 	 */
 	has_default: boolean;
 	/**
+	 * Whether that default is a `with_default_fn`'s, made by its `make` on each
+	 * parse that fills it in. `default` is then `undefined`, as `make` is not
+	 * called to read it.
+	 */
+	default_computed: boolean;
+	/**
 	 * The value of that `with_default`, before any step of a `pipe` it starts,
-	 * and `undefined` when there is none.
+	 * and `undefined` when there is none or it is a `with_default_fn`.
 	 */
 	default: unknown;
 	/** The `description` metadata, as `get_schema_meta` finds it. */
@@ -120,17 +128,24 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
 	const entries = get_schema_entries(schema);
 	for (const name in entries) {
 		const entry = entries[name]!;
-		// the outermost `optional` or `with_default`: a default under an `optional` is never asked
-		let first: SchemaNode<'optional' | 'with_default'> | undefined;
+		// the outermost `optional` or default: a default under an `optional` is never asked
+		let first: SchemaNode<'optional' | 'with_default' | 'with_default_fn'> | undefined;
 		let description: string | undefined;
 		for (const layer of to_layers(entry)) {
-			if (layer.kind === 'optional' || layer.kind === 'with_default') first ??= layer;
+			if (
+				layer.kind === 'optional' ||
+				layer.kind === 'with_default' ||
+				layer.kind === 'with_default_fn'
+			) {
+				first ??= layer;
+			}
 			description ??= get_meta(layer)?.description;
 		}
 		fields.push({
 			name,
 			schema: entry,
-			has_default: first?.kind === 'with_default',
+			has_default: first !== undefined && first.kind !== 'optional',
+			default_computed: first?.kind === 'with_default_fn',
 			default: first?.kind === 'with_default' ? first.def.value : undefined,
 			description
 		});
@@ -142,9 +157,10 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
  * Renders the type `schema` accepts as TypeScript-like text, for help output:
  * `Array<string> | null`, `{name: string; port?: number}`, `"a" | "b"`.
  *
- * - A `with_default` renders as its schema, leaving the default to be shown
- *   by its value, and an `optional` adds `| undefined`.
- * - An entry is marked `?` when a layer is an `optional` or a `with_default`.
+ * - A `with_default` and a `with_default_fn` render as their schema, leaving
+ *   the default to be shown apart, and an `optional` adds `| undefined`.
+ * - An entry is marked `?` when a layer is an `optional`, a `with_default`, or
+ *   a `with_default_fn`.
  *   A `union` with an `optional` option lets the key be missing too, and
  *   isn't looked into.
  * - A `pipe` renders as its first schema, what it accepts.
@@ -181,6 +197,7 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 		case 'nullable':
 			return to_type(s.def.schema, inside) + ' | null';
 		case 'with_default':
+		case 'with_default_fn':
 			return to_type(s.def.schema, inside);
 		case 'pipe':
 			return to_type(s.def[0]!, inside);
@@ -203,7 +220,7 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 			for (const key in s.def) {
 				const entry = s.def[key]!;
 				const optional = to_layers(entry).some(
-					(l) => l.kind === 'optional' || l.kind === 'with_default'
+					(l) => l.kind === 'optional' || l.kind === 'with_default' || l.kind === 'with_default_fn'
 				);
 				parts.push(
 					`${/^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key)}${optional ? '?' : ''}: ${to_type(entry, inside)}`
