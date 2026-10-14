@@ -673,6 +673,7 @@ const each: CaseGroup = (s) => {
 	return [
 		of('string/valid', s.string, 'hello'),
 		of('number/valid', s.number, 42),
+		of('number_fractional/valid', s.number, 3.25),
 		of('literal/valid', s.literal('a'), 'a'),
 		of('one_of_20_last/valid', to_one_of(s)(range(20)), 19),
 		of('optional_present/valid', s.optional(s.string), 'x'),

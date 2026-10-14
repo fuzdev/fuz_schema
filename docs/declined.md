@@ -99,6 +99,22 @@ The loops looking for each entry's key, so that every schema that accepts
   See [design.md](design.md#missing-keys).
 - **Reopens**: a check that costs an object with no such entry nothing.
 
+### The unknown-key check by a `Set` of the keys
+
+`object` asking a `Set` of its keys, made when the schema is, whether a key
+out of the schema's order is one of them, in place of `Object.hasOwn` on its
+entries.
+
+- **Gave**: two realistic cases 0.93x in the matrix, `real/posts_100_mixed_order`
+  and `real/docinfo_module_full`. The realistic valid path 1.0% faster in the
+  matrix, inside its A/A of ±1.3%, and 1.6% faster alone, past its A/A of
+  ±1.4%.
+- **Cost**: +5 gzip on the core and +11 on `object` last in, and `real/form`
+  1.059x alone, marked `?`.
+- **Why**: rule 4 asks +5% on the realistic valid path for the core bytes,
+  and the matrix showed no speedup past its A/A.
+- **Reopens**: real data whose keys are mostly out of the schema's order.
+
 ## Dropping keys
 
 What was taken, in `strip_object`: the entries run as `object`'s do, and only
@@ -190,6 +206,26 @@ of 2.2x on the valid cases in the matrix and 2.8x to 3.1x alone and apart, and
 up to 12x on a probe that fails. The eager form's realistic valid path was 26%
 slower in the matrix and 36% alone. The current loop itself, on an input with
 nothing to drop, moved from 111 to 121 ns.
+
+## `variant`
+
+### The discriminator run once
+
+`variant` telling the option it calls that its discriminator has matched, so
+the option's loop skips that entry, by a module variable the object schemas
+read and clear.
+
+- **Gave**: one entry fewer run on each input a `variant` takes.
+- **Cost**: module state that every object schema reads, in every parse:
+  +38 gzip on the core and +58 over all the scenarios together, and the
+  realistic valid path 3.8% slower in the matrix and 5.7% alone. And a
+  discriminator of `literal(undefined)` no longer needed its key: skipped,
+  it took an input without it, which both Zod and Valibot refuse.
+- **Why**: slower on the valid path, and every object schema pays for a
+  `variant`.
+- **Reopens**: a way to skip the entry that the object schemas don't read
+  outside a `variant`, and that keeps a skipped discriminator's missing key
+  refused.
 
 ## `lazy`
 
@@ -392,6 +428,32 @@ with a `with_default` replaces with one that writes the key.
 - **Why**: time on every object parse of a program that writes the shape
   once, and bytes over the opt-in price, for a shape few write.
 - **Reopens**: as above.
+
+## `number`
+
+What was taken: `Number.isFinite(value)`, true of a finite number and of
+nothing else, so the type is not asked first.
+
+### The `typeof` form
+
+`typeof value === 'number' && value === value`, the form `number` had before
+it refused the infinities.
+
+- **Gave**: a fractional double 0.92x alone and apart,
+  `each/number_fractional`.
+- **Cost**: it takes `Infinity` and `-Infinity`, which `number` refuses. And
+  whole numbers slower in the matrix: `each/number` 1.065x, and an array of
+  10 numbers 1.056x and of 10,000 1.067x.
+- **Why**: it is a form that takes the infinities, and slows whole numbers. Of
+  the forms that refuse them, none was faster on fractional doubles in a
+  microbenchmark of a scalar and of an array of 100: `typeof` beside
+  `Number.isFinite` measured equal, but for one faster reading on a scalar
+  that a second run didn't repeat, `!==` each infinity was faster on a whole
+  number as a scalar and over twice as slow on an array of fractional doubles,
+  and `Math.abs(value) < Infinity`, a comparison with each infinity,
+  `value * 0 === 0`, and `value - value === 0` were slower.
+- **Reopens**: a form that refuses the infinities and is faster on fractional
+  doubles without slowing whole numbers.
 
 ## The parse context
 
