@@ -3692,6 +3692,68 @@ describe('array, union, variant', () => {
 		]);
 		assert(!s.is(Shape, null));
 	});
+
+	describe('a recursive union', () => {
+		// a chain of nodes each with one child, of the last option, counting the
+		// `check` every option reaches in a node before its `op`, or after it
+		const count_runs = (
+			make: (counted: s.AnySchema, Node: () => s.AnySchema) => s.AnySchema,
+			depth: number
+		): { parse: number; is: number } => {
+			let runs = 0;
+			const counted = s.pipe(
+				s.number,
+				s.check(() => {
+					runs++;
+					return true;
+				})
+			);
+			const Node: s.AnySchema = s.lazy(() => make(counted, () => Node));
+			let input: unknown = { op: 'b', n: 0, args: [] };
+			for (let i = 0; i < depth; i++) input = { op: 'b', n: 0, args: [input] };
+			assert(s.parse(Node, input).ok);
+			const parse = runs;
+			runs = 0;
+			assert(s.is(Node, input));
+			return { parse, is: runs };
+		};
+		const depth = 10;
+
+		test('walks the children again for each option they fail in, exponential in depth', () => {
+			const runs = count_runs(
+				(n, Node) =>
+					s.union(
+						['a', 'b'].map((op) => s.object({ args: s.array(Node()), n, op: s.literal(op) }))
+					),
+				depth
+			);
+			const expected = 2 ** (depth + 2) - 2;
+			assert.deepEqual(runs, { parse: expected, is: expected });
+		});
+
+		test('is linear with the entry that tells the options apart first', () => {
+			const runs = count_runs(
+				(n, Node) =>
+					s.union(
+						['a', 'b'].map((op) => s.object({ op: s.literal(op), n, args: s.array(Node()) }))
+					),
+				depth
+			);
+			assert.deepEqual(runs, { parse: depth + 1, is: depth + 1 });
+		});
+
+		test('is linear as a variant, whatever the order of the entries', () => {
+			const runs = count_runs(
+				(n, Node) =>
+					s.variant(
+						'op',
+						['a', 'b'].map((op) => s.object({ args: s.array(Node()), n, op: s.literal(op) }))
+					),
+				depth
+			);
+			assert.deepEqual(runs, { parse: depth + 1, is: depth + 1 });
+		});
+	});
 });
 
 describe('pipe and actions', () => {

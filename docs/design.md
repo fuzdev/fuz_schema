@@ -138,6 +138,18 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   engine's last tier has the call, its `arguments` is an object a call, which
   a parse of settled code doesn't allocate. The other forms of a lazy are
   in [declined.md](declined.md#lazy).
+- **A recursive `union` can take time exponential in the depth of its
+  input.** An option that walks a node's children before the entry that rules
+  it out fails only after the walk, and the next option walks them again, at
+  every level: `lazy(() => union([object({args: array(Node), op: literal('a')}), ...]))`.
+  Valibot and Zod's mini form do the same, and Zod's classic form is linear
+  on it through the memo its containers turn on by default. There are two
+  ways out. `variant`, when the options have a `literal` discriminator,
+  finds the option in constant time, so the children are walked once.
+  Otherwise each option puts the entries that rule it out cheaply first, as
+  a `literal`, and a probed option fails before it walks. A memo inside
+  `lazy` and the other forms are in
+  [declined.md](declined.md#a-recursive-union).
 
 ## Copy-on-write output
 

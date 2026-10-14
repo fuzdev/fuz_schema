@@ -262,6 +262,55 @@ In place of reading the length of `arguments` on each call.
   entry.
 - **Reopens**: an engine that adapts the arguments for less.
 
+## A recursive `union`
+
+A `union` whose options walk a node's children before an entry rules them
+out takes time exponential in the input's depth, see
+[design.md](design.md#running). These were built to make it linear.
+
+### A memo of probes inside `lazy`
+
+A `lazy` that, while probing, keeps what its schema gave for an input object
+it is handed again at the same depth, as the next option of a union hands it,
+and clears it when the parse ends. It keeps a failure and an output that is
+its input, and starts only when an object comes back.
+
+- **Gave**: linear in depth. `is` on a binary tree of 127 nodes under a
+  union of three options, each walking the children before its `literal`,
+  went from about 6 ms to 23 µs, and `parse` to 69 µs. Core the same.
+- **Cost**: `lazy` alone +172 gzip and last in +133, and the `type_json`
+  scenario +131. Recursion that walks nothing again slower: a tree of objects
+  with no union about 8% in `parse` and 26% in `is`, and a JSON-like union of
+  primitives and containers about 7%. The realistic `package_json` case
+  allocated 8.6 times the bytes and read 23% slower in one run. A `transform`
+  under a recursive union runs fewer times than it does without the memo,
+  which is a difference in behavior to declare.
+- **Why**: the bytes land on every `lazy`, and the time on recursion that
+  doesn't need it, where `variant` or the cheap entries first in each option
+  are the way out of the curve.
+- **Reopens**: a form whose bytes land only on schemas that recurse through
+  a union.
+
+### The `literal` entries first when probing
+
+An object that, probed, checks its `literal` entries before the rest, so a
+union's option is ruled out before it walks.
+
+- **Cost**: core +71 gzip, and `object` alone +67.
+- **Why**: core bytes for a shape that a consumer can write in order.
+- **Reopens**: nothing known.
+
+### `variant`'s dispatch inside `union`
+
+A `union` that finds, when it is made, a `literal` entry its object options
+share, and dispatches on it as `variant` does.
+
+- **Cost**: `union` alone +177 gzip and last in +146, the `union` scenario
+  +183, just under the backstop.
+- **Why**: bytes on every union, for what `variant` already does as an
+  export of its own.
+- **Reopens**: nothing known.
+
 ## Passing the object and the key on
 
 ### One closure of four parameters
