@@ -245,6 +245,50 @@ const create_name = (s: SchemaLib): schema_lib.AnySchema =>
 const create_age = (s: SchemaLib): schema_lib.AnySchema =>
 	s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150));
 
+// a client that drops what it doesn't name at every level, as one written for
+// a library whose plain object does
+const create_account = (s: SchemaLib): schema_lib.AnySchema =>
+	to_strip_object(s)({
+		id: s.number,
+		login: s.string,
+		name: s.nullable(s.string),
+		email: s.string,
+		avatar_url: s.string,
+		created_at: s.string,
+		plan: to_strip_object(s)({ name: s.string, seats: s.number }),
+		roles: s.array(s.string)
+	});
+
+const to_account = (i: number): Record<string, unknown> => ({
+	id: i,
+	login: `user${i}`,
+	name: i % 5 ? `User ${i}` : null,
+	email: `user${i}@example.com`,
+	avatar_url: `https://example.com/avatars/${i}.png`,
+	created_at: '2024-01-01T00:00:00Z',
+	plan: { name: i % 2 ? 'free' : 'team', seats: 1 + (i % 9) },
+	roles: ['member', 'admin'].slice(0, 1 + (i % 2))
+});
+
+// the same from an API that has since grown fields the client doesn't name,
+// among the ones it does and a level down
+const to_account_extra = (i: number): Record<string, unknown> => {
+	const { id, login, name, email, avatar_url, created_at, plan, roles } = to_account(i);
+	return {
+		id,
+		node_id: `n${i}`,
+		login,
+		name,
+		email,
+		avatar_url,
+		url: `https://example.com/users/${i}`,
+		created_at,
+		updated_at: '2024-06-01T00:00:00Z',
+		plan: { ...(plan as object), private_repos: i },
+		roles
+	};
+};
+
 //
 // Realistic
 //
@@ -272,46 +316,7 @@ const real: CaseGroup = (s) => {
 		newsletter: s.optional(s.boolean)
 	});
 	const form = { name: 'ada lovelace', email: 'ada@example.com', age: 36, newsletter: true };
-	// a client that drops what it doesn't name at every level, as one written for
-	// a library whose plain object does
-	const Account = to_strip_object(s)({
-		id: s.number,
-		login: s.string,
-		name: s.nullable(s.string),
-		email: s.string,
-		avatar_url: s.string,
-		created_at: s.string,
-		plan: to_strip_object(s)({ name: s.string, seats: s.number }),
-		roles: s.array(s.string)
-	});
-	const to_account = (i: number): Record<string, unknown> => ({
-		id: i,
-		login: `user${i}`,
-		name: i % 5 ? `User ${i}` : null,
-		email: `user${i}@example.com`,
-		avatar_url: `https://example.com/avatars/${i}.png`,
-		created_at: '2024-01-01T00:00:00Z',
-		plan: { name: i % 2 ? 'free' : 'team', seats: 1 + (i % 9) },
-		roles: ['member', 'admin'].slice(0, 1 + (i % 2))
-	});
-	// the same from an API that has since grown fields the client doesn't name,
-	// among the ones it does and a level down
-	const to_account_extra = (i: number): Record<string, unknown> => {
-		const { id, login, name, email, avatar_url, created_at, plan, roles } = to_account(i);
-		return {
-			id,
-			node_id: `n${i}`,
-			login,
-			name,
-			email,
-			avatar_url,
-			url: `https://example.com/users/${i}`,
-			created_at,
-			updated_at: '2024-06-01T00:00:00Z',
-			plan: { ...(plan as object), private_repos: i },
-			roles
-		};
-	};
+	const Account = create_account(s);
 	const Event = s.variant('type', [
 		to_object(s)({
 			type: s.literal('click'),
@@ -387,15 +392,6 @@ const real: CaseGroup = (s) => {
 			s.array(Account),
 			to_json(range(100).map(to_account)),
 			'identity'
-		),
-		// and one with fields to drop, alone and as a list
-		to_case(s, 'real/account_extra_fields/valid', Account, to_json(to_account_extra(1)), 'copy'),
-		to_case(
-			s,
-			'real/accounts_100_extra_fields/valid',
-			s.array(Account),
-			to_json(range(100).map(to_account_extra)),
-			'copy'
 		),
 		to_case(
 			s,
@@ -943,6 +939,7 @@ const object: CaseGroup = (s) => {
 // beside inputs with none
 const strip: CaseGroup = (s) => {
 	const O = to_strip_object(s)(to_six(s.string));
+	const Account = create_account(s);
 	const input = to_six('v');
 	const to_option = (type: string): schema_lib.AnySchema =>
 		to_strip_object(s)({ type: s.literal(type), id: s.number, name: s.string, note: s.string });
@@ -1056,6 +1053,16 @@ const strip: CaseGroup = (s) => {
 			'strip/union_3_last_unknown_first/valid',
 			Shapes,
 			to_json({ z: 1, ...to_shape('c') }),
+			'copy'
+		),
+		// the response of `real/accounts_100` with fields to drop, alone and as a
+		// list, kept out of the realistic cases speed is judged on
+		to_case(s, 'strip/account_extra_fields/valid', Account, to_json(to_account_extra(1)), 'copy'),
+		to_case(
+			s,
+			'strip/accounts_100_extra_fields/valid',
+			s.array(Account),
+			to_json(range(100).map(to_account_extra)),
 			'copy'
 		)
 	];
