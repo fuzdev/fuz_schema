@@ -5,9 +5,8 @@
  *
  * Every object is strict and every union but the last is discriminated, so
  * nothing differs in kind: `discriminatedUnion` is `variant`, `enum` is
- * `one_of`, and a count is `pipe(number, finite, safe_integer, min_value(0))`,
- * since zod's `number` takes no infinity and its `int` is an integer a double
- * holds exactly.
+ * `one_of`, and a count is `pipe(number, safe_integer, min_value(0))`,
+ * since zod's `int` is an integer a double holds exactly.
  *
  * @module
  */
@@ -74,8 +73,8 @@ export type ReposStatusSchemas = Record<
 
 export const create_repos_status = (s: SchemaLib): ReposStatusSchemas => {
 	const REPOS_STATUS_FORMAT_VERSION = 19;
-	const Count = s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0));
-	const UnixSeconds = s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0));
+	const Count = s.pipe(s.number, s.safe_integer, s.min_value(0));
+	const UnixSeconds = s.pipe(s.number, s.safe_integer, s.min_value(0));
 
 	const ReposSessionSource = s.one_of(['session_file', 'roster_worker']);
 

@@ -63,7 +63,7 @@ export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 		s.object({ kind: s.literal('intrinsic'), text: s.string }),
 		s.object({
 			kind: s.literal('literal'),
-			value: s.union([s.string, s.pipe(s.number, s.finite), s.boolean]),
+			value: s.union([s.string, s.number, s.boolean]),
 			text: s.string
 		}),
 		s.object({

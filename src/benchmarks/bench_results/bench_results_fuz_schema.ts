@@ -5,7 +5,7 @@
  *
  * What stands in for what zod has built in:
  *
- * - `z.number()` is `pipe(number, finite)`, since zod's takes no infinity.
+ * - `z.number()` is `number`, as both take no infinity.
  * - `.int()` is `safe_integer`, `.nonnegative()` is `min_value(0)`, and
  *   `.positive()`, which has no bound to state, is a `check`.
  * - `.min(1)` on a string or an array is `min_length(1)`.
@@ -115,7 +115,6 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		threads: s.nullable(
 			s.pipe(
 				s.number,
-				s.finite,
 				s.safe_integer,
 				s.check((v: number) => v > 0, '> 0')
 			)
@@ -126,14 +125,13 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		boost: s.nullable(s.boolean),
 		memory_gb: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		os_release: s.pipe(s.string, s.min_length(1))
 	});
 
 	const BenchAnchor = s.object({
-		drift: s.pipe(s.number, s.finite),
+		drift: s.number,
 		stable: s.boolean
 	});
 
@@ -169,21 +167,20 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	});
 
 	const BenchNoiseFloor = s.object({
-		per_cell: s.pipe(s.number, s.finite, s.min_value(0)),
-		geomean: s.pipe(s.number, s.finite, s.min_value(0)),
-		per_process: s.nullable(s.pipe(s.number, s.finite, s.min_value(0)))
+		per_cell: s.pipe(s.number, s.min_value(0)),
+		geomean: s.pipe(s.number, s.min_value(0)),
+		per_process: s.nullable(s.pipe(s.number, s.min_value(0)))
 	});
 
 	const BenchProcessNoise = s.object({
 		pairs: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		median: s.pipe(s.number, s.finite, s.min_value(0)),
-		p95: s.pipe(s.number, s.finite, s.min_value(0)),
-		max: s.pipe(s.number, s.finite, s.min_value(0))
+		median: s.pipe(s.number, s.min_value(0)),
+		p95: s.pipe(s.number, s.min_value(0)),
+		max: s.pipe(s.number, s.min_value(0))
 	});
 
 	const BenchSize = s.one_of(['micro', 'small', 'medium', 'large']);
@@ -209,53 +206,48 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		kind: BenchRunKind,
 		passes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		rounds: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		target_ms: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		warmup_ms: s.pipe(s.number, s.finite, s.min_value(0)),
-		rewarm_ms: s.pipe(s.number, s.finite, s.min_value(0)),
-		retries: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0)),
+		warmup_ms: s.pipe(s.number, s.min_value(0)),
+		rewarm_ms: s.pipe(s.number, s.min_value(0)),
+		retries: s.pipe(s.number, s.safe_integer, s.min_value(0)),
 		loaded_langs: s.literal('cell'),
 		collection: s.literal('minor'),
 		startup_samples: s.nullable(
 			s.pipe(
 				s.number,
-				s.finite,
 				s.safe_integer,
 				s.check((v: number) => v > 0, '> 0')
 			)
 		),
-		startup_discard: s.nullable(s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0))),
+		startup_discard: s.nullable(s.pipe(s.number, s.safe_integer, s.min_value(0))),
 		startup_compile_cache: s.nullable(s.literal('disabled')),
 		filters: BenchRunFilters,
 		segments: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		duration_ms: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0)),
-		load_at_start: s.pipe(s.number, s.finite, s.min_value(0))
+		duration_ms: s.pipe(s.number, s.safe_integer, s.min_value(0)),
+		load_at_start: s.pipe(s.number, s.min_value(0))
 	});
 
 	const bundler_vite = s.pipe(s.string, s.min_length(1));
 
 	const bundler_shape = {
 		esbuild: s.pipe(s.string, s.min_length(1)),
-		gzip_level: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(1), s.max_value(9)),
-		brotli_quality: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0), s.max_value(11))
+		gzip_level: s.pipe(s.number, s.safe_integer, s.min_value(1), s.max_value(9)),
+		brotli_quality: s.pipe(s.number, s.safe_integer, s.min_value(0), s.max_value(11))
 	};
 
 	const BenchBundlerRolldown = s.object({
@@ -286,29 +278,24 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		...startup_key_shape,
 		samples: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		median_ms: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		p10_ms: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		p90_ms: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		spread: s.pipe(s.number, s.finite, s.min_value(1)),
+		spread: s.pipe(s.number, s.min_value(1)),
 		rss_peak_bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		)
@@ -368,13 +355,11 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		size: BenchSize,
 		bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		lines: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
@@ -387,35 +372,29 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	const BenchCellValue = s.object({
 		ns_per_op: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		ops_per_sec: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		mb_per_sec: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		p10_ns: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		p90_ns: s.pipe(
 			s.number,
-			s.finite,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		spread: s.pipe(s.number, s.finite, s.min_value(1)),
+		spread: s.pipe(s.number, s.min_value(1)),
 		pass_medians_ns: s.pipe(
 			s.array(
 				s.pipe(
 					s.number,
-					s.finite,
 					s.check((v: number) => v > 0, '> 0')
 				)
 			),
@@ -423,19 +402,16 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		),
 		iterations: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		rss_peak_bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		attempts: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		)
@@ -444,23 +420,20 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	const BenchCellOutput = s.object({
 		html_bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
-		spans: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0))
+		spans: s.pipe(s.number, s.safe_integer, s.min_value(0))
 	});
 
 	const BenchCellCompressed = s.object({
 		gzip: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		brotli: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		)
@@ -477,13 +450,11 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 		file: s.pipe(s.string, s.min_length(1)),
 		bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		lines: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
@@ -493,7 +464,6 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 			NAME_MATCHER,
 			s.pipe(
 				s.number,
-				s.finite,
 				s.safe_integer,
 				s.check((v: number) => v > 0, '> 0')
 			)
@@ -505,19 +475,16 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	const byte_sizes_shape = {
 		raw: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		gzip: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		brotli: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		)
@@ -534,19 +501,16 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	const BenchInstall = s.object({
 		packages: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		files: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
 		bytes: s.pipe(
 			s.number,
-			s.finite,
 			s.safe_integer,
 			s.check((v: number) => v > 0, '> 0')
 		),
@@ -554,9 +518,9 @@ export const create_bench_results = (s: SchemaLib): BenchResultsSchemas => {
 	});
 
 	const BenchHeap = s.object({
-		retained_kb: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0)),
-		code_kb: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0)),
-		external_kb: s.pipe(s.number, s.finite, s.safe_integer, s.min_value(0))
+		retained_kb: s.pipe(s.number, s.safe_integer, s.min_value(0)),
+		code_kb: s.pipe(s.number, s.safe_integer, s.min_value(0)),
+		external_kb: s.pipe(s.number, s.safe_integer, s.min_value(0))
 	});
 
 	const BenchBundleUnsupported = s.object({

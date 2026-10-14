@@ -235,7 +235,7 @@ export const create_docinfo = (s: SchemaLib): DocinfoSchemas => {
 		s.object({ kind: s.literal('intrinsic'), text: s.string }),
 		s.object({
 			kind: s.literal('literal'),
-			value: s.union([s.string, s.pipe(s.number, s.finite), s.boolean]),
+			value: s.union([s.string, s.number, s.boolean]),
 			text: s.string
 		}),
 		s.object({
@@ -333,7 +333,7 @@ export const create_docinfo = (s: SchemaLib): DocinfoSchemas => {
 		docComment: s.optional(s.string),
 		typeSignature: s.optional(s.string),
 		modifiers: s.with_default(s.array(DeclarationModifier), []),
-		sourceLine: s.optional(s.pipe(s.number, s.finite)),
+		sourceLine: s.optional(s.number),
 		genericParams: s.with_default(s.array(GenericParamJson), []),
 		...docFields,
 		partial: s.with_default(s.boolean, false)
@@ -489,7 +489,7 @@ export const create_docinfo = (s: SchemaLib): DocinfoSchemas => {
 		name: s.string,
 		module: s.string,
 		typeOnly: s.with_default(s.boolean, false),
-		sourceLine: s.optional(s.pipe(s.number, s.finite))
+		sourceLine: s.optional(s.number)
 	});
 
 	const ExternalReExportJson = s.object({
@@ -497,7 +497,7 @@ export const create_docinfo = (s: SchemaLib): DocinfoSchemas => {
 		specifier: s.string,
 		originalName: s.optional(s.string),
 		typeOnly: s.with_default(s.boolean, false),
-		sourceLine: s.optional(s.pipe(s.number, s.finite))
+		sourceLine: s.optional(s.number)
 	});
 
 	const ModuleJson = s.object({

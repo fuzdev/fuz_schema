@@ -43,7 +43,7 @@ const walk = (
 const WRONG: ReadonlyArray<unknown> = [1, 'x', true, null, {}];
 
 // numbers at the edge of each check on one: `min_value`, `safe_integer` twice
-// over, and `finite`, which a JSON text reaches as `1e999`. Each fails one
+// over, and the infinity, which a JSON text reaches as `1e999`. Each fails one
 // check at most: valibot runs every check of a pipe and this library stops at
 // the first to fail, so a number that fails two gives two issues there
 const NUMBERS: ReadonlyArray<number> = [0, 1.5, 2 ** 53, Infinity];

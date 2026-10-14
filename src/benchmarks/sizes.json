@@ -7,11 +7,11 @@
 		"pipe": 1067,
 		"union": 766,
 		"list": 924,
-		"type_json": 1702
+		"type_json": 1551
 	},
-	"all": 2118,
+	"all": 2099,
 	"valibot_all": 2826,
-	"all_vs_valibot": 0.7495,
+	"all_vs_valibot": 0.7427,
 	"parse": 132,
 	"library": 2806,
 	"exports": {
