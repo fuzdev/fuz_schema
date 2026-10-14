@@ -370,6 +370,13 @@ Things that are easy to break without a test noticing:
   the entries the walker refuses it for. A schema in `schema.ts` that starts
   to read the object its `run` is handed, or to pass it on or stop passing it
   on, is a change to `walk.rs`.
+- **A verdict of `walk::run` is a function of the node and the value.** A
+  union with two options that could take the same array or object and reach
+  a cycle, not told apart first by a `literal`, keeps its verdicts on those
+  by address, see `docs/rust.md`, and reads them back. A walker that comes to
+  read anything else, an object and a key passed down, a count, or which
+  report it has, makes a kept verdict wrong where it differs. A memo lives as
+  long as one tree, and the stream's for one walk of what it read into a tree.
 - **A difference is declared, not skipped.** It is a flag on a fixture case,
   and `tests/fixtures.rs` asserts the declared behavior.
 - **Refuse, don't guess.** What the crate can't carry across is a

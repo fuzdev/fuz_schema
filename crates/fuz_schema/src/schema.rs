@@ -15,8 +15,8 @@ use crate::json::{Json, LINEAR_MAX, Value};
 ///
 /// Each is a step the evaluators take without reading into the input, so this
 /// bounds how deep they recurse per level of the input. It does not bound the
-/// work: a `union` whose options each come back to it tries every one at
-/// every level.
+/// work. The verdicts some unions keep bound part of it; `docs/rust.md` says
+/// which.
 pub const MAX_NESTING: usize = 16;
 
 /// A node of a schema: an index into its arena.
@@ -512,7 +512,7 @@ impl VariantDef {
 }
 
 /// An array or an object: what a `union` is asked about before one is read.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Container {
     Array,
     Object,
@@ -544,6 +544,11 @@ pub struct Schema {
     /// For each `union`, its candidates for an array and for an object. Any
     /// other node has none.
     pub(crate) candidates: Box<[[Candidates; 2]]>,
+    /// For each `union`, whether its verdicts on arrays, and on objects, are
+    /// kept while a tree is walked: when two or more of the options that could
+    /// take one reach a cycle, and for objects, no `literal` entry tells
+    /// those options apart before they reach one. Any other node keeps none.
+    pub(crate) memoized: Box<[[bool; 2]]>,
 }
 
 impl Schema {
@@ -571,6 +576,13 @@ impl Schema {
     /// Whether the node accepts every value that is present.
     pub(crate) fn accepts_any(&self, id: NodeId) -> bool {
         self.any[id.index()]
+    }
+
+    /// Whether the `union` with `id` keeps its verdicts on `container`: two or
+    /// more of its options that could take one reach a cycle, and, for
+    /// objects, no `literal` tells them apart first.
+    pub(crate) fn memoizes_on(&self, id: NodeId, container: Container) -> bool {
+        self.memoized[id.index()][container as usize]
     }
 
     /// The options of the `union` with `id` that `container` could match.

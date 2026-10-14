@@ -306,11 +306,22 @@ impl SchemaBuilder {
                 candidates[id.index()] = union_candidates(&nodes, options, &mut memo);
             }
         }
+        // a union with two options that reach a cycle, and could take the
+        // same array or object, can be asked of one value once for each of
+        // them at every level above: its verdicts on those are kept
+        let reaches = reaches_cycle(&nodes, &order);
+        let mut memoized = vec![[false; 2]; nodes.len()];
+        for &id in &order {
+            if let SchemaNode::Union(options) = &nodes[id.index()] {
+                memoized[id.index()] = union_memoized(&nodes, &reaches, options, &mut memo);
+            }
+        }
         let mut schema = Schema {
             nodes: nodes.into_boxed_slice(),
             root,
             any,
             candidates: candidates.into_boxed_slice(),
+            memoized: memoized.into_boxed_slice(),
         };
         // an entry is required when a missing key fails it, which the tree
         // evaluator is asked
@@ -320,7 +331,12 @@ impl SchemaBuilder {
             };
             let mut required = Bits::new(entries.len());
             for (position, (_, entry)) in entries.iter().enumerate() {
-                if !walk::run(&schema, entry, Value::Undefined, &mut walk::Probe) {
+                if !walk::run(
+                    &schema,
+                    entry,
+                    Value::Undefined,
+                    &mut walk::Probe::default(),
+                ) {
                     required.insert(position);
                 }
             }
@@ -349,18 +365,25 @@ fn variant_table(nodes: &[SchemaNode], variant: &VariantDef) -> Box<[(SchemaLite
         let Some(SchemaNode::Literal(literal)) = literal else {
             continue;
         };
-        // equal as the values of a `Map` key are: `0` and `-0` are one key
-        let same = |known: &SchemaLiteral| match (known, literal) {
-            (SchemaLiteral::Number(a), SchemaLiteral::Number(b)) => js::number_equals(*a, *b),
-            _ => known == literal,
-        };
-        if let Some(known) = table.iter_mut().find(|(known, _)| same(known)) {
+        if let Some(known) = table
+            .iter_mut()
+            .find(|(known, _)| literals_equal(known, literal))
+        {
             known.1 = option;
         } else {
             table.push((literal.clone(), option));
         }
     }
     table.into_boxed_slice()
+}
+
+/// Whether two literals are one value, as `===` and the keys of a `Map` have
+/// it: `0` and `-0` are one.
+fn literals_equal(a: &SchemaLiteral, b: &SchemaLiteral) -> bool {
+    match (a, b) {
+        (SchemaLiteral::Number(a), SchemaLiteral::Number(b)) => js::number_equals(*a, *b),
+        _ => a == b,
+    }
 }
 
 /// Whether the node accepts every value that is present.
@@ -440,6 +463,178 @@ fn union_candidates(
         }
     }
     candidates
+}
+
+/// Whether the `union` with `options` keeps its verdicts on arrays, and on
+/// objects: when two or more of the options that could take one reach a
+/// cycle, unless a `literal` tells those objects apart first, see
+/// `told_apart`.
+///
+/// An option that reaches no cycle reads the value it is given no deeper than
+/// the schema under it goes. Only an option that reaches one can read without
+/// end, so a union with one such option for a value carries every path that
+/// reaches it on into one path, and one with two doubles them at every level
+/// it is asked at. Its verdicts, kept, are computed once for each value.
+fn union_memoized(
+    nodes: &[SchemaNode],
+    reaches: &[bool],
+    options: &[NodeId],
+    memo: &mut [Option<[bool; 2]>],
+) -> [bool; 2] {
+    let mut recursive = [Vec::new(), Vec::new()];
+    for &option in options {
+        if reaches[option.index()] {
+            let holds = holds_containers(nodes, option, memo);
+            for (recursive, holds) in recursive.iter_mut().zip(holds) {
+                if holds {
+                    recursive.push(option);
+                }
+            }
+        }
+    }
+    let [arrays, objects] = recursive;
+    [
+        arrays.len() > 1,
+        objects.len() > 1 && !told_apart(nodes, reaches, &objects),
+    ]
+}
+
+/// Whether one key tells `options` apart before any of them reads on into a
+/// cycle: each, looked through its wrappers and `lazy`, is an object schema
+/// with a `literal` at the key, their values distinct, and the entry runs
+/// before every entry that reaches a cycle.
+///
+/// The walker runs an object's entries in order, and a probe stops at the
+/// first that fails. A missing key is `undefined`, which no `literal` is. So
+/// of the options asked of one object, at most one gets past the key and
+/// reads on without end.
+fn told_apart(nodes: &[SchemaNode], reaches: &[bool], options: &[NodeId]) -> bool {
+    // for each option, its literal entries that run before it reaches a cycle
+    let mut discriminators: Vec<Vec<(&str, &SchemaLiteral)>> = Vec::new();
+    for &option in options {
+        let Some(entries) = object_entries(nodes, option) else {
+            return false;
+        };
+        let mut found = Vec::new();
+        for (key, entry) in entries.iter() {
+            if reaches[entry.index()] {
+                break;
+            }
+            if let SchemaNode::Literal(literal) = &nodes[entry.index()] {
+                found.push((key, literal));
+            }
+        }
+        discriminators.push(found);
+    }
+    let Some((first, rest)) = discriminators.split_first() else {
+        return false;
+    };
+    first.iter().any(|&(key, literal)| {
+        let mut values = vec![literal];
+        for found in rest {
+            let Some(&(_, literal)) = found.iter().find(|(known, _)| *known == key) else {
+                return false;
+            };
+            if values.iter().any(|known| literals_equal(known, literal)) {
+                return false;
+            }
+            values.push(literal);
+        }
+        true
+    })
+}
+
+/// The entries of the object schema `id` is, looked through the wrappers and
+/// `lazy`, which an object passes through to it.
+fn object_entries(nodes: &[SchemaNode], mut id: NodeId) -> Option<&SchemaEntries> {
+    loop {
+        match &nodes[id.index()] {
+            SchemaNode::Optional(inner) | SchemaNode::Nullable(inner) | SchemaNode::Lazy(inner) => {
+                id = *inner;
+            }
+            SchemaNode::WithDefault(default) => id = default.schema,
+            SchemaNode::Object(entries)
+            | SchemaNode::LooseObject(entries)
+            | SchemaNode::StripObject(entries) => return Some(entries),
+            _ => return None,
+        }
+    }
+}
+
+/// Whether each reached node reaches a cycle, which only a `lazy` can close,
+/// counting one it is on.
+///
+/// By Tarjan's algorithm without recursion, which finishes a strongly
+/// connected component after every component it reaches. A component with
+/// more than one node is a cycle, as a node never refers to itself, and one
+/// of one node reaches a cycle when a child does.
+fn reaches_cycle(nodes: &[SchemaNode], order: &[NodeId]) -> Vec<bool> {
+    const UNSEEN: usize = usize::MAX;
+    let mut index = vec![UNSEEN; nodes.len()];
+    let mut low = vec![0; nodes.len()];
+    let mut on_stack = vec![false; nodes.len()];
+    let mut stack: Vec<NodeId> = Vec::new();
+    let mut reaches = vec![false; nodes.len()];
+    let mut count = 0;
+    // each frame is a node, its children, and the next of them to visit
+    let mut frames: Vec<(NodeId, Vec<NodeId>, usize)> = Vec::new();
+    for &start in order {
+        if index[start.index()] != UNSEEN {
+            continue;
+        }
+        let mut pending = Some(start);
+        loop {
+            if let Some(id) = pending.take() {
+                index[id.index()] = count;
+                low[id.index()] = count;
+                count += 1;
+                stack.push(id);
+                on_stack[id.index()] = true;
+                let mut children = Vec::new();
+                for_each_child(&nodes[id.index()], |_, child| children.push(child));
+                frames.push((id, children, 0));
+            }
+            let Some((id, children, next)) = frames.last_mut() else {
+                break;
+            };
+            let id = *id;
+            if let Some(&child) = children.get(*next) {
+                *next += 1;
+                if index[child.index()] == UNSEEN {
+                    pending = Some(child);
+                } else if on_stack[child.index()] {
+                    low[id.index()] = low[id.index()].min(index[child.index()]);
+                }
+                continue;
+            }
+            let Some((_, children, _)) = frames.pop() else {
+                break;
+            };
+            if let Some((parent, _, _)) = frames.last() {
+                low[parent.index()] = low[parent.index()].min(low[id.index()]);
+            }
+            if low[id.index()] == index[id.index()] {
+                let mut members = Vec::new();
+                while let Some(member) = stack.pop() {
+                    on_stack[member.index()] = false;
+                    members.push(member);
+                    if member == id {
+                        break;
+                    }
+                }
+                // every component a member reaches is finished, so its
+                // children outside this one are settled
+                let reached =
+                    members.len() > 1 || children.iter().any(|child| reaches[child.index()]);
+                if reached {
+                    for member in members {
+                        reaches[member.index()] = true;
+                    }
+                }
+            }
+        }
+    }
+    reaches
 }
 
 /// What a step of a pipe has fixed the value to be.
@@ -1394,6 +1589,204 @@ mod tests {
             b.literal(f64::NAN);
             b.string()
         });
+    }
+
+    /// `Expr`: a `lazy` to a union of objects, each with an array of the
+    /// `lazy` and a `literal` at a key, given as key and value, before the
+    /// array when `literal_first`.
+    fn define_expr(
+        b: &mut SchemaBuilder,
+        literals: &[(&str, &str)],
+        literal_first: bool,
+    ) -> NodeId {
+        let lazy = b.declare();
+        let objects: Vec<NodeId> = literals
+            .iter()
+            .map(|&(key, value)| {
+                let args = b.array(lazy);
+                let literal = b.literal(value);
+                if literal_first {
+                    b.object([(key, literal), ("args", args)])
+                } else {
+                    b.object([("args", args), (key, literal)])
+                }
+            })
+            .collect();
+        let union = b.union(objects);
+        b.define(lazy, union);
+        lazy
+    }
+
+    /// The unions whose verdicts are kept, on arrays and on objects: those
+    /// with two options or more that could take the value and reach a cycle,
+    /// and for objects, no `literal` entry that tells those options apart
+    /// before they reach one. The verdicts are listed in the order the
+    /// builder made the unions.
+    #[test]
+    fn only_a_union_with_two_options_that_reach_a_cycle_is_memoized() {
+        let memoized = |schema: &Schema| -> Vec<[bool; 2]> {
+            (0..schema.nodes.len())
+                .filter(|&index| matches!(schema.nodes[index], SchemaNode::Union(_)))
+                .map(|index| schema.memoized[index])
+                .collect()
+        };
+        let ab = [("op", "a"), ("op", "b")];
+        // two objects that each reach the cycle before the literal
+        let expr = built(|b| define_expr(b, &ab, false));
+        assert_eq!(memoized(&expr), [[false, true]]);
+        // the literal first: one option at most gets past it
+        let told = built(|b| define_expr(b, &ab, true));
+        assert_eq!(memoized(&told), [[false, false]]);
+        // the same value at the key, or the values at two keys, tell nothing
+        let same = built(|b| define_expr(b, &[("op", "a"), ("op", "a")], true));
+        assert_eq!(memoized(&same), [[false, true]]);
+        let keys = built(|b| define_expr(b, &[("op", "a"), ("kind", "b")], true));
+        assert_eq!(memoized(&keys), [[false, true]]);
+        // an option is looked through its wrappers to the object
+        let wrapped = built(|b| {
+            let lazy = b.declare();
+            let a = b.literal("a");
+            let args = b.array(lazy);
+            let first = b.object([("op", a), ("args", args)]);
+            let first = b.nullable(first);
+            let c = b.literal("b");
+            let args = b.array(lazy);
+            let second = b.object([("op", c), ("args", args)]);
+            let union = b.union([first, second]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&wrapped), [[false, false]]);
+        // a record has no entry to tell it apart
+        let record = built(|b| {
+            let lazy = b.declare();
+            let records = b.record(lazy);
+            let a = b.literal("a");
+            let object = b.object([("op", a), ("x", lazy)]);
+            let union = b.union([records, object]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&record), [[false, true]]);
+        // two arrays that reach the cycle
+        let arrays = built(|b| {
+            let lazy = b.declare();
+            let first = b.array(lazy);
+            let second = b.array(lazy);
+            let union = b.union([first, second]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&arrays), [[true, false]]);
+        // one option that reaches a cycle, and one that could take the same
+        // value and reaches none
+        let one_array = built(|b| {
+            let lazy = b.declare();
+            let first = b.array(lazy);
+            let string = b.string();
+            let second = b.array(string);
+            let union = b.union([first, second]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&one_array), [[false, false]]);
+        let one_object = built(|b| {
+            let lazy = b.declare();
+            let object = b.object([("a", lazy)]);
+            let unknown = b.unknown();
+            let union = b.union([object, unknown]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&one_object), [[false, false]]);
+        // the other option a recursive schema of its own: it reaches a cycle
+        // too
+        let other_cycle = built(|b| {
+            let other = define_expr(b, &[("t", "b")], false);
+            let lazy = b.declare();
+            let items = b.array(lazy);
+            let a = b.literal("a");
+            let first = b.object([("x", items), ("t", a)]);
+            let union = b.union([first, other]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&other_cycle), [[false, false], [false, true]]);
+        // a union on no cycle whose options each reach one
+        let off_cycle = built(|b| {
+            let json = b.declare();
+            let string = b.string();
+            let array = b.array(json);
+            let record = b.record(json);
+            let value = b.union([string, array, record]);
+            b.define(json, value);
+            let a = b.literal("a");
+            let first = b.object([("v", json), ("t", a)]);
+            let c = b.literal("b");
+            let second = b.object([("v", json), ("t", c)]);
+            b.union([first, second])
+        });
+        assert_eq!(memoized(&off_cycle), [[false, false], [false, true]]);
+        // a literal after an entry that reaches a cycle, another than the
+        // union's, tells nothing
+        let side_first = built(|b| {
+            let json = b.declare();
+            let string = b.string();
+            let array = b.array(json);
+            let value = b.union([string, array]);
+            b.define(json, value);
+            let lazy = b.declare();
+            let objects: Vec<NodeId> = ["a", "b"]
+                .into_iter()
+                .map(|op| {
+                    let op = b.literal(op);
+                    let args = b.array(lazy);
+                    b.object([("side", json), ("op", op), ("args", args)])
+                })
+                .collect();
+            let union = b.union(objects);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&side_first), [[false, false], [false, true]]);
+        // any JSON value: one option for an array and one for an object
+        let json = built(|b| {
+            let lazy = b.declare();
+            let string = b.string();
+            let array = b.array(lazy);
+            let record = b.record(lazy);
+            let union = b.union([string, array, record]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(memoized(&json), [[false, false]]);
+        // two objects that reach no cycle
+        let flat = built(|b| {
+            let string = b.string();
+            let number = b.number();
+            let first = b.object([("a", string)]);
+            let second = b.object([("a", number)]);
+            let union = b.union([first, second]);
+            b.array(union)
+        });
+        assert_eq!(memoized(&flat), [[false, false]]);
+        // a union with one option for an object hands it to the union that
+        // has two, which keeps the verdict: only that one is kept
+        let nested = built(|b| {
+            let lazy = b.declare();
+            let a = b.literal("a");
+            let args = b.array(lazy);
+            let first = b.object([("args", args), ("op", a)]);
+            let c = b.literal("b");
+            let args = b.array(lazy);
+            let second = b.object([("args", args), ("op", c)]);
+            let inner = b.union([first, second]);
+            let string = b.string();
+            let outer = b.union([string, inner]);
+            b.define(lazy, outer);
+            lazy
+        });
+        assert_eq!(memoized(&nested), [[false, true], [false, false]]);
     }
 
     #[test]

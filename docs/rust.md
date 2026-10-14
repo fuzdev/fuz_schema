@@ -125,6 +125,18 @@ its own is written as that kind and behaves as the library's in the crate.
 - **`matches_json_bytes` validates UTF-8 first**, in full, then reads the text.
 - The walker reports failures to a `Report`. `Probe` wants only the verdict,
   and `Collect` keeps every failure as an issue.
+- **Some unions keep their verdicts.** A `union` keeps its verdicts on arrays
+  when two or more of its options could take an array and reach a cycle, which
+  only a `lazy` closes, and likewise on objects, unless a `literal` entry at
+  one key, with a value of its own in each of those options, runs before any
+  entry that reaches a cycle: then at most one gets past it. This is settled
+  when the schema is built. The walker keeps a verdict on each array or object
+  of the tree, by address, for as long as it walks that tree, and reads it
+  back when the union is asked of the value again. `matches_json` gets it
+  through the walks of what it reads into a tree, each with a memo of its own,
+  as a tree is dropped after its walk and the next can have its addresses. A
+  verdict is a function of the node and the value alone, so keeping it changes
+  no verdict and no issue: a union never reports what its options found.
 
 ## Issues
 
@@ -227,10 +239,19 @@ one of the number tests, or a pipe of one of those. The number tests
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
-input under the most nesting on a small stack. Neither bounds the work: a
-`union` whose options each come back to it tries every option at every
-level, which can take time exponential in the depth of the input, as it does
-in the TypeScript library.
+input under the most nesting on a small stack. Neither bounds the work. The
+unions that keep their verdicts, [above](#two-evaluators), bound it by the
+size of the input times its depth, and a factor of the schema: without them a `union` with two options
+that reach a cycle tries each at every level, which takes time exponential
+in the depth of the input, as it does in the TypeScript library, see
+[design.md](design.md#running). The depth is from an option that reads into
+another cycle, which walks what is below the value again wherever the union
+is asked of it, as in
+`L = lazy(() => union([object({x: array(L), t: literal('a')}), M]))` with
+`M` another recursive schema. The factor of the schema grows with the
+unions that reach no cycle and whose options read the same value: those
+keep nothing, and k levels of them can try 2^k ways, with or without a
+`lazy`.
 
 ## Fixtures
 

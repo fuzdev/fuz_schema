@@ -148,7 +148,9 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   it out fails only after the walk, and the next option walks them again, at
   every level: `lazy(() => union([object({args: array(Node), op: literal('a')}), ...]))`.
   Valibot and Zod's mini form do the same, and Zod's classic form is linear
-  on it through the memo its containers turn on by default. There are two
+  on it through the memo its containers turn on by default, as the Rust
+  crate is through the verdicts such a union keeps, see
+  [rust.md](rust.md#two-evaluators). There are two
   ways out. `variant`, when the options have a `literal` discriminator,
   finds the option in constant time, so the children are walked once.
   Otherwise each option puts the entries that rule it out cheaply first, as

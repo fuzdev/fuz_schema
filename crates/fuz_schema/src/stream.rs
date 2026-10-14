@@ -93,7 +93,9 @@ impl<'a> NodeSeed<'a> {
     /// Matches a value that is whole: a scalar, or an array or object that
     /// was read into a tree.
     fn walk<E: de::Error>(self, value: Value<'_>) -> Result<(), E> {
-        let matched = walk::run(self.context.schema, self.id, value, &mut Probe);
+        // a probe for this walk alone: the tree is dropped after it, and the
+        // next tree read can have its addresses
+        let matched = walk::run(self.context.schema, self.id, value, &mut Probe::default());
         self.context.verdict(matched)
     }
 

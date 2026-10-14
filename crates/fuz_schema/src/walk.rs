@@ -11,13 +11,20 @@
 //! a `SchemaIssue`, the one the TypeScript library's `parse` reports, in its order.
 //! A container that had a failure under it prefixes its key onto the paths of
 //! those issues, as the library does, so a value that matches builds no path.
+//!
+//! A union `Schema::memoizes_on` names keeps its verdicts on the arrays or
+//! objects of the tree, so however many of its recursive options reach one
+//! value again, it computes its verdict on it once. The verdicts are held by
+//! the report's `Probe` and dropped with it.
+
+use std::collections::HashMap;
 
 use crate::error::JsonError;
 use crate::issue::{PathSegment, Received, SchemaIssue, SchemaIssueKind};
 use crate::js;
 use crate::json::{Json, Value};
 use crate::schema::{
-    MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaLiteral, SchemaNode, VariantDef,
+    Container, MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaLiteral, SchemaNode, VariantDef,
 };
 
 /// Where failures go.
@@ -36,6 +43,10 @@ pub trait Report {
     /// The failures since there were `from` of them are of values under
     /// `segment` of the current one.
     fn prefix(&mut self, from: usize, segment: Segment<'_>);
+
+    /// The probe a `union` runs its options with, which holds the verdicts
+    /// kept so far in this evaluation.
+    fn probe(&mut self) -> &mut Probe;
 }
 
 /// What failed.
@@ -61,8 +72,14 @@ pub enum Segment<'a> {
 }
 
 /// The report that only wants the verdict.
-#[derive(Debug)]
-pub struct Probe;
+///
+/// It holds the verdicts the memoized unions have kept, for one tree: a probe
+/// is never handed a second tree, whose arrays and objects can have the
+/// addresses of the first's.
+#[derive(Debug, Default)]
+pub struct Probe {
+    memo: Memo,
+}
 
 impl Report for Probe {
     const PROBE: bool = true;
@@ -74,12 +91,96 @@ impl Report for Probe {
     }
 
     fn prefix(&mut self, _: usize, _: Segment<'_>) {}
+
+    fn probe(&mut self) -> &mut Probe {
+        self
+    }
+}
+
+type MemoKey = (NodeId, Container, usize);
+
+/// A multiplicative hash of a key's words.
+///
+/// A key is a node id and an address the allocator gave the tree, which no
+/// text chooses, so it is not seeded.
+#[derive(Debug, Default)]
+struct MemoHasher(u64);
+
+impl std::hash::Hasher for MemoHasher {
+    fn finish(&self) -> u64 {
+        // the product's entropy is in its high bits, and a table's index is
+        // its low ones
+        self.0.rotate_left(26)
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.write_u64(u64::from(byte));
+        }
+    }
+
+    fn write_u64(&mut self, word: u64) {
+        self.0 = (self.0.rotate_left(5) ^ word).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+
+    fn write_u32(&mut self, word: u32) {
+        self.write_u64(u64::from(word));
+    }
+
+    fn write_usize(&mut self, word: usize) {
+        self.write_u64(word as u64);
+    }
+}
+
+/// The verdicts of the unions `Schema::memoizes_on` names, on the arrays and
+/// objects of one tree, for as long as the tree lives.
+///
+/// A `union` two of whose options reach a cycle can be asked of one value
+/// once per option of every such union above it, which is exponential in the
+/// depth of the input. Its verdict is a function of the node and the value
+/// alone, so it is kept the first time and read after.
+#[derive(Debug, Default)]
+struct Memo {
+    /// By node, container, and address. Not made until the first verdict is
+    /// kept.
+    verdicts: Option<HashMap<MemoKey, bool, std::hash::BuildHasherDefault<MemoHasher>>>,
+}
+
+impl Memo {
+    /// The key of `value` for the union `id`, when it is an array or object
+    /// the union keeps its verdicts on.
+    ///
+    /// An array is known by the address of its items and an object by its
+    /// own, which no other array, or other object, of the tree shares while
+    /// it lives: every empty array has one address, and the same verdict. An
+    /// array's address can be an object's, of the object that is its first
+    /// item, so the key says which it is.
+    fn key(schema: &Schema, id: NodeId, value: Value<'_>) -> Option<MemoKey> {
+        let (container, address) = match value {
+            Value::Array(items) => (Container::Array, items.as_ptr().addr()),
+            Value::Object(object) => (Container::Object, std::ptr::from_ref(object).addr()),
+            _ => return None,
+        };
+        schema
+            .memoizes_on(id, container)
+            .then_some((id, container, address))
+    }
+
+    fn get(&self, key: MemoKey) -> Option<bool> {
+        self.verdicts.as_ref()?.get(&key).copied()
+    }
+
+    fn insert(&mut self, key: MemoKey, matched: bool) {
+        self.verdicts.get_or_insert_default().insert(key, matched);
+    }
 }
 
 /// The report that keeps every failure as an issue.
 #[derive(Debug)]
 pub struct Collect<'a> {
     schema: &'a Schema,
+    /// What its unions run their options with.
+    probe: Probe,
     /// The issues so far, each with its path innermost first.
     issues: Vec<SchemaIssue>,
 }
@@ -88,6 +189,9 @@ impl<'a> Collect<'a> {
     pub const fn new(schema: &'a Schema) -> Self {
         Self {
             schema,
+            probe: Probe {
+                memo: Memo { verdicts: None },
+            },
             issues: Vec::new(),
         }
     }
@@ -135,6 +239,10 @@ impl Report for Collect<'_> {
                 Segment::Index(index) => PathSegment::Index(index),
             });
         }
+    }
+
+    fn probe(&mut self) -> &mut Probe {
+        &mut self.probe
     }
 }
 
@@ -189,7 +297,12 @@ fn format_literals<'a>(literals: impl IntoIterator<Item = &'a SchemaLiteral>) ->
 /// tree and walking the tree.
 pub fn matches_json(schema: &Schema, text: &str) -> Result<bool, JsonError> {
     let json = Json::parse(text)?;
-    Ok(run(schema, schema.root(), json.view(), &mut Probe))
+    Ok(run(
+        schema,
+        schema.root(),
+        json.view(),
+        &mut Probe::default(),
+    ))
 }
 
 /// The issues of `text` against `schema`, none when it matches, by parsing
@@ -235,7 +348,7 @@ pub fn run<R: Report>(schema: &Schema, mut id: NodeId, value: Value<'_>, report:
             }
             SchemaNode::Lazy(inner) => id = *inner,
             SchemaNode::Union(options) => {
-                if union(schema, options, value) {
+                if union(schema, id, options, value, report.probe()) {
                     return true;
                 }
                 report.fail(id, Failure::Schema, Received::of(value));
@@ -310,14 +423,38 @@ fn fail_at<R: Report>(
 }
 
 /// Whether any option matches. Options are only probed: a union that fails
-/// reports itself and not what its options found.
-fn union(schema: &Schema, options: &[NodeId], value: Value<'_>) -> bool {
+/// reports itself and not what its options found. They share `probe`, so a
+/// verdict one of them keeps is read by the next.
+///
+/// A union the schema memoizes reads its verdict back, or keeps the one it
+/// reaches. That is done here and not in a function of its own, which would
+/// be one more frame for every union around a value.
+fn union(
+    schema: &Schema,
+    id: NodeId,
+    options: &[NodeId],
+    value: Value<'_>,
+    probe: &mut Probe,
+) -> bool {
+    let key = Memo::key(schema, id, value);
+    if let Some(key) = key
+        && let Some(matched) = probe.memo.get(key)
+    {
+        return matched;
+    }
+    let mut matched = false;
     for &option in options {
-        if run(schema, option, value, &mut Probe) {
-            return true;
+        #[cfg(test)]
+        tests::OPTION_RUNS.with(|runs| runs.set(runs.get() + 1));
+        if run(schema, option, value, probe) {
+            matched = true;
+            break;
         }
     }
-    false
+    if let Some(key) = key {
+        probe.memo.insert(key, matched);
+    }
+    matched
 }
 
 /// The steps of a pipe in order, each reporting its own failure, the first of
@@ -538,9 +675,14 @@ pub mod tests {
     use crate::error::JsonErrorKind;
     use crate::schema::{SchemaKind, SchemaLiteral};
 
+    thread_local! {
+        /// How many options the unions of this thread have run.
+        pub static OPTION_RUNS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    }
+
     /// A report that keeps the node of each failure.
     #[derive(Debug)]
-    struct Ids(Vec<NodeId>);
+    struct Ids(Vec<NodeId>, Probe);
 
     impl Report for Ids {
         const PROBE: bool = false;
@@ -554,6 +696,10 @@ pub mod tests {
         }
 
         fn prefix(&mut self, _: usize, _: Segment<'_>) {}
+
+        fn probe(&mut self) -> &mut Probe {
+            &mut self.1
+        }
     }
 
     /// Every issue of `text`, checked against the verdict of a probe.
@@ -1187,7 +1333,10 @@ pub mod tests {
         let schema = build(SchemaBuilder::number);
         for value in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
             let value = Value::Number(value);
-            assert!(!run(&schema, schema.root(), value, &mut Probe), "{value:?}");
+            assert!(
+                !run(&schema, schema.root(), value, &mut Probe::default()),
+                "{value:?}"
+            );
             let mut collect = Collect::new(&schema);
             assert!(!run(&schema, schema.root(), value, &mut collect));
             let issues = collect.finish();
@@ -1199,7 +1348,10 @@ pub mod tests {
         }
         for value in [0.0, -0.0, 1.5, f64::MAX, f64::MIN, 5e-324] {
             let value = Value::Number(value);
-            assert!(run(&schema, schema.root(), value, &mut Probe), "{value:?}");
+            assert!(
+                run(&schema, schema.root(), value, &mut Probe::default()),
+                "{value:?}"
+            );
         }
         // an integer of any size is a number
         check(
@@ -1301,7 +1453,7 @@ pub mod tests {
         // of the two `max_length`, the one further in is asked first
         for (text, failed) in [(r#""abcd""#, 2), (r#""abc""#, 7)] {
             let json = Json::parse(text).unwrap();
-            let mut ids = Ids(Vec::new());
+            let mut ids = Ids(Vec::new(), Probe::default());
             assert!(!run(&schema, schema.root(), json.view(), &mut ids));
             assert_eq!(ids.0, [NodeId::new(failed)], "{text}");
         }
@@ -1676,6 +1828,258 @@ pub mod tests {
         }
     }
 
+    /// How many options the unions run in `evaluate`.
+    fn option_runs(evaluate: impl FnOnce()) -> usize {
+        OPTION_RUNS.with(|runs| runs.set(0));
+        evaluate();
+        OPTION_RUNS.with(std::cell::Cell::get)
+    }
+
+    /// `Expr`, a union of `options` objects each holding an array of `Expr`
+    /// and the literal that tells them apart. With the array first, every
+    /// option reads the whole value below it before it can fail. Its `lazy`,
+    /// then its union.
+    fn define_expr(b: &mut SchemaBuilder, options: usize, op_first: bool) -> (NodeId, NodeId) {
+        let lazy = b.declare();
+        let objects: Vec<NodeId> = (0..options)
+            .map(|option| {
+                let args = b.array(lazy);
+                let op = b.literal(option.to_string().as_str());
+                if op_first {
+                    b.object([("op", op), ("args", args)])
+                } else {
+                    b.object([("args", args), ("op", op)])
+                }
+            })
+            .collect();
+        let union = b.union(objects);
+        b.define(lazy, union);
+        (lazy, union)
+    }
+
+    fn expr(options: usize, op_first: bool) -> Schema {
+        build(|b| define_expr(b, options, op_first).0)
+    }
+
+    /// A chain of `depth` objects, each the only item of the one above's
+    /// `args`, every one matching the last option, and `leaf` the only item
+    /// of the deepest.
+    fn expr_chain(depth: usize, op: &str, leaf: &str) -> String {
+        let open = r#"{"args":["#.repeat(depth);
+        let close = format!(r#"],"op":"{op}"}}"#).repeat(depth);
+        format!("{open}{leaf}{close}")
+    }
+
+    /// The option runs of `text` in each evaluator, each with its verdict,
+    /// asserted to be the same in all three.
+    fn option_runs_of(schema: &Schema, text: &str, matched: bool) -> usize {
+        let exact = option_runs(|| assert_eq!(matches_json(schema, text), Ok(matched), "{text}"));
+        let issues = option_runs(|| {
+            assert_eq!(validate_json(schema, text).unwrap().is_empty(), matched);
+        });
+        let stream = option_runs(|| {
+            assert_eq!(crate::stream::matches_json(schema, text), Ok(matched));
+        });
+        assert_eq!((issues, stream), (exact, exact), "{text}");
+        exact
+    }
+
+    /// A union a `lazy` brings back to the same value through each of its
+    /// options runs them once per value, and not once per path to it, which
+    /// multiplies by the options with each level: the count is linear in the
+    /// depth, to the deepest input the parser reads.
+    #[test]
+    fn a_recursive_union_runs_its_options_once_per_value() {
+        for options in [2, 3] {
+            let schema = expr(options, false);
+            let last = (options - 1).to_string();
+            // small depths first, where the count without the memo is still
+            // countable, so that losing it fails here and not by hanging
+            for depth in [1, 2, 3, 10, 20, 63] {
+                let matching = expr_chain(depth, &last, "");
+                // the deepest object has no option's literal
+                let failing = expr_chain(depth - 1, &last, r#"{"args":[],"op":"none"}"#);
+                // each object runs every option, the last matching or none
+                let runs = options * depth;
+                assert_eq!(option_runs_of(&schema, &matching, true), runs);
+                assert_eq!(option_runs_of(&schema, &failing, false), runs);
+            }
+        }
+    }
+
+    /// A union whose options a `literal` first tells apart keeps no verdicts,
+    /// and needs none: an option that isn't the value's fails at the literal,
+    /// so the count is linear in the depth without them.
+    #[test]
+    fn a_union_told_apart_first_runs_its_options_once_per_value() {
+        for options in [2, 3] {
+            let mut union = None;
+            let schema = build(|b| {
+                let (lazy, id) = define_expr(b, options, true);
+                union = Some(id);
+                lazy
+            });
+            assert_eq!(schema.memoized[union.unwrap().index()], [false, false]);
+            let last = (options - 1).to_string();
+            let chain = |depth: usize, leaf: &str| {
+                let open = format!(r#"{{"op":"{last}","args":["#).repeat(depth);
+                format!("{open}{leaf}{}", "]}".repeat(depth))
+            };
+            for depth in [1, 2, 3, 10, 20, 63] {
+                let matching = chain(depth, "");
+                let failing = chain(depth - 1, r#"{"op":"none","args":[]}"#);
+                let runs = options * depth;
+                assert_eq!(option_runs_of(&schema, &matching, true), runs);
+                assert_eq!(option_runs_of(&schema, &failing, false), runs);
+            }
+        }
+    }
+
+    /// A union of two arrays that reach its cycle keeps its verdicts on
+    /// arrays and on nothing else: each array runs both options once, and
+    /// the deepest, which holds a number, runs them on the number too.
+    #[test]
+    fn a_union_keeps_its_verdicts_on_the_container_it_is_memoized_for() {
+        let mut union = None;
+        let schema = build(|b| {
+            let lazy = b.declare();
+            let first = b.array(lazy);
+            let second = b.array(lazy);
+            let id = b.union([first, second]);
+            union = Some(id);
+            b.define(lazy, id);
+            lazy
+        });
+        assert_eq!(schema.memoized[union.unwrap().index()], [true, false]);
+        for depth in [1, 2, 3, 10, 20, 126] {
+            let text = format!("{}1{}", "[".repeat(depth), "]".repeat(depth));
+            assert_eq!(option_runs_of(&schema, &text, false), 2 * depth + 4);
+        }
+    }
+
+    /// `U_k`, a chain of recursive schemas whose second option reads one level
+    /// in to the next: each union's two options reach a cycle, its own and
+    /// the next, so it keeps its verdicts, and the count stays polynomial in
+    /// the depth however long the chain. Each option that reads into the
+    /// next cycle walks what is below again, which is the square.
+    #[test]
+    fn a_chain_of_recursive_schemas_stays_polynomial_in_the_depth() {
+        let chain = |links: usize| {
+            build(|b| {
+                let json = b.declare();
+                let null = b.literal(SchemaLiteral::Null);
+                let array = b.array(json);
+                let record = b.record(json);
+                let value = b.union([null, array, record]);
+                b.define(json, value);
+                let mut next = json;
+                for _ in 0..links {
+                    let lazy = b.declare();
+                    let items = b.array(lazy);
+                    let a = b.literal("a");
+                    let own = b.object([("x", items), ("t", a)]);
+                    let items = b.array(next);
+                    let on = b.loose_object([("x", items)]);
+                    let union = b.union([own, on]);
+                    b.define(lazy, union);
+                    next = lazy;
+                }
+                next
+            })
+        };
+        let text = |depth: usize| {
+            format!(
+                "{}{}",
+                r#"{"x":["#.repeat(depth),
+                r#"],"t":"b"}"#.repeat(depth)
+            )
+        };
+        // small depths first, so that losing the bound fails here and not by
+        // hanging
+        for (links, depths) in [(4, &[1, 2, 3, 8, 16, 32, 63][..]), (40, &[8, 20][..])] {
+            let schema = chain(links);
+            for &depth in depths {
+                // past the chain, a `t` is a string, which the last link's
+                // JSON values don't have
+                let runs = option_runs_of(&schema, &text(depth), depth <= links);
+                assert!(
+                    runs <= 4 * depth * depth,
+                    "{links} links, depth {depth}: {runs}"
+                );
+            }
+        }
+    }
+
+    /// A memoized union asked of an array, and of the object that is its
+    /// first item, keeps two verdicts: the array's is not read back for the
+    /// object. `Json` holds the object past its tag, so the two addresses
+    /// differ as it is laid out today, and this guards the key against a
+    /// layout that has them the same.
+    #[test]
+    fn an_array_and_its_first_item_are_kept_apart() {
+        let mut memoized = None;
+        let schema = build(|b| {
+            let lazy = b.declare();
+            // two options for an array and two for an object come back, so
+            // it keeps its verdicts on both
+            let array = b.array(lazy);
+            let other_array = b.array(lazy);
+            let one = b.literal(1.0);
+            let k_value = b.union([lazy, one]);
+            let k = b.object([("k", k_value)]);
+            let record = b.record(lazy);
+            let recursive = b.union([array, other_array, k, record]);
+            memoized = Some(recursive);
+            b.define(lazy, recursive);
+            let number = b.number();
+            let item = b.union([lazy, number]);
+            let items = b.array(item);
+            let a = b.literal("a");
+            let bb = b.literal("b");
+            let first = b.object([("x", lazy), ("t", a)]);
+            let second = b.object([("x", items), ("t", bb)]);
+            b.union([first, second])
+        });
+        let memoized = memoized.unwrap();
+        assert!(schema.memoizes_on(memoized, Container::Array));
+        assert!(schema.memoizes_on(memoized, Container::Object));
+        // the first option keeps the object's verdict, true, then the
+        // array's, false, and the second asks of the object again
+        let text = r#"{"x":[{"k":1},5],"t":"b"}"#;
+        assert_eq!(matches_json(&schema, text), Ok(true));
+        assert_eq!(crate::stream::matches_json(&schema, text), Ok(true));
+        assert_eq!(validate_json(&schema, text), Ok(Vec::new()));
+    }
+
+    /// The streaming evaluator reads each item that more than one option
+    /// could match into a tree of its own, dropped before the next: no
+    /// verdict outlives its tree, whose addresses the next can have. Whether
+    /// the next has them is the allocator's to say, so this guards the
+    /// lifetime of a memo and doesn't prove it.
+    #[test]
+    fn no_verdict_outlives_its_tree() {
+        let item = |op: &str| expr_chain(3, op, "");
+        let mut memoized = None;
+        let items = build(|b| {
+            let (lazy, union) = define_expr(b, 2, false);
+            memoized = Some(union);
+            b.array(lazy)
+        });
+        assert!(items.memoizes_on(memoized.unwrap(), Container::Object));
+        for count in [2, 3, 10] {
+            let mut texts: Vec<String> = (0..count).map(|_| item("1")).collect();
+            let last = texts.len() - 1;
+            texts[last] = item("2");
+            let text = format!("[{}]", texts.join(","));
+            assert_eq!(
+                crate::stream::matches_json(&items, &text),
+                Ok(false),
+                "{text}"
+            );
+            assert_eq!(matches_json(&items, &text), Ok(false), "{text}");
+        }
+    }
+
     /// The deepest input the parser reads, against the most nesting a schema
     /// may have at every level, on a small stack: what the limit on nesting
     /// is for. A debug build, as the tests are, has the largest frames.
@@ -1696,6 +2100,27 @@ pub mod tests {
             b.define(lazy, id);
             lazy
         });
+        // the same for an object, with a second option at every union that
+        // comes back and fails at once, so that every union keeps its
+        // verdicts and is asked through the frames that keep them
+        let mut unions = Vec::new();
+        let nested_memoized = build(|b| {
+            let lazy = b.declare();
+            let mut id = b.record(lazy);
+            for _ in 0..MAX_NESTING - 1 {
+                let never = b.literal("never");
+                let back = b.object([("t", never), ("a", lazy)]);
+                id = b.union([back, id]);
+                unions.push(id);
+            }
+            b.define(lazy, id);
+            lazy
+        });
+        assert!(
+            unions
+                .iter()
+                .all(|&id| nested_memoized.memoizes_on(id, Container::Object))
+        );
         let arrays = build(|b| {
             let lazy = b.declare();
             let array = b.array(lazy);
@@ -1760,6 +2185,7 @@ pub mod tests {
             .spawn(move || {
                 for (schema, text) in [
                     (&nested, &deepest_array),
+                    (&nested_memoized, &deepest_object),
                     (&piped, &deepest_array),
                     (&piped_option, &deepest_array),
                     (&piped_unions, &deepest_array),
