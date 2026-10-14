@@ -1,5 +1,5 @@
 ---
-'@fuzdev/fuz_schema': patch
+'@fuzdev/fuz_schema': minor
 ---
 
-fix: `object`, `strip_object`, `loose_object`, `record`, and `variant` reject arrays
+**breaking** fix: `object`, `strip_object`, `loose_object`, `record`, and `variant` reject arrays

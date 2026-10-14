@@ -279,6 +279,8 @@ bytes need no speedup, and speed by default, see `docs/grading.md`.
   what retains more in total, the figures per further schema rule 9 prices,
   and the cases marked. Read every regime.
 - **A declined trade gets an entry in `docs/declined.md`**, with its numbers.
+- **A change a consumer sees gets a changeset**, in the house style of
+  `.changeset/README.md`.
 
 Easy to break in the grader without a test noticing: an instance shares no
 function with another, every instance is called the same number of times in
