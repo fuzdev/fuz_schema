@@ -272,6 +272,46 @@ const real: CaseGroup = (s) => {
 		newsletter: s.optional(s.boolean)
 	});
 	const form = { name: 'ada lovelace', email: 'ada@example.com', age: 36, newsletter: true };
+	// a client that drops what it doesn't name at every level, as one written for
+	// a library whose plain object does
+	const Account = to_strip_object(s)({
+		id: s.number,
+		login: s.string,
+		name: s.nullable(s.string),
+		email: s.string,
+		avatar_url: s.string,
+		created_at: s.string,
+		plan: to_strip_object(s)({ name: s.string, seats: s.number }),
+		roles: s.array(s.string)
+	});
+	const to_account = (i: number): Record<string, unknown> => ({
+		id: i,
+		login: `user${i}`,
+		name: i % 5 ? `User ${i}` : null,
+		email: `user${i}@example.com`,
+		avatar_url: `https://example.com/avatars/${i}.png`,
+		created_at: '2024-01-01T00:00:00Z',
+		plan: { name: i % 2 ? 'free' : 'team', seats: 1 + (i % 9) },
+		roles: ['member', 'admin'].slice(0, 1 + (i % 2))
+	});
+	// the same from an API that has since grown fields the client doesn't name,
+	// among the ones it does and a level down
+	const to_account_extra = (i: number): Record<string, unknown> => {
+		const { id, login, name, email, avatar_url, created_at, plan, roles } = to_account(i);
+		return {
+			id,
+			node_id: `n${i}`,
+			login,
+			name,
+			email,
+			avatar_url,
+			url: `https://example.com/users/${i}`,
+			created_at,
+			updated_at: '2024-06-01T00:00:00Z',
+			plan: { ...(plan as object), private_repos: i },
+			roles
+		};
+	};
 	const Event = s.variant('type', [
 		to_object(s)({
 			type: s.literal('click'),
@@ -338,6 +378,23 @@ const real: CaseGroup = (s) => {
 			'real/form_extra_fields/valid',
 			Form,
 			to_json({ csrf: 'f3a9', ...form, submit: 'Save' }),
+			'copy'
+		),
+		// a response that is what its schema names, through objects that would drop
+		to_case(
+			s,
+			'real/accounts_100/valid',
+			s.array(Account),
+			to_json(range(100).map(to_account)),
+			'identity'
+		),
+		// and one with fields to drop, alone and as a list
+		to_case(s, 'real/account_extra_fields/valid', Account, to_json(to_account_extra(1)), 'copy'),
+		to_case(
+			s,
+			'real/accounts_100_extra_fields/valid',
+			s.array(Account),
+			to_json(range(100).map(to_account_extra)),
 			'copy'
 		),
 		to_case(
@@ -573,12 +630,23 @@ const fixed: CaseGroup = (s) => [
 	to_probe_case(s, 'fixed/is_string/invalid', s.string, 42, false)
 ];
 
-// an object whose one entry is a `pipe` that starts with an `optional`
+// a `pipe` that starts with an `optional`
+const to_optional_check = (s: SchemaLib): schema_lib.AnySchema =>
+	s.pipe(
+		s.optional(s.string),
+		s.check((v: string | undefined) => v !== '')
+	);
+
+// an object whose one entry is that pipe
 const to_optional_checked = (s: SchemaLib): schema_lib.AnySchema =>
+	to_object(s)({ a: to_optional_check(s) });
+
+// an object whose one entry is a `pipe` that starts with a `with_default`
+const to_default_checked = (s: SchemaLib): schema_lib.AnySchema =>
 	to_object(s)({
 		a: s.pipe(
-			s.optional(s.string),
-			s.check((v: string | undefined) => v !== '')
+			s.with_default(s.string, 'd'),
+			s.check((v: string) => v !== '')
 		)
 	});
 
@@ -690,6 +758,47 @@ const each: CaseGroup = (s) => {
 		// where its check runs, and without it, where no step after the first does
 		of('entry_pipe_optional_check_present/valid', to_optional_checked(s), { a: 'x' }),
 		of('entry_pipe_optional_check_absent/valid', to_optional_checked(s), {}),
+		// the same under a `message`, which hands the pipe what the loop handed it
+		of(
+			'entry_message_pipe_optional_present/valid',
+			to_object(s)({ a: s.message(to_optional_check(s), 'must not be empty') }),
+			{ a: 'x' }
+		),
+		of(
+			'entry_message_pipe_optional_absent/valid',
+			to_object(s)({ a: s.message(to_optional_check(s), 'must not be empty') }),
+			{}
+		),
+		// a `pipe` whose first schema is a `with_default`, as an entry: with the
+		// key, and without it, where the check runs on the default and the key is
+		// written
+		of('entry_pipe_default_check_present/valid', to_default_checked(s), { a: 'x' }),
+		of('entry_pipe_default_check_absent/valid', to_default_checked(s), {}, 'copy'),
+		// a `union` whose first option needs its key and whose second lets it be
+		// missing, as an entry: without the key, where the second matches, and with
+		// it as `undefined`, where the first does. Neither input is parsed, as
+		// `JSON.stringify` leaves the second's key out
+		to_case(
+			s,
+			'each/entry_union_unknown_optional_absent/valid',
+			s.array(to_object(s)({ a: s.union([s.unknown, s.optional(s.string)]) })),
+			range(100).map(() => ({})),
+			'identity'
+		),
+		to_case(
+			s,
+			'each/entry_union_unknown_optional_undefined/valid',
+			s.array(to_object(s)({ a: s.union([s.unknown, s.optional(s.string)]) })),
+			range(100).map(() => ({ a: undefined })),
+			'identity'
+		),
+		// a `lazy` over an object, as an entry: the object's loop, called with the
+		// object and the key the `lazy` passes on, which it doesn't read
+		of(
+			'entry_lazy_object/valid',
+			to_object(s)({ a: s.lazy(() => to_object(s)({ b: s.string })) }),
+			{ a: { b: 'x' } }
+		),
 		// an entry that looks for its key itself, as the closure of each that does:
 		// a `literal` of `undefined`, and a `one_of` with `undefined` among its
 		// values. `JSON.stringify` leaves a key that is `undefined` out, so the
@@ -830,12 +939,38 @@ const object: CaseGroup = (s) => {
 	];
 };
 
-// `strip_object` where it differs from `object`, which is with keys to drop:
-// with none it is the same work, and `object`'s cases stand for it
+// `strip_object` where it differs from `object`, which is with keys to drop,
+// beside inputs with none
 const strip: CaseGroup = (s) => {
 	const O = to_strip_object(s)(to_six(s.string));
 	const input = to_six('v');
+	const to_option = (type: string): schema_lib.AnySchema =>
+		to_strip_object(s)({ type: s.literal(type), id: s.number, name: s.string, note: s.string });
+	const Shapes = s.union([to_option('a'), to_option('b'), to_option('c')]);
+	const to_shape = (type: string): Record<string, unknown> => ({
+		type,
+		id: 1,
+		name: 'v',
+		note: 'v'
+	});
 	return [
+		to_case(s, 'strip/6_of_6_keys/valid', O, to_json(input), 'identity'),
+		// the input's keys in another order than the schema's, and after an optional
+		// key it lacks, so that none comes where the schema has it
+		to_case(
+			s,
+			'strip/6_of_6_keys_reversed/valid',
+			O,
+			to_json(Object.fromEntries(Object.entries(input).reverse())),
+			'identity'
+		),
+		to_case(
+			s,
+			'strip/6_of_7_keys_first_optional_absent/valid',
+			to_strip_object(s)({ first: s.optional(s.string), ...to_six(s.string) }),
+			to_json(input),
+			'identity'
+		),
 		to_case(s, 'strip/6_of_7_keys_unknown_last/valid', O, to_json({ ...input, z: 1 }), 'copy'),
 		to_case(s, 'strip/6_of_7_keys_unknown_first/valid', O, to_json({ z: 1, ...input }), 'copy'),
 		// far more unknown keys than known ones, of which the first is enough to know
@@ -856,6 +991,14 @@ const strip: CaseGroup = (s) => {
 			to_json({ ...input, z: 1 }),
 			'copy'
 		),
+		// an entry that changes and no key to drop: the copy is made, and no key looked for
+		to_case(
+			s,
+			'strip/7_of_7_keys_last_defaulted/valid',
+			to_strip_object(s)({ ...to_six(s.string), last: s.with_default(s.string, 'd') }),
+			to_json(input),
+			'copy'
+		),
 		// a failure's output is unused, so the keys to drop are never looked for
 		to_case(
 			s,
@@ -863,6 +1006,57 @@ const strip: CaseGroup = (s) => {
 			O,
 			to_json({ ...input, k0: 1, z: 1 }),
 			'issues'
+		),
+		// and a failure with no key to drop
+		to_case(s, 'strip/6_keys_first_bad/invalid', O, to_json({ ...input, k0: 1 }), 'issues'),
+		// through `is`, which returns at the entry that fails: with no key to drop,
+		// and with one ahead of that entry
+		to_probe_case(s, 'strip/6_keys_first_bad_is/invalid', O, to_json({ ...input, k0: 1 }), false),
+		to_probe_case(
+			s,
+			'strip/6_of_7_keys_first_bad_is/invalid',
+			O,
+			to_json({ z: 1, ...input, k0: 1 }),
+			false
+		),
+		// a key to drop at each of two levels
+		to_case(
+			s,
+			'strip/nested_unknown_at_each_level/valid',
+			to_strip_object(s)({
+				a: s.string,
+				inner: to_strip_object(s)({ b: s.string, c: s.string }),
+				d: s.string
+			}),
+			to_json({ a: 'v', y: 1, inner: { b: 'v', c: 'v', z: 1 }, d: 'v' }),
+			'copy'
+		),
+		// a `union` of objects told apart by their first entry, which probes each
+		// until one matches: the first, and the last after the others have missed
+		to_case(s, 'strip/union_3_first/valid', Shapes, to_json(to_shape('a')), 'identity'),
+		to_case(s, 'strip/union_3_last/valid', Shapes, to_json(to_shape('c')), 'identity'),
+		// and with a key to drop, which every option that misses is handed too: after
+		// the keys the options name, and ahead of them
+		to_case(
+			s,
+			'strip/union_3_first_unknown_last/valid',
+			Shapes,
+			to_json({ ...to_shape('a'), z: 1 }),
+			'copy'
+		),
+		to_case(
+			s,
+			'strip/union_3_last_unknown_last/valid',
+			Shapes,
+			to_json({ ...to_shape('c'), z: 1 }),
+			'copy'
+		),
+		to_case(
+			s,
+			'strip/union_3_last_unknown_first/valid',
+			Shapes,
+			to_json({ z: 1, ...to_shape('c') }),
+			'copy'
 		)
 	];
 };

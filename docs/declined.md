@@ -99,6 +99,82 @@ The loops looking for each entry's key, so that every schema that accepts
   See [design.md](design.md#missing-keys).
 - **Reopens**: a check that costs an object with no such entry nothing.
 
+## Dropping keys
+
+What was taken, in `strip_object`: the entries run as `object`'s do, and only
+an output that is still the input looks for a key to drop, copying the
+schema's keys when it finds one.
+
+### Always a copy
+
+`strip_object` returning a copy of the schema's keys on every input, filled
+as the entries run, with no key looked for.
+
+- **Gave**: an input with a key to drop 0.59x to 0.77x, and the realistic
+  copy path 7.2% faster in the matrix. 63 gzip fewer on all the scenarios
+  together.
+- **Cost**: an input with nothing to drop comes back as a copy: a hundred
+  accounts with nothing to drop 1.31x and allocating 22538 bytes in place of
+  88, a form 1.13x, six keys 1.26x. A failure 1.40x.
+- **Why**: the copy every input pays, where most have nothing to drop and
+  came back as themselves.
+- **Reopens**: nothing known.
+
+### A key to drop looked for first
+
+The input's keys enumerated before the entries run, so that one to drop is
+known and the copy is filled as the entries run, in place of being made
+after them.
+
+- **Gave**: an input with a key to drop 0.71x to 0.94x, a hundred accounts
+  with fields to drop 0.83x and one 0.83x, and the realistic valid path
+  2.4% faster in the matrix and 1.2% alone. 43 gzip fewer on all the
+  scenarios together, and 1 fewer on the core.
+- **Cost**: the enumeration runs ahead of an entry that fails. Through `is`,
+  which returned at that entry, 1.74x with no key to drop and 1.49x with one,
+  and a failure through `parse` 1.80x with a key to drop and 1.22x without.
+  A `union` of three whose last option matches 1.19x, as each option that
+  misses enumerates first. An entry that changes with no key to drop 1.12x,
+  and an env file with transforms and keys to drop 1.21x alone, past its A/A.
+- **Why**: valid input slower, and probes and failures much slower, for
+  inputs with keys to drop.
+- **Reopens**: a way to look for a key to drop that costs a probe and a
+  failure nothing.
+
+Three forms of it were built beside it, and kept its costs on valid input: a
+`union` whose last option matches 1.07x to 1.24x and an entry that changes
+with no key to drop 1.10x to 1.16x in each.
+
+- A flag passed to the loop in place of the copy, begun at the first entry:
+  17 gzip fewer on all the scenarios together and +17 on the core, and a
+  failure with a key to drop 2.06x.
+- A copy not written to after a failure: a failure with a key to drop 1.28x,
+  28 gzip fewer on all the scenarios together and +12 on the core.
+- A probe that runs the entries first: `is` 1.12x, an input with a key to
+  drop that the first of a `union`'s options matches no longer faster, and
+  +14 gzip on all the scenarios together.
+
+### The entries driven by the enumeration
+
+`strip_object` running its entries from a `for...in` over the input, each as
+its key comes in the schema's order, with the copy begun at the first key to
+drop. From the first entry whose key doesn't come in that order, the rest run
+after the enumeration, as `run_entries` runs them.
+
+- **Gave**: an input with nothing to drop 0.72x, a hundred accounts with
+  nothing to drop 0.73x, a `union` of three whose first option matches
+  0.75x, and the realistic valid path 4.8% faster in the matrix and 4.1%
+  alone.
+- **Cost**: +63 to +71 gzip on the scenarios built with `strip_object` and
+  +44 on all the scenarios together, and 2 fewer on the core. An env file with
+  transforms and keys to drop 1.22x, past its A/A in the matrix and alone. A
+  failure with a key to drop 2.10x, and through `is` with one ahead of the
+  entry that fails 1.42x.
+- **Not ruled on**: it is the loop driven by `for...in` above, in
+  `strip_object` alone, and is to be measured in a program that has parsed
+  an object in dictionary mode, which made that loop generic for every
+  schema.
+
 ## `lazy`
 
 ### A `lazy` that replaces its own `run`
