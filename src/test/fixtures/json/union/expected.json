@@ -124,7 +124,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "number",
 					"path": [
 						0
@@ -154,7 +154,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "object",
 					"path": [
 						0
@@ -170,7 +170,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "object",
 					"path": [
 						0
@@ -186,7 +186,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "object",
 					"path": [
 						0
@@ -202,7 +202,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "object",
 					"path": [
 						0
@@ -232,7 +232,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "array",
 					"path": [
 						0
@@ -255,7 +255,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "array",
 					"path": [
 						0
@@ -271,7 +271,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "boolean",
 					"path": [
 						0
@@ -287,7 +287,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "array",
 					"path": [
 						0
@@ -303,7 +303,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "boolean",
 					"path": [
 						3
@@ -319,7 +319,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "boolean",
 					"path": [
 						0
@@ -356,7 +356,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | pipe | object | object | array | lazy | union",
+					"expected": "string | number | object | array | lazy | literal",
 					"received": "object",
 					"path": [
 						0

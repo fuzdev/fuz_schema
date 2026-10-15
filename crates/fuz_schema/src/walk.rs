@@ -265,16 +265,44 @@ fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
         ) => "object".to_owned(),
         (_, SchemaNode::Literal(literal)) => format_literals([literal]),
         (_, SchemaNode::OneOf(literals)) => format_literals(literals.iter()),
-        (_, SchemaNode::Union(options)) => options
-            .iter()
-            .map(|&option| schema.at(option).kind().as_str())
-            .collect::<Vec<_>>()
-            .join(" | "),
+        (_, SchemaNode::Union(options)) => {
+            let mut parts = Vec::new();
+            for &option in options {
+                describe_option(schema, option, &mut parts);
+            }
+            parts.join(" | ")
+        }
         (_, SchemaNode::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
         (_, SchemaNode::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
         (_, SchemaNode::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
         (_, SchemaNode::MaxValue(max)) => format!("<= {}", js::number_to_string(*max)),
         _ => node.kind().as_str().to_owned(),
+    }
+}
+
+/// What an option adds to a union's `expected`, as the library's
+/// `describe_option` has it, each part once where it first appears: a union
+/// its options', at any depth, a `pipe` what its first schema adds, and any
+/// other node its kind. A `lazy` is its kind, so a recursive union is never
+/// followed back to itself, and the builder bounds the rest.
+fn describe_option(schema: &Schema, id: NodeId, parts: &mut Vec<&'static str>) {
+    match schema.at(id) {
+        SchemaNode::Union(options) => {
+            for &option in options {
+                describe_option(schema, option, parts);
+            }
+        }
+        SchemaNode::Pipe(steps) => {
+            if let Some(&first) = steps.first() {
+                describe_option(schema, first, parts);
+            }
+        }
+        node => {
+            let kind = node.kind().as_str();
+            if !parts.contains(&kind) {
+                parts.push(kind);
+            }
+        }
     }
 }
 
@@ -1570,6 +1598,54 @@ pub mod tests {
     }
 
     #[test]
+    fn a_union_expects_its_options_through_a_union_or_a_pipe() {
+        let schema = build(|b| {
+            let string = b.string();
+            let number = b.number();
+            let boolean = b.boolean();
+            let null = b.literal(SchemaLiteral::Null);
+            let inner = b.union([number, string]);
+            let deeper = b.union([inner, boolean]);
+            let empty = b.union([]);
+            let min = b.min_length(1.0);
+            let piped = b.pipe([string, min]);
+            let max = b.max_length(2.0);
+            let items = b.array(number);
+            let first = b.pipe([items, min]);
+            let pipe_of_pipe = b.pipe([first, max]);
+            let held = b.nullable(inner);
+            let lazy = b.declare();
+            let nested = b.array(lazy);
+            let again = b.union([string, nested]);
+            b.define(lazy, again);
+            b.union([
+                string,
+                deeper,
+                empty,
+                piped,
+                pipe_of_pipe,
+                held,
+                null,
+                lazy,
+                number,
+            ])
+        });
+        assert_eq!(
+            expects(&schema, "{}"),
+            ["string | number | boolean | array | nullable | literal | lazy"]
+        );
+        let lazy = build(|b| {
+            let string = b.string();
+            let lazy = b.declare();
+            let items = b.array(lazy);
+            let union = b.union([string, items]);
+            b.define(lazy, union);
+            lazy
+        });
+        assert_eq!(expects(&lazy, "1"), ["string | array"]);
+    }
+
+    #[test]
     fn literals_are_written_as_javascript_writes_them() {
         assert_eq!(expects(&build(|b| b.literal("a")), "1"), [r#""a""#]);
         assert_eq!(
@@ -1659,7 +1735,8 @@ pub mod tests {
         });
         assert_eq!(
             expects(&schema, "null"),
-            ["string | literal | optional | pipe | loose_object | lazy | union"]
+            // a pipe by its first schema, and the union's string once
+            ["string | literal | optional | integer | loose_object | lazy"]
         );
         assert_eq!(expects(&build(|b| b.union([])), "null"), [""]);
     }

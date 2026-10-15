@@ -164,7 +164,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						1
 					]
@@ -181,7 +181,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						0
 					]

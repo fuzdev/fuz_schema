@@ -1213,7 +1213,7 @@
 				{
 					"kind": "literal",
 					"expected": "1.7976931348623157e+308",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"max"
 					]
@@ -1230,7 +1230,7 @@
 				{
 					"kind": "literal",
 					"expected": "0",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"zero"
 					]

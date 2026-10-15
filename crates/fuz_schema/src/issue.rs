@@ -53,6 +53,11 @@ pub enum PathSegment {
 }
 
 /// The type of a value that failed, as the TypeScript library names it.
+///
+/// The library names a number that isn't finite by its value, `NaN`,
+/// `Infinity`, or `-Infinity`. No JSON text the crate reads holds one: a
+/// number past a double is an error of the parser, where `JSON.parse` reads
+/// an infinity. So every number here is `Number`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Received {

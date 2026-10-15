@@ -115,7 +115,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | pipe",
+					"expected": "bigint | array",
 					"received": "array",
 					"path": []
 				}
@@ -136,7 +136,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | pipe",
+					"expected": "bigint | array",
 					"received": "number",
 					"path": []
 				}
@@ -150,7 +150,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | pipe",
+					"expected": "bigint | array",
 					"received": "array",
 					"path": []
 				}
@@ -164,7 +164,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | pipe",
+					"expected": "bigint | array",
 					"received": "object",
 					"path": []
 				}
@@ -192,7 +192,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | pipe",
+					"expected": "bigint | array",
 					"received": "array",
 					"path": []
 				}

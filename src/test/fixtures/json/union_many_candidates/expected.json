@@ -76,7 +76,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "array",
 					"path": []
 				}
@@ -104,7 +104,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "object",
 					"path": []
 				}
@@ -118,7 +118,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "object",
 					"path": []
 				}
@@ -139,7 +139,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "string",
 					"path": []
 				}
@@ -160,7 +160,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "object",
 					"path": []
 				}
@@ -196,7 +196,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "array",
 					"path": []
 				}
@@ -211,7 +211,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "array",
 					"path": []
 				}
@@ -226,7 +226,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "array | array | object | object | literal",
+					"expected": "array | object | literal",
 					"received": "object",
 					"path": []
 				}

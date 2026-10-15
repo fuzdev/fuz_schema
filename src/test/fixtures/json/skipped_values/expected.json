@@ -214,7 +214,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"loose",
 						"a"

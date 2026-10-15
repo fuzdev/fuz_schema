@@ -47,7 +47,10 @@ export interface SchemaIssue {
 	kind: string;
 	/** Describes what was expected. */
 	expected: string;
-	/** The type of the value that failed: `'null'`, `'array'`, or its `typeof`. */
+	/**
+	 * The type of the value that failed: `'null'`, `'array'`, `'NaN'`,
+	 * `'Infinity'`, or `'-Infinity'`, or else its `typeof`.
+	 */
 	received: string;
 	/**
 	 * Keys from the root value to the one that failed, outermost first.
@@ -350,8 +353,16 @@ export const fail = (
 		const issue: SchemaIssue = {
 			kind,
 			expected,
-			// `get_issue_value` names a type the same way, to compare against this
-			received: value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value,
+			// `get_issue_value` names a type the same way, to compare against this.
+			// `isFinite` converts what it is given, and is given only a number
+			received:
+				value === null
+					? 'null'
+					: Array.isArray(value)
+						? 'array'
+						: typeof value === 'number' && !isFinite(value)
+							? '' + value
+							: typeof value,
 			path: [],
 			message: undefined
 		};
@@ -491,8 +502,13 @@ export const get_issue_value = (
 		value = Object.hasOwn(value, key) ? value[key] : undefined;
 	}
 	// the type as `fail` names it
-	return (value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value) ===
-		issue.received
+	return (value === null
+		? 'null'
+		: Array.isArray(value)
+			? 'array'
+			: typeof value === 'number' && !isFinite(value)
+				? '' + value
+				: typeof value) === issue.received
 		? { ok: true, value }
 		: { ok: false };
 };
@@ -1267,9 +1283,27 @@ export const array = <T extends AnySchema>(
 	}
 });
 
+// what an option adds to a union's `expected`: a union its options', at any
+// depth, a `pipe` what its first schema adds, and any other schema its kind.
+// A `lazy` is its kind, so a recursive union is never followed back to itself
+const describe_option = ({ kind, def }: AnySchema): Array<string> =>
+	kind === 'union'
+		? (def as Array<AnySchema>).flatMap(describe_option)
+		: kind === 'pipe'
+			? describe_option((def as Array<AnySchema>)[0]!)
+			: [kind];
+
+// a union's `expected`, each part once, where it first appears
+const describe_options = (options: ReadonlyArray<AnySchema>): string =>
+	Array.from(new Set(options.flatMap(describe_option))).join(' | ');
+
 /**
  * Matches the first of `options` that accepts the value.
- * On failure reports one issue, not the options' own.
+ * On failure reports one issue, not the options' own. It expects the kinds of
+ * the options, each once: a union among them by its own options, at any
+ * depth, and a `pipe` by its first schema, so
+ * `union([number, union([string, pipe(string, min_length(1)), array(string)])])`
+ * expects `number | string | array`.
  *
  * As an object entry it hands every option the object and the key when any of
  * them takes them. So a missing key matches only where an option lets its key
@@ -1334,7 +1368,7 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 						ctx.fails = count;
 					}
 					ctx.probe = probe;
-					return fail(ctx, 'union', value, (expected ??= options.map((o) => o.kind).join(' | ')));
+					return fail(ctx, 'union', value, (expected ??= describe_options(options)));
 				}
 			: (value, ctx) => {
 					const { probe } = ctx;
@@ -1349,7 +1383,7 @@ export const union = <const T extends ReadonlyArray<AnySchema>>(
 						ctx.fails = count;
 					}
 					ctx.probe = probe;
-					return fail(ctx, 'union', value, (expected ??= options.map((o) => o.kind).join(' | ')));
+					return fail(ctx, 'union', value, (expected ??= describe_options(options)));
 				}
 	};
 };

@@ -128,7 +128,7 @@
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"b",
 						0

@@ -1875,7 +1875,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"integer"
 					]
@@ -1892,7 +1892,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_large"
 					]
@@ -1909,7 +1909,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_least_zero"
 					]
@@ -1926,7 +1926,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_max"
 					]
@@ -1943,7 +1943,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"integer"
 					]
@@ -1960,7 +1960,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"at_most_large"
 					]
@@ -1977,7 +1977,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"at_least_zero"
 					]
@@ -1994,7 +1994,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"at_most_max"
 					]
@@ -2011,7 +2011,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"integer"
 					]
@@ -2028,7 +2028,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_large"
 					]
@@ -2045,7 +2045,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_least_zero"
 					]
@@ -2062,7 +2062,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_max"
 					]
@@ -2079,7 +2079,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"integer"
 					]
@@ -2096,7 +2096,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_large"
 					]
@@ -2113,7 +2113,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_least_zero"
 					]
@@ -2130,7 +2130,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_max"
 					]
@@ -2147,7 +2147,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"integer"
 					]
@@ -2164,7 +2164,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_large"
 					]
@@ -2181,7 +2181,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_least_zero"
 					]
@@ -2198,7 +2198,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"at_most_max"
 					]

@@ -1,0 +1,544 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"flat": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "union",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "loose_object",
+											"def": {
+												"name": {
+													"kind": "string"
+												}
+											}
+										}
+									]
+								},
+								{
+									"kind": "union",
+									"def": [
+										{
+											"kind": "union",
+											"def": [
+												{
+													"kind": "literal",
+													"def": null
+												},
+												{
+													"kind": "array",
+													"def": {
+														"kind": "number"
+													}
+												}
+											]
+										},
+										{
+											"kind": "number"
+										}
+									]
+								}
+							]
+						}
+					}
+				},
+				"piped": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "min_length",
+											"def": 3
+										}
+									]
+								},
+								{
+									"kind": "union",
+									"def": [
+										{
+											"kind": "pipe",
+											"def": [
+												{
+													"kind": "pipe",
+													"def": [
+														{
+															"kind": "array",
+															"def": {
+																"kind": "number"
+															}
+														},
+														{
+															"kind": "min_length",
+															"def": 1
+														}
+													]
+												},
+												{
+													"kind": "max_length",
+													"def": 2
+												}
+											]
+										},
+										{
+											"kind": "boolean"
+										}
+									]
+								},
+								{
+									"kind": "record",
+									"def": {
+										"kind": "string"
+									}
+								}
+							]
+						}
+					}
+				},
+				"held": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "union",
+											"def": [
+												{
+													"kind": "string"
+												}
+											]
+										}
+									}
+								},
+								{
+									"kind": "lazy",
+									"def": "$0"
+								},
+								{
+									"kind": "array",
+									"def": {
+										"kind": "union",
+										"def": [
+											{
+												"kind": "boolean"
+											}
+										]
+									}
+								},
+								{
+									"kind": "variant",
+									"def": {
+										"key": "k",
+										"options": [
+											{
+												"kind": "object",
+												"def": {
+													"k": {
+														"kind": "literal",
+														"def": "a"
+													}
+												}
+											}
+										]
+									}
+								},
+								{
+									"kind": "one_of",
+									"def": [
+										"a",
+										1
+									]
+								}
+							]
+						}
+					}
+				},
+				"twice": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "object",
+									"def": {
+										"a": {
+											"kind": "number"
+										}
+									}
+								},
+								{
+									"kind": "union",
+									"def": [
+										{
+											"kind": "object",
+											"def": {
+												"b": {
+													"kind": "number"
+												}
+											}
+										},
+										{
+											"kind": "number"
+										}
+									]
+								},
+								{
+									"kind": "number"
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "number"
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "none",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "flat_string",
+			"text": "{\"flat\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "flat_object",
+			"text": "{\"flat\":{\"name\":\"a\",\"other\":1}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "flat_null",
+			"text": "{\"flat\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "flat_numbers",
+			"text": "{\"flat\":[1,2]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "flat_wrong_object",
+			"text": "{\"flat\":{\"name\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | loose_object | literal | array | number",
+					"received": "object",
+					"path": [
+						"flat"
+					]
+				}
+			]
+		},
+		{
+			"name": "flat_true",
+			"text": "{\"flat\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | loose_object | literal | array | number",
+					"received": "boolean",
+					"path": [
+						"flat"
+					]
+				}
+			]
+		},
+		{
+			"name": "flat_strings",
+			"text": "{\"flat\":[\"a\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | loose_object | literal | array | number",
+					"received": "array",
+					"path": [
+						"flat"
+					]
+				}
+			]
+		},
+		{
+			"name": "piped_short",
+			"text": "{\"piped\":\"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array | boolean | record",
+					"received": "string",
+					"path": [
+						"piped"
+					]
+				}
+			]
+		},
+		{
+			"name": "piped_long",
+			"text": "{\"piped\":\"abc\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "piped_record",
+			"text": "{\"piped\":{\"a\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "piped_number",
+			"text": "{\"piped\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array | boolean | record",
+					"received": "number",
+					"path": [
+						"piped"
+					]
+				}
+			]
+		},
+		{
+			"name": "piped_empty",
+			"text": "{\"piped\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array | boolean | record",
+					"received": "array",
+					"path": [
+						"piped"
+					]
+				}
+			]
+		},
+		{
+			"name": "piped_numbers",
+			"text": "{\"piped\":[1,2]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "piped_null",
+			"text": "{\"piped\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array | boolean | record",
+					"received": "null",
+					"path": [
+						"piped"
+					]
+				}
+			]
+		},
+		{
+			"name": "held_null",
+			"text": "{\"held\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "held_number",
+			"text": "{\"held\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "held_wrong",
+			"text": "{\"held\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "nullable | lazy | array | variant | one_of",
+					"received": "object",
+					"path": [
+						"held"
+					]
+				}
+			]
+		},
+		{
+			"name": "held_array",
+			"text": "{\"held\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "nullable | lazy | array | variant | one_of",
+					"received": "array",
+					"path": [
+						"held"
+					]
+				}
+			]
+		},
+		{
+			"name": "twice_wrong",
+			"text": "{\"twice\":{\"c\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object | number",
+					"received": "object",
+					"path": [
+						"twice"
+					]
+				}
+			]
+		},
+		{
+			"name": "twice_string",
+			"text": "{\"twice\":\"a\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object | number",
+					"received": "string",
+					"path": [
+						"twice"
+					]
+				}
+			]
+		},
+		{
+			"name": "flat_overflow",
+			"text": "{\"flat\":1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | loose_object | literal | array | number",
+					"received": "Infinity",
+					"path": [
+						"flat"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "piped_negative_overflow",
+			"text": "{\"piped\":-1e400}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | array | boolean | record",
+					"received": "-Infinity",
+					"path": [
+						"piped"
+					]
+				}
+			],
+			"diverges": "number_overflow"
+		},
+		{
+			"name": "all",
+			"text": "{\"flat\":false,\"piped\":false,\"held\":false,\"twice\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | loose_object | literal | array | number",
+					"received": "boolean",
+					"path": [
+						"flat"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "nullable | lazy | array | variant | one_of",
+					"received": "boolean",
+					"path": [
+						"held"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "object | number",
+					"received": "boolean",
+					"path": [
+						"twice"
+					]
+				}
+			]
+		}
+	]
+}

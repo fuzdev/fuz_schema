@@ -296,7 +296,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "object | object",
+					"expected": "object",
 					"received": "object",
 					"path": [
 						"tree"
@@ -312,7 +312,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "object | object",
+					"expected": "object",
 					"received": "object",
 					"path": [
 						"tree"
@@ -335,7 +335,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "object | object",
+					"expected": "object",
 					"received": "object",
 					"path": [
 						"tree"
@@ -409,7 +409,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "lazy | union",
+					"expected": "lazy | string | with_default",
 					"received": "number",
 					"path": [
 						"nested_default"
@@ -455,7 +455,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "pipe | with_default",
+					"expected": "string | with_default",
 					"received": "boolean",
 					"path": [
 						"piped_default"

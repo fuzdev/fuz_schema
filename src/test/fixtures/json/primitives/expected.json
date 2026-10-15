@@ -901,7 +901,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"number"
 					]
@@ -918,7 +918,7 @@
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"string"
 					]
@@ -943,7 +943,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"number"
 					]
@@ -960,7 +960,7 @@
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "number",
+					"received": "-Infinity",
 					"path": [
 						"string"
 					]
@@ -985,7 +985,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"number"
 					]
@@ -1002,7 +1002,7 @@
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"string"
 					]
@@ -1027,7 +1027,7 @@
 				{
 					"kind": "number",
 					"expected": "number",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"number"
 					]
@@ -1044,7 +1044,7 @@
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "number",
+					"received": "Infinity",
 					"path": [
 						"string"
 					]

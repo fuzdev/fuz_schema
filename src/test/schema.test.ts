@@ -26,24 +26,24 @@ describe('primitives', () => {
 	});
 
 	test('number rejects NaN and the infinities', () => {
-		for (const value of [
-			NaN,
-			Infinity,
-			-Infinity,
-			JSON.parse('1e999'),
-			JSON.parse('-1e999'),
-			JSON.parse('1' + '0'.repeat(400)),
-			Number.MAX_VALUE * 2
-		]) {
+		for (const [value, received] of [
+			[NaN, 'NaN'],
+			[Infinity, 'Infinity'],
+			[-Infinity, '-Infinity'],
+			[JSON.parse('1e999'), 'Infinity'],
+			[JSON.parse('-1e999'), '-Infinity'],
+			[JSON.parse('1' + '0'.repeat(400)), 'Infinity'],
+			[Number.MAX_VALUE * 2, 'Infinity']
+		] as const) {
 			assert(!s.is(s.number, value), inspect(value));
 			assert.deepEqual(
 				issues_of(s.number, value),
-				[{ kind: 'number', expected: 'number', received: 'number', path: [], message: undefined }],
+				[{ kind: 'number', expected: 'number', received, path: [], message: undefined }],
 				inspect(value)
 			);
 			assert.strictEqual(
 				s.format_issue(issues_of(s.number, value)[0]!),
-				'expected number, received number'
+				`expected number, received ${received}`
 			);
 		}
 		for (const value of [
@@ -77,8 +77,14 @@ describe('primitives', () => {
 	test('number refuses an infinity wherever it is', () => {
 		const O = s.object({ a: s.number, b: s.optional(s.array(s.number)) });
 		assert.deepEqual(issues_of(O, JSON.parse('{"a":1e999,"b":[0,-1e999]}')), [
-			{ kind: 'number', expected: 'number', received: 'number', path: ['a'], message: undefined },
-			{ kind: 'number', expected: 'number', received: 'number', path: ['b', 1], message: undefined }
+			{ kind: 'number', expected: 'number', received: 'Infinity', path: ['a'], message: undefined },
+			{
+				kind: 'number',
+				expected: 'number',
+				received: '-Infinity',
+				path: ['b', 1],
+				message: undefined
+			}
 		]);
 		assert(!s.is(s.record(s.number), { a: Infinity }));
 		assert(!s.is(s.union([s.string, s.number]), Infinity));
@@ -2044,7 +2050,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('number | pipe')
+			union_issue('number | unknown')
 		],
 		[
 			'union with a union with unknown',
@@ -2052,7 +2058,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('number | union')
+			union_issue('number | string | unknown')
 		],
 		[
 			'pipe of a union with unknown',
@@ -3195,7 +3201,7 @@ describe('missing keys', () => {
 			> = [
 				['nullable', (schema) => s.nullable(schema), refused],
 				['lazy', (schema) => s.lazy(() => schema), refused],
-				['union', (schema) => s.union([s.number, schema]), union_issue('number | pipe')],
+				['union', (schema) => s.union([s.number, schema]), union_issue('number | optional')],
 				['nullable lazy', (schema) => s.nullable(s.lazy(() => schema)), refused],
 				[
 					'message nullable',
@@ -4112,6 +4118,79 @@ describe('array, union, variant', () => {
 		]);
 	});
 
+	test('union expects the kinds of its options, through a nested union or a pipe', () => {
+		const expected_of = (schema: s.AnySchema, value: unknown = Symbol('none')): string => {
+			const issues = issues_of(schema, value);
+			assert.strictEqual(issues.length, 1);
+			assert.strictEqual(issues[0]!.kind, 'union');
+			return issues[0]!.expected;
+		};
+		const Self: s.AnySchema = s.lazy(() => s.union([s.string, s.array(Self)]));
+		const cases: Array<[schema: s.AnySchema, expected: string]> = [
+			[s.union([]), ''],
+			[s.union([s.string]), 'string'],
+			// a nested union adds its options in its place, at any depth
+			[s.union([s.string, s.union([s.number, s.boolean])]), 'string | number | boolean'],
+			[s.union([s.union([s.number, s.boolean]), s.string]), 'number | boolean | string'],
+			[
+				s.union([s.bigint, s.union([s.union([s.union([s.number]), s.array(s.string)]), s.string])]),
+				'bigint | number | array | string'
+			],
+			[s.union([s.string, s.union([])]), 'string'],
+			// each once, where it first appears
+			[s.union([s.string, s.number, s.string]), 'string | number'],
+			[s.union([s.string, s.union([s.number, s.string])]), 'string | number'],
+			[s.union([s.object({ a: s.string }), s.object({ b: s.string })]), 'object'],
+			// a pipe is its first schema, a union there included
+			[s.union([s.number, s.pipe(s.string, s.min_length(1))]), 'number | string'],
+			[
+				s.union([
+					s.number,
+					s.pipe(
+						s.pipe(
+							s.union([s.string, s.boolean]),
+							s.check(() => true)
+						),
+						s.check(() => true)
+					)
+				]),
+				'number | string | boolean'
+			],
+			[s.union([s.pipe(s.string, s.min_length(1)), s.string]), 'string'],
+			// the schemas that hold another are their kind
+			[s.union([s.number, s.nullable(s.union([s.string, s.boolean]))]), 'number | nullable'],
+			[s.union([s.number, s.optional(s.string)]), 'number | optional'],
+			[s.union([s.number, s.with_default(s.string, 'd')]), 'number | with_default'],
+			[s.union([s.number, s.with_default_fn(s.string, () => 'd')]), 'number | with_default_fn'],
+			[s.union([s.number, s.lazy(() => s.union([s.string]))]), 'number | lazy'],
+			[s.union([s.number, s.array(s.union([s.string]))]), 'number | array'],
+			[s.union([s.literal('a'), s.one_of(['b']), s.literal(1)]), 'literal | one_of'],
+			[s.union([s.number, s.variant('k', [s.object({ k: s.literal('a') })])]), 'number | variant'],
+			// a recursive union is not followed back through its `lazy`
+			[s.union([s.number, Self]), 'number | lazy'],
+			// `message`, `flavor`, and `brand` keep the kind and def of the schema
+			[
+				s.union([s.number, s.message(s.union([s.string, s.boolean]), 'm')]),
+				'number | string | boolean'
+			],
+			[s.union([s.flavor(s.union([s.string]), 'F'), s.brand(s.number, 'B')]), 'string | number']
+		];
+		for (const [schema, expected] of cases) {
+			assert.strictEqual(expected_of(schema), expected, expected);
+			// and the same on a second failure, the text being kept
+			assert.strictEqual(expected_of(schema), expected, expected);
+		}
+		assert.strictEqual(
+			s.format_issue(
+				issues_of(s.object({ a: s.union([s.string, s.union([s.number])]) }), { a: {} })[0]!
+			),
+			'a: expected string | number, received object'
+		);
+		// both closures, the one that passes the object and the key on included
+		const Keyed = s.object({ a: s.union([s.unknown, s.union([s.string, s.number])]) });
+		assert.deepEqual(issues_of(Keyed, {})[0]!.expected, 'unknown | string | number');
+	});
+
 	test('union restores issues recorded before it', () => {
 		const O = s.strip_object({ a: s.string, b: s.union([s.string, s.number]) });
 		assert.deepEqual(
@@ -4735,14 +4814,14 @@ describe('probe mode', () => {
 			},
 			{
 				kind: 'union',
-				expected: 'object | object',
+				expected: 'object',
 				received: 'object',
 				path: ['items', 1],
 				message: undefined
 			},
 			{
 				kind: 'union',
-				expected: 'object | object',
+				expected: 'object',
 				received: 'object',
 				path: ['items', 2],
 				message: undefined
@@ -5036,7 +5115,12 @@ describe('issues', () => {
 			[undefined, 'undefined'],
 			['a', 'string'],
 			[1, 'number'],
-			[NaN, 'number'],
+			[-0, 'number'],
+			[Number.MAX_VALUE, 'number'],
+			[NaN, 'NaN'],
+			[Infinity, 'Infinity'],
+			[-Infinity, '-Infinity'],
+			[Object(NaN), 'object'],
 			[true, 'boolean'],
 			[1n, 'bigint'],
 			[Symbol('a'), 'symbol'],
@@ -5048,8 +5132,61 @@ describe('issues', () => {
 			// `get_issue_value` names types the same way, or it would refuse
 			assert.deepEqual(s.get_issue_value(issue, value), { ok: true, value });
 		}
-		assert.strictEqual(issues_of(s.number, NaN)[0]!.received, 'number');
+		assert.strictEqual(issues_of(s.number, NaN)[0]!.received, 'NaN');
+		// a value of another type is refused by its type, a non-finite number by its value
+		assert.deepEqual(s.get_issue_value(issues_of(Never, NaN)[0]!, Infinity), { ok: false });
+		assert.deepEqual(s.get_issue_value(issues_of(Never, Infinity)[0]!, -Infinity), { ok: false });
+		assert.deepEqual(s.get_issue_value(issues_of(Never, Infinity)[0]!, 1), { ok: false });
+		assert.deepEqual(s.get_issue_value(issues_of(Never, 1)[0]!, NaN), { ok: false });
+		assert.deepEqual(s.get_issue_value(issues_of(Never, '')[0]!, NaN), { ok: false });
 		assert.strictEqual(issues_of(s.object({ a: s.string }), {})[0]!.received, 'undefined');
+	});
+
+	test('a number that is not finite is received as String writes it, wherever it fails', () => {
+		const cases: Array<[schema: s.AnySchema, value: unknown, text: string]> = [
+			[s.string, NaN, 'expected string, received NaN'],
+			[s.boolean, Infinity, 'expected boolean, received Infinity'],
+			[s.bigint, -Infinity, 'expected bigint, received -Infinity'],
+			[s.integer, Infinity, 'expected integer, received Infinity'],
+			[s.integer, NaN, 'expected integer, received NaN'],
+			[s.safe_integer, -Infinity, 'expected safe_integer, received -Infinity'],
+			[s.min_value(0), NaN, 'expected >= 0, received NaN'],
+			[s.min_value(0), -Infinity, 'expected >= 0, received -Infinity'],
+			[s.max_value(0), Infinity, 'expected <= 0, received Infinity'],
+			[s.literal(1), NaN, 'expected 1, received NaN'],
+			[s.literal(Infinity), -Infinity, 'expected Infinity, received -Infinity'],
+			[s.one_of([1, 'a']), Infinity, 'expected 1 | "a", received Infinity'],
+			[s.union([s.string, s.number]), NaN, 'expected string | number, received NaN'],
+			[s.array(s.number), [1, NaN], '1: expected number, received NaN'],
+			[s.object({ a: s.number }), { a: -Infinity }, 'a: expected number, received -Infinity'],
+			[s.record(s.string), { a: Infinity }, 'a: expected string, received Infinity'],
+			[s.array(s.string), NaN, 'expected array, received NaN'],
+			[s.object({}), Infinity, 'expected object, received Infinity'],
+			[s.check(() => false, 'finite'), NaN, 'expected finite, received NaN'],
+			[
+				s.variant('k', [s.object({ k: s.literal('a') })]),
+				{ k: NaN },
+				'k: expected "a", received NaN'
+			],
+			[s.pipe(s.number, s.integer), Infinity, 'expected number, received Infinity']
+		];
+		for (const [schema, value, text] of cases) {
+			const issues = issues_of(schema, value);
+			assert.deepEqual(issues.map(s.format_issue), [text], text);
+			// and the value is read back by it
+			assert.deepEqual(s.get_issue_value(issues[0]!, value), {
+				ok: true,
+				value: issues[0]!.path.reduce((v: any, key) => v[key], value)
+			});
+		}
+		// as Standard Schema writes it too
+		const result = to_standard_schema(s.number)['~standard'].validate(-Infinity);
+		assert(!(result instanceof Promise) && result.issues);
+		assert.strictEqual(result.issues[0]!.message, 'expected number, received -Infinity');
+		// a finite number, and a boxed one, are received by their type
+		assert.strictEqual(issues_of(s.string, Number.MAX_VALUE)[0]!.received, 'number');
+		assert.strictEqual(issues_of(s.string, -Number.MIN_VALUE)[0]!.received, 'number');
+		assert.strictEqual(issues_of(s.string, Object(Infinity))[0]!.received, 'object');
 	});
 
 	test('nothing in a failed result or a SchemaError holds the input', () => {

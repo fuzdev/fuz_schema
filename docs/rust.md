@@ -153,7 +153,7 @@ the same order. A `SchemaIssue` owns what it holds:
 |---|---|
 | `kind()` | a `SchemaIssueKind`: the kind of the schema or action that failed, or `UnknownKey` or `MissingKey` |
 | `expected()` | the library's text, character for character |
-| `received()` | a `Received`: the type of the value, `Undefined` for a missing key |
+| `received()` | a `Received`: the type of the value, `Undefined` for a missing key. The parser reads no number that isn't finite, so none is the library's `NaN`, `Infinity`, or `-Infinity` |
 | `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
 
 - **The order is the library's**: an object's entries in its order, then for
@@ -165,7 +165,8 @@ the same order. A `SchemaIssue` owns what it holds:
   and otherwise the issue of the entry's schema. It is at the entry's place
   in the order.
 - **A failed `union` is one issue**, at the union's value, expecting the kinds
-  of its options.
+  of its options, each once: a `union` among them by its own options, at any
+  depth, and a `pipe` by its first schema.
 - **A `variant` reports at its discriminator** when no option has the value
   there, expecting the options' values, and otherwise leaves the report to
   the option selected.

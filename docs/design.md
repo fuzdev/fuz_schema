@@ -413,13 +413,23 @@ An issue is `{kind, expected, received, path, message}`, built in one place,
 is only bundled when used. There is no message registry.
 
 - **An issue holds no value.** `received` is the type of the value that
-  failed: `'null'`, `'array'`, or its `typeof`. Nothing reachable from a
+  failed: `'null'`, `'array'`, or its `typeof`, but a number that isn't
+  finite is `'NaN'`, `'Infinity'`, or `'-Infinity'`. Nothing reachable from a
   result or a `SchemaError` is the input or part of it, so issues can be
   serialized and kept. `fail` is passed the value and names its type.
-- **A number `number` refuses reads as any other value it refuses**: `NaN`
-  and the infinities are `{kind: 'number', expected: 'number', received:
-  'number'}`, as `received` is the value's `typeof`, and `format_issue`
-  writes `expected number, received number`.
+- **A number that isn't finite is received as `String` writes it**,
+  wherever it fails: `number` refuses `NaN` as `{kind: 'number', expected:
+  'number', received: 'NaN'}`, which `format_issue` writes `expected number,
+  received NaN`, as Zod does, and a `string` given `-Infinity` reads
+  `expected string, received -Infinity`. `fail` tells it apart, a test of a
+  number in every bundle that can fail, so the text says why `number` refused a number.
+- **A failed `union` expects the kinds of its options**, each once where it
+  first appears. A `union` among them adds its own options, at any depth, and
+  a `pipe` its first schema's: `union([string, union([object({...}),
+  pipe(string, check(..))])])` expects `string | object`. Any other schema
+  that holds one is its kind, `nullable` and `lazy` included, so a recursive
+  union is never followed back to itself. The text is built on the union's
+  first failure and kept, by code only `union` reaches.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
