@@ -1,5 +1,15 @@
 # @fuzdev/fuz_schema
 
+## 0.2.1
+
+### Patch Changes
+
+- fix: metadata is shared by every copy of `meta.ts`, so no copy drops what another attached ([a6aec1a](https://github.com/fuzdev/fuz_schema/commit/a6aec1a))
+
+  - `get_meta` reads metadata `meta` attached through any copy of the module: a second install, another version, a bundler's duplicate
+  - the registry is a `WeakMap` on `globalThis` under `Symbol.for('@fuzdev/fuz_schema/meta')`: a copy of 0.2.0 or earlier keeps one of its own, and shares nothing with the rest: upgrade every copy to share
+  - a bundle that never calls `meta` or `get_meta` still carries none of it
+
 ## 0.2.0
 
 ### Minor Changes
