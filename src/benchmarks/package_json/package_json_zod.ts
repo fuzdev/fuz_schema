@@ -2,7 +2,7 @@
  * fuz_util's schema of a `package.json`, as it writes it for zod: what gro and
  * fuz_repos read every manifest through. A snapshot, taken from
  * https://github.com/fuzdev/fuz_util at 33f3612de579 (`src/lib/package_json.ts`),
- * MIT licensed, copyright fuz.dev. What is left out is what doesn't validate:
+ * 0BSD licensed, copyright fuz.dev. What is left out is what doesn't validate:
  * its comments, its type exports, and the `.meta()` descriptions. The three
  * helpers it imports are written in where they are used. What it accepts is
  * what the zod installed here accepts, which need not be the consumer's.

@@ -2,7 +2,7 @@
  * fuz_repos's mirror of what its `repos status --json` prints, as it writes it
  * for zod: a report of every registered repo's state, or an error. A snapshot,
  * taken from https://github.com/fuzdev/fuz_repos at 07436b1bc167
- * (`src/lib/repos_status.ts`), MIT licensed, copyright fuz.dev. What is left
+ * (`src/lib/repos_status.ts`), 0BSD licensed, copyright fuz.dev. What is left
  * out is what doesn't validate: its comments, its type exports, and the
  * `.meta()` descriptions. What it accepts is what the zod installed here
  * accepts, which need not be the consumer's.

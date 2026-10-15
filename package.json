@@ -4,7 +4,7 @@
   "description": "a performance-focused Standard Schema library for JS",
   "logo": "logo.svg",
   "logo_alt": "a friendly pixelated spider facing you",
-  "license": "MIT",
+  "license": "0BSD",
   "homepage": "https://schema.fuz.dev/",
   "author": {
     "name": "Ryan Atkinson",

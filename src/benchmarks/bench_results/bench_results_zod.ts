@@ -2,7 +2,7 @@
  * syntax-highlighter-bench's schema of a results document, as it writes it for
  * zod: what its site and its publish step read a run's results through. A
  * snapshot, taken from https://github.com/ryanatkn/syntax-highlighter-bench at
- * 507cadb74dbf (`src/lib/results_schema.ts`), MIT licensed, copyright Ryan
+ * 507cadb74dbf (`src/lib/results_schema.ts`), 0BSD licensed, copyright Ryan
  * Atkinson.
  *
  * This is the document's structure and not all of its checking. Left out is

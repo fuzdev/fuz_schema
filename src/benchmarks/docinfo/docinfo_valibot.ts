@@ -3,7 +3,7 @@
  * module and of its diagnostics, and the shape its test fixtures are stored in. A snapshot, taken from
  * https://github.com/fuzdev/svelte-docinfo at 201167635284
  * (`src/lib/types.ts`, `src/lib/diagnostics.ts`, and `ModuleFixtureJson` from
- * its fixture helpers), MIT licensed, copyright fuz.dev. What is left out is
+ * its fixture helpers), 0BSD licensed, copyright fuz.dev. What is left out is
  * what doesn't run: its comments, its type exports but the two the recursive
  * schema is annotated with, and the named interfaces it declares for its
  * package's types.
