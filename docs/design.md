@@ -469,6 +469,18 @@ nothing until it imports the module.
 - **`SchemaMeta` is an interface**, with `description`, that consumers extend
   by declaration merging. The library names no application's keys.
 - The registry holds its keys weakly: metadata lives as long as its schema.
+- **The registry is shared by every copy of the module**, on `globalThis`
+  under `Symbol.for('@fuzdev/fuz_schema/meta')`, as Zod 4 keeps its global
+  registry on `globalThis`. A second install, a bundler's duplicate, or
+  another version that keeps it there reads what
+  any other attached, where a registry of each copy's own drops it silently.
+  So its shape is a contract between versions: a `WeakMap` from schema to
+  metadata object, which attaching replaces with a merged copy and never
+  mutates. A change to it takes a new key. The registry is made in a call
+  marked pure, so a bundle of the source that never calls `meta` or
+  `get_meta` drops it. A minifier that inlines the call drops the mark, so a
+  library that ships `meta.ts` in a minified bundle writes the registry for
+  its consumers whether they call it or not.
 
 ## Reading a schema
 

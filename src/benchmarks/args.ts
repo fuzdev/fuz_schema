@@ -7,7 +7,8 @@
  * fuz_util imports, so parsing it runs no function of the instance a
  * measurement uses. The query reaches only the two modules it is put on, which
  * import nothing at runtime; a runtime import added to either is shared with
- * the measured instance.
+ * the measured instance. The registry of metadata is shared with it too, as
+ * with every copy of `meta.ts`: data, which no measurement reads.
  *
  * Imported only by the scripts a benchmark is started from, never by a module
  * a measured process loads.
@@ -28,10 +29,11 @@ export const s: typeof Schema = await import(
 );
 
 /**
- * `meta` of the args instance, whose registry no measured schema is in. It
- * records a description and nothing `args_parse` reads: fuz_util reads
- * metadata through the `@fuzdev/fuz_schema` it imports, whose registry this
- * isn't, so an alias given here is never expanded.
+ * `meta` of the args instance. fuz_util reads metadata through the
+ * `@fuzdev/fuz_schema` it imports, so what this attaches, an alias included,
+ * reaches `args_parse` only when that installed copy keeps its registry on
+ * `globalThis` as this one does. One that keeps a registry of its own reads
+ * nothing attached here.
  */
 export const { meta }: typeof Meta = await import(
 	new URL('../lib/meta.ts', import.meta.url).href + ARGS_QUERY

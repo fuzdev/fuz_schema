@@ -15,6 +15,14 @@
  * `SchemaMeta` has `description` built in and takes other keys by
  * declaration merging.
  *
+ * The registry is one for the whole JS realm, on `globalThis` under
+ * `Symbol.for('@fuzdev/fuz_schema/meta')`, so every copy of this module
+ * shares it: a second install of the package, a bundler's duplicate, another
+ * version that keeps it there. Metadata attached through one copy is read through any other.
+ * That makes the registry's shape a contract between versions: a `WeakMap`
+ * from schema object to its metadata object, which `meta` replaces with a
+ * merged copy and never mutates. A version that changes it takes a new key.
+ *
  * Import as a namespace or by name:
  * `import {meta, get_meta} from '@fuzdev/fuz_schema/meta.ts'`.
  *
@@ -41,8 +49,17 @@ export interface SchemaMeta {
 	description?: string;
 }
 
-// held weakly, so metadata lives as long as its schema and no longer
-const registry: WeakMap<AnySchema, SchemaMeta> = /* @__PURE__ */ new WeakMap();
+type Registry = WeakMap<AnySchema, SchemaMeta>;
+
+// held weakly, so metadata lives as long as its schema and no longer.
+// The key holds the package's name, which no other package can publish under,
+// and no version: the shape is the contract. The call is pure as far as a
+// bundler needs: only this module reads what it writes, and a copy that is
+// kept writes it when it runs, so dropping an unused one loses nothing.
+const registry: Registry = /* @__PURE__ */ (() =>
+	((globalThis as unknown as Record<symbol, Registry | undefined>)[
+		Symbol.for('@fuzdev/fuz_schema/meta')
+	] ??= new WeakMap()))();
 
 /**
  * Attaches metadata to a copy of `schema`, leaving `schema` as it was: one

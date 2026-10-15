@@ -2,6 +2,7 @@ import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import { meta, get_meta, type SchemaMeta } from '#lib/meta.ts';
+import type * as Meta from '#lib/meta.ts';
 
 // how a consumer adds its own keys
 declare module '#lib/meta.ts' {
@@ -204,6 +205,47 @@ describe('meta', () => {
 		assert(s.is(V, { kind: 'b' }));
 		assert(!s.is(V, { kind: 'c' }));
 		assert.strictEqual(issues_of(V, { kind: 'c' })[0]!.expected, '"a" | "b"');
+	});
+});
+
+describe('meta across copies of the module', () => {
+	const KEY = Symbol.for('@fuzdev/fuz_schema/meta');
+
+	// a second instance of the module, as a second install or a bundler's duplicate is
+	const load_copy = async (): Promise<typeof Meta> =>
+		import(new URL('../lib/meta.ts', import.meta.url).href + '?second_copy');
+
+	test('a second instance of the module is another module', async () => {
+		const copy = await load_copy();
+		assert.notStrictEqual(copy.meta, meta);
+		assert.notStrictEqual(copy.get_meta, get_meta);
+	});
+
+	test('metadata attached through one copy is read through the other', async () => {
+		const copy = await load_copy();
+		const a = meta(s.string, { description: 'a', test_aliases: ['x'] });
+		assert.deepEqual(copy.get_meta(a), { description: 'a', test_aliases: ['x'] });
+		const b = copy.meta(s.number, { description: 'b' });
+		assert.deepEqual(get_meta(b), { description: 'b' });
+		// and merges across them
+		const c = copy.meta(a, { description: 'c' });
+		assert.deepEqual(get_meta(c), { description: 'c', test_aliases: ['x'] });
+		assert.strictEqual(get_meta(c), copy.get_meta(c));
+	});
+
+	test('the registry is a WeakMap on globalThis under the shared key', () => {
+		const registry = (globalThis as unknown as Record<symbol, unknown>)[KEY];
+		assert.instanceOf(registry, WeakMap);
+		const a = meta(s.string, { description: 'a' });
+		assert.strictEqual((registry as WeakMap<object, SchemaMeta>).get(a), get_meta(a));
+		// what another version writes there is read, and merged onto
+		const b = { kind: 'string', def: undefined, run: s.string.run } as s.AnySchema;
+		(registry as WeakMap<object, SchemaMeta>).set(b, { description: 'b' });
+		assert.deepEqual(get_meta(b), { description: 'b' });
+		assert.deepEqual(get_meta(meta(b, { test_aliases: [] })), {
+			description: 'b',
+			test_aliases: []
+		});
 	});
 });
 

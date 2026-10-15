@@ -325,6 +325,9 @@ and as an object entry `meta(s.optional(...), ...)` still makes the key optional
   metadata on a nested schema is reached by [walking](#introspection). `get_schema_meta` walks the layers.
 - `flavor` and `brand` return the schema itself, so its metadata is still there.
   `message` builds a new schema, so attach metadata last: `meta(s.message(...), ...)`.
+- Every copy of the module shares one `WeakMap`, on `globalThis`, so metadata attached through one
+  is read through any other: a second install, a bundler's duplicate, or another version that
+  keeps it there.
 
 `description` is built in. Other keys are added to the `SchemaMeta` interface by declaration merging,
 from a module, naming the module as it is imported:
