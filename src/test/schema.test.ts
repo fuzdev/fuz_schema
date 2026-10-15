@@ -4353,9 +4353,10 @@ describe('pipe and actions', () => {
 	});
 
 	// KNOWN: an action used as a schema itself, outside a `pipe`, is handed the
-	// input unchecked, as its `run` assumes the type a `pipe` gives it. As an
-	// entry or an option its type is `any` too, see `schema.inference.test.ts`.
-	// A guard would cost bytes in every action, so these are pinned and not fixed
+	// input unchecked, as its `run` assumes the type a `pipe` gives it. Its type
+	// is inferred from what it reads, see `schema.inference.test.ts`, which the
+	// input is not checked against. A guard would cost bytes in every action, so
+	// these are pinned and not fixed
 	test('an action outside a pipe is handed the input unchecked, a known hole', () => {
 		// a length action reads `length`, so `parse` and `is` throw on a missing key and on null
 		const Entry = s.object({ a: s.min_length(1) });

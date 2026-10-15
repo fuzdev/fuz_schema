@@ -481,15 +481,18 @@ option, it is handed the input unchecked:
   `regex(/5/)` accepts the number `5`, and `min_value(1)` compares, so it
   accepts the string `'5'`.
 
-The types let these through. A `pipe`'s output is inferred from its steps and
-never from the schema around it, so a `pipe` infers the same anywhere. An
-action's own type is inferred from that context alone: as an object entry,
-a `union` option, an entry of a `variant` option, or a `message` there, the
-schema around it takes any schema, so a `check` or `transform` with an
-unannotated parameter, and the length and value actions, are `any` there.
-An action goes in a `pipe`, or a `check` or `transform` annotates its
-parameter. `src/test/schema.inference.test.ts` pins both as known, and
-asserts what every other schema infers in each position.
+The types don't catch these: an action's type is the type it assumes, so as
+an entry `regex(/5/)` types as a `string` and gives the number `5`. A `pipe`'s
+output is inferred from its steps and never from the schema around it, so a
+`pipe` infers the same anywhere. An action as an entry or an option has
+nothing to infer its own type from but that position, which takes a schema
+of `unknown` output, so it is typed by what it reads: a `check` or
+`transform` with an unannotated parameter is given `unknown`, so
+`object({a: check((v) => v.foo)})` doesn't compile, a length action takes `{length: number}`, and a value action
+`number | bigint`. An action goes in a `pipe`, or a `check` or `transform`
+annotates its parameter. `src/test/schema.inference.test.ts` asserts what
+every schema and action infers in each position, and `src/test/schema.test.ts`
+pins the runtime behavior above.
 
 ## Nominal types
 

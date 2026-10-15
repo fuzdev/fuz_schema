@@ -64,7 +64,7 @@ dev server.
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
   behavior and type inference
 - `src/test/schema.inference.test.ts` - what every schema and action infers
-  in each position that has lost a type before, the known `any` holes pinned
+  in each position that has lost a type before
 - `src/test/schema.shape.test.ts` - every schema the library makes has one
   hidden class and no field written to, asked of the engine in a process of
   its own, `shape_test_child.ts`, over the samples in `shape_test_helpers.ts`

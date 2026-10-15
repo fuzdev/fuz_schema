@@ -1,14 +1,14 @@
 import { describe, test, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
+import { meta } from '#lib/meta.ts';
 
 // Type inference by position: every schema and action the library exports,
 // written inline in each position where an inferred type has been lost
 // before, as a schema whose type parameters are inferred from what the
 // position expects can be. Each position names its leaves by a key, and its
 // assertion compares what each leaf inferred, `[output, input]`, against
-// `Expected`, or `InContext` where the position types what it holds as any
-// schema. A leaf is read back out of its position through `def`, or, for a
+// `Expected`. A leaf is read back out of its position through `def`, or, for a
 // `pipe`, whose `def` keeps no types, from the pipe itself.
 
 type Pair<T> = T extends s.AnySchema ? [s.Infer<T>, s.InferInput<T>] : never;
@@ -72,29 +72,6 @@ interface Expected {
 	min_value: [number | bigint, number | bigint];
 	max_value: [number | bigint, number | bigint];
 }
-
-// KNOWN holes: an action used as a schema itself, where the position types
-// what it holds as any schema: an entry of an object, an option of a `union`,
-// an entry of a `variant` option, and a `message` there. Its `T` has no site
-// to be inferred from but that context, so it is `any`. `Uninferred` on the
-// action's `T` would close these and break the action in a `pipe`, where the
-// same inference is what types it. An action belongs in a `pipe`, or a `check`
-// or `transform` annotates its parameter. A fix flips these to `Expected`.
-interface KnownHoles {
-	// the value its function is given is `any`, so a typo in it compiles
-	check: [any, any];
-	// the same, and what it returns is built from that `any`
-	transform: [Array<any>, any];
-	// the bound is typed, the value it is given is not
-	min_length: [any, any];
-	max_length: [any, any];
-	min_value: [any, any];
-	max_value: [any, any];
-}
-
-type InContext = {
-	[K in keyof Expected]: K extends keyof KnownHoles ? KnownHoles[K] : Expected[K];
-};
 
 // a `pipe` step after `string` or `number`: what each leaf infers given that
 interface ExpectedStep {
@@ -182,6 +159,45 @@ describe('inference by position', () => {
 				s.check((v) => v.lenght > 0)
 			)
 		});
+	});
+
+	test('a bare action as an entry or an option is given `unknown`, not `any`', () => {
+		// @ts-expect-error `v` is `unknown`
+		s.object({ a: s.check((v) => v.foo) });
+		// @ts-expect-error `v` is `unknown`
+		s.strip_object({ a: s.transform((v) => v.foo) });
+		// @ts-expect-error `v` is `unknown`
+		s.union([s.check((v) => v.foo)]);
+		s.object({
+			a: meta(
+				// @ts-expect-error `v` is `unknown`, through `meta` too
+				s.check((v) => v.foo),
+				{}
+			)
+		});
+		s.variant('k', [
+			// @ts-expect-error `v` is `unknown`
+			s.object({ k: s.literal('a'), a: s.check((v) => v.foo) })
+		]);
+		s.object({
+			a: s.message(
+				// @ts-expect-error `v` is `unknown`
+				s.check((v) => v.foo),
+				'm'
+			)
+		});
+		// as at top level
+		s.parse(
+			// @ts-expect-error `v` is `unknown`
+			s.check((v) => v.foo),
+			1
+		);
+		// and a length or value action is typed by what it reads
+		const _O = s.object({ a: s.min_length(1), b: s.min_value(1) });
+		expectTypeOf<s.Infer<typeof _O>>().toEqualTypeOf<{
+			a: Lengthed;
+			b: number | bigint;
+		}>();
 	});
 
 	test('a pipe of a generic action or schema, in a generic function', () => {
@@ -337,7 +353,7 @@ describe('inference by position', () => {
 			min_value: s.min_value(1),
 			max_value: s.max_value(1)
 		});
-		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<Expected>();
 		// and the object's own type is built from them
 		expectTypeOf<s.Infer<typeof _O>['pipe_steps']>().toEqualTypeOf<string>();
 		expectTypeOf<s.InferInput<typeof _O>['with_default']>().toEqualTypeOf<string | undefined>();
@@ -394,7 +410,7 @@ describe('inference by position', () => {
 			min_value: s.min_value(1),
 			max_value: s.max_value(1)
 		});
-		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<Expected>();
 	});
 
 	test('loose_object entry', () => {
@@ -448,7 +464,7 @@ describe('inference by position', () => {
 			min_value: s.min_value(1),
 			max_value: s.max_value(1)
 		});
-		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<Expected>();
 	});
 
 	test('object_with_rest entry', () => {
@@ -505,7 +521,7 @@ describe('inference by position', () => {
 			},
 			s.unknown
 		);
-		expectTypeOf<Pairs<(typeof _O)['def']['entries']>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<(typeof _O)['def']['entries']>>().toEqualTypeOf<Expected>();
 	});
 
 	test('object_with_rest rest', () => {
@@ -646,7 +662,7 @@ describe('inference by position', () => {
 			min_value: s.union([s.min_value(1)]),
 			max_value: s.union([s.max_value(1)])
 		};
-		expectTypeOf<Pairs<Fields<Defs<typeof _leaves>, 0>>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<Fields<Defs<typeof _leaves>, 0>>>().toEqualTypeOf<Expected>();
 	});
 
 	test('union option in an object entry', () => {
@@ -706,7 +722,7 @@ describe('inference by position', () => {
 			min_value: s.union([s.min_value(1)]),
 			max_value: s.union([s.max_value(1)])
 		});
-		expectTypeOf<Pairs<Fields<Defs<(typeof _O)['def']>, 0>>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<Fields<Defs<(typeof _O)['def']>, 0>>>().toEqualTypeOf<Expected>();
 	});
 
 	test('variant option entry', () => {
@@ -765,7 +781,7 @@ describe('inference by position', () => {
 		]);
 		expectTypeOf<
 			Pairs<Omit<(typeof _V)['def']['options'][0]['def'], 'k'>>
-		>().toEqualTypeOf<InContext>();
+		>().toEqualTypeOf<Expected>();
 	});
 
 	test('pipe head, in an object entry that ends in an unannotated check', () => {
@@ -1950,6 +1966,6 @@ describe('inference by position', () => {
 			min_value: s.message(s.min_value(1), 'm'),
 			max_value: s.message(s.max_value(1), 'm')
 		});
-		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<InContext>();
+		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<Expected>();
 	});
 });

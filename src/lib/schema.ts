@@ -132,6 +132,10 @@ export interface Schema<
 	readonly '~types'?: { readonly input: TInput };
 }
 
+/**
+ * A schema of any types, for code that holds or reads one without typing its output.
+ * A parameter that takes any schema is typed as a bare `Schema`.
+ */
 export type AnySchema = Schema<any, any, string, any>;
 
 /**
@@ -250,17 +254,17 @@ interface SchemaOfKind<TKind extends SchemaKind> extends Schema<
 > {}
 
 /** The output type of a schema. */
-export type Infer<T extends AnySchema> = ReturnType<T['run']>;
+export type Infer<T extends Schema> = ReturnType<T['run']>;
 
 /** The input type a schema accepts. */
-export type InferInput<T extends AnySchema> = NonNullable<T['~types']>['input'];
+export type InferInput<T extends Schema> = NonNullable<T['~types']>['input'];
 
 /**
  * A schema that refines or transforms an already-typed value, for use in `pipe`.
  */
 export type SchemaAction<TInput, TOutput = TInput> = Schema<TOutput, TInput>;
 
-export type SchemaEntries = Record<string, AnySchema>;
+export type SchemaEntries = Record<string, Schema>;
 
 type Flatten<T> = { [K in keyof T]: T[K] } & {};
 
@@ -405,9 +409,9 @@ const not_object = (value: unknown): boolean =>
 /**
  * Validates `value`, returning the output or every issue found.
  */
-export const parse = <T extends AnySchema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
+export const parse = <T extends Schema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
-	const output = schema.run(value, ctx);
+	const output = schema.run(value, ctx) as Infer<T>;
 	return ctx.fails ? { ok: false, issues: ctx.issues! } : { ok: true, value: output };
 };
 
@@ -416,9 +420,9 @@ export const parse = <T extends AnySchema>(schema: T, value: unknown): SchemaRes
  *
  * @throws SchemaError when `value` doesn't match
  */
-export const parse_or_throw = <T extends AnySchema>(schema: T, value: unknown): Infer<T> => {
+export const parse_or_throw = <T extends Schema>(schema: T, value: unknown): Infer<T> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
-	const output = schema.run(value, ctx);
+	const output = schema.run(value, ctx) as Infer<T>;
 	if (ctx.fails) throw new SchemaError(ctx.issues!);
 	return output;
 };
@@ -428,7 +432,7 @@ export const parse_or_throw = <T extends AnySchema>(schema: T, value: unknown): 
  * and stopping at the first failure.
  * Narrows to the input type because the output is discarded.
  */
-export const is = <T extends AnySchema>(schema: T, value: unknown): value is InferInput<T> => {
+export const is = <T extends Schema>(schema: T, value: unknown): value is InferInput<T> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: true };
 	schema.run(value, ctx);
 	return !ctx.fails;
@@ -687,7 +691,7 @@ export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
  * The `def` of `optional` and `nullable`. An interface, so it has no index
  * signature and is not mistaken for the entries of an object schema.
  */
-export interface SchemaWrapperDef<T extends AnySchema> {
+export interface SchemaWrapperDef<T extends Schema> {
 	schema: T;
 }
 
@@ -696,12 +700,12 @@ export interface SchemaWrapperDef<T extends AnySchema> {
  * input may leave it out, and a key left out stays out of the output.
  */
 // @__NO_SIDE_EFFECTS__
-export const optional = <T extends AnySchema>(
+export const optional = <T extends Schema>(
 	schema: T
 ): Schema<Infer<T> | undefined, InferInput<T> | undefined, 'optional', SchemaWrapperDef<T>> => ({
 	kind: 'optional',
 	def: { schema },
-	run: (value, ctx) => (value === undefined ? undefined : schema.run(value, ctx))
+	run: (value, ctx) => (value === undefined ? undefined : (schema.run(value, ctx) as Infer<T>))
 });
 
 /**
@@ -711,7 +715,7 @@ export const optional = <T extends AnySchema>(
  * accepts one.
  */
 // @__NO_SIDE_EFFECTS__
-export const nullable = <T extends AnySchema>(
+export const nullable = <T extends Schema>(
 	schema: T
 ): Schema<Infer<T> | null, InferInput<T> | null, 'nullable', SchemaWrapperDef<T>> => ({
 	kind: 'nullable',
@@ -719,8 +723,9 @@ export const nullable = <T extends AnySchema>(
 	// two closures chosen once here, as in `message`
 	run:
 		schema.run.length > 2 || schema.kind === 'lazy'
-			? (value, ctx, parent, key) => (value === null ? null : schema.run(value, ctx, parent, key))
-			: (value, ctx) => (value === null ? null : schema.run(value, ctx))
+			? (value, ctx, parent, key) =>
+					value === null ? null : (schema.run(value, ctx, parent, key) as Infer<T>)
+			: (value, ctx) => (value === null ? null : (schema.run(value, ctx) as Infer<T>))
 });
 
 /**
@@ -735,13 +740,13 @@ export const nullable = <T extends AnySchema>(
  * @param value - returned as it is, the same reference on every parse
  */
 // @__NO_SIDE_EFFECTS__
-export const with_default = <T extends AnySchema>(
+export const with_default = <T extends Schema>(
 	schema: T,
 	value: Infer<T>
 ): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', { schema: T; value: Infer<T> }> => ({
 	kind: 'with_default',
 	def: { schema, value },
-	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
+	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))
 });
 
 /**
@@ -760,7 +765,7 @@ export const with_default = <T extends AnySchema>(
  * @param make - called for each `undefined`, with no arguments, and never called otherwise
  */
 // @__NO_SIDE_EFFECTS__
-export const with_default_fn = <T extends AnySchema>(
+export const with_default_fn = <T extends Schema>(
 	schema: T,
 	make: () => Infer<T>
 ): Schema<
@@ -771,7 +776,7 @@ export const with_default_fn = <T extends AnySchema>(
 > => ({
 	kind: 'with_default_fn',
 	def: { schema, make },
-	run: (v, ctx) => (v === undefined ? make() : schema.run(v, ctx))
+	run: (v, ctx) => (v === undefined ? make() : (schema.run(v, ctx) as Infer<T>))
 });
 
 /**
@@ -784,7 +789,7 @@ export const with_default_fn = <T extends AnySchema>(
  * `lazy(() => optional(string))` accepts one.
  */
 // @__NO_SIDE_EFFECTS__
-export const lazy = <T extends AnySchema>(
+export const lazy = <T extends Schema>(
 	get: () => T
 ): Schema<Infer<T>, InferInput<T>, 'lazy', () => T> => {
 	let schema: T | undefined;
@@ -798,8 +803,8 @@ export const lazy = <T extends AnySchema>(
 			schema ??= get();
 			return arguments.length > 2
 				? // eslint-disable-next-line prefer-rest-params
-					schema.run(value, ctx, arguments[2], arguments[3])
-				: schema.run(value, ctx);
+					(schema.run(value, ctx, arguments[2], arguments[3]) as Infer<T>)
+				: (schema.run(value, ctx) as Infer<T>);
 		}
 	};
 };
@@ -836,7 +841,7 @@ const label_issues = (
  * @param message - the text, or a function that builds it from the issue and the value
  */
 // @__NO_SIDE_EFFECTS__
-export const message = <T extends AnySchema>(
+export const message = <T extends Schema>(
 	schema: T,
 	message: string | ((issue: SchemaIssue, value: unknown) => string)
 ): T =>
@@ -947,7 +952,7 @@ export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, nu
  * @param name - the flavor's name, which exists only in the types and is not stored
  */
 // @__NO_SIDE_EFFECTS__
-export const flavor: <T extends AnySchema, const TName extends string>(
+export const flavor: <T extends Schema, const TName extends string>(
 	schema: T,
 	name: TName
 ) => Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
@@ -962,7 +967,7 @@ export const flavor: <T extends AnySchema, const TName extends string>(
  * @param name - the brand's name, which exists only in the types and is not stored
  */
 // @__NO_SIDE_EFFECTS__
-export const brand: <T extends AnySchema, const TName extends string>(
+export const brand: <T extends Schema, const TName extends string>(
 	schema: T,
 	name: TName
 ) => Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
@@ -1110,7 +1115,7 @@ export const loose_object = <T extends SchemaEntries>(
  * @param rest - the schema of the value of every own key that isn't an entry
  */
 // @__NO_SIDE_EFFECTS__
-export const object_with_rest = <T extends SchemaEntries, R extends AnySchema>(
+export const object_with_rest = <T extends SchemaEntries, R extends Schema>(
 	entries: T,
 	rest: R
 ): Schema<
@@ -1215,7 +1220,7 @@ export const strip_object = <T extends SchemaEntries>(
  * The output is the input itself when no value changed.
  */
 // @__NO_SIDE_EFFECTS__
-export const record = <T extends AnySchema>(
+export const record = <T extends Schema>(
 	schema: T
 ): Schema<Record<string, Infer<T>>, Record<string, InferInput<T>>, 'record', T> => ({
 	kind: 'record',
@@ -1253,7 +1258,7 @@ export const record = <T extends AnySchema>(
  * The output is the input itself when no item changed.
  */
 // @__NO_SIDE_EFFECTS__
-export const array = <T extends AnySchema>(
+export const array = <T extends Schema>(
 	schema: T
 ): Schema<Array<Infer<T>>, Array<InferInput<T>>, 'array', T> => ({
 	kind: 'array',
@@ -1294,7 +1299,7 @@ const describe_option = ({ kind, def }: AnySchema): Array<string> =>
 			: [kind];
 
 // a union's `expected`, each part once, where it first appears
-const describe_options = (options: ReadonlyArray<AnySchema>): string =>
+const describe_options = (options: ReadonlyArray<Schema>): string =>
 	Array.from(new Set(options.flatMap(describe_option))).join(' | ');
 
 /**
@@ -1325,7 +1330,7 @@ const describe_options = (options: ReadonlyArray<AnySchema>): string =>
  * it again.
  */
 // @__NO_SIDE_EFFECTS__
-export const union = <const T extends ReadonlyArray<AnySchema>>(
+export const union = <const T extends ReadonlyArray<Schema>>(
 	options: T
 ): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
 	// built on first failure and kept, as in `literal`: a union that misses
@@ -1426,7 +1431,7 @@ export const variant = <
 // Pipe
 //
 
-export type PipeSchema<TOutput, T extends AnySchema> = Schema<
+export type PipeSchema<TOutput, T extends Schema> = Schema<
 	TOutput,
 	InferInput<T>,
 	'pipe',
@@ -1434,22 +1439,19 @@ export type PipeSchema<TOutput, T extends AnySchema> = Schema<
 >;
 
 export interface SchemaPipeFactory {
-	<T extends AnySchema, O1>(
-		schema: T,
-		a1: SchemaAction<Infer<T>, O1>
-	): PipeSchema<Uninferred<O1>, T>;
-	<T extends AnySchema, O1, O2>(
+	<T extends Schema, O1>(schema: T, a1: SchemaAction<Infer<T>, O1>): PipeSchema<Uninferred<O1>, T>;
+	<T extends Schema, O1, O2>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>
 	): PipeSchema<Uninferred<O2>, T>;
-	<T extends AnySchema, O1, O2, O3>(
+	<T extends Schema, O1, O2, O3>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>,
 		a3: SchemaAction<O2, O3>
 	): PipeSchema<Uninferred<O3>, T>;
-	<T extends AnySchema, O1, O2, O3, O4>(
+	<T extends Schema, O1, O2, O3, O4>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>,
