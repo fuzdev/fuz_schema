@@ -4351,6 +4351,30 @@ describe('pipe and actions', () => {
 	test('transform ignores the context argument', () => {
 		assert.strictEqual(s.parse_or_throw(s.pipe(s.string, s.transform(parseInt)), '11'), 11);
 	});
+
+	// KNOWN: an action used as a schema itself, outside a `pipe`, is handed the
+	// input unchecked, as its `run` assumes the type a `pipe` gives it. As an
+	// entry or an option its type is `any` too, see `schema.inference.test.ts`.
+	// A guard would cost bytes in every action, so these are pinned and not fixed
+	test('an action outside a pipe is handed the input unchecked, a known hole', () => {
+		// a length action reads `length`, so `parse` and `is` throw on a missing key and on null
+		const Entry = s.object({ a: s.min_length(1) });
+		assert.throws(() => s.parse(Entry, {}), TypeError);
+		assert.throws(() => s.is(Entry, {}), TypeError);
+		assert.throws(() => s.parse(Entry, { a: null }), TypeError);
+		assert.throws(() => s.parse(s.min_length(1), null), TypeError);
+		assert.throws(() => s.parse(s.max_length(1), undefined), TypeError);
+		assert.throws(() => s.parse(s.union([s.min_length(1), s.number]), null), TypeError);
+		// `RegExp.prototype.test` converts what it is given to a string
+		assert(s.is(s.regex(/5/), 5));
+		assert(s.is(s.object({ a: s.regex(/5/) }), { a: 5 }));
+		// and a value action compares what it is given
+		assert(s.is(s.min_value(1), '5'));
+		// in a `pipe` each is given only what the schema before it accepts
+		assert(!s.is(s.object({ a: s.pipe(s.string, s.min_length(1)) }), {}));
+		assert(!s.is(s.pipe(s.string, s.regex(/5/)), 5));
+		assert(!s.is(s.pipe(s.number, s.min_value(1)), '5'));
+	});
 });
 
 describe('message', () => {

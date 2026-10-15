@@ -1434,25 +1434,28 @@ export type PipeSchema<TOutput, T extends AnySchema> = Schema<
 >;
 
 export interface SchemaPipeFactory {
-	<T extends AnySchema, O1>(schema: T, a1: SchemaAction<Infer<T>, O1>): PipeSchema<O1, T>;
+	<T extends AnySchema, O1>(
+		schema: T,
+		a1: SchemaAction<Infer<T>, O1>
+	): PipeSchema<Uninferred<O1>, T>;
 	<T extends AnySchema, O1, O2>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>
-	): PipeSchema<O2, T>;
+	): PipeSchema<Uninferred<O2>, T>;
 	<T extends AnySchema, O1, O2, O3>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>,
 		a3: SchemaAction<O2, O3>
-	): PipeSchema<O3, T>;
+	): PipeSchema<Uninferred<O3>, T>;
 	<T extends AnySchema, O1, O2, O3, O4>(
 		schema: T,
 		a1: SchemaAction<Infer<T>, O1>,
 		a2: SchemaAction<O1, O2>,
 		a3: SchemaAction<O2, O3>,
 		a4: SchemaAction<O3, O4>
-	): PipeSchema<O4, T>;
+	): PipeSchema<Uninferred<O4>, T>;
 }
 
 /**
@@ -1532,8 +1535,17 @@ export const pipe: SchemaPipeFactory = (
 // the schema around that `pipe` expects, which is any schema and would make it
 // `any`. For the same reason the bound of a value action is typed by whether
 // it is a number or a bigint and its `def` apart from `T`: either of them
-// typed `T` would have the bound's literal type inferred as the value's.
-type Uninferred<T> = T extends infer U ? U : never;
+// typed `T` would have the bound's literal type inferred as the value's. A
+// `pipe` writes its output in it too: inferred from what the schema around it
+// expects, the output would be `any`, and so would the value an unannotated
+// `check` or `transform` at its end is given. The `extends T` bound keeps the
+// result assignable to `T` while `T` is still generic, and the tuple keeps it
+// from distributing over a generic `T`, which would have the `check` at the
+// end of a pipe of a generic schema typed from the pipe's declared type and
+// not as the schema's output. So a function that pipes its own generic action
+// or schema can return the pipe as its declared type, and inference is blocked
+// all the same.
+type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(

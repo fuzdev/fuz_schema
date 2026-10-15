@@ -569,12 +569,12 @@ describe('to_schema_json refuses', () => {
 		);
 		for (const head of [s.unknown, s.boolean, s.nullable(s.string), s.record(s.string)]) {
 			refuses(
-				() => s.pipe(head, s.min_length(1) as any),
+				() => s.pipe(head, s.min_length(1)),
 				'cannot serialize `pipe` at /schema/def/0: a pipe must start with a schema that fixes the type of its value'
 			);
 		}
 		refuses(
-			() => s.pipe(s.string, s.string as any),
+			() => s.pipe(s.string, s.string),
 			"cannot serialize `pipe` at /schema/def/1: only actions follow a pipe's first schema"
 		);
 		refuses(

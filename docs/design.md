@@ -468,6 +468,29 @@ through the input, and refuses instead of guessing:
   container in a `pipe` that applied a default or dropped a key, the issue
   is about the new value and the walk returns the input's.
 
+## Actions outside a pipe
+
+An action's `run` assumes the type a `pipe` gives it, from the schema before
+it. Used as a schema itself, at the top level, as an object entry, or as an
+option, it is handed the input unchecked:
+
+- `min_length` and `max_length` read `length`, so `parse` and `is` throw a
+  `TypeError` on `null` or `undefined`, a missing key included:
+  `parse(object({a: min_length(1)}), {})` throws.
+- `regex` calls `RegExp.prototype.test`, which converts to a string, so
+  `regex(/5/)` accepts the number `5`, and `min_value(1)` compares, so it
+  accepts the string `'5'`.
+
+The types let these through. A `pipe`'s output is inferred from its steps and
+never from the schema around it, so a `pipe` infers the same anywhere. An
+action's own type is inferred from that context alone: as an object entry,
+a `union` option, an entry of a `variant` option, or a `message` there, the
+schema around it takes any schema, so a `check` or `transform` with an
+unannotated parameter, and the length and value actions, are `any` there.
+An action goes in a `pipe`, or a `check` or `transform` annotates its
+parameter. `src/test/schema.inference.test.ts` pins both as known, and
+asserts what every other schema infers in each position.
+
 ## Nominal types
 
 `flavor` and `brand` change only the output type and return the schema object
