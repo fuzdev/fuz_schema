@@ -116,6 +116,8 @@ dev server.
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
+  - `args.ts` - what the scripts parse their args through: the library
+    imported under `?args`, an instance no measurement uses
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
   - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
     class of a change, and the backstop against Valibot

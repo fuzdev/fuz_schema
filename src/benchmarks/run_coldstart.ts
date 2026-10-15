@@ -9,10 +9,9 @@
  * @module
  */
 
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
+import { meta, parse_args, s } from './args.ts';
 import { ENTRY_FORMS, type EntryForm } from './child.ts';
 import {
 	COLDSTART_STAGES,
@@ -25,36 +24,42 @@ import { format_table, hold_benchmark_lock } from './measure.ts';
 
 const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
 
-const Names = z
-	.union([z.string(), z.array(z.string())])
-	.transform((v) => (Array.isArray(v) ? v : [v]));
+const Names = s.pipe(
+	s.union([s.string, s.array(s.string)]),
+	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
+);
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	lib: Names.default(LIB_NAMES).meta({ description: 'library names to run' }),
-	scenario: Names.default(['object_flat', 'type_json']).meta({
-		description: 'scenario names to run'
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	lib: meta(
+		s.with_default_fn(Names, () => [...LIB_NAMES]),
+		{ description: 'library names to run' }
+	),
+	scenario: meta(
+		s.with_default_fn(Names, () => ['object_flat', 'type_json']),
+		{ description: 'scenario names to run' }
+	),
+	form: meta(
+		s.with_default_fn(
+			s.pipe(
+				s.union([s.one_of(ENTRY_FORMS), s.array(s.one_of(ENTRY_FORMS))]),
+				s.transform((v: EntryForm | Array<EntryForm>): Array<EntryForm> =>
+					Array.isArray(v) ? v : [v]
+				)
+			),
+			() => [...ENTRY_FORMS]
+		),
+		{ description: 'bundled, unbundled, or both' }
+	),
+	samples: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 15), {
+		description: 'kept rounds'
 	}),
-	form: z
-		.union([z.enum(ENTRY_FORMS), z.array(z.enum(ENTRY_FORMS))])
-		.transform((v): Array<EntryForm> => (Array.isArray(v) ? v : [v]))
-		.default([...ENTRY_FORMS])
-		.meta({ description: 'bundled, unbundled, or both' }),
-	samples: z.number().int().positive().default(15).meta({ description: 'kept rounds' }),
-	discard: z
-		.number()
-		.int()
-		.nonnegative()
-		.default(2)
-		.meta({ description: 'rounds thrown away first' })
+	discard: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(0)), 2), {
+		description: 'rounds thrown away first'
+	})
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 hold_benchmark_lock('fuz_schema coldstart');
 

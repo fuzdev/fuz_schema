@@ -8,32 +8,30 @@
  * @module
  */
 
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
-
+import { meta, parse_args, s } from './args.ts';
 import { HEAP_COUNTS, measure_retained_heap } from './heap.ts';
 import { format_table } from './measure.ts';
 
 const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
 
-const Names = z
-	.union([z.string(), z.array(z.string())])
-	.transform((v) => (Array.isArray(v) ? v : [v]));
+const Names = s.pipe(
+	s.union([s.string, s.array(s.string)]),
+	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
+);
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	lib: Names.default(LIB_NAMES).meta({ description: 'library names to run' }),
-	scenario: Names.default(['object_flat', 'type_json']).meta({
-		description: 'scenario names to run'
-	})
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	lib: meta(
+		s.with_default_fn(Names, () => [...LIB_NAMES]),
+		{ description: 'library names to run' }
+	),
+	scenario: meta(
+		s.with_default_fn(Names, () => ['object_flat', 'type_json']),
+		{ description: 'scenario names to run' }
+	)
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 const to_kb = (bytes: number): string => (bytes / 1024).toFixed(1);
 

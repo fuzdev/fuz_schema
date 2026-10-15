@@ -65,6 +65,10 @@ When a change targets a path no case isolates, add the case first.
 The exit code is 0 whatever the verdicts, and nonzero only when the grade
 could not run.
 
+The grader parses its own args with the working tree's `schema.ts` and
+`meta.ts`, `--new-file` included: one that doesn't load stops it at start,
+and one that parses wrong misreads its args.
+
 ## How it measures
 
 **Instances.** A timing process of `matrix` or `alone` loads each version

@@ -27,9 +27,8 @@
  */
 
 import { fileURLToPath } from 'node:url';
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
+import { meta, parse_args, s } from './args.ts';
 import {
 	ALLOCATION_NODE_FLAGS,
 	format_table,
@@ -65,39 +64,38 @@ import {
 const SUBJECT_LIB: SurveyLibName = 'fuz_schema';
 const OTHER_LIBS = SURVEY_LIBS.filter((lib) => lib !== SUBJECT_LIB);
 
-const Names = z
-	.union([z.string(), z.array(z.string())])
-	.transform((v) => (Array.isArray(v) ? v : [v]));
+const Names = s.pipe(
+	s.union([s.string, s.array(s.string)]),
+	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
+);
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	filter: z.string().optional().meta({ description: 'only time rows whose name includes this' }),
-	lib: Names.optional().meta({
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	filter: meta(s.optional(s.string), {
+		description: 'only time rows whose name includes this'
+	}),
+	lib: meta(s.optional(Names), {
 		description: `the libraries to compare this one with, defaulting to ${OTHER_LIBS.join(' and ')}`
 	}),
-	duration: z
-		.number()
-		.positive()
-		.default(150)
-		.meta({ description: 'measurement ms per row of each library, shared out over the passes' }),
-	passes: z
-		.number()
-		.int()
-		.positive()
-		.default(3)
-		.meta({ description: 'how many times the whole is repeated, in fresh processes' }),
-	alone: z
-		.boolean()
-		.default(false)
-		.meta({ description: 'a process for each row of each library, not one for each library' })
+	duration: meta(
+		s.with_default(
+			s.pipe(
+				s.number,
+				s.check((n: number) => n > 0, '> 0')
+			),
+			150
+		),
+		{ description: 'measurement ms per row of each library, shared out over the passes' }
+	),
+	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 3), {
+		description: 'how many times the whole is repeated, in fresh processes'
+	}),
+	alone: meta(s.with_default(s.boolean, false), {
+		description: 'a process for each row of each library, not one for each library'
+	})
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 const unknown = (args.lib ?? []).filter((name) => !OTHER_LIBS.some((lib) => lib === name));
 if (unknown.length) {

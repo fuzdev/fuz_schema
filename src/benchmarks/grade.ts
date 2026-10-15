@@ -63,11 +63,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
 import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
+import { meta, parse_args, s } from './args.ts';
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
 import { PROGRAM } from './program.ts';
 import { SCENARIOS } from './scenarios.ts';
@@ -138,78 +137,65 @@ import {
 	to_balanced_orders
 } from './measure.ts';
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	against: z.string().default('HEAD').meta({ description: 'git ref to take the baseline from' }),
-	'against-file': z
-		.string()
-		.optional()
-		.meta({ description: 'file to use as the baseline instead of a git ref' }),
-	'against-libs-file': z
-		.string()
-		.optional()
-		.meta({ description: "the baseline's scenario module, with --against-file" }),
-	'new-file': z
-		.string()
-		.optional()
-		.meta({ description: "file to grade instead of the working tree's schema.ts" }),
-	filter: z
-		.string()
-		.optional()
-		.meta({ description: 'only measure cases whose name includes this' }),
-	runs: z
-		.number()
-		.int()
-		.positive()
-		.default(3)
-		.meta({ description: 'how many times the whole of the timing is repeated' }),
-	alone: z
-		.union([z.string(), z.boolean()])
-		.default('real/')
-		.meta({
-			description:
-				'which cases also get processes of their own: those whose name includes this, ' +
-				'by default the realistic ones, and every case when given with no value'
-		}),
-	'no-alone': z.boolean().default(false).meta({ description: 'opt out of alone' }),
-	apart: z
-		.union([z.string(), z.boolean()])
-		.optional()
-		.meta({
-			description:
-				'which cases are also timed a version to a process: those whose name includes this, ' +
-				'by default a few, mostly ones the engine folds whole, and every case when given with no value'
-		}),
-	'no-apart': z.boolean().default(false).meta({ description: 'opt out of apart' }),
-	slice: z
-		.number()
-		.positive()
-		.default(1)
-		.meta({ description: 'milliseconds one timing slice of one instance lasts' }),
-	class: z
-		.enum(CHANGE_CLASSES)
-		.default('speed')
-		.meta({
-			description:
-				'what the change is for, which sets the price of its bytes: speed, or correctness ' +
-				'for a fix of correctness or conformance'
-		}),
-	bundle: z.boolean().default(true).meta({ description: 'also measure bundle sizes' }),
-	'no-bundle': z.boolean().default(false).meta({ description: 'opt out of bundle' }),
-	process: z
-		.boolean()
-		.default(true)
-		.meta({ description: 'also measure retained heap and cold start, in processes of their own' }),
-	'no-process': z.boolean().default(false).meta({ description: 'opt out of process' }),
-	samples: z.number().int().positive().default(15).meta({ description: 'kept cold-start rounds' })
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	against: meta(s.with_default(s.string, 'HEAD'), {
+		description: 'git ref to take the baseline from'
+	}),
+	'against-file': meta(s.optional(s.string), {
+		description: 'file to use as the baseline instead of a git ref'
+	}),
+	'against-libs-file': meta(s.optional(s.string), {
+		description: "the baseline's scenario module, with --against-file"
+	}),
+	'new-file': meta(s.optional(s.string), {
+		description: "file to grade instead of the working tree's schema.ts"
+	}),
+	filter: meta(s.optional(s.string), {
+		description: 'only measure cases whose name includes this'
+	}),
+	runs: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 3), {
+		description: 'how many times the whole of the timing is repeated'
+	}),
+	alone: meta(s.with_default(s.union([s.string, s.boolean]), 'real/'), {
+		description:
+			'which cases also get processes of their own: those whose name includes this, ' +
+			'by default the realistic ones, and every case when given with no value'
+	}),
+	'no-alone': meta(s.with_default(s.boolean, false), { description: 'opt out of alone' }),
+	apart: meta(s.optional(s.union([s.string, s.boolean])), {
+		description:
+			'which cases are also timed a version to a process: those whose name includes this, ' +
+			'by default a few, mostly ones the engine folds whole, and every case when given with no value'
+	}),
+	'no-apart': meta(s.with_default(s.boolean, false), { description: 'opt out of apart' }),
+	slice: meta(
+		s.with_default(
+			s.pipe(
+				s.number,
+				s.check((n: number) => n > 0, '> 0')
+			),
+			1
+		),
+		{ description: 'milliseconds one timing slice of one instance lasts' }
+	),
+	class: meta(s.with_default(s.one_of(CHANGE_CLASSES), 'speed'), {
+		description:
+			'what the change is for, which sets the price of its bytes: speed, or correctness ' +
+			'for a fix of correctness or conformance'
+	}),
+	bundle: meta(s.with_default(s.boolean, true), { description: 'also measure bundle sizes' }),
+	'no-bundle': meta(s.with_default(s.boolean, false), { description: 'opt out of bundle' }),
+	process: meta(s.with_default(s.boolean, true), {
+		description: 'also measure retained heap and cold start, in processes of their own'
+	}),
+	'no-process': meta(s.with_default(s.boolean, false), { description: 'opt out of process' }),
+	samples: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 15), {
+		description: 'kept cold-start rounds'
+	})
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 if (args['against-libs-file'] && !args['against-file']) {
 	console.error(
 		'--against-libs-file goes with --against-file: a baseline from git (--against) brings ' +

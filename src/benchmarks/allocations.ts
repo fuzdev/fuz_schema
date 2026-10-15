@@ -9,9 +9,7 @@
  * @module
  */
 
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
-
+import { meta, parse_args, s } from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { LIBS } from './libs.ts';
 import {
@@ -21,23 +19,20 @@ import {
 	require_allocation_node_flags
 } from './measure.ts';
 
-const Names = z
-	.union([z.string(), z.array(z.string())])
-	.transform((v) => (Array.isArray(v) ? v : [v]))
-	.optional();
+const Names = s.optional(
+	s.pipe(
+		s.union([s.string, s.array(s.string)]),
+		s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
+	)
+);
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	scenario: Names.meta({ description: 'scenario names to run, defaulting to all' }),
-	lib: Names.meta({ description: 'library names to run, defaulting to all' })
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	scenario: meta(Names, { description: 'scenario names to run, defaulting to all' }),
+	lib: meta(Names, { description: 'library names to run, defaulting to all' })
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 require_allocation_node_flags();
 

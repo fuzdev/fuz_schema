@@ -40,9 +40,8 @@ import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { rolldown } from 'rolldown';
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
+import { meta, parse_args, s } from './args.ts';
 import { to_bundle_size, type BundleSize } from './bundle_size.ts';
 import {
 	HARVEST_ASIDES,
@@ -79,32 +78,33 @@ const SCHEMA_PATH = to_path('../lib/schema.ts');
 // Arguments
 //
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	set: z
-		.union([z.string(), z.array(z.string())])
-		.transform((value) => (Array.isArray(value) ? value : [value]))
-		.optional()
-		.meta({ description: 'set names to run, defaulting to all' }),
-	duration: z
-		.number()
-		.positive()
-		.default(1000)
-		.meta({ description: 'measurement ms per row of a side, shared out over the passes' }),
-	passes: z
-		.number()
-		.int()
-		.positive()
-		.default(5)
-		.meta({ description: 'how many times the timing is repeated, in fresh processes' })
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	set: meta(
+		s.optional(
+			s.pipe(
+				s.union([s.string, s.array(s.string)]),
+				s.transform((value: string | Array<string>) => (Array.isArray(value) ? value : [value]))
+			)
+		),
+		{ description: 'set names to run, defaulting to all' }
+	),
+	duration: meta(
+		s.with_default(
+			s.pipe(
+				s.number,
+				s.check((n: number) => n > 0, '> 0')
+			),
+			1000
+		),
+		{ description: 'measurement ms per row of a side, shared out over the passes' }
+	),
+	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 5), {
+		description: 'how many times the timing is repeated, in fresh processes'
+	})
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 const sets = HARVEST_SETS.filter((set) => !args.set || args.set.includes(set.name));
 const unknown = args.set?.filter((name) => !HARVEST_SETS.some((set) => set.name === name));

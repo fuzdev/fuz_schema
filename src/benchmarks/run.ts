@@ -28,9 +28,8 @@
  */
 
 import { fileURLToPath } from 'node:url';
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
+import { meta, parse_args, s } from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
 import {
@@ -51,39 +50,38 @@ import {
 	type TimingUnit
 } from './timing_passes.ts';
 
-const Names = z
-	.union([z.string(), z.array(z.string())])
-	.transform((v) => (Array.isArray(v) ? v : [v]));
+const Names = s.pipe(
+	s.union([s.string, s.array(s.string)]),
+	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
+);
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	scenario: Names.optional().meta({ description: 'scenario names to run, defaulting to all' }),
-	lib: Names.optional().meta({ description: 'library names to run, defaulting to all' }),
-	invalid: z.boolean().default(true).meta({ description: 'also time invalid input' }),
-	'no-invalid': z.boolean().default(false).meta({ description: 'opt out of invalid' }),
-	duration: z
-		.number()
-		.positive()
-		.default(500)
-		.meta({ description: 'measurement ms per task, shared out over the passes' }),
-	passes: z
-		.number()
-		.int()
-		.positive()
-		.default(5)
-		.meta({ description: 'how many times the whole is repeated, in fresh processes' }),
-	alone: z
-		.boolean()
-		.default(false)
-		.meta({ description: 'a process for each scenario and input, not one for each library' })
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	scenario: meta(s.optional(Names), {
+		description: 'scenario names to run, defaulting to all'
+	}),
+	lib: meta(s.optional(Names), { description: 'library names to run, defaulting to all' }),
+	invalid: meta(s.with_default(s.boolean, true), { description: 'also time invalid input' }),
+	'no-invalid': meta(s.with_default(s.boolean, false), { description: 'opt out of invalid' }),
+	duration: meta(
+		s.with_default(
+			s.pipe(
+				s.number,
+				s.check((n: number) => n > 0, '> 0')
+			),
+			500
+		),
+		{ description: 'measurement ms per task, shared out over the passes' }
+	),
+	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 5), {
+		description: 'how many times the whole is repeated, in fresh processes'
+	}),
+	alone: meta(s.with_default(s.boolean, false), {
+		description: 'a process for each scenario and input, not one for each library'
+	})
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 const unknown = [
 	...(args.scenario ?? []).filter((name) => !SCENARIOS.some((s) => s.name === name)),

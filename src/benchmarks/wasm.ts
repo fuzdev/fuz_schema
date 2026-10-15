@@ -48,11 +48,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { z } from 'zod';
-import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
 import * as s from '#lib/schema.ts';
 import { to_schema_json } from '#lib/schema_json.ts';
+import { s as args_s, meta, parse_args } from './args.ts';
 import {
 	load_json_fixture,
 	load_json_fixture_names,
@@ -64,27 +63,27 @@ import {
 import { SCENARIOS } from './scenarios.ts';
 import { format_table, hold_benchmark_lock, median } from './measure.ts';
 
-const Args = z.strictObject({
-	_: z.array(z.string()).default([]),
-	rounds: z
-		.number()
-		.int()
-		.min(1)
-		.default(15)
-		.meta({ description: 'timings per row, the median is reported' }),
-	'round-ms': z
-		.number()
-		.positive()
-		.default(20)
-		.meta({ description: 'ms one timing of a row aims to take' })
+const Args = args_s.object({
+	_: args_s.with_default_fn(args_s.array(args_s.string), () => []),
+	rounds: meta(
+		args_s.with_default(args_s.pipe(args_s.number, args_s.safe_integer, args_s.min_value(1)), 15),
+		{
+			description: 'timings per row, the median is reported'
+		}
+	),
+	'round-ms': meta(
+		args_s.with_default(
+			args_s.pipe(
+				args_s.number,
+				args_s.check((n: number) => n > 0, '> 0')
+			),
+			20
+		),
+		{ description: 'ms one timing of a row aims to take' }
+	)
 });
 
-const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
-if (!parsed.success) {
-	console.error(z.prettifyError(parsed.error));
-	process.exit(1);
-}
-const args = parsed.data;
+const args = parse_args(Args);
 
 const ROOT_DIR = join(import.meta.dirname, '../..');
 const WASM_DIR = join(ROOT_DIR, 'target/fuz_schema_wasm');

@@ -217,6 +217,14 @@ whoever runs it.
 - **Type-checking**: `tsc` over one library's scenario module.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm).
+- **Args**: the scripts parse their command-line args with this library,
+  through instances no measurement uses: the schemas are built with
+  `schema.ts` and `meta.ts` imported under `?args` by `args.ts`, and
+  `args_parse` runs them through the published `@fuzdev/fuz_schema` that
+  fuz_util imports. Parsing them then runs no function of the instance a
+  measurement uses, which a process that measures in itself, as
+  `benchmark:allocations` and `benchmark:wasm` do, would otherwise have run
+  first.
 
 ### The whole library
 
