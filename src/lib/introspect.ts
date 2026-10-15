@@ -80,7 +80,9 @@ export const get_schema_meta = <TKey extends keyof SchemaMeta>(
 
 /**
  * The entries of `schema` when its innermost layer is an object schema,
- * `object`, `loose_object`, or `strip_object`, and otherwise `undefined`.
+ * `object`, `loose_object`, `strip_object`, or `object_with_rest`, and
+ * otherwise `undefined`. Of an `object_with_rest` they are its `def.entries`,
+ * without its `rest`.
  */
 export const get_schema_entries = (
 	schema: AnySchema
@@ -88,7 +90,9 @@ export const get_schema_entries = (
 	const s = unwrap_schema(schema);
 	return s.kind === 'object' || s.kind === 'loose_object' || s.kind === 'strip_object'
 		? s.def
-		: undefined;
+		: s.kind === 'object_with_rest'
+			? s.def.entries
+			: undefined;
 };
 
 /** What `get_schema_fields` reads of one entry of an object schema. */
@@ -163,6 +167,8 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
  *   a `with_default_fn`.
  *   A `union` with an `optional` option lets the key be missing too, and
  *   isn't looked into.
+ * - The other keys of a `loose_object` render as `[key: string]: unknown`,
+ *   and those of an `object_with_rest` as its `rest`, after the entries.
  * - A `pipe` renders as its first schema, what it accepts.
  * - A `lazy` renders as the schema its function returns, once, and one
  *   that returns a `lazy` as what that returns: a `lazy` inside that renders
@@ -215,10 +221,12 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 			return s.def.options.map((o) => to_type(o, inside)).join(' | ');
 		case 'object':
 		case 'loose_object':
-		case 'strip_object': {
+		case 'strip_object':
+		case 'object_with_rest': {
+			const entries = s.kind === 'object_with_rest' ? s.def.entries : s.def;
 			const parts: Array<string> = [];
-			for (const key in s.def) {
-				const entry = s.def[key]!;
+			for (const key in entries) {
+				const entry = entries[key]!;
 				const optional = to_layers(entry).some(
 					(l) => l.kind === 'optional' || l.kind === 'with_default' || l.kind === 'with_default_fn'
 				);
@@ -227,6 +235,9 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 				);
 			}
 			if (s.kind === 'loose_object') parts.push('[key: string]: unknown');
+			else if (s.kind === 'object_with_rest') {
+				parts.push(`[key: string]: ${to_type(s.def.rest, inside)}`);
+			}
 			return `{${parts.join('; ')}}`;
 		}
 		default:

@@ -117,16 +117,18 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of` |
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
-| containers | `object`, `loose_object`, `strip_object`, `record`, `array`, `union`, `variant` |
+| containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
 
-The three object schemas differ only on keys the schema doesn't name:
+The object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
-`strip_object` drops them and pays for a copy when there are any.
+`strip_object` drops them and pays for a copy when there are any,
+and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
+as Zod's `catchall` and Valibot's `objectWithRest` do.
 None of them accepts an array, and neither do `record` and `variant`.
 
 A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
@@ -268,7 +270,8 @@ unwrap(User.def.age).kind; // 'number'
   the function given to `check`, `transform`, or `lazy`
 - `optional` and `nullable` hold `{schema}`, `with_default` holds `{schema, value}`,
   and `with_default_fn` holds `{schema, make}`
-- the object schemas hold their entries, `array` and `record` the schema of their items,
+- the object schemas hold their entries, and `object_with_rest` holds `{entries, rest}`,
+  `array` and `record` the schema of their items,
   `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
 
 `message`, `flavor`, and `brand` have no kind: the result has the `kind` and `def` of the schema given.
@@ -378,6 +381,7 @@ to_schema_json(s.array(s.optional(s.number)));
 
 It throws on a schema the form can't hold, saying where:
 `regex`, `check`, `transform`, and `with_default_fn`, which hold JavaScript values;
+`object_with_rest`, which the crate doesn't carry yet;
 a `bigint` or `undefined` literal; a default that isn't a JSON value;
 an entry named like a member of `Object.prototype`.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.

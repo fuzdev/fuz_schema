@@ -1125,6 +1125,41 @@ const loose: CaseGroup = (s) => {
 	];
 };
 
+// `object_with_rest`, which validates the keys the schema doesn't name in a
+// loop of its own. A version without it goes without the group
+const rest: CaseGroup = (s) => {
+	const O = s.object_with_rest(to_six(s.string), s.string);
+	const Defaulted = s.object_with_rest(to_six(s.with_default(s.string, 'd')), s.number);
+	const Upper = s.object_with_rest(
+		to_six(s.string),
+		s.pipe(
+			s.string,
+			s.transform((v: string) => v.toUpperCase())
+		)
+	);
+	const input = to_six('v');
+	const bad_last = { ...to_record(20), k19: 1 };
+	return [
+		// no other key, so only the entries and the one pass over the input's keys
+		to_case(s, 'rest/6_keys/valid', O, to_json(input), 'identity'),
+		// every other key validated, and the input still comes back
+		to_case(s, 'rest/6_of_20_keys/valid', O, to_record(20), 'identity'),
+		// an entry changes, so the copy carries every other key across
+		to_case(
+			s,
+			'rest/6_defaults_absent_3_rest/valid',
+			Defaulted,
+			to_json({ x: 1, y: 2, z: 3 }),
+			'copy'
+		),
+		// the first other key changes, so the copy is begun there
+		to_case(s, 'rest/6_of_20_keys_rest_changes/valid', Upper, to_record(20), 'copy'),
+		to_case(s, 'rest/6_of_20_keys_last_bad/invalid', O, to_json(bad_last), 'issues'),
+		to_probe_case(s, 'rest/6_of_20_keys_is/valid', O, to_record(20), true),
+		to_probe_case(s, 'rest/6_of_20_keys_last_bad_is/invalid', O, to_json(bad_last), false)
+	];
+};
+
 const nested: CaseGroup = (s) => {
 	const to_schema = (depth: number): schema_lib.AnySchema =>
 		depth === 0 ? s.string : to_object(s)({ a: s.number, next: to_schema(depth - 1) });
@@ -1344,6 +1379,7 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	object,
 	strip,
 	loose,
+	rest,
 	nested,
 	array,
 	record,

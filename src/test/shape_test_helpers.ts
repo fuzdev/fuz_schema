@@ -126,6 +126,24 @@ export const SHAPE_SAMPLES: Record<
 			invalid: [{ a: 1 }, {}, 1, []]
 		}
 	],
+	object_with_rest: () => [
+		{
+			schema: s.object_with_rest({ a: s.string, c: s.with_default(s.number, 1) }, s.number),
+			valid: [{ a: 'a' }, { a: 'a', c: 2, d: 1 }, JSON.parse('{"a": "a", "__proto__": 1}')],
+			invalid: [{ a: 1 }, { a: 'a', d: 'x' }, { a: 1, d: 'x' }, {}, 1, []]
+		},
+		{
+			schema: s.object_with_rest(
+				{},
+				s.pipe(
+					s.string,
+					s.transform((v: string) => v + '!')
+				)
+			),
+			valid: [{}, { a: 'a', b: 'b' }],
+			invalid: [{ a: 1 }]
+		}
+	],
 	strip_object: () => [
 		{
 			schema: s.strip_object({ a: s.string, c: s.with_default(s.number, 1) }),

@@ -138,7 +138,8 @@ export type AnySchema = Schema<any, any, string, any>;
  * A `def` is as close to plain JSON as its kind allows. A kind that takes no
  * options has `undefined`, one that takes a single value has that value, and
  * `optional`, `nullable`, `with_default`, and `with_default_fn` have an object
- * with their schema under `schema`.
+ * with their schema under `schema`. The object schemas have their entries, and
+ * `object_with_rest` has an object with them under `entries`.
  *
  * `message`, `flavor`, and `brand` have no kind of their own: what they
  * return has the `kind` and `def` of the schema they were given.
@@ -172,6 +173,11 @@ export interface SchemaDefs {
 	object: Readonly<Record<string, SchemaNode>>;
 	loose_object: Readonly<Record<string, SchemaNode>>;
 	strip_object: Readonly<Record<string, SchemaNode>>;
+	/** The entries, in the order they run, and `rest`, the schema of every other own key. */
+	object_with_rest: {
+		readonly entries: Readonly<Record<string, SchemaNode>>;
+		readonly rest: SchemaNode;
+	};
 	/** The schema of every value. */
 	record: SchemaNode;
 	/** The schema of every item. */
@@ -957,8 +963,8 @@ export const brand: <T extends AnySchema, const TName extends string>(
  * A key the input lacks reads as `undefined`, so it fails unless its entry
  * accepts that. `unknown`, `literal(undefined)`, and a `one_of` with
  * `undefined` among its values accept `undefined` and still need their key,
- * failing as a `missing_key` without it. This holds for `loose_object` and
- * `strip_object` too.
+ * failing as a `missing_key` without it. This holds for the entries of the
+ * other object schemas too.
  */
 // @__NO_SIDE_EFFECTS__
 export const object = <T extends SchemaEntries>(
@@ -1058,6 +1064,92 @@ export const loose_object = <T extends SchemaEntries>(
 				}
 			}
 			return output ?? value;
+		}
+	};
+};
+
+/**
+ * Matches an object with `entries`, and every other own enumerable string key
+ * of it with `rest`: `object_with_rest({_: array(string)}, number)`
+ * matches `{_: [], a: 1}` and refuses `{_: [], a: 'x'}`, at the key `a`.
+ *
+ * - The entries run first, then `rest` on each other key in the input's order,
+ *   and the issues are reported in that order: an entry that fails doesn't stop
+ *   the keys after it from being validated.
+ * - A key the input inherits is neither validated nor copied, as Valibot has
+ *   it, and is still read through an input that comes back. An own key named
+ *   `constructor` or `prototype` is validated as any other, as Zod has it. An
+ *   array is refused.
+ * - An own `__proto__` key is left out of the output and not validated, as
+ *   both do: assigning it would set the prototype.
+ * - The output is the input itself when nothing changed and there is no
+ *   `__proto__` key. A copy has the schema's keys first, as `object` copies
+ *   them, then the other own keys in the input's order.
+ *
+ * `variant` can't take it as an option: its types refuse one, as its `def` is
+ * not the entries. One forced through by a cast has its discriminator looked
+ * up in that `def`, so `variant` throws when it is made, or is made and takes
+ * the discriminator's values from that `def`, not from the entries.
+ *
+ * @param rest - the schema of the value of every own key that isn't an entry
+ */
+// @__NO_SIDE_EFFECTS__
+export const object_with_rest = <T extends SchemaEntries, R extends AnySchema>(
+	entries: T,
+	rest: R
+): Schema<
+	SchemaObjectOutput<T> & Record<string, Infer<R>>,
+	SchemaObjectInput<T> & Record<string, InferInput<R>>,
+	'object_with_rest',
+	{ entries: T; rest: R }
+> => {
+	const keys = Object.keys(entries);
+	const schemas = Object.values(entries);
+	return {
+		kind: 'object_with_rest',
+		def: { entries, rest },
+		// its own loop over the other keys, so validating them costs the other
+		// object schemas nothing
+		run: (value, ctx): any => {
+			if (not_object(value)) return fail(ctx, 'object_with_rest', value, 'object');
+			// a failed entry outside probe mode still gives an output, so the
+			// other keys are validated after it
+			let output = run_entries(keys, schemas, value, ctx);
+			if (!output) return;
+			let i = 0;
+			for (const key in value) {
+				// a key in the schema's order is known without a lookup
+				if (key === keys[i]) i++;
+				else if (Object.hasOwn(value, key) && !Object.hasOwn(entries, key)) {
+					const input = value[key];
+					// assigning a `__proto__` key would set the prototype, so it's dropped unread
+					const keep = key !== '__proto__';
+					const count = ctx.fails;
+					const v = keep ? rest.run(input, ctx) : input;
+					if (ctx.fails > count) {
+						if (ctx.probe) return;
+						prefix_path(ctx.issues!, count, key);
+					} else if (output !== value) {
+						if (keep) output[key] = v;
+					} else if (!keep || !Object.is(v, input)) {
+						// the schema's keys, as `run_entries` copies them, then the other
+						// own keys before this one, none of them `__proto__`, which
+						// would have begun the copy
+						output = {};
+						for (let j = 0; j < keys.length; j++) {
+							const k = keys[j]!;
+							const u = value[k];
+							if (u !== undefined || k in value) output[k] = u;
+						}
+						for (const k in value) {
+							if (k === key) break;
+							if (Object.hasOwn(value, k) && !Object.hasOwn(entries, k)) output[k] = value[k];
+						}
+						if (keep) output[key] = v;
+					}
+				}
+			}
+			return output;
 		}
 	};
 };

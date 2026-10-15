@@ -237,7 +237,8 @@ Things that are easy to break without a test noticing:
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and
   which `npm run grade` shows only in its `apart` regime.
-- **`loose_object` has its own loop.** Folding it into the shared one put its
+- **`loose_object` has its own loop, and so does `object_with_rest` for the
+  keys it doesn't name.** Folding `loose_object`'s into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
   export or module the core path doesn't reach. It should take that shape

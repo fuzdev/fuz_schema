@@ -96,6 +96,12 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		valid: { a: 'a', d: 1 },
 		invalid: { a: 1 }
 	},
+	{
+		name: 'object_with_rest',
+		create: (s) => s.object_with_rest({ a: s.string, c: s.with_default(s.number, 1) }, s.number),
+		valid: { a: 'a', d: 1 },
+		invalid: { a: 'a', d: 'd' }
+	},
 	{ name: 'record', create: (s) => s.record(s.number), valid: { a: 1 }, invalid: { a: 'a' } },
 	{ name: 'array', create: (s) => s.array(s.string), valid: ['a'], invalid: ['a', 1] },
 	{ name: 'union', create: (s) => s.union([s.string, s.number]), valid: 1, invalid: true },

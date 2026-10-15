@@ -88,6 +88,13 @@ describe('get_schema_entries', () => {
 		}
 	});
 
+	test('the entries of an object_with_rest, without its rest', () => {
+		const entries = { a: s.string };
+		const O = s.object_with_rest(entries, s.object({ r: s.string }));
+		assert.strictEqual(get_schema_entries(O), entries);
+		assert.strictEqual(get_schema_entries(s.optional(s.lazy(() => s.message(O, 'm')))), entries);
+	});
+
 	test('undefined for a schema that is no object', () => {
 		assert.strictEqual(get_schema_entries(s.string), undefined);
 		assert.strictEqual(get_schema_entries(s.array(s.object({}))), undefined);
@@ -210,6 +217,35 @@ describe('get_schema_fields', () => {
 		assert.ok(!field!.has_default);
 	});
 
+	test('reads the entries of an object_with_rest, and not its rest', () => {
+		let made = 0;
+		const Args = s.object_with_rest(
+			{
+				_: s.with_default_fn(meta(s.array(s.string), { description: 'the file path' }), () => {
+					made++;
+					return [];
+				}),
+				force: meta(s.optional(s.boolean), { introspect_aliases: ['f'] })
+			},
+			meta(s.union([s.string, s.number]), { description: 'any other' })
+		);
+		assert.deepEqual(
+			get_schema_fields(Args).map((f) => [
+				f.name,
+				f.has_default,
+				f.default_computed,
+				f.description
+			]),
+			[
+				['_', true, true, 'the file path'],
+				['force', false, false, undefined]
+			]
+		);
+		assert.deepEqual(get_schema_meta(Args.def.entries.force, 'introspect_aliases'), ['f']);
+		assert.strictEqual(unwrap_schema(Args.def.entries.force).kind, 'boolean');
+		assert.strictEqual(made, 0);
+	});
+
 	test('none for a schema that is no object', () => {
 		assert.deepEqual(get_schema_fields(s.string), []);
 	});
@@ -242,6 +278,14 @@ describe('format_schema_type', () => {
 			false
 		],
 		loose_object: [s.loose_object({ a: s.string }), '{a: string; [key: string]: unknown}', false],
+		object_with_rest: [
+			s.object_with_rest(
+				{ a: s.string, 'b-c': s.optional(s.number) },
+				s.union([s.number, s.array(s.string)])
+			),
+			'{a: string; "b-c"?: number | undefined; [key: string]: number | Array<string>}',
+			false
+		],
 		strip_object: [s.strip_object({}), '{}', false],
 		record: [s.record(s.number), 'Record<string, number>', false],
 		array: [s.array(s.optional(s.string)), 'Array<string | undefined>', false],
@@ -269,6 +313,18 @@ describe('format_schema_type', () => {
 			assert.strictEqual(unwrap_schema(schema) !== schema, layer);
 		});
 	}
+
+	test('the rest of an object_with_rest, inside a lazy', () => {
+		const Tree: s.AnySchema = s.object_with_rest(
+			{ v: s.number },
+			s.lazy(() => Tree)
+		);
+		assert.strictEqual(format_schema_type(s.lazy(() => Tree)), '{v: number; [key: string]: ...}');
+		assert.strictEqual(
+			format_schema_type(s.object_with_rest({}, s.optional(s.string))),
+			'{[key: string]: string | undefined}'
+		);
+	});
 
 	test('literals', () => {
 		assert.strictEqual(format_schema_type(s.literal(1n)), '1n');

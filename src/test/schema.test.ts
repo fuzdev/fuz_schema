@@ -513,6 +513,7 @@ describe('arrays are not objects', () => {
 		s.object(entries),
 		s.strip_object(entries),
 		s.loose_object(entries),
+		s.object_with_rest(entries, s.unknown),
 		s.record(s.unknown),
 		s.variant('kind', [s.object({ kind: s.literal('a') })])
 	];
@@ -1627,6 +1628,289 @@ describe('loose_object copy', () => {
 			assert.deepEqual(keys_of(s.parse_or_throw(Loose, more)), [...keys_of(strict), 'z', 'y']);
 			assert.deepEqual(keys_of(s.parse_or_throw(Strip, more)), keys_of(strict));
 		}
+	});
+});
+
+describe('object_with_rest', () => {
+	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
+	const sym = Symbol('sym');
+	const upper = s.pipe(
+		s.string,
+		s.transform((v) => v.toUpperCase())
+	);
+	const Numbers = s.object_with_rest({ a: s.string, b: s.optional(s.string) }, s.number);
+	const Defaulted = s.object_with_rest({ a: s.string, d: s.with_default(s.string, 'D') }, s.number);
+	const Upper = s.object_with_rest({ a: s.string }, upper);
+
+	test('validates every other own key with rest', () => {
+		assert(s.is(Numbers, { a: 'x' }));
+		assert(s.is(Numbers, { a: 'x', b: 'y', z: 1, y: 2 }));
+		assert(!s.is(Numbers, { a: 'x', z: 'z' }));
+		assert(!s.is(Numbers, { z: 1 }));
+		// an entry out of the schema's order is an entry, not one of the other keys
+		assert(s.is(Numbers, { b: 'y', a: 'x' }));
+		assert.deepEqual(
+			issues_of(Numbers, { b: 'y', z: 'z', a: 'x' }).map((i) => i.path),
+			[['z']]
+		);
+		assert.deepEqual(issues_of(Numbers, { z: 'z', a: 'x' }), [
+			{ kind: 'number', expected: 'number', received: 'string', path: ['z'], message: undefined }
+		]);
+		// a key that isn't an identifier, in the path as it is
+		assert.deepEqual(
+			issues_of(Numbers, { a: 'x', 'some-key': null }).map((i) => [i.path, s.format_issue(i)]),
+			[[['some-key'], '"some-key": expected number, received null']]
+		);
+		// nested, the path goes through the key
+		const Nested = s.object_with_rest({}, s.object_with_rest({}, s.number));
+		assert.deepEqual(
+			issues_of(Nested, { o: { p: 'x' } }).map((i) => i.path),
+			[['o', 'p']]
+		);
+	});
+
+	test('the entries are reported first, then the other keys in the input order', () => {
+		const O = s.object_with_rest({ _: s.array(s.string), n: s.number }, s.number);
+		// keys that fail before, between, and after the entries, and one that passes
+		const input = { y: 'y', _: [1, 'x', 2], m: 'm', ok: 1, n: 'n', z: null };
+		assert.deepEqual(
+			issues_of(O, input).map((i) => i.path),
+			[['_', 0], ['_', 2], ['n'], ['y'], ['m'], ['z']]
+		);
+		// as `object` reports its entries before its unknown keys
+		assert.deepEqual(
+			issues_of(s.object({ _: s.array(s.string) }), { y: 1, _: [1] }).map((i) => i.path),
+			[['_', 0], ['y']]
+		);
+		// probe mode stops at the first failure, whichever it is
+		assert(!s.is(O, { _: [1], y: 'y' }));
+		assert(!s.is(O, { _: [], n: 1, y: 'y' }));
+		assert(s.is(O, { _: [], n: 1, y: 1 }));
+	});
+
+	test('the input comes back when nothing changed', () => {
+		const inputs: Array<object> = [
+			{ a: 'x' },
+			{ z: 1, a: 'x', b: 'y', y: 2 },
+			{ a: 'x', [sym]: 'not a number' },
+			Object.defineProperty({ a: 'x' }, 'hidden', { value: 'not a number' }),
+			Object.assign(Object.create(null), { a: 'x', z: 1 }),
+			Object.assign(Object.create({ a: 'x', inherited: 'not a number' }), { z: 1 })
+		];
+		for (const input of inputs) {
+			const keys = keys_of(input);
+			assert.strictEqual<unknown>(s.parse_or_throw(Numbers, input), input);
+			assert(s.is(Numbers, input));
+			assert.deepEqual(keys_of(input), keys);
+			assert.strictEqual<unknown>(s.parse_or_throw(s.union([s.string, Numbers]), input), input);
+		}
+		const already = { z: 'Z', a: 'x' };
+		assert.strictEqual<unknown>(s.parse_or_throw(Upper, already), already);
+		// a value `rest` gives back is unchanged by `Object.is`, as a `NaN` is,
+		// and a `-0` it gives back as `0` is a change
+		const nan = { a: 'x', z: NaN };
+		assert.strictEqual<unknown>(
+			s.parse_or_throw(s.object_with_rest({ a: s.string }, s.unknown), nan),
+			nan
+		);
+		const zero = s.object_with_rest(
+			{ a: s.string },
+			s.pipe(
+				s.number,
+				s.transform((n) => n + 0)
+			)
+		);
+		assert(Object.is(s.parse_or_throw(zero, { a: 'x', z: -0 }).z, 0));
+	});
+
+	test('a copy has the schema keys first, then the other keys in the input order', () => {
+		// a change in an entry
+		const output = s.parse_or_throw(Defaulted, { y: 1, a: 'x', z: 2 });
+		assert.deepEqual(keys_of(output), ['a', 'd', 'y', 'z']);
+		assert.deepEqual<unknown>(output, { a: 'x', d: 'D', y: 1, z: 2 });
+		// a change in another key: first, in the middle, and last
+		for (const [input, expected] of [
+			[
+				{ y: 'y', a: 'x', z: 'Z' },
+				{ a: 'x', y: 'Y', z: 'Z' }
+			],
+			[
+				{ y: 'Y', a: 'x', z: 'z', w: 'W' },
+				{ a: 'x', y: 'Y', z: 'Z', w: 'W' }
+			],
+			[
+				{ y: 'Y', z: 'Z', a: 'x', w: 'w' },
+				{ a: 'x', y: 'Y', z: 'Z', w: 'W' }
+			]
+		] as const) {
+			const copy = s.parse_or_throw(Upper, input);
+			assert.notStrictEqual<unknown>(copy, input);
+			assert.deepEqual(keys_of(copy), keys_of(expected));
+			assert.deepEqual<unknown>(copy, expected);
+		}
+		// a missing optional entry stays out, an undefined one stays in
+		const optional = s.object_with_rest({ o: s.optional(s.string), a: upper }, s.unknown);
+		assert.deepEqual(keys_of(s.parse_or_throw(optional, { u: 1, a: 'x' })), ['a', 'u']);
+		assert.deepEqual(keys_of(s.parse_or_throw(optional, { u: 1, a: 'x', o: undefined })), [
+			'o',
+			'a',
+			'u'
+		]);
+		// the same in a copy begun at another key
+		const later = s.object_with_rest({ o: s.optional(s.string), a: s.string }, upper);
+		assert.deepEqual(keys_of(s.parse_or_throw(later, { a: 'x', u: 'u' })), ['a', 'u']);
+		assert.deepEqual(keys_of(s.parse_or_throw(later, { u: 'u', a: 'x', o: undefined })), [
+			'o',
+			'a',
+			'u'
+		]);
+		// a key whose value is `undefined` that rest accepts is kept
+		const kept = s.parse_or_throw(s.object_with_rest({ a: upper }, s.unknown), {
+			u: undefined,
+			a: 'x'
+		});
+		assert.deepEqual(keys_of(kept), ['a', 'u']);
+		// a copy has a plain prototype
+		const bare = Object.assign(Object.create(null), { z: 'z', a: 'x' });
+		assert.strictEqual(Object.getPrototypeOf(s.parse_or_throw(Upper, bare)), Object.prototype);
+		// the input is never mutated
+		const input = { z: 'z', a: 'x' };
+		s.parse_or_throw(Upper, input);
+		assert.deepEqual(input, { z: 'z', a: 'x' });
+	});
+
+	test('a key the input inherits is neither validated nor copied', () => {
+		const inherits = Object.assign(Object.create({ inherited: 'not a number' }), {
+			a: 'x',
+			z: 1
+		});
+		assert(s.is(Numbers, inherits));
+		const copy: object = s.parse_or_throw(Defaulted, inherits);
+		assert.deepEqual(keys_of(copy), ['a', 'd', 'z']);
+		assert(!('inherited' in copy));
+		// an entry it inherits is read through the prototype, as in every object schema
+		assert(s.is(Numbers, Object.create({ a: 'x' })));
+	});
+
+	test('a symbol key and a non-enumerable key are neither validated nor copied', () => {
+		const input = Object.defineProperty({ a: 'x', [sym]: 'not a number', z: 1 }, 'hidden', {
+			value: 'not a number'
+		});
+		assert(s.is(Numbers, input));
+		assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, input)), ['a', 'd', 'z']);
+	});
+
+	test('an own key named constructor or prototype is validated as any other', () => {
+		for (const key of ['constructor', 'prototype', 'toString']) {
+			assert(!s.is(Numbers, { a: 'x', [key]: 'not a number' }), key);
+			assert.deepEqual(
+				issues_of(Numbers, { a: 'x', [key]: 'x' }).map((i) => i.path),
+				[[key]]
+			);
+			const output = s.parse_or_throw(Defaulted, { [key]: 1, a: 'x' });
+			assert.deepEqual(keys_of(output), ['a', 'd', key]);
+		}
+	});
+
+	test('an own __proto__ key is left out and not validated', () => {
+		for (const text of [
+			'{"a": "x", "__proto__": "not a number", "z": 1}',
+			'{"__proto__": {"p": 1}, "a": "x", "z": 1}',
+			'{"a": "x", "z": 1, "__proto__": 1}'
+		]) {
+			const input = JSON.parse(text);
+			assert(s.is(Numbers, input), text);
+			// a copy, though nothing else changed
+			const output: object = s.parse_or_throw(Numbers, input);
+			assert.notStrictEqual(output, input);
+			assert.deepEqual(keys_of(output), ['a', 'z']);
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+			assert(Object.hasOwn(input, '__proto__'));
+		}
+		// with a rest key after it that changes, and one before it
+		const after = s.parse_or_throw(Upper, JSON.parse('{"a": "x", "__proto__": 1, "z": "z"}'));
+		assert.deepEqual(keys_of(after), ['a', 'z']);
+		assert.deepEqual(after, { a: 'x', z: 'Z' });
+		const before = s.parse_or_throw(Upper, JSON.parse('{"y": "y", "a": "x", "__proto__": 1}'));
+		assert.deepEqual(keys_of(before), ['a', 'y']);
+		assert.deepEqual(before, { a: 'x', y: 'Y' });
+		assert.strictEqual(({} as any).p, undefined);
+	});
+
+	test('an entry named __proto__ is run and written as the other object schemas do', () => {
+		const O = s.object_with_rest(
+			{ a: s.string, ['__proto__']: s.unknown, d: s.with_default(s.string, 'D') },
+			s.number
+		);
+		const output: object = s.parse_or_throw(O, JSON.parse('{"a": "x", "__proto__": {"p": 1}}'));
+		// not guarded: the entry's value becomes the copy's prototype
+		assert.deepEqual(Object.getPrototypeOf(output), { p: 1 });
+		assert.deepEqual(Object.keys(output), ['a', 'd']);
+	});
+
+	test('an array is refused, with one issue', () => {
+		for (const input of [[], [1], Object.assign(['x'], { a: 'x' })]) {
+			assert.deepEqual(issues_of(Numbers, input), [
+				{
+					kind: 'object_with_rest',
+					expected: 'object',
+					received: 'array',
+					path: [],
+					message: undefined
+				}
+			]);
+		}
+		assert.deepEqual(issues_of(Numbers, null)[0]!.received, 'null');
+	});
+
+	test('rest is handed the value alone, not the object and the key', () => {
+		const calls: Array<number> = [];
+		const O = s.object_with_rest(
+			{},
+			s.check((...args: Array<unknown>) => (calls.push(args.length), true))
+		);
+		assert(s.is(O, { a: 1, b: 2 }));
+		assert.deepEqual(calls, [1, 1]);
+		// so an `unknown` rest accepts a key whose value is `undefined`
+		assert(s.is(s.object_with_rest({}, s.unknown), { a: undefined }));
+	});
+
+	test('variant refuses it as an option, in its types, and throws when one is forced', () => {
+		const Option = s.object_with_rest({ t: s.literal('a') }, s.number);
+		// @ts-expect-error its `def` is not the entries
+		assert.throws(() => s.variant('t', [Option]), TypeError);
+	});
+
+	test('a failed probe has no output, and a union takes the copy of one that passed', () => {
+		const U = s.union([s.object_with_rest({ a: s.number }, upper), Upper]);
+		const output: object = s.parse_or_throw(U, { z: 'z', a: 'x' });
+		assert.deepEqual(output, { a: 'x', z: 'Z' });
+		assert(!s.is(Upper, { a: 'x', z: 1 }));
+	});
+
+	test('types', () => {
+		type Out = s.Infer<typeof Defaulted>;
+		type In = s.InferInput<typeof Defaulted>;
+		expectTypeOf<Out['a']>().toEqualTypeOf<string>();
+		expectTypeOf<Out['d']>().toEqualTypeOf<string>();
+		expectTypeOf<Out['other']>().toEqualTypeOf<number>();
+		expectTypeOf<In['d']>().toEqualTypeOf<string | undefined>();
+		expectTypeOf<In['other']>().toEqualTypeOf<number>();
+		expectTypeOf<Out>().toEqualTypeOf<{ a: string; d: string } & Record<string, number>>();
+		expectTypeOf<In>().toEqualTypeOf<
+			{ a: string; d?: string | undefined } & Record<string, number>
+		>();
+		// rest's input and output are apart
+		const _Lengths = s.object_with_rest(
+			{},
+			s.pipe(
+				s.string,
+				s.transform((v: string) => v.length)
+			)
+		);
+		expectTypeOf<s.Infer<typeof _Lengths>['k']>().toEqualTypeOf<number>();
+		expectTypeOf<s.InferInput<typeof _Lengths>['k']>().toEqualTypeOf<string>();
+		expectTypeOf(Defaulted.def.rest).toEqualTypeOf(s.number);
 	});
 });
 
@@ -4153,6 +4437,7 @@ describe('def', () => {
 		object: s.object(entries),
 		loose_object: s.loose_object(entries),
 		strip_object: s.strip_object(entries),
+		object_with_rest: s.object_with_rest(entries, s.number),
 		record: s.record(s.string),
 		array: s.array(s.string),
 		union: s.union(options),
@@ -4199,6 +4484,7 @@ describe('def', () => {
 			object: entries,
 			loose_object: entries,
 			strip_object: entries,
+			object_with_rest: { entries, rest: s.number },
 			record: s.string,
 			array: s.string,
 			union: options,
@@ -4227,6 +4513,8 @@ describe('def', () => {
 		assert.strictEqual(by_kind.check.def, check_fn);
 		assert.strictEqual(by_kind.transform.def, transform_fn);
 		assert.strictEqual(by_kind.with_default_fn.def.make, make);
+		assert.strictEqual(by_kind.object_with_rest.def.entries, entries);
+		assert.deepEqual(Object.keys(by_kind.object_with_rest.def), ['entries', 'rest']);
 	});
 
 	test('a wrapper holds its schema under one key', () => {
@@ -4285,6 +4573,8 @@ describe('def', () => {
 					case 'loose_object':
 					case 'strip_object':
 						return Object.values(schema.def);
+					case 'object_with_rest':
+						return [...Object.values(schema.def.entries), schema.def.rest];
 					case 'record':
 					case 'array':
 						return [schema.def];
@@ -5685,6 +5975,10 @@ describe('types', () => {
 				case 'loose_object':
 				case 'strip_object':
 					expectTypeOf(schema.def).toEqualTypeOf<Readonly<Record<string, s.SchemaNode>>>();
+					break;
+				case 'object_with_rest':
+					expectTypeOf(schema.def.entries).toEqualTypeOf<Readonly<Record<string, s.SchemaNode>>>();
+					expectTypeOf(schema.def.rest).toEqualTypeOf<s.SchemaNode>();
 					break;
 				case 'record':
 				case 'array':

@@ -361,6 +361,18 @@ describe('to_schema_json refuses', () => {
 		assert.strictEqual(made, 0, '`make` is never called');
 	});
 
+	test('an object_with_rest, which the crate does not carry', () => {
+		// not among the kinds the crate refuses by name: it refuses it as one it doesn't know
+		refuses(
+			() => s.object_with_rest({ a: s.string }, s.number),
+			'cannot serialize `object_with_rest` at /schema: it is not portable, as the Rust crate does not carry it'
+		);
+		refuses(
+			() => s.array(s.object_with_rest({}, s.string)),
+			'cannot serialize `object_with_rest` at /schema/def: it is not portable, as the Rust crate does not carry it'
+		);
+	});
+
 	test('literals JSON does not hold', () => {
 		refuses(
 			() => s.literal(undefined),

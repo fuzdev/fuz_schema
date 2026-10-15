@@ -40,6 +40,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | `{schema, value}` | `with_default` |
 | `{schema, make}` | `with_default_fn` |
 | the entries | `object`, `loose_object`, `strip_object` |
+| `{entries, rest}` | `object_with_rest` |
 | the schema of every value or item | `record`, `array` |
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
@@ -187,8 +188,9 @@ Given up:
 - A key read through the prototype stays inherited in an input that comes
   back, where a copy has it as an own key.
 - An enumerable key the input inherits is still read through an input that
-  comes back: one a `record` never validated, as it runs own keys only, and
-  one a `loose_object` doesn't name. A copy has neither.
+  comes back: one a `record` or an `object_with_rest` never validated, as
+  they run own keys only, and one a `loose_object` doesn't name. A copy has
+  neither.
 - An array that comes back is the input as it is, as an object is: a hole
   stays a hole, and its own keys that are not items stay. A copy of one is a
   `slice` with the changed items written to it: it has none of those keys, a
@@ -201,10 +203,10 @@ Kept:
 - `object` never accepts them.
 - `record` drops a `__proto__` key, after validating its value as any own
   key's, and so does a copy `loose_object` makes of one the schema doesn't
-  name. A schema entry named `__proto__` is not
-  guarded in any object schema: a copy writes it, which sets the copy's
-  prototype from the input, and an input that comes back keeps its own
-  `__proto__` key.
+  name. `object_with_rest` drops one unread, and copies to drop it. A schema
+  entry named `__proto__` is not guarded in any object schema: a copy writes
+  it, which sets the copy's prototype from the input, and an input that comes
+  back keeps its own `__proto__` key.
 - The input is never mutated.
 
 Zod and Valibot build every output. `src/test/schema.conformance.test.ts`
@@ -218,15 +220,16 @@ key, and what an array keeps.
 
 ## Object schemas
 
-Three, differing only in what they do with keys the schema doesn't name:
+The object schemas differ only in what they do with keys the schema doesn't name:
 
 | | Unknown keys | Cost on valid input |
 |---|---|---|
 | `object` | an error | one pass over the input's keys |
 | `loose_object` | kept | none; they are looked at only to copy them |
 | `strip_object` | dropped | one pass, then a copy when there are any |
+| `object_with_rest` | validated by `rest`, and kept | one pass, `rest` run on each |
 
-An array is not an object: all three reject one, as do `record` and
+An array is not an object: each of them rejects one, as do `record` and
 `variant`, with the one issue any non-object gets.
 
 `object` is the default name because rejecting is the safe default.
@@ -254,8 +257,8 @@ same rule and never looks at the input's keys unless it made a copy:
 
 - **A copy then takes the unknown keys**: the input's own enumerable string
   keys the schema doesn't name, in the input's order, after the schema's.
-  So the three copy the schema's keys alike, and a loose copy is a stripped
-  one with the unknown keys after it.
+  So the object schemas copy the schema's keys alike, and a loose copy is a
+  stripped one with the unknown keys after it.
 - **Of the unknown keys, a symbol key, an inherited key, and a non-enumerable
   key are left out**, and so is a `__proto__` key, which would set the
   prototype if assigned. The input returned as it is keeps them all.
@@ -265,6 +268,30 @@ same rule and never looks at the input's keys unless it made a copy:
   valid input when the loop was a call to the shared one.
 - **Every key of a copy is a keyed write.** A change in a wide loose object
   costs in proportion to its width, and more than a spread of it would.
+
+`object_with_rest(entries, rest)` runs the shared loop over its entries, then
+a loop of its own over the input's keys, as `loose_object` has one:
+
+- **Every other own enumerable string key is validated by `rest`**, in the
+  input's order, with the value alone, as a `record` runs its values. A key
+  named `constructor` or `prototype` is one of them. An inherited key, a
+  symbol key, and a non-enumerable key are not looked at.
+- **The entries are reported first**, then the other keys in the input's
+  order, as Zod and Valibot report them: an entry that fails outside probe
+  mode leaves an output, and the loop goes on to the other keys.
+- **A `__proto__` key is dropped unread**, as both do, since assigning it
+  would set the prototype, and it makes a copy, so an output that is the
+  input never carries an own key `rest` didn't validate.
+- **A copy has the schema's keys first**, as the shared loop copies them,
+  then the other own keys in the input's order. One begun at a key `rest`
+  changed takes the keys before it from the input.
+- **`variant` takes no `object_with_rest` option.** Its options' `def` is
+  their entries, and this one's is `{entries, rest}`: the types refuse it,
+  and one forced through by a cast has its discriminator looked up in that
+  `def`, so `variant` throws when it is made, or is made and takes the
+  discriminator's values from that `def`, not from the entries.
+- **The loop is its own**, so validating other keys costs a bundle without
+  `object_with_rest` nothing.
 
 ### Missing keys
 
@@ -498,6 +525,10 @@ nothing until it imports the module.
   unless an `optional` is outside it, which answers `undefined` before the
   default is asked. A `union` is not looked into. One of a `with_default_fn`
   is `default_computed`, and has no `default` to read.
+- **The entries of an `object_with_rest` are its `def.entries`**, which
+  `get_schema_entries` and `get_schema_fields` read as any object schema's.
+  Its `rest` is no entry, and `format_schema_type` renders it as the index
+  signature, `{a: string; [key: string]: number}`.
 - **Nothing is called but a `lazy`'s function.** A `check` or a `transform`
   is read as its kind, and never run, and a `with_default_fn`'s `make` is
   never called.
@@ -665,6 +696,14 @@ Where the two disagree, this library goes with:
   missing key out, where Zod writes it. By design: wrappers compose in the
   order written, the outer `optional` answering `undefined` before the
   default inside it is asked.
+- **Zod on an own key named `constructor` or `prototype`**, in an
+  `object_with_rest`: Zod validates it with the rest schema, and Valibot
+  leaves it out unread. By design: it is an own key, as any other.
+- **Valibot on a key the input inherits**, in an `object_with_rest` copy:
+  Zod validates and copies an enumerable one, and Valibot does neither, as
+  here. **Neither on that key in an input that comes back**, through which
+  it is still read, unvalidated. By design: `rest` is the schema of the
+  input's own keys, as a `record`'s schema is.
 - **Valibot on an unknown key the input inherits**, in a `loose_object` copy:
   Zod copies an enumerable one and Valibot doesn't, and here it is left out.
   The copy otherwise has the keys Valibot's and Zod's loose objects give, in
@@ -675,7 +714,7 @@ Where the two disagree, this library goes with:
   still read through the input, which Valibot's copy doesn't allow, and is
   not an own key, as it is in Zod's. By design: the input comes back with its
   unknown keys never looked at, which is what makes `loose_object` the
-  cheapest of the three.
+  cheapest of the object schemas.
 - **Zod on an unknown key named `constructor` or `prototype`**, in a
   `loose_object`: Valibot drops it and Zod keeps it, and here it is kept. By
   design: a loose object keeps its unknown keys, and leaves out only
@@ -684,9 +723,9 @@ Where the two disagree, this library goes with:
   and reads nothing for it. Valibot and this library read and write it as any
   other key, so it sees `Object.prototype` when the input lacks the key, and
   writing it sets the output's prototype. Not guarded.
-- **Zod on an array.** Valibot's object, record, and variant schemas take an
-  array as an object. Zod's refuse it, as these do. By design: an array is
-  not an object.
+- **Zod on an array.** Valibot's object, record, variant, and
+  `objectWithRest` schemas take an array as an object. Zod's refuse it, as
+  these do. By design: an array is not an object.
 - **Valibot on what a `record` is given.** Zod refuses a class instance and
   a symbol key. Valibot takes both, as this library does, and leaves the
   symbol key out of its copy. By design, for consistency with the object

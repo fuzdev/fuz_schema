@@ -332,6 +332,9 @@ const SIDES: Record<string, ConformanceSide> = {
 		zod: 'fail at <root>',
 		valibot: 'ok {t: "b", d: "D"}'
 	},
+	'rest, array': { side: 'zod', zod: 'fail at <root>', valibot: 'fail at a' },
+	'rest, array with the key': { side: 'zod', zod: 'fail at <root>', valibot: 'ok {a: "x"}' },
+	'rest, array, empty schema': { side: 'zod', zod: 'fail at <root>', valibot: 'ok {0: 1}' },
 
 	// a discriminator that is missing, of an option that has other entries:
 	// valibot stops at the discriminator
@@ -375,6 +378,54 @@ const SIDES: Record<string, ConformanceSide> = {
 		side: 'zod',
 		zod: 'ok {a: "x", d: "D", prototype: 1}',
 		valibot: 'ok {a: "x", d: "D"}'
+	},
+
+	// the other keys of an object with a rest. An own key named `constructor` or
+	// `prototype` valibot leaves out unread, and zod validates, as here
+	'rest, own key named constructor': {
+		side: 'zod',
+		zod: 'ok {a: "x", constructor: 1}',
+		valibot: 'ok {a: "x"}'
+	},
+	'rest, own key named constructor, wrong': {
+		side: 'zod',
+		zod: 'fail at constructor',
+		valibot: 'ok {a: "x"}'
+	},
+	'rest, own key named prototype, wrong': {
+		side: 'zod',
+		zod: 'fail at prototype',
+		valibot: 'ok {a: "x"}'
+	},
+	'rest, a default, own key named constructor': {
+		side: 'zod',
+		zod: 'ok {a: "x", d: "D", constructor: 1}',
+		valibot: 'ok {a: "x", d: "D"}'
+	},
+	// an enumerable key the input inherits zod validates and copies, and valibot
+	// neither, as here: a copy leaves it out, and an input that comes back is
+	// neither's, as the key is still read through it, as for a loose object
+	'rest, a default, inherited key': {
+		side: 'valibot',
+		zod: 'ok {a: "x", d: "D", z: 1}',
+		valibot: 'ok {a: "x", d: "D"}'
+	},
+	'rest, a default, inherited key, wrong': {
+		side: 'valibot',
+		zod: 'fail at z',
+		valibot: 'ok {a: "x", d: "D"}'
+	},
+	'rest, inherited key': {
+		side: 'neither',
+		zod: 'ok {a: "x", z: 1}',
+		valibot: 'ok {a: "x"}',
+		ours: 'ok {a: "x"} proto=other'
+	},
+	'rest, inherited key, wrong': {
+		side: 'neither',
+		zod: 'fail at z',
+		valibot: 'ok {a: "x"}',
+		ours: 'ok {a: "x"} proto=other'
 	},
 
 	// an optional key under another schema: valibot needs the key
@@ -823,7 +874,10 @@ const INFORMATIONAL: Record<string, Partial<Record<InformationalLibName, string>
 	'default + unknown key / strip': { arktype: 'ok {a: "x", d: "D"}' },
 	'default + unknown key / strict': { arktype: 'fail' },
 	// a copy of the input with the default after it, so in the input's order
-	'default + unknown key / loose': { arktype: 'ok {z: 1, a: "x", d: "D"}' }
+	'default + unknown key / loose': { arktype: 'ok {z: 1, a: "x", d: "D"}' },
+	rest: { typebox: 'ok {a: "x", z: 1}' },
+	'rest, a key wrong': { typebox: 'fail' },
+	'rest, array': { typebox: 'fail' }
 };
 
 // a table by row, its ` / *` keys written out

@@ -977,7 +977,8 @@ mod tests {
                 )
             );
         }
-        for kind in ["date", "String", "", "min_len"] {
+        // `object_with_rest` is the library's, and not yet carried here
+        for kind in ["date", "String", "", "min_len", "object_with_rest"] {
             assert_eq!(
                 refusal(&format!(r#"{{"schema":{{"kind":"{kind}"}}}}"#)),
                 (

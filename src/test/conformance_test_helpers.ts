@@ -79,6 +79,8 @@ export interface ConformanceLib {
 	strip: (entries: Record<string, any>) => any;
 	strict: (entries: Record<string, any>) => any;
 	loose: (entries: Record<string, any>) => any;
+	/** An object with `entries`, whose every other key's value is validated by `rest`. */
+	rest: (entries: Record<string, any>, rest: any) => any;
 	record: (schema: any) => any;
 	array: (schema: any) => any;
 	parse: (schema: any, input: unknown) => ConformanceParsed;
@@ -111,6 +113,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		strip: (entries) => z.object(entries),
 		strict: (entries) => z.strictObject(entries),
 		loose: (entries) => z.looseObject(entries),
+		rest: (entries, rest) => z.object(entries).catchall(rest),
 		record: (schema) => z.record(z.string(), schema),
 		array: (schema) => z.array(schema),
 		parse: (schema, input) => {
@@ -151,6 +154,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		strip: (entries) => v.object(entries),
 		strict: (entries) => v.strictObject(entries),
 		loose: (entries) => v.looseObject(entries),
+		rest: (entries, rest) => v.objectWithRest(entries, rest),
 		record: (schema) => v.record(v.string(), schema),
 		array: (schema) => v.array(schema),
 		parse: (schema, input) => {
@@ -196,6 +200,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		strip: (entries) => s.strip_object(entries),
 		strict: (entries) => s.object(entries),
 		loose: (entries) => s.loose_object(entries),
+		rest: (entries, rest) => s.object_with_rest(entries, rest),
 		record: (schema) => s.record(schema),
 		array: (schema) => s.array(schema),
 		parse: (schema, input) => {
@@ -259,7 +264,7 @@ export const INFORMATIONAL_LIBS: Record<InformationalLibName, Partial<Conformanc
 		}
 	},
 	// `Value.Parse` checks and returns its input, so it has no object that drops
-	// unknown keys and no default
+	// unknown keys and no default. Its `rest` is an object's `additionalProperties`
 	typebox: {
 		string: T.String(),
 		number: T.Number(),
@@ -267,6 +272,7 @@ export const INFORMATIONAL_LIBS: Record<InformationalLibName, Partial<Conformanc
 		optional: (schema) => ({ [OPTIONAL]: schema }),
 		strict: (entries) => to_typebox_object(entries, { additionalProperties: false }),
 		loose: (entries) => to_typebox_object(entries),
+		rest: (entries, rest) => to_typebox_object(entries, { additionalProperties: rest }),
 		parse: (schema, input) => {
 			// tells a value that doesn't match by throwing
 			try {
@@ -411,6 +417,11 @@ const AB: Entries = (l) => ({ a: l.string, b: l.optional(l.string) });
 const AD: Entries = (l) => ({ a: l.string, d: l.with_default(l.string, 'D') });
 const B: Entries = (l) => ({ b: l.optional(l.string) });
 const DB: Entries = (l) => ({ d: l.with_default(l.string, 'D'), b: l.optional(l.string) });
+
+// `a` and then numbers, and the same with a default to fill
+const REST = (l: ConformanceLib): any => l.rest({ a: l.string }, l.number);
+const REST_DEFAULT = (l: ConformanceLib): any =>
+	l.rest({ a: l.string, d: l.with_default(l.string, 'D') }, l.number);
 
 const NEGATED: Entries = (l) => ({ a: l.map(l.number, (x) => -x) });
 
@@ -1632,7 +1643,120 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'a transform', schema: (l) => l.map(l.string, (x) => x + '!'), input: () => 'x' },
 	{ name: 'a bare check', schema: (l) => l.check(() => true), input: () => undefined },
 	{ name: 'a bare transform', schema: (l) => l.transform(() => 'T'), input: () => undefined },
-	{ name: 'lazy', schema: (l) => l.lazy(() => l.string), input: () => 1 }
+	{ name: 'lazy', schema: (l) => l.lazy(() => l.string), input: () => 1 },
+
+	// an object with a schema for its other keys, `a` and then numbers, and the
+	// same with a default to fill, so with an output that isn't the input
+	// arktype's `[string]` index holds the named keys to it too; a lookahead regex
+	// index could express it, left out as arktype's `record` and `array` are
+	{ name: 'rest', schema: REST, input: () => ({ a: 'x', z: 1 }), also: ['typebox'] },
+	{ name: 'rest, no other key', schema: REST, input: () => ({ a: 'x' }) },
+	{
+		name: 'rest, a key wrong',
+		schema: REST,
+		input: () => ({ a: 'x', z: 'z' }),
+		also: ['typebox']
+	},
+	{ name: 'rest, the entry missing', schema: REST, input: () => ({ z: 1 }) },
+	{
+		name: 'rest, the entries out of order',
+		schema: (l) => l.rest({ a: l.string, b: l.optional(l.string) }, l.number),
+		input: () => ({ b: 'y', z: 1, a: 'x' })
+	},
+	{
+		name: 'rest, the entry and keys wrong',
+		schema: REST,
+		input: () => ({ y: 'y', a: 1, z: 'z', w: 2 })
+	},
+	{ name: 'rest, a key undefined', schema: REST, input: () => ({ a: 'x', z: undefined }) },
+	{
+		name: 'rest of optionals, a key undefined',
+		schema: (l) => l.rest({ a: l.string }, l.optional(l.number)),
+		input: () => ({ a: 'x', z: undefined })
+	},
+	{ name: 'rest, a default', schema: REST_DEFAULT, input: () => ({ y: 1, a: 'x', z: 2 }) },
+	{
+		name: 'rest, a key that changes',
+		schema: (l) =>
+			l.rest(
+				{ a: l.string },
+				l.map(l.string, (x) => x + '!')
+			),
+		input: () => ({ y: 'y', a: 'x', z: 'z' })
+	},
+	{ name: 'rest, empty schema', schema: (l) => l.rest({}, l.number), input: () => ({ z: 1 }) },
+	{
+		name: 'rest, own key named constructor',
+		schema: REST,
+		input: () => ({ a: 'x', constructor: 1 })
+	},
+	{
+		name: 'rest, own key named constructor, wrong',
+		schema: REST,
+		input: () => ({ a: 'x', constructor: 'c' })
+	},
+	{
+		name: 'rest, own key named prototype, wrong',
+		schema: REST,
+		input: () => ({ a: 'x', prototype: 'p' })
+	},
+	{
+		name: 'rest, own key named toString, wrong',
+		schema: REST,
+		input: () => ({ a: 'x', toString: 't' })
+	},
+	{
+		name: 'rest, a default, own key named constructor',
+		schema: REST_DEFAULT,
+		input: () => ({ a: 'x', constructor: 1 })
+	},
+	{
+		name: 'rest, inherited key',
+		schema: REST,
+		input: () => inheriting({ z: 1 }, { a: 'x' })
+	},
+	{
+		name: 'rest, inherited key, wrong',
+		schema: REST,
+		input: () => inheriting({ z: 'z' }, { a: 'x' })
+	},
+	{
+		name: 'rest, a default, inherited key',
+		schema: REST_DEFAULT,
+		input: () => inheriting({ z: 1 }, { a: 'x' })
+	},
+	{
+		name: 'rest, a default, inherited key, wrong',
+		schema: REST_DEFAULT,
+		input: () => inheriting({ z: 'z' }, { a: 'x' })
+	},
+	{
+		name: 'rest, own __proto__ key',
+		schema: REST,
+		input: () => JSON.parse('{"a": "x", "__proto__": 1}')
+	},
+	{
+		name: 'rest, own __proto__ key, wrong',
+		schema: REST,
+		input: () => JSON.parse('{"a": "x", "__proto__": {"q": 1}}')
+	},
+	{
+		name: 'rest, a default, own __proto__ key, wrong',
+		schema: REST_DEFAULT,
+		input: () => JSON.parse('{"a": "x", "__proto__": "p", "z": 1}')
+	},
+	{ name: 'rest, symbol key', schema: REST, input: () => ({ a: 'x', [SYMBOL]: 's' }) },
+	{
+		name: 'rest, non-enumerable key',
+		schema: REST,
+		input: () => with_hidden({ a: 'x' }, 'z', 'z')
+	},
+	{ name: 'rest, null prototype', schema: REST, input: () => inheriting(null, { a: 'x', z: 1 }) },
+	{ name: 'rest, class instance', schema: REST, input: () => new ConformancePoint() },
+	{ name: 'rest, array', schema: REST, input: () => [], also: ['typebox'] },
+	{ name: 'rest, array with the key', schema: REST, input: () => Object.assign([], { a: 'x' }) },
+	{ name: 'rest, array, empty schema', schema: (l) => l.rest({}, l.number), input: () => [1] },
+	{ name: 'rest, null', schema: REST, input: () => null }
 ];
 
 //

@@ -22,18 +22,18 @@
 		"type_json": 0.6387
 	},
 	"parse": 132,
-	"library": 2843,
+	"library": 3055,
 	"exports": {
 		"SchemaError": {
 			"last_in": 6,
 			"alone": 177
 		},
 		"array": {
-			"last_in": 89,
+			"last_in": 92,
 			"alone": 322
 		},
 		"bigint": {
-			"last_in": 24,
+			"last_in": 25,
 			"alone": 149
 		},
 		"boolean": {
@@ -41,7 +41,7 @@
 			"alone": 151
 		},
 		"brand": {
-			"last_in": 11,
+			"last_in": 10,
 			"alone": 41
 		},
 		"check": {
@@ -61,35 +61,35 @@
 			"alone": 116
 		},
 		"get_issue_value": {
-			"last_in": 63,
+			"last_in": 65,
 			"alone": 125
 		},
 		"integer": {
-			"last_in": 17,
+			"last_in": 19,
 			"alone": 158
 		},
 		"is": {
-			"last_in": 18,
+			"last_in": 20,
 			"alone": 20
 		},
 		"is_schema": {
-			"last_in": 47,
+			"last_in": 46,
 			"alone": 67
 		},
 		"lazy": {
-			"last_in": 55,
+			"last_in": 57,
 			"alone": 107
 		},
 		"literal": {
-			"last_in": 61,
+			"last_in": 63,
 			"alone": 304
 		},
 		"loose_object": {
-			"last_in": 169,
+			"last_in": 161,
 			"alone": 462
 		},
 		"max_length": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 205
 		},
 		"max_value": {
@@ -97,7 +97,7 @@
 			"alone": 199
 		},
 		"message": {
-			"last_in": 110,
+			"last_in": 111,
 			"alone": 211
 		},
 		"min_length": {
@@ -105,27 +105,31 @@
 			"alone": 204
 		},
 		"min_value": {
-			"last_in": 19,
+			"last_in": 21,
 			"alone": 199
 		},
 		"nullable": {
-			"last_in": 36,
+			"last_in": 37,
 			"alone": 118
 		},
 		"number": {
-			"last_in": 23,
+			"last_in": 24,
 			"alone": 156
 		},
 		"object": {
-			"last_in": 94,
+			"last_in": 93,
 			"alone": 517
 		},
+		"object_with_rest": {
+			"last_in": 212,
+			"alone": 621
+		},
 		"one_of": {
-			"last_in": 92,
+			"last_in": 95,
 			"alone": 328
 		},
 		"optional": {
-			"last_in": 20,
+			"last_in": 21,
 			"alone": 84
 		},
 		"parse_or_throw": {
@@ -133,11 +137,11 @@
 			"alone": 209
 		},
 		"pipe": {
-			"last_in": 131,
+			"last_in": 132,
 			"alone": 211
 		},
 		"record": {
-			"last_in": 128,
+			"last_in": 126,
 			"alone": 393
 		},
 		"regex": {
@@ -145,15 +149,15 @@
 			"alone": 194
 		},
 		"safe_integer": {
-			"last_in": 24,
+			"last_in": 25,
 			"alone": 166
 		},
 		"string": {
-			"last_in": 20,
+			"last_in": 19,
 			"alone": 149
 		},
 		"strip_object": {
-			"last_in": 98,
+			"last_in": 101,
 			"alone": 506
 		},
 		"transform": {
@@ -161,11 +165,11 @@
 			"alone": 68
 		},
 		"union": {
-			"last_in": 154,
+			"last_in": 158,
 			"alone": 378
 		},
 		"unknown": {
-			"last_in": 29,
+			"last_in": 30,
 			"alone": 180
 		},
 		"variant": {
@@ -173,18 +177,18 @@
 			"alone": 417
 		},
 		"with_default": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 92
 		},
 		"with_default_fn": {
-			"last_in": 25,
+			"last_in": 26,
 			"alone": 97
 		}
 	},
 	"modules": {
-		"meta.ts": 99,
-		"standard_schema.ts": 94,
-		"schema_json.ts": 2223,
-		"introspect.ts": 701
+		"meta.ts": 100,
+		"standard_schema.ts": 93,
+		"schema_json.ts": 2247,
+		"introspect.ts": 724
 	}
 }
