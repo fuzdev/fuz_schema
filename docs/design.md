@@ -635,7 +635,8 @@ issues. These it holds:
     a time regrows it
 - `record` validates the value of an own `__proto__` key, and fails where it
   is refused, where both drop the key unread and pass, and a `union` with the
-  record as an option goes on to the next. By design: every own
+  record as an option goes on to the next, which keeps the key where it
+  returns the input as it is. By design: every own
   key's value is validated, which is the stricter answer, and is what the
   Rust crate does.
 - Valibot and Zod need the key of every entry that isn't optional. Here a key
@@ -661,15 +662,21 @@ issues. These it holds:
   back, and so does an `object_with_rest` with an own key named `constructor`
   or `prototype`, or one it inherits, and a `record` beside the check keeps
   its own key named `constructor`. A `with_default` under an `optional`, and
-  a `with_default` of `undefined`, leave a missing key out, a `with_default`
-  whose schema gives `undefined` fills its value in, and keeps the
+  a `with_default` of `undefined`, leave a missing key out, the second also
+  beside one that doesn't match its schema, which is filled in, a
+  `with_default` whose schema gives `undefined` fills its value in, and keeps the
   `undefined` for a value given, a `pipe` that starts with a `with_default` of
   `undefined` runs its steps for a missing key, a `loose_object` keeps an
   own key named `constructor` beside a `with_default` it fills in as it is,
   and beside a `with_default` of `undefined` whose missing key it leaves out,
-  a check after a `strict_object` with an unknown key is not run, and a
-  `union` matches an object of a bare `check` and a bare `transform` whose
-  keys are missing, as Zod's `transform` lets its key be missing.
+  a `pipe` that starts with an `optional` runs no step for a missing key, a
+  check after a `strict_object` with an unknown key is not run, and neither
+  is one after an object whose `unknown` then a check that fails has its key
+  missing, or whose `pipe` that starts with a `transform` and then fails
+  does, the object alone or in an array, and a `union` matches an object of
+  a bare `check` and a `transform` whose keys are missing, bare or under a
+  `union`, a `nullable`, or a `lazy`, as Zod's `transform` lets its key be
+  missing.
 - a `pipe` that starts with a `with_default` or a `with_default_fn` and whose
   steps give `undefined` leaves a missing key out, where both write the key as
   `undefined`: as the entry itself, under a `message`, and as the first schema
@@ -734,6 +741,11 @@ sides it is on:
   takes the class instance. And an input that a
   `union`'s option with a rest takes comes back, still inheriting the key,
   where Zod takes a later option and Valibot copies it.
+- a symbol key of a `record` input is left unread, where Zod refuses it and
+  Valibot takes it. So a `union` with an option of such a record of a
+  default that doesn't match its schema takes the input with an `undefined`
+  value, as a copy with the default, where both refuse it, as Valibot
+  refuses the default.
 
 Where the two disagree, this library goes with:
 
@@ -745,14 +757,16 @@ Where the two disagree, this library goes with:
   is the consumer's, and running it through the schema costs every parse
   that fills it in. A value given, and not filled in, whose schema gives
   `undefined` stays `undefined`, as in Valibot, where Zod fills the default
-  in.
+  in. Beside a `with_default` of `undefined`, whose missing key it leaves
+  out as Valibot does, it goes with neither.
 - **Zod on an optional key under another schema.** An `optional`, a
   `with_default`, or a `with_default_fn` under a `nullable`, a `lazy`, or a
-  `union` lets the key be
-  missing, as in Zod and not in Valibot. A `transform` that is the entry
-  itself lets the key be missing too, as Zod's does. By design: a missing key
-  is the `undefined` it reads as to every schema but the three that need
-  their key, so the object schemas look for no key to reach a verdict.
+  `union` lets the key be missing, as in Zod and not in Valibot. A
+  `transform` that is the entry itself, or under a `nullable`, a `lazy`, or
+  a `union`, lets the key be missing too, as Zod's does, and so does a
+  `pipe` that starts with one. By design: a missing key is the `undefined` it
+  reads as to every schema but the three that need their key, so the object
+  schemas look for no key to reach a verdict.
   Where a `pipe` that starts with a `with_default` under one of them gives
   `undefined`, the key stays out, where Zod writes it.
 - **Zod or neither on the options of a `union` before one that fills the key
@@ -797,10 +811,12 @@ Where the two disagree, this library goes with:
   too, as in Zod, where Valibot stops at the discriminator.
 - **Valibot on a default under an `optional`.** `optional(with_default(...))`
   and `optional(with_default_fn(...))` leave `undefined` and a missing key as
-  they are, where Zod fills the default in. And a `with_default` whose value is `undefined` leaves a
-  missing key out, where Zod writes it. By design: wrappers compose in the
-  order written, the outer `optional` answering `undefined` before the
-  default inside it is asked.
+  they are, where Zod fills the default in, and so does an `optional` of a
+  default under a `nullable` or a `lazy`. And a `with_default` whose value is
+  `undefined` leaves a missing key out, where Zod writes it, whatever its
+  schema reaches, another default among them. By design: wrappers compose
+  in the order written, the outer `optional` answering `undefined` before
+  the default inside it is asked.
 - **Zod on an own key named `constructor` or `prototype`**, in an
   `object_with_rest`: Zod validates it with the rest schema, and Valibot
   leaves it out unread. By design: it is an own key, as any other.
@@ -840,6 +856,10 @@ Where the two disagree, this library goes with:
   the length of an array too long before its items and reports only that,
   and of one too short after them and reports both. Valibot reports the
   item, as here, where a `pipe` stops at its first failing step.
+- **Valibot on a check after an object whose `unknown` then a check that
+  fails has its key missing.** Valibot refuses the key and stops, as here,
+  where a `pipe` stops at its first failing step. Zod runs the entry's check
+  on the `undefined`, and the check after the object.
 - **Valibot on the length of a string.** `min_length` and `max_length` read
   `length`, which counts a surrogate pair as two, as Valibot's do, where
   Zod's count it as one.

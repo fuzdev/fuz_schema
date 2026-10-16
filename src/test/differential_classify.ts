@@ -65,6 +65,7 @@ import {
 	type DifferentialEntries,
 	type DifferentialInput,
 	type DifferentialKind,
+	type DifferentialObjectSpec,
 	type DifferentialResult,
 	type DifferentialResults,
 	type DifferentialRun,
@@ -80,16 +81,20 @@ import {
 	WRAPPERS,
 	collect_input_objects,
 	drop_before_check,
+	drop_before_check_at,
 	entry_specs,
+	holder_returned,
 	holds_no_proto,
 	is_bare_transform,
 	is_index,
 	is_object,
+	left_unread,
 	path_text,
 	reaches_check,
 	rewrite_missing_keys,
 	rewrite_prototypes,
 	rewrite_record_proto,
+	rewrite_record_symbols,
 	same_apart,
 	same_given_keys,
 	same_issues_renamed,
@@ -424,7 +429,15 @@ const explain = (
 	let r = results;
 	let current = input;
 	let checked = false;
-	let unprototyped = false;
+	let taken_away = false;
+	// the input with an own `__proto__` key of a `record` renamed, theirs on it,
+	// the paths of the renamed keys, and whether a result of theirs left one out
+	let renamed: {
+		input: DifferentialInput;
+		results: DifferentialResults;
+		to: Array<DifferentialPath>;
+		left_out: (result: DifferentialResult) => boolean;
+	} | null = null;
 	if (rules.has('prototype_ignored')) {
 		const plain = rewrite_prototypes(spec, current);
 		if (plain !== current) {
@@ -438,7 +451,26 @@ const explain = (
 			) {
 				current = plain;
 				r = r2;
-				unprototyped = true;
+				taken_away = true;
+			}
+		}
+	}
+	if (rules.has('symbol_ignored')) {
+		const next = rewrite_record_symbols(spec, current);
+		if (next.input !== current) {
+			const r2 = run_differential_case(spec, next.input, run);
+			// where ours did the same apart from the key, and left the key unread,
+			// and zod and valibot either did the same too, or now disagree, which
+			// `split_on_a_side` is for
+			const theirs_kept = r2.zod.text === r.zod.text && r2.valibot.text === r.valibot.text;
+			if (
+				(theirs_kept || r2.zod.text !== r2.valibot.text) &&
+				same_apart(r.fuz_schema, r2.fuz_schema, next.touched) &&
+				left_unread(r.fuz_schema, next.touched)
+			) {
+				current = next.input;
+				r = r2;
+				taken_away = true;
 			}
 		}
 	}
@@ -452,11 +484,7 @@ const explain = (
 		past_options = false
 	): boolean => {
 		const all = rewrite_missing_keys(spec, current, needs);
-		if (all.input === current) return false;
-		const kept = (next: DifferentialRewritten): boolean => {
-			if (keeps(r.fuz_schema, run('fuz_schema', spec, next.input), next.touched)) return true;
-			// the options before the check, which ours did without on the input
-			const dropped = past_options ? drop_before_check(spec) : spec;
+		const kept_without = (next: DifferentialRewritten, dropped: DifferentialSpec): boolean => {
 			if (dropped === spec) return false;
 			const ours = run('fuz_schema', dropped, current);
 			return (
@@ -464,12 +492,45 @@ const explain = (
 				keeps(ours, run('fuz_schema', dropped, next.input), next.touched)
 			);
 		};
-		let next: DifferentialRewritten | null = kept(all) ? all : null;
+		const kept = (next: DifferentialRewritten): boolean => {
+			if (keeps(r.fuz_schema, run('fuz_schema', spec, next.input), next.touched)) return true;
+			if (!past_options) return false;
+			// the options before the check, which ours did without on the input:
+			// of every union, else only of those of the keys given
+			const dropped = drop_before_check(spec);
+			if (kept_without(next, dropped)) return true;
+			const at_keys = drop_before_check_at(spec, next.touched);
+			return at_keys !== dropped && kept_without(next, at_keys);
+		};
+		let next: DifferentialRewritten | null = all.input !== current && kept(all) ? all : null;
 		// else the keys of one structure at a time, as where options of a union
 		// the input is given to name different keys
 		for (let i = 0; !next && i < all.visits; i++) {
-			const one = rewrite_missing_keys(spec, current, needs, i);
+			const one = rewrite_missing_keys(spec, current, needs, { only: i });
 			if (one.input !== current && kept(one)) next = one;
+		}
+		// else only the keys whose check takes them, one at a time: a key ours
+		// does more with than leave `undefined` is not one, as a check beside
+		// another option of a union that needs the key. And a strict object
+		// beside a key that doesn't name it keeps the key out only where one of
+		// the three takes the object without it
+		if (!next) {
+			const strict_takes = (strict: DifferentialObjectSpec, object: DifferentialInput): boolean =>
+				(['zod', 'valibot', 'fuz_schema'] as const).some((lib) => run(lib, strict, object).ok);
+			const candidates = rewrite_missing_keys(spec, current, needs, { strict_takes });
+			const keys: Set<string> = new Set();
+			let found: DifferentialRewritten | null = null;
+			for (const path of candidates.touched) {
+				const text = path_text(path);
+				if (keys.has(text)) continue;
+				const with_key = new Set([...keys, text]);
+				const one = rewrite_missing_keys(spec, current, needs, { keys: with_key, strict_takes });
+				if (one.input !== current && kept(one)) {
+					keys.add(text);
+					found = one;
+				}
+			}
+			next = found;
 		}
 		if (!next) return false;
 		current = next.input;
@@ -503,8 +564,8 @@ const explain = (
 			};
 			// only where zod and valibot dropped the key unread, and where ours
 			// failed at the key as it does at the key renamed, so the value fails
-			const renamed = rewrite_record_proto(spec, current, RENAMED_PROTO).input;
-			const ours_renamed = run('fuz_schema', spec, renamed);
+			const renamed_input = rewrite_record_proto(spec, current, RENAMED_PROTO).input;
+			const ours_renamed = run('fuz_schema', spec, renamed_input);
 			const unread = r2.zod.text === r.zod.text && r2.valibot.text === r.valibot.text;
 			if (
 				unread &&
@@ -524,22 +585,28 @@ const explain = (
 				// went on to a later option: theirs are of the key renamed, which
 				// they read as they read any key, and without it
 				const to = next.touched.map((t) => [...t.slice(0, -1), RENAMED_PROTO]);
-				const r3 = run_differential_case(spec, renamed, run);
+				const r3 = run_differential_case(spec, renamed_input, run);
 				// where theirs leave the renamed key out, as they do the key, or keep
-				// it where ours keeps the key, which `loose_own_proto` is for
+				// it where ours keeps the key, which `loose_own_proto` is for, or in
+				// their input returned as it is, as ours returns its own
 				const left_out = (result: DifferentialResult): boolean =>
 					!result.ok ||
 					to.every(
 						(t) =>
 							value_at(result.value, t) === undefined ||
+							holder_returned(result, t) ||
 							(rules.has('loose_own_proto') && !holds_no_proto(r.fuz_schema, [t]))
 					);
-				if (left_out(r3.zod) && left_out(r3.valibot)) {
-					r = {
-						zod: unrename(r3.zod, to),
-						valibot: unrename(r3.valibot, to),
-						fuz_schema: r.fuz_schema
-					};
+				const zod = unrename(r3.zod, to);
+				const valibot = unrename(r3.valibot, to);
+				// or where one keeps it, and they disagree, which `split_on_a_side`
+				// is for, on the input with the key renamed
+				if (
+					(left_out(r3.zod) && left_out(r3.valibot)) ||
+					(rules.has('split_on_a_side') && zod.text !== valibot.text)
+				) {
+					r = { zod, valibot, fuz_schema: r.fuz_schema };
+					renamed = { input: renamed_input, results: r3, to, left_out };
 				}
 			}
 		}
@@ -548,10 +615,34 @@ const explain = (
 		return { explained: false, split: null };
 	}
 	if (r.zod.text !== r.valibot.text) {
-		// a split the check's key brought out, or the prototype taken away, that
-		// one entry of the table recognizes, on the side of whose row ours is
-		if (!(checked || unprototyped) || !rules.has('split_on_a_side')) {
+		// a split the check's key brought out, the prototype or a symbol key
+		// taken away, or an own `__proto__` key of a record renamed, that one
+		// entry of the table recognizes, on the side of whose row ours is
+		if (!(checked || taken_away || renamed) || !rules.has('split_on_a_side')) {
 			return { explained: false, split: null };
+		}
+		if (renamed) {
+			// told apart on the input with the key renamed, where they disagree
+			// there too, and held to the result of the side that left it out,
+			// read as on the input
+			const { input: renamed_at, results, to, left_out } = renamed;
+			if (results.zod.text === results.valibot.text) return { explained: false, split: null };
+			const split = split_side(spec, renamed_at, results.zod, results.valibot, run);
+			const held = split.kind === 'one' ? split.held : null;
+			return {
+				explained:
+					held !== null &&
+					left_out(held.result) &&
+					same_differential_result(
+						spec,
+						r.fuz_schema,
+						unrename(held.result, to),
+						rules,
+						run,
+						held.inherited
+					),
+				split
+			};
 		}
 		const split = split_side(spec, current, r.zod, r.valibot, run);
 		const held = split.kind === 'one' ? split.held : null;

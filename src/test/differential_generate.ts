@@ -495,7 +495,8 @@ export type DifferentialInput =
 			frozen: boolean;
 	  };
 
-const SYMBOL = Symbol.for('sym');
+/** The symbol key an object input is given, `SYMBOL` in `conformance_test_helpers.ts`. */
+export const DIFFERENTIAL_SYMBOL = Symbol.for('sym');
 
 /** An input of the value `v`. */
 export const value_in = (v: unknown): DifferentialInput => ({ t: 'v', v });
@@ -740,7 +741,7 @@ export const materialize_input = (input: DifferentialInput): unknown => {
 							: Object.prototype;
 			const object = define_entries(Object.create(proto), input.own, true);
 			define_entries(object, input.hidden, false);
-			if (input.symbol) object[SYMBOL] = materialize_input(input.symbol);
+			if (input.symbol) object[DIFFERENTIAL_SYMBOL] = materialize_input(input.symbol);
 			return input.frozen ? Object.freeze(object) : object;
 		}
 	}

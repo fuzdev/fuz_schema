@@ -24,6 +24,8 @@ import {
 import {
 	LENGTH_AND_VALUE_STEPS,
 	PIPE_STEPS,
+	RENAMED_PROTO,
+	WRAPPERS,
 	is_bare_transform,
 	is_index,
 	is_object,
@@ -127,6 +129,16 @@ const without_default = (spec: DifferentialSpec): DifferentialSpec =>
 			? (spec as { of: DifferentialSpec }).of
 			: spec;
 
+// the default of a schema, under its messages, `nullable`s and `lazy`s, taken
+// out, the same where it reaches none
+const without_held_default = (spec: DifferentialSpec): DifferentialSpec => {
+	if (spec.t === 'message' || spec.t === 'nullable' || spec.t === 'lazy') {
+		const of = without_held_default(spec.of);
+		return of === spec.of ? spec : { ...spec, of };
+	}
+	return is_default(spec) ? (spec as { of: DifferentialSpec }).of : spec;
+};
+
 // each default of a value but `undefined` made to take its value as it is,
 // as zod does, by a `one_of` of it before its schema
 const without_default_as_is = (spec: DifferentialSpec): DifferentialSpec =>
@@ -136,10 +148,24 @@ const without_default_as_is = (spec: DifferentialSpec): DifferentialSpec =>
 			: null
 	);
 
-// each `with_default` of `undefined` an `optional`, as valibot reads it
+// a schema with the defaults it reaches without a structure taken out:
+// under a wrapper, as an option of a union, or at the start of a pipe
+const without_head_defaults = (spec: DifferentialSpec): DifferentialSpec => {
+	if (is_default(spec)) return without_head_defaults((spec as { of: DifferentialSpec }).of);
+	if (spec.t === 'union' || WRAPPERS.has(spec.t)) {
+		return map_spec_children(spec, without_head_defaults);
+	}
+	return spec;
+};
+
+// each `with_default` of `undefined` an `optional`, as valibot reads it, which
+// gives `undefined` for a missing key and runs its schema only on a value, so
+// the defaults that schema reaches without a structure taken out
 const without_default_of_undefined = (spec: DifferentialSpec): DifferentialSpec =>
 	map_spec(spec, (s) =>
-		s.t === 'default' && s.v === undefined ? { t: 'optional', of: s.of } : null
+		s.t === 'default' && s.v === undefined
+			? { t: 'optional', of: without_head_defaults(s.of) }
+			: null
 	);
 
 // the length of a string in code points, as zod's `max_length` counts it
@@ -227,6 +253,123 @@ const pipe_default = (spec: DifferentialSpec): DifferentialSpec | null => {
 	return is_default(head) ? head : null;
 };
 
+// whether a schema reaches a `transform` as it is, under a `nullable`, a
+// `lazy`, or a `message`, or as an option of a `union`
+const reaches_transform = (spec: DifferentialSpec): boolean => {
+	if (spec.t === 'transform') return true;
+	if (spec.t === 'nullable' || spec.t === 'lazy' || spec.t === 'message') {
+		return reaches_transform(spec.of);
+	}
+	return spec.t === 'union' && spec.of.some(reaches_transform);
+};
+
+// whether an entry, past its messages, is a schema of `kind` that holds a
+// transform it reaches, so the outermost of a `union`, a `nullable`, and a
+// `lazy` names the entry's row
+const is_transform_under =
+	(kind: 'union' | 'nullable' | 'lazy') =>
+	(spec: DifferentialSpec): boolean => {
+		const head = unwrap_messages(spec);
+		return head.t === kind && reaches_transform(head);
+	};
+
+// whether zod's result is valibot's given the missing keys of the entries
+// `needs` names, and a key valibot then writes as `undefined` left out, as
+// zod leaves out a key whose entry gives `undefined`
+const valibot_given_keys = (
+	spec: DifferentialSpec,
+	input: DifferentialInput,
+	zod: DifferentialResult,
+	run: DifferentialRun,
+	needs: (entry: DifferentialSpec) => boolean
+): boolean => {
+	const { input: given, touched } = rewrite_missing_keys(spec, input, needs);
+	if (given === input) return false;
+	const valibot = run('valibot', spec, given);
+	if (valibot.text === zod.text) return true;
+	const left_out = touched.filter(
+		(t) => value_at(valibot.value, t) === undefined && !has_path(zod.value, t)
+	);
+	return (
+		zod.ok &&
+		valibot.ok &&
+		render_value(without_touched(valibot.value, left_out)) === render_value(zod.value)
+	);
+};
+
+// whether a schema reaches an `unknown` under steps of a pipe, a `nullable`,
+// a `lazy`, or a `message`
+const reaches_unknown = (spec: DifferentialSpec): boolean => {
+	if (spec.t === 'unknown') return true;
+	if (
+		spec.t === 'nullable' ||
+		spec.t === 'lazy' ||
+		spec.t === 'message' ||
+		PIPE_STEPS.has(spec.t)
+	) {
+		return reaches_unknown((spec as { of: DifferentialSpec }).of);
+	}
+	return false;
+};
+
+// the schema a pipe starts with, as the entry itself or under a `message`,
+// through every pipe that is its first schema, `null` where it is no pipe
+const pipe_start = (spec: DifferentialSpec): DifferentialSpec | null => {
+	let head = unwrap_messages(spec);
+	if (!PIPE_STEPS.has(head.t)) return null;
+	while (PIPE_STEPS.has(head.t)) head = unwrap_messages((head as { of: DifferentialSpec }).of);
+	return head;
+};
+
+// whether a pipe starts with an `optional`
+const is_pipe_from_optional = (spec: DifferentialSpec): boolean =>
+	pipe_start(spec)?.t === 'optional';
+
+// whether a pipe starts with a `transform`
+const is_pipe_from_transform = (spec: DifferentialSpec): boolean =>
+	pipe_start(spec)?.t === 'transform';
+
+// the finite number an infinity is given as, and its sign
+const FINITE = Number.MAX_VALUE;
+
+// each infinity that is the value of an own `__proto__` key of a `record`
+// input, renamed as `record_own_proto` renames it, given as `FINITE` of its
+// sign, the same input where it has none
+const without_proto_infinities = (input: DifferentialInput): DifferentialInput => {
+	const entries = (list: DifferentialEntries, at_key: boolean): DifferentialEntries => {
+		const next = list.map(([key, x]): [string, DifferentialInput] => [
+			key,
+			at_key && key === RENAMED_PROTO && x.t === 'v' && (x.v === Infinity || x.v === -Infinity)
+				? { t: 'v', v: x.v > 0 ? FINITE : -FINITE }
+				: without_proto_infinities(x)
+		]);
+		return next.some(([, x], i) => x !== list[i]![1]) ? next : list;
+	};
+	switch (input.t) {
+		case 'v':
+			return input;
+		case 'arr': {
+			const items = input.items.map((x) => x && without_proto_infinities(x));
+			const extra = entries(input.extra, false);
+			return items.some((x, i) => x !== input.items[i]) || extra !== input.extra
+				? { ...input, items, extra }
+				: input;
+		}
+		case 'obj': {
+			const own = entries(input.own, true);
+			const proto = entries(input.proto, false);
+			const hidden = entries(input.hidden, false);
+			const symbol = input.symbol && without_proto_infinities(input.symbol);
+			return own !== input.own ||
+				proto !== input.proto ||
+				hidden !== input.hidden ||
+				symbol !== input.symbol
+				? { ...input, own, proto, hidden, symbol }
+				: input;
+		}
+	}
+};
+
 const RECOGNIZERS: Array<SplitRecognizer> = [
 	// an own key named `constructor` or `prototype` an object doesn't name:
 	// zod validates it and keeps it, valibot leaves it out unread
@@ -269,7 +412,14 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 					? { ...s, of: without_default(s.of) }
 					: null
 			);
-			return without !== spec && both_give(valibot, without, input, run);
+			if (without !== spec && both_give(valibot, without, input, run)) return true;
+			// or under a `nullable` or a `lazy` the optional holds
+			const held = map_spec(spec, (s) => {
+				if (s.t !== 'optional') return null;
+				const of = without_held_default(s.of);
+				return of === s.of ? null : { ...s, of };
+			});
+			return held !== spec && held !== without && both_give(valibot, held, input, run);
 		}
 	},
 	// a default of `undefined`: zod writes the missing key
@@ -329,25 +479,63 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 				);
 			})
 	},
+	// a pipe from an optional as the entry, its key missing: zod runs its steps
+	// and writes what they give, valibot runs none and leaves the key out
+	{
+		row: 'optional(string) then a transform to "T" entry, key missing / *',
+		combination:
+			'a bare check entry and an optional(string) then a transform to "T" entry, keys missing',
+		at: (spec, _input, zod, valibot) =>
+			differs_only_at(
+				spec,
+				zod,
+				valibot,
+				(at) =>
+					!at.has.input &&
+					at.has.zod &&
+					!at.has.valibot &&
+					!!at.chain[0] &&
+					is_pipe_from_optional(at.chain[0])
+			)
+	},
 	// a bare transform, its key missing: zod runs it, valibot needs the key
 	{
 		row: 'bare transform to "T" entry, key missing / *',
 		combination: 'union[string, object of a bare check and a bare transform], keys missing',
-		at: (spec, input, zod, _valibot, run) => {
-			// valibot given the keys writes those zod leaves out as `undefined`
-			const { input: given, touched } = rewrite_missing_keys(spec, input, is_bare_transform);
-			if (given === input) return false;
-			const valibot = run('valibot', spec, given);
-			if (valibot.text === zod.text) return true;
-			const left_out = touched.filter(
-				(t) => value_at(valibot.value, t) === undefined && !has_path(zod.value, t)
-			);
-			return (
-				zod.ok &&
-				valibot.ok &&
-				render_value(without_touched(valibot.value, left_out)) === render_value(zod.value)
-			);
-		}
+		at: (spec, input, zod, _valibot, run) =>
+			valibot_given_keys(spec, input, zod, run, is_bare_transform)
+	},
+	// a transform under a union, a nullable, or a lazy, its key missing: zod
+	// runs it, valibot needs the key
+	{
+		row: 'union[string, bare transform to "T"] entry, key missing / *',
+		combination:
+			'union[string, object of a bare check and a union[string, bare transform to "T"]], keys missing',
+		at: (spec, input, zod, _valibot, run) =>
+			valibot_given_keys(spec, input, zod, run, is_transform_under('union'))
+	},
+	{
+		row: 'nullable(bare transform to "T") entry, key missing / *',
+		combination:
+			'union[string, object of a bare check and a nullable(bare transform to "T")], keys missing',
+		at: (spec, input, zod, _valibot, run) =>
+			valibot_given_keys(spec, input, zod, run, is_transform_under('nullable'))
+	},
+	{
+		row: 'lazy(bare transform to "T") entry, key missing / *',
+		combination:
+			'union[string, object of a bare check and a lazy(bare transform to "T")], keys missing',
+		at: (spec, input, zod, _valibot, run) =>
+			valibot_given_keys(spec, input, zod, run, is_transform_under('lazy'))
+	},
+	// a pipe that starts with a transform, its key missing: zod runs it,
+	// valibot needs the key
+	{
+		row: 'transform to "T" then a transform entry, key missing / *',
+		combination:
+			'a check after an object of a bare check and a transform then a check that fails, keys missing',
+		at: (spec, input, zod, _valibot, run) =>
+			valibot_given_keys(spec, input, zod, run, is_pipe_from_transform)
 	},
 	// a check after an object with an unknown key: zod runs it, valibot stops
 	{
@@ -361,6 +549,19 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 					: null
 			);
 			return without !== spec && both_give(valibot, without, input, run);
+		}
+	},
+	// a check after an object whose missing key is an `unknown`'s, then a check
+	// that fails: zod runs both checks, valibot refuses the key and stops. Given
+	// the key, valibot runs them too, and gives zod's result
+	{
+		row: 'a check after an object of unknown then a check that fails, key missing',
+		combination:
+			'a check after an object of a bare check and unknown then a check that fails, keys missing',
+		at: (spec, input, zod, valibot, run) => {
+			if (zod.ok || valibot.ok) return false;
+			const { input: given } = rewrite_missing_keys(spec, input, reaches_unknown);
+			return given !== input && both_give(zod, spec, given, run);
 		}
 	},
 	// a default zod fills in as it is and valibot runs through its schema, and
@@ -405,6 +606,28 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 		},
 		neither: (spec, input, run) => run('zod', without_default_of_undefined(spec), input)
 	},
+	// a default zod fills in as it is and valibot runs through its schema, and
+	// a default of `undefined` zod writes the missing key of, which valibot
+	// leaves out: ours goes with zod on the one, and with valibot on the other
+	{
+		row: 'a default of a wrong value entry and a default of undefined entry, keys missing / *',
+		combination:
+			'union[string, object of a default of a wrong value, a bare check, and a default of undefined], keys missing',
+		neither: (spec, input, run) => run('zod', without_default_of_undefined(spec), input),
+		at: (spec, input, _zod, _valibot, run) => {
+			const without_undefined = without_default_of_undefined(spec);
+			const without_as_is = without_default_as_is(spec);
+			if (without_undefined === spec || without_as_is === spec) return false;
+			// each library sees each trigger, and they agree without both
+			const agree = (s: DifferentialSpec): boolean =>
+				run('zod', s, input).text === run('valibot', s, input).text;
+			return (
+				!agree(without_undefined) &&
+				!agree(without_as_is) &&
+				agree(without_default_as_is(without_undefined))
+			);
+		}
+	},
 	// a length check after an array too long whose item fails: zod reports the
 	// length, valibot the item
 	{
@@ -438,6 +661,20 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 					chain.some((c) => c.t === 'max_length' && code_points(value) <= c.n && value.length > c.n)
 				);
 			})
+	},
+	// an infinity, the value of an own `__proto__` key of a record: zod's
+	// `number` refuses it, valibot's takes it. Given a finite number, both
+	// give valibot's result, with the number
+	{
+		row: 'number, Infinity',
+		combination:
+			'union[record(number), transform to undefined], own __proto__ key whose value is Infinity',
+		at: (spec, input, _zod, valibot, run) => {
+			const finite = without_proto_infinities(input);
+			if (finite === input) return false;
+			const to = valibot.text.replaceAll('Infinity', String(FINITE));
+			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+		}
 	},
 	// an array given to a record: valibot takes it as an object
 	{

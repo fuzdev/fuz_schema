@@ -890,6 +890,23 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		l.union([l.string, l.check(() => true)])
 	),
 	...missing_and_undefined('bare transform to "T" entry', (l) => l.transform(() => 'T')),
+	// and one under a union, a nullable, or a lazy: zod runs it on the missing key
+	...missing_and_undefined('union[string, bare transform to "T"] entry', (l) =>
+		l.union([l.string, l.transform(() => 'T')])
+	),
+	...missing_and_undefined('nullable(bare transform to "T") entry', (l) =>
+		l.nullable(l.transform(() => 'T'))
+	),
+	...missing_and_undefined('lazy(bare transform to "T") entry', (l) =>
+		l.lazy(() => l.transform(() => 'T'))
+	),
+	// and a pipe that starts with one
+	...missing_and_undefined('transform to "T" then a transform entry', (l) =>
+		l.map(
+			l.transform(() => 'T'),
+			(x: string) => x + '!'
+		)
+	),
 	// the missing key beside a disagreement of the two that their refusals hide
 	{
 		name: 'loose, a bare check entry, key missing, an unknown key named constructor',
@@ -1002,6 +1019,15 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => ({ b: 'x' })
 	},
 	{
+		name: 'a bare check entry and an optional(string) then a transform to "T" entry, keys missing',
+		schema: (l) =>
+			l.strip({
+				a: l.check(() => true),
+				b: l.map(l.optional(l.string), () => 'T')
+			}),
+		input: () => ({})
+	},
+	{
 		name: 'a bare check entry and a default of undefined then a transform to "T" entry, keys missing',
 		schema: (l) =>
 			l.strip({
@@ -1070,6 +1096,33 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'union[string, object of a bare check and a bare transform], keys missing',
 		schema: (l) =>
 			l.union([l.string, l.strip({ a: l.check(() => true), b: l.transform((x) => x) })]),
+		input: () => ({})
+	},
+	{
+		name: 'union[string, object of a bare check and a union[string, bare transform to "T"]], keys missing',
+		schema: (l) =>
+			l.union([
+				l.string,
+				l.strip({ a: l.check(() => true), b: l.union([l.string, l.transform(() => 'T')]) })
+			]),
+		input: () => ({})
+	},
+	{
+		name: 'union[string, object of a bare check and a nullable(bare transform to "T")], keys missing',
+		schema: (l) =>
+			l.union([
+				l.string,
+				l.strip({ a: l.check(() => true), b: l.nullable(l.transform(() => 'T')) })
+			]),
+		input: () => ({})
+	},
+	{
+		name: 'union[string, object of a bare check and a lazy(bare transform to "T")], keys missing',
+		schema: (l) =>
+			l.union([
+				l.string,
+				l.strip({ a: l.check(() => true), b: l.lazy(() => l.transform(() => 'T')) })
+			]),
 		input: () => ({})
 	},
 	...missing_and_undefined('string entry', (l) => l.string),
@@ -1307,8 +1360,20 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('lazy(default) entry', (l) =>
 		l.lazy(() => l.with_default(l.string, 'D'))
 	),
+	...missing_and_undefined('optional(nullable(default)) entry', (l) =>
+		l.optional(l.nullable(l.with_default(l.string, 'D')))
+	),
+	...missing_and_undefined('optional(lazy(default)) entry', (l) =>
+		l.optional(l.lazy(() => l.with_default(l.string, 'D')))
+	),
 	...missing_and_undefined('default of undefined entry', (l) =>
 		l.with_default(l.optional(l.string), undefined)
+	),
+	...missing_and_undefined('default of undefined of a default entry', (l) =>
+		l.with_default(l.with_default(l.string, 'D'), undefined)
+	),
+	...missing_and_undefined('default of undefined of union[number, default] entry', (l) =>
+		l.with_default(l.union([l.number, l.with_default(l.string, 'D')]), undefined)
 	),
 
 	// a default made by a function, for each value it fills in
@@ -1319,6 +1384,29 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('default_fn of a wrong value entry', (l) =>
 		l.with_default_fn(l.string, () => 5)
 	),
+	// beside a default of `undefined`, whose missing key zod writes and valibot
+	// leaves out: neither's, with zod on the one and valibot on the other
+	{
+		name: 'a default of a wrong value entry and a default of undefined entry, keys missing',
+		entries: (l) => ({
+			a: l.with_default(l.string, 1),
+			d: l.with_default(l.optional(l.string), undefined)
+		}),
+		input: () => ({})
+	},
+	{
+		name: 'union[string, object of a default of a wrong value, a bare check, and a default of undefined], keys missing',
+		schema: (l) =>
+			l.union([
+				l.string,
+				l.strip({
+					a: l.with_default(l.string, 1),
+					b: l.check(() => true),
+					d: l.with_default(l.optional(l.string), undefined)
+				})
+			]),
+		input: () => ({})
+	},
 	// a value given to a default whose schema gives `undefined`: zod fills the
 	// default in, and valibot keeps the `undefined`, as here
 	{
@@ -1549,6 +1637,16 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => JSON.parse('{"__proto__": "x"}')
 	},
 	{
+		name: 'union[record(number), transform to undefined], own __proto__ key whose value is Infinity',
+		schema: (l) => l.union([l.record(l.number), l.transform(() => undefined)]),
+		input: () => ({ ['__proto__']: Infinity })
+	},
+	{
+		name: 'union[record, unknown], own __proto__ key whose value is wrong',
+		schema: (l) => l.union([l.record(l.number), l.unknown]),
+		input: () => JSON.parse('{"__proto__": "x"}')
+	},
+	{
 		name: 'record of defaults, own __proto__ key',
 		schema: (l) => l.record(l.with_default(l.number, 0)),
 		input: () => Object.assign(JSON.parse('{"__proto__": 1}'), { a: undefined })
@@ -1557,6 +1655,13 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'record, symbol key',
 		schema: (l) => l.record(l.number),
 		input: () => ({ a: 1, [SYMBOL]: 'x' })
+	},
+	// and as an option of a union, of a default zod fills in as it is, which
+	// valibot refuses
+	{
+		name: 'union[string, record(default of a wrong value)], a value undefined, a symbol key',
+		schema: (l) => l.union([l.string, l.record(l.with_default(l.string, 1))]),
+		input: () => ({ k0: undefined, [SYMBOL]: 'x' })
 	},
 	{
 		name: 'record, symbol key whose value is right',
@@ -2026,6 +2131,54 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'a check after a strict object of a bare check entry, key missing, an unknown key',
 		schema: (l) => l.refine(l.strict({ a: l.check(() => true) }), () => false),
 		input: () => ({ z: 1 })
+	},
+	// a check after an object whose missing key is an `unknown`'s, then a check
+	// that fails: zod runs both checks, and valibot stops at the key
+	{
+		name: 'a check after an object of unknown then a check that fails, key missing',
+		schema: (l) => l.refine(l.strip({ a: l.refine(l.unknown, () => false) }), () => false),
+		input: () => ({})
+	},
+	{
+		name: 'a check after an object of a bare check and a transform then a check that fails, keys missing',
+		schema: (l) =>
+			l.refine(
+				l.strip({
+					a: l.check(() => true),
+					b: l.refine(
+						l.transform((x: unknown) => x),
+						() => false
+					)
+				}),
+				() => false
+			),
+		input: () => ({})
+	},
+	{
+		name: 'a check after an array of an object of a bare check and a transform then a check that fails, keys missing',
+		schema: (l) =>
+			l.refine(
+				l.array(
+					l.strip({
+						a: l.check(() => true),
+						b: l.refine(
+							l.transform((x: unknown) => x),
+							() => false
+						)
+					})
+				),
+				() => false
+			),
+		input: () => [{}]
+	},
+	{
+		name: 'a check after an object of a bare check and unknown then a check that fails, keys missing',
+		schema: (l) =>
+			l.refine(
+				l.strip({ a: l.check(() => true), b: l.refine(l.unknown, () => false) }),
+				() => false
+			),
+		input: () => ({})
 	},
 	// a length check after an array whose item is wrong: zod checks a too long
 	// array's length before its items, and reports only that

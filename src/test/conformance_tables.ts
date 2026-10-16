@@ -95,6 +95,12 @@ const differences = [
 			},
 			'a bare check entry, key missing, and a default of a transform to undefined entry, a value given':
 				{ both: 'fail at a', ours: 'ok {b: undefined}' },
+			'a bare check entry and an optional(string) then a transform to "T" entry, keys missing': {
+				both: 'fail at a',
+				ours: 'ok {}'
+			},
+			'union[string, object of a default of a wrong value, a bare check, and a default of undefined], keys missing':
+				{ both: 'fail at <root>', ours: 'ok {a: 1}' },
 			'a bare check entry and a default of undefined then a transform to "T" entry, keys missing': {
 				both: 'fail at a',
 				ours: 'ok {b: "T"}'
@@ -131,7 +137,31 @@ const differences = [
 			'union[strict object of a bare check, object of a check of defined], keys missing': {
 				both: 'fail at <root>',
 				ours: 'ok {}'
-			}
+			},
+			// and beside a transform under a union, a nullable, or a lazy, whose
+			// missing key zod runs it on, as here, and valibot refuses
+			'union[string, object of a bare check and a union[string, bare transform to "T"]], keys missing':
+				{ both: 'fail at <root>', ours: 'ok {b: "T"}' },
+			'union[string, object of a bare check and a nullable(bare transform to "T")], keys missing': {
+				both: 'fail at <root>',
+				ours: 'ok {b: "T"}'
+			},
+			'union[string, object of a bare check and a lazy(bare transform to "T")], keys missing': {
+				both: 'fail at <root>',
+				ours: 'ok {b: "T"}'
+			},
+			// and beside an unknown then a check that fails, after which zod runs a
+			// check, and valibot, as here, refuses the missing key and stops
+			'a check after an object of a bare check and unknown then a check that fails, keys missing': {
+				both: 'fail at a, b',
+				ours: 'fail at b'
+			},
+			// and beside a pipe that starts with a transform, then a check that
+			// fails, which zod runs on the missing key, and valibot refuses
+			'a check after an object of a bare check and a transform then a check that fails, keys missing':
+				{ both: 'fail at a, b', ours: 'fail at b' },
+			'a check after an array of an object of a bare check and a transform then a check that fails, keys missing':
+				{ both: 'fail at [0].a, [0].b', ours: 'fail at [0].b' }
 		}
 	},
 	{
@@ -376,6 +406,18 @@ const differences = [
 		}
 	},
 	{
+		reason:
+			'a symbol key of a `record` input is left unread, so a `union` with a record option of a default that does not match its schema takes the input with an `undefined` value, as a copy with the default, where both refuse it: zod refuses the symbol key, and valibot the default. It follows from going with valibot on the symbol key, and with zod on the default',
+		status: 'declared',
+		docs: 'a symbol key of a `record` input is left unread',
+		rows: {
+			'union[string, record(default of a wrong value)], a value undefined, a symbol key': {
+				both: 'fail at <root>',
+				ours: 'ok {k0: 1}'
+			}
+		}
+	},
+	{
 		reason: 'an entry named `__proto__` is not guarded, so an input that comes back keeps the key',
 		status: 'declared',
 		docs: 'an input that comes back keeps its own `__proto__` key',
@@ -414,6 +456,17 @@ const differences = [
 			'union[record, check then a transform to null], own __proto__ key whose value is wrong': {
 				both: 'ok {}',
 				ours: 'ok null'
+			},
+			// and with a value of it this library refuses, as zod does, and valibot
+			// takes, so where the key is renamed the two disagree
+			'union[record(number), transform to undefined], own __proto__ key whose value is Infinity': {
+				both: 'ok {}',
+				ours: 'ok undefined'
+			},
+			// and to a later option that returns the input as it is, keeping the key
+			'union[record, unknown], own __proto__ key whose value is wrong': {
+				both: 'ok {}',
+				ours: 'ok {__proto__: "x"}'
 			}
 		}
 	},
@@ -774,6 +827,29 @@ const sides = {
 		zod: 'ok {a: "T"}',
 		valibot: 'fail at a'
 	},
+	// and one under a union, a nullable, or a lazy, which zod runs on the
+	// missing key, where valibot needs it
+	'union[string, bare transform to "T"] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	'nullable(bare transform to "T") entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	'lazy(bare transform to "T") entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T"}',
+		valibot: 'fail at a'
+	},
+	// and a pipe that starts with one, whose steps zod runs on what it gives
+	'transform to "T" then a transform entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "T!"}',
+		valibot: 'fail at a'
+	},
 
 	// a length check after an array whose item is wrong. zod checks the length
 	// of an array too long before its items, and reports only that, and the
@@ -803,6 +879,14 @@ const sides = {
 		side: 'valibot',
 		zod: 'fail at <root> +unknown keys in <root>',
 		valibot: 'fail +unknown keys in <root>'
+	},
+	// and after an object whose missing key is an `unknown`'s, then a check
+	// that fails: valibot refuses the key and stops, as here, and zod runs the
+	// entry's check on the `undefined`, and the check after the object
+	'a check after an object of unknown then a check that fails, key missing': {
+		side: 'valibot',
+		zod: 'fail at <root>, a',
+		valibot: 'fail at a'
 	},
 
 	// steps after an optional, with the key missing: valibot runs none and
@@ -927,7 +1011,40 @@ const sides = {
 		zod: 'ok {a: "D"}',
 		valibot: 'ok {a: undefined}'
 	},
+	// and a default the optional holds under a nullable or a lazy
+	'optional(nullable(default)) entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {}'
+	},
+	'optional(nullable(default)) entry, key undefined / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {a: undefined}'
+	},
+	'optional(lazy(default)) entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {}'
+	},
+	'optional(lazy(default)) entry, key undefined / *': {
+		side: 'valibot',
+		zod: 'ok {a: "D"}',
+		valibot: 'ok {a: undefined}'
+	},
 	'default of undefined entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: undefined}',
+		valibot: 'ok {}'
+	},
+	// and of a schema that reaches another default, as itself or as an option
+	// of a union, which zod doesn't run on its `undefined`
+	'default of undefined of a default entry, key missing / *': {
+		side: 'valibot',
+		zod: 'ok {a: undefined}',
+		valibot: 'ok {}'
+	},
+	'default of undefined of union[number, default] entry, key missing / *': {
 		side: 'valibot',
 		zod: 'ok {a: undefined}',
 		valibot: 'ok {}'
@@ -983,6 +1100,15 @@ const sides = {
 		side: 'zod',
 		zod: 'ok {a: 5}',
 		valibot: 'fail at a'
+	},
+	// and beside a default of `undefined`, whose missing key zod writes and
+	// valibot leaves out: neither's, with zod on the one and valibot on the
+	// other
+	'a default of a wrong value entry and a default of undefined entry, keys missing / *': {
+		side: 'neither',
+		zod: 'ok {a: 1, d: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {a: 1}'
 	},
 	// a value given to a default whose schema gives `undefined`: zod fills the
 	// default in, and valibot keeps the `undefined`, as here

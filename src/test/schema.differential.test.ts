@@ -1,6 +1,7 @@
 import { describe, test, assert } from 'vitest';
 
 import { DIFFERENCES, SIDES, type ConformanceSidesRow } from './conformance_tables.ts';
+import { render_parsed, type ConformanceParsed } from './conformance_test_helpers.ts';
 import {
 	classify_differential_case,
 	format_differential_report,
@@ -9,7 +10,9 @@ import {
 } from './differential_classify.ts';
 import {
 	DIFFERENTIAL_KINDS,
+	DIFFERENTIAL_SYMBOL,
 	gen_root_spec,
+	run_differential_case,
 	show_input,
 	show_spec,
 	spec_has_kind,
@@ -105,14 +108,19 @@ describe('the differential', () => {
 });
 
 // a plain object input of own keys, with a prototype of `proto` keys or of
-// `ConformancePoint`
+// `ConformancePoint`, and the symbol key where `symbol` is given
 const obj = (
 	own: Array<[string, DifferentialInput]> = [],
 	{
 		proto = [],
-		base = 'plain'
-	}: { proto?: Array<[string, DifferentialInput]>; base?: 'plain' | 'class' } = {}
-): DifferentialInput => ({ t: 'obj', own, base, proto, hidden: [], symbol: null, frozen: false });
+		base = 'plain',
+		symbol = null
+	}: {
+		proto?: Array<[string, DifferentialInput]>;
+		base?: 'plain' | 'class';
+		symbol?: DifferentialInput | null;
+	} = {}
+): DifferentialInput => ({ t: 'obj', own, base, proto, hidden: [], symbol, frozen: false });
 const v = (value: unknown): DifferentialInput => ({ t: 'v', v: value });
 const arr = (items: Array<DifferentialInput>): DifferentialInput => ({
 	t: 'arr',
@@ -121,6 +129,7 @@ const arr = (items: Array<DifferentialInput>): DifferentialInput => ({
 	sub: false
 });
 const check_true: DifferentialSpec = { t: 'check', fn: 'true' };
+const to_t: DifferentialSpec = { t: 'transform', fn: 'to_T' };
 const loose = (entries: Array<[string, DifferentialSpec]>): DifferentialSpec => ({
 	t: 'object',
 	flavor: 'loose',
@@ -142,8 +151,8 @@ interface DifferentialPin {
 }
 
 // a case declared through each entry of `SPLIT_RECOGNIZERS`, and through each
-// rule of the splits and of the prototype, which the seeds above may never
-// reach
+// rule of the splits, of the prototype, and of a symbol key, which the seeds
+// above may never reach
 const PINS: Array<DifferentialPin> = [
 	{
 		recognizers: ['unknown key named constructor / loose'],
@@ -228,6 +237,41 @@ const PINS: Array<DifferentialPin> = [
 		},
 		input: obj([], { proto: [['q', v(undefined)]] })
 	},
+	...(['union', 'nullable', 'lazy'] as const).map((kind): DifferentialPin => ({
+		recognizers: [
+			kind === 'union'
+				? 'union[string, bare transform to "T"] entry, key missing / *'
+				: `${kind}(bare transform to "T") entry, key missing / *`
+		],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'string' },
+				strip([
+					['a', check_true],
+					[
+						'b',
+						kind === 'union' ? { t: 'union', of: [{ t: 'string' }, to_t] } : { t: kind, of: to_t }
+					]
+				])
+			]
+		},
+		input: obj()
+	})),
+	{
+		recognizers: ['a check after an object of unknown then a check that fails, key missing'],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: {
+			t: 'refine',
+			of: strip([
+				['a', check_true],
+				['b', { t: 'refine', of: { t: 'unknown' }, fn: 'false' }]
+			]),
+			fn: 'false'
+		},
+		input: obj()
+	},
 	{
 		recognizers: ['a check after an object with an unknown key'],
 		rules: ['check_missing_key', 'split_on_a_side'],
@@ -291,6 +335,173 @@ const PINS: Array<DifferentialPin> = [
 		input: obj([['b', arr([v('\u{1F600}')])]])
 	},
 	{
+		recognizers: ['default of a wrong value entry, key missing / *'],
+		rules: ['symbol_ignored', 'split_on_a_side'],
+		spec: {
+			t: 'union',
+			of: [{ t: 'string' }, { t: 'record', of: { t: 'default', of: { t: 'string' }, v: 1 } }]
+		},
+		input: obj([['k0', v(undefined)]], { symbol: v('x') })
+	},
+	// nested defaults of `undefined` beside a bare check, which valibot reads as
+	// an optional of the schema past them
+	{
+		recognizers: ['default of undefined entry, key missing / *'],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: strip([
+			['a', { t: 'default', of: { t: 'default', of: { t: 'string' }, v: 'x' }, v: undefined }],
+			['b', check_true]
+		]),
+		input: obj()
+	},
+	{
+		recognizers: ['optional(string) then a transform to "T" entry, key missing / *'],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: strip([
+			['a', check_true],
+			['b', { t: 'map', of: { t: 'optional', of: { t: 'string' } }, fn: 'to_T' }]
+		]),
+		input: obj()
+	},
+	{
+		recognizers: [
+			'a default of a wrong value entry and a default of undefined entry, keys missing / *'
+		],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'string' },
+				strip([
+					['a', { t: 'default', of: { t: 'string' }, v: 1 }],
+					['b', check_true],
+					['d', { t: 'default', of: { t: 'string' }, v: undefined }]
+				])
+			]
+		},
+		input: obj()
+	},
+	{
+		recognizers: ['number, Infinity'],
+		rules: ['record_own_proto', 'split_on_a_side'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'record', of: { t: 'number' } },
+				{ t: 'transform', fn: 'to_undefined' }
+			]
+		},
+		input: obj([['__proto__', v(Infinity)]])
+	},
+	// a pipe that starts with a transform, then a check that fails, beside a
+	// bare check, after which zod runs a check, and valibot refuses the key
+	{
+		recognizers: ['transform to "T" then a transform entry, key missing / *'],
+		rules: ['check_missing_key', 'split_on_a_side', 'pipe_stops'],
+		spec: {
+			t: 'refine',
+			of: strip([
+				['a', check_true],
+				['b', { t: 'refine', of: { t: 'transform', fn: 'neg' }, fn: 'false' }]
+			]),
+			fn: 'false'
+		},
+		input: obj()
+	},
+	// a default an optional holds under a nullable, beside a bare check
+	{
+		recognizers: ['optional(default) entry, key undefined / *'],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: strip([
+			['a', check_true],
+			[
+				'z',
+				{
+					t: 'optional',
+					of: { t: 'nullable', of: { t: 'default', of: { t: 'string' }, v: 'x' } }
+				}
+			]
+		]),
+		input: obj()
+	},
+	// a key given only where its check takes it: the union beside the check
+	// needs the key, as its `unknown` does
+	{
+		recognizers: [],
+		rules: ['check_missing_key'],
+		spec: strip([
+			['a', check_true],
+			['b', { t: 'union', of: [{ t: 'check', fn: 'is_string' }, { t: 'unknown' }] }]
+		]),
+		input: obj()
+	},
+	// a strict option that doesn't name the key and refuses the object without it
+	{
+		recognizers: [],
+		rules: ['check_missing_key'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'object', flavor: 'strict', entries: [['x', { t: 'string' }]] },
+				strip([['a', check_true]])
+			]
+		},
+		input: obj()
+	},
+	// the options dropped of the union at the key given, and not of the one
+	// beside it, whose check would take its value
+	{
+		recognizers: [],
+		rules: ['check_missing_key', 'check_after_keyed_option'],
+		spec: strip([
+			['a', { t: 'union', of: [{ t: 'map', of: { t: 'unknown' }, fn: 'to_T' }, check_true] }],
+			['b', { t: 'union', of: [{ t: 'unknown' }, { t: 'check', fn: 'is_string' }] }]
+		]),
+		input: obj([['b', v(undefined)]])
+	},
+	// the options dropped before the last that reaches a check, and not the first
+	{
+		recognizers: [],
+		rules: ['check_missing_key', 'check_after_keyed_option'],
+		spec: strip([
+			[
+				'a',
+				{
+					t: 'union',
+					of: [
+						{ t: 'check', fn: 'defined' },
+						{ t: 'map', of: { t: 'unknown' }, fn: 'to_null' },
+						check_true
+					]
+				}
+			]
+		]),
+		input: obj()
+	},
+	// an own `__proto__` key renamed, which zod and valibot keep in their input
+	// returned as it is
+	{
+		recognizers: [],
+		rules: ['record_own_proto'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'record', of: { t: 'one_of', vs: [0, true, undefined] } },
+				{
+					t: 'union',
+					of: [{ t: 'unknown' }, { t: 'one_of', vs: ['y', 1] }]
+				}
+			]
+		},
+		input: obj([['__proto__', v('x')]])
+	},
+	{
+		recognizers: [],
+		rules: ['record_own_proto'],
+		spec: { t: 'union', of: [{ t: 'record', of: { t: 'string' } }, { t: 'unknown' }] },
+		input: obj([['__proto__', v(undefined)]])
+	},
+	{
 		recognizers: [],
 		rules: ['too_long_zod_items'],
 		spec: { t: 'max_length', of: { t: 'array', of: { t: 'number' } }, n: 1 },
@@ -344,7 +555,28 @@ describe('the differential pins', () => {
 		});
 	}
 
-	test('every entry of SPLIT_RECOGNIZERS and every rule of a split or the prototype has a pin', () => {
+	// ours as though it wrote the symbol key into a copy, which `symbol_ignored`
+	// takes away and is not what it is for
+	test('a symbol key in a copy of ours is not taken away', () => {
+		const spec: DifferentialSpec = {
+			t: 'union',
+			of: [{ t: 'record', of: { t: 'number' } }, strip([['a', to_t]])]
+		};
+		const input = obj([['a', v('x')]], { symbol: v('y') });
+		const results = run_differential_case(spec, input);
+		const ours = results.fuz_schema;
+		assert(ours.ok && ours.value !== ours.input, 'ours copies');
+		const value = { ...(ours.value as object), [DIFFERENTIAL_SYMBOL]: 'MUT' };
+		const parsed: ConformanceParsed = { ok: true, value };
+		const written = { ...ours, value, parsed, text: render_parsed(parsed) };
+		assert.deepEqual(classify_differential_case(spec, input, results), { kind: 'agree' });
+		assert.deepEqual(classify_differential_case(spec, input, { ...results, fuz_schema: written }), {
+			kind: 'undeclared',
+			split: null
+		});
+	});
+
+	test('every entry of SPLIT_RECOGNIZERS and every rule of a split, the prototype, or a symbol key has a pin', () => {
 		const pinned = new Set(PINS.flatMap((pin) => pin.recognizers));
 		assert.deepEqual(
 			SPLIT_RECOGNIZERS.map((entry) => entry.row).filter((row) => !pinned.has(row)),
@@ -356,7 +588,8 @@ describe('the differential pins', () => {
 			'union_options_split',
 			'too_long_zod_items',
 			'constructor_valibot_verdict',
-			'prototype_ignored'
+			'prototype_ignored',
+			'symbol_ignored'
 		];
 		assert.deepEqual(
 			rules.filter((rule) => !credited.has(rule)),

@@ -16,6 +16,7 @@ import {
 } from './conformance_test_helpers.ts';
 import type { ConformanceDifferencesRow } from './conformance_tables.ts';
 import {
+	DIFFERENTIAL_SYMBOL,
 	map_spec_children,
 	materialize_input,
 	value_in,
@@ -62,6 +63,7 @@ export type DifferentialRuleName =
 	| 'transform_missing_key'
 	| 'record_own_proto'
 	| 'prototype_ignored'
+	| 'symbol_ignored'
 	| 'pipe_default_left_out'
 	| 'default_fn_left_out'
 	| 'read_through'
@@ -99,14 +101,14 @@ export const DIFFERENTIAL_RULES: ReadonlyArray<DifferentialRule> = [
 		row: 'bare check entry, key missing / *',
 		kind: 'rewrite',
 		summary:
-			'a missing key of an entry that reaches a `check` as the entry itself is given an own `undefined`, where no strict option of a union beside it takes the key as unknown, and ours does the same apart from the key: what it left out of its output, the rewritten input leaves `undefined`, and what it wrote, the same'
+			'a missing key of an entry that reaches a `check` as the entry itself is given an own `undefined`, where no strict option of a union beside it that does not name the key takes the object, and ours does the same apart from the key: what it left out of its output, the rewritten input leaves `undefined`, and what it wrote, the same. Every such key, else those of one structure, else each key only where ours does that with it, so a key whose check does not take it stays missing'
 	},
 	{
 		name: 'check_after_keyed_option',
 		row: 'union[unknown then a transform to null, check] entry, key missing / *',
 		kind: 'rewrite',
 		summary:
-			'where an option of a `union` before one that reaches a `check` takes the key `check_missing_key` gives, the options before it are dropped, where ours does the same on the input without them, and the guard of `check_missing_key` holds there'
+			'where an option of a `union` before one that reaches a `check` takes the key `check_missing_key` gives, the options before the last that reaches one are dropped, of every union or else of those at the keys given, where ours does the same on the input without them, and the guard of `check_missing_key` holds there'
 	},
 	{
 		name: 'transform_missing_key',
@@ -120,7 +122,7 @@ export const DIFFERENTIAL_RULES: ReadonlyArray<DifferentialRule> = [
 		row: 'record, own __proto__ key whose value is wrong',
 		kind: 'rewrite',
 		summary:
-			'an own `__proto__` key of a `record` input is taken out, where that changes nothing zod and valibot do, and ours does the same apart from the key and keeps no own `__proto__` key where it held one: it failed at the key as it does at the key renamed, or at a `union` the key is in, with `union_own_path`, and a step after the record that the failure stopped fails without the key, with `pipe_stops`. Or, where ours does on the input what it does with the key renamed, so a `union` it fails in goes on to a later option, the key is renamed for all three, where zod and valibot leave the renamed key out, or keep it where ours keeps the key, with `loose_own_proto`'
+			'an own `__proto__` key of a `record` input is taken out, where that changes nothing zod and valibot do, and ours does the same apart from the key and keeps no own `__proto__` key where it held one: it failed at the key as it does at the key renamed, or at a `union` the key is in, with `union_own_path`, and a step after the record that the failure stopped fails without the key, with `pipe_stops`. Or, where ours does on the input what it does with the key renamed, so a `union` it fails in goes on to a later option, the key is renamed for all three, where zod and valibot leave the renamed key out, keep it in their input returned as it is, named back, or keep it where ours keeps the key, with `loose_own_proto`, or where one keeps it and the two then disagree, with `split_on_a_side`'
 	},
 	{
 		name: 'pipe_default_left_out',
@@ -203,7 +205,7 @@ export const DIFFERENTIAL_RULES: ReadonlyArray<DifferentialRule> = [
 		row: 'loose, a bare check entry, key missing, an unknown key named constructor',
 		kind: 'relaxation',
 		summary:
-			'where zod and valibot disagree once `check_missing_key` gives the key, or `prototype_ignored` takes the prototype away, exactly one entry of `SPLIT_RECOGNIZERS` recognizes the disagreement as that of its `SIDES` row, and ours is the result of the side the row names, with the other relaxations'
+			'where zod and valibot disagree once `check_missing_key` gives the key, `prototype_ignored` takes the prototype away, `symbol_ignored` the symbol key, or `record_own_proto` renames an own `__proto__` key, exactly one entry of `SPLIT_RECOGNIZERS` recognizes the disagreement as that of its `SIDES` row, and ours is the result of the side the row names, with the other relaxations'
 	},
 	{
 		name: 'union_options_split',
@@ -232,6 +234,13 @@ export const DIFFERENTIAL_RULES: ReadonlyArray<DifferentialRule> = [
 		kind: 'rewrite',
 		summary:
 			'an object input given to a `record`, an `object_with_rest` or a `loose_object` that is of a class, or that inherits enumerable keys, is given the plain prototype and none of the keys it inherits but those it names as entries, which ours reads through, where ours does the same on it, but for the keys taken away that an input that comes back still inherits, and zod and valibot either do the same too or now disagree, with `split_on_a_side`: ours takes a class instance by a `record`, as valibot does, and reads no key an `object_with_rest` or a `loose_object` input inherits that it does not name. Applied first and listed last, so a case another rule explains is not credited to it'
+	},
+	{
+		name: 'symbol_ignored',
+		row: 'union[string, record(default of a wrong value)], a value undefined, a symbol key',
+		kind: 'rewrite',
+		summary:
+			'a symbol key of an object input given to a `record` is taken away, where ours does the same on it apart from the key and left the key unread, with no issue at it and the key in its output only in the input returned as it is, and zod and valibot either do the same too or now disagree, with `split_on_a_side`: ours leaves a symbol key of a `record` unread, as valibot does. Applied after `prototype_ignored` and listed last, so a case another rule explains is not credited to it'
 	}
 ];
 
@@ -484,17 +493,30 @@ export interface DifferentialRewritten {
 	touched: Array<DifferentialPath>;
 }
 
+/** Which missing keys `rewrite_missing_keys` gives. */
+export interface DifferentialMissingKeysOptions {
+	/** Only the keys of the structure visited at this count, from `0`, where given. */
+	only?: number | null;
+	/** Only the keys at these paths, as `path_text` writes them, where given. */
+	keys?: ReadonlySet<string> | null;
+	/**
+	 * Whether a `strict_object` beside the key that doesn't name it takes the
+	 * object as it is, so the key would make it fail: by default it does.
+	 */
+	strict_takes?: (strict: DifferentialObjectSpec, object: ObjectInput) => boolean;
+}
+
 /**
  * Each missing key of an entry that `needs` names given an own `undefined`, but
  * where a `strict_object` the same input is given to, as an option of a
- * `union`, doesn't name the key, which would make it fail there.
+ * `union`, doesn't name the key and takes the object, which the key would make
+ * fail there.
  */
 export const rewrite_missing_keys = (
 	spec: DifferentialSpec,
 	input: DifferentialInput,
 	needs: (entry: DifferentialSpec) => boolean,
-	/** Only the keys of the structure visited at this count, from `0`, where given. */
-	only: number | null = null
+	{ only = null, keys = null, strict_takes = () => true }: DifferentialMissingKeysOptions = {}
 ): DifferentialRewritten & { visits: number } => {
 	const strict: Map<string, Array<DifferentialObjectSpec>> = new Map();
 	rewrite_input(spec, input, (p, object, path) => {
@@ -513,7 +535,10 @@ export const rewrite_missing_keys = (
 		const beside = strict.get(path_text(path)) ?? [];
 		const missing = p.entries.filter(
 			([key, e]) =>
-				needs(e) && !has_key(object, key) && beside.every((o) => o.entries.some(([k]) => k === key))
+				needs(e) &&
+				!has_key(object, key) &&
+				(!keys || keys.has(path_text([...path, key]))) &&
+				beside.every((o) => o.entries.some(([k]) => k === key) || !strict_takes(o, object))
 		);
 		if (!missing.length) return object;
 		for (const [key] of missing) touched.push([...path, key]);
@@ -700,9 +725,64 @@ export const same_issues_renamed = (
 };
 
 /**
+ * Whether the object that holds the key at `path` in a result's value is the
+ * object of its input that held it, returned as it is.
+ */
+export const holder_returned = (result: DifferentialResult, path: DifferentialPath): boolean => {
+	const holder = value_at(result.value, path.slice(0, -1));
+	return is_object(holder) && holder === value_at(result.input, path.slice(0, -1));
+};
+
+/**
+ * Whether ours left each key at `touched` unread: no issue at or under it, and
+ * an output that holds it only in an object of the input returned as it is.
+ */
+export const left_unread = (ours: DifferentialResult, touched: Array<DifferentialPath>): boolean =>
+	touched.every((t) => {
+		if (
+			ours.parsed &&
+			!ours.parsed.ok &&
+			[...ours.parsed.paths, ...ours.parsed.unknown_keys].some((path) => starts_path(path, t))
+		) {
+			return false;
+		}
+		const holder = value_at(ours.value, t.slice(0, -1));
+		return !is_object(holder) || !Object.hasOwn(holder, t.at(-1)!) || holder_returned(ours, t);
+	});
+
+// a value of theirs on an input with a key renamed, as on the input: the
+// renamed key at each of `to` taken out of a copy, and named back
+// `__proto__`, an own key, in an object of the input returned as it is
+const unrename_value = (
+	value: unknown,
+	input: unknown,
+	to: Array<DifferentialPath>,
+	path: DifferentialPath = []
+): unknown => {
+	if (!is_object(value) || !to.some((t) => starts_path(t, path))) return value;
+	const returned = value === value_at(input, path);
+	const copy: any = Array.isArray(value) ? new Array(value.length) : {};
+	Object.setPrototypeOf(copy, Object.getPrototypeOf(value));
+	for (const key of Reflect.ownKeys(value)) {
+		if (key === 'length' && Array.isArray(value)) continue;
+		const at = [...path, key];
+		const renamed = to.some((t) => t.length === at.length && starts_path(at, t));
+		if (renamed && !returned) continue;
+		Object.defineProperty(copy, renamed ? '__proto__' : key, {
+			value: renamed ? (value as any)[key] : unrename_value((value as any)[key], input, to, at),
+			enumerable: Object.prototype.propertyIsEnumerable.call(value, key),
+			writable: true,
+			configurable: true
+		});
+	}
+	return copy;
+};
+
+/**
  * Theirs on an input with a key renamed, as on the input but for reading the
  * key as they read any key: the renamed key at each of `to` taken out of a
- * value, and a path through it given the key's name.
+ * copy, or named back where the object that holds it is the input's returned
+ * as it is, and a path through it given the key's name.
  */
 export const unrename = (
 	result: DifferentialResult,
@@ -710,7 +790,7 @@ export const unrename = (
 ): DifferentialResult => {
 	if (!result.parsed) return result;
 	const parsed: ConformanceParsed = result.parsed.ok
-		? { ok: true, value: without_touched(result.parsed.value, to) }
+		? { ok: true, value: unrename_value(result.parsed.value, result.input, to) }
 		: {
 				ok: false,
 				paths: result.parsed.paths.map((path) =>
@@ -726,19 +806,64 @@ export const unrename = (
 	};
 };
 
-/**
- * Each `union` with the options before the first that reaches a `check`, or is
- * an object with an entry that does, dropped, the same spec where none is.
- */
-export const drop_before_check = (spec: DifferentialSpec): DifferentialSpec => {
-	const mapped = map_spec_children(spec, drop_before_check);
-	if (mapped.t !== 'union') return mapped;
-	const i = mapped.of.findIndex(
+// a union with the options before the last that reaches a `check`, or is an
+// object with an entry that does, dropped, the same where none is
+const drop_options_before_check = (union: DifferentialSpec & { t: 'union' }): DifferentialSpec => {
+	const last = union.of.findLastIndex(
 		(o) =>
 			reaches_check(o) ||
 			((o.t === 'object' || o.t === 'rest') && o.entries.some(([, e]) => reaches_check(e)))
 	);
-	return i > 0 ? { t: 'union', of: mapped.of.slice(i) } : mapped;
+	return last > 0 ? { t: 'union', of: union.of.slice(last) } : union;
+};
+
+/**
+ * Each `union` with the options before the last that reaches a `check`, or is
+ * an object with an entry that does, dropped, the same spec where none is.
+ */
+export const drop_before_check = (spec: DifferentialSpec): DifferentialSpec => {
+	const mapped = map_spec_children(spec, drop_before_check);
+	return mapped.t === 'union' ? drop_options_before_check(mapped) : mapped;
+};
+
+/**
+ * `drop_before_check` of only the unions that are the entries at `paths`, or
+ * hold them as an option's: those of the keys a rewrite gives, and not a
+ * union beside them. The same spec where none is dropped.
+ */
+export const drop_before_check_at = (
+	spec: DifferentialSpec,
+	paths: ReadonlyArray<DifferentialPath>
+): DifferentialSpec => {
+	if (!paths.length) return spec;
+	const under = (key: PropertyKey | null): Array<DifferentialPath> =>
+		paths.filter((p) => p.length && (key === null || String(p[0]) === key)).map((p) => p.slice(1));
+	let mapped: DifferentialSpec;
+	if (spec.t === 'object' || spec.t === 'rest') {
+		const named = new Set(spec.entries.map(([key]) => key));
+		const entries = spec.entries.map(([key, e]): [string, DifferentialSpec] => [
+			key,
+			drop_before_check_at(e, under(key))
+		]);
+		const changed = entries.some(([, e], i) => e !== spec.entries[i]![1]);
+		if (spec.t === 'rest') {
+			const rest = drop_before_check_at(
+				spec.rest,
+				paths.filter((p) => p.length && !named.has(String(p[0]))).map((p) => p.slice(1))
+			);
+			mapped = changed || rest !== spec.rest ? { ...spec, entries, rest } : spec;
+		} else {
+			mapped = changed ? { ...spec, entries } : spec;
+		}
+	} else if (spec.t === 'record' || spec.t === 'array') {
+		const of = drop_before_check_at(spec.of, under(null));
+		mapped = of === spec.of ? spec : { ...spec, of };
+	} else {
+		mapped = map_spec_children(spec, (child) => drop_before_check_at(child, paths));
+	}
+	return mapped.t === 'union' && paths.some((p) => p.length <= 1)
+		? drop_options_before_check(mapped)
+		: mapped;
 };
 
 /**
@@ -760,6 +885,23 @@ export const rewrite_prototypes = (
 			? { ...object, base: 'plain', proto }
 			: object;
 	});
+
+/**
+ * Each symbol key of an object input given to a `record` taken away, with the
+ * paths of the keys taken.
+ */
+export const rewrite_record_symbols = (
+	spec: DifferentialSpec,
+	input: DifferentialInput
+): DifferentialRewritten => {
+	const touched: Array<DifferentialPath> = [];
+	const next = rewrite_input(spec, input, (p, object, path) => {
+		if (p.t !== 'record' || !object.symbol) return object;
+		touched.push([...path, DIFFERENTIAL_SYMBOL]);
+		return { ...object, symbol: null };
+	});
+	return { input: next, touched };
+};
 
 /** Whether an object spec has an entry named `key`. */
 export const names_entry = (p: DifferentialSpec, key: PropertyKey): boolean =>

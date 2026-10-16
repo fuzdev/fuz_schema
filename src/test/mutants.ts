@@ -834,9 +834,276 @@ export const MUTANTS: Array<Mutant> = [
 			},
 			{
 				find: `	},
-	// a default zod fills in as it is and valibot runs through its schema, and`,
+	// a check after an object whose missing key is an \`unknown\`'s, then a check`,
 				replace: `	}].filter(() => false),
-	// a default zod fills in as it is and valibot runs through its schema, and`
+	// a check after an object whose missing key is an \`unknown\`'s, then a check`
+			}
+		]
+	},
+	{
+		name: 'recognizer_transform_under_union_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'union[string, bare transform to "T"] entry, key missing / *',`,
+				replace: `	...[{
+		row: 'union[string, bare transform to "T"] entry, key missing / *',`
+			},
+			{
+				find: `			valibot_given_keys(spec, input, zod, run, is_transform_under('union'))
+	},`,
+				replace: `			valibot_given_keys(spec, input, zod, run, is_transform_under('union'))
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_transform_under_nullable_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'nullable(bare transform to "T") entry, key missing / *',`,
+				replace: `	...[{
+		row: 'nullable(bare transform to "T") entry, key missing / *',`
+			},
+			{
+				find: `			valibot_given_keys(spec, input, zod, run, is_transform_under('nullable'))
+	},`,
+				replace: `			valibot_given_keys(spec, input, zod, run, is_transform_under('nullable'))
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_transform_under_lazy_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'lazy(bare transform to "T") entry, key missing / *',`,
+				replace: `	...[{
+		row: 'lazy(bare transform to "T") entry, key missing / *',`
+			},
+			{
+				find: `			valibot_given_keys(spec, input, zod, run, is_transform_under('lazy'))
+	},`,
+				replace: `			valibot_given_keys(spec, input, zod, run, is_transform_under('lazy'))
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_unknown_key_missing_check_after_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'a check after an object of unknown then a check that fails, key missing',`,
+				replace: `	...[{
+		row: 'a check after an object of unknown then a check that fails, key missing',`
+			},
+			{
+				find: `			return given !== input && both_give(zod, spec, given, run);
+		}
+	},`,
+				replace: `			return given !== input && both_give(zod, spec, given, run);
+		}
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_pipe_from_optional_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'optional(string) then a transform to "T" entry, key missing / *',`,
+				replace: `	...[{
+		row: 'optional(string) then a transform to "T" entry, key missing / *',`
+			},
+			{
+				find: `					is_pipe_from_optional(at.chain[0])
+			)
+	},`,
+				replace: `					is_pipe_from_optional(at.chain[0])
+			)
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_infinity_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'number, Infinity',`,
+				replace: `	...[{
+		row: 'number, Infinity',`
+			},
+			{
+				find: `			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+		}
+	},`,
+				replace: `			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+		}
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_two_defaults_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'a default of a wrong value entry and a default of undefined entry, keys missing / *',`,
+				replace: `	...[{
+		row: 'a default of a wrong value entry and a default of undefined entry, keys missing / *',`
+			},
+			{
+				find: `				agree(without_default_as_is(without_undefined))
+			);
+		}
+	},`,
+				replace: `				agree(without_default_as_is(without_undefined))
+			);
+		}
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_pipe_from_transform_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `	{
+		row: 'transform to "T" then a transform entry, key missing / *',`,
+				replace: `	...[{
+		row: 'transform to "T" then a transform entry, key missing / *',`
+			},
+			{
+				find: `			valibot_given_keys(spec, input, zod, run, is_pipe_from_transform)
+	},`,
+				replace: `			valibot_given_keys(spec, input, zod, run, is_pipe_from_transform)
+	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_optional_held_default_unread',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `return held !== spec && held !== without && both_give(valibot, held, input, run);`,
+				replace: `return held !== spec && held !== without && false;`
+			}
+		]
+	},
+	{
+		name: 'recognizer_default_of_undefined_keeps_head_defaults',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `? { t: 'optional', of: without_head_defaults(s.of) }`,
+				replace: `? { t: 'optional', of: s.of }`
+			}
+		]
+	},
+	{
+		name: 'check_missing_key_no_keys_one_at_a_time',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `		if (!next) {
+			const strict_takes`,
+				replace: `		if (false) {
+			const strict_takes`
+			}
+		]
+	},
+	{
+		name: 'check_missing_key_strict_always_takes',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `(['zod', 'valibot', 'fuz_schema'] as const).some((lib) => run(lib, strict, object).ok);`,
+				replace: `true || !!strict || !!object;`
+			}
+		]
+	},
+	{
+		name: 'check_after_keyed_option_every_union_only',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `return at_keys !== dropped && kept_without(next, at_keys);`,
+				replace: `return false && at_keys !== dropped;`
+			}
+		]
+	},
+	{
+		name: 'check_after_keyed_option_drops_before_first',
+		file: 'src/test/differential_rules.ts',
+		edits: [
+			{
+				find: `const last = union.of.findLastIndex(`,
+				replace: `const last = union.of.findIndex(`
+			}
+		]
+	},
+	{
+		name: 'record_own_proto_renamed_no_split',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `(rules.has('split_on_a_side') && zod.text !== valibot.text)`,
+				replace: `false`
+			}
+		]
+	},
+	{
+		name: 'record_own_proto_renamed_returned_not_left_out',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `							holder_returned(result, t) ||
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'record_own_proto_renamed_never_named_back',
+		file: 'src/test/differential_rules.ts',
+		edits: [
+			{
+				find: `const returned = value === value_at(input, path);`,
+				replace: `const returned = false && value === value_at(input, path);`
+			}
+		]
+	},
+	{
+		name: 'symbol_ignored_never_tried',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `if (rules.has('symbol_ignored')) {`,
+				replace: `if (false && rules.has('symbol_ignored')) {`
+			}
+		]
+	},
+	{
+		name: 'symbol_ignored_key_read',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `left_unread(r.fuz_schema, next.touched)`,
+				replace: `true`
 			}
 		]
 	},
