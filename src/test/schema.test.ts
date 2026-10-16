@@ -929,6 +929,31 @@ describe('copy on write', () => {
 			assert.strictEqual(output.list, nans);
 		});
 	});
+
+	test('a copy never takes an inherited key, even when the key that began it is gone', () => {
+		// a getter that deletes its own key, so the copy's pass over the keys
+		// before it never meets it and reaches the inherited ones
+		const make = (): object => {
+			const input = Object.create({ inherited: 'i' });
+			Object.defineProperty(input, 'a', {
+				get() {
+					delete this.a;
+					return 'x';
+				},
+				enumerable: true,
+				configurable: true
+			});
+			input.b = 'y';
+			return input;
+		};
+		const upper = s.pipe(
+			s.string,
+			s.transform((v) => v.toUpperCase())
+		);
+		for (const schema of [s.record(upper), s.object_with_rest({}, upper)]) {
+			assert.deepEqual(s.parse_or_throw(schema, make()), { a: 'X', b: 'Y' }, schema.kind);
+		}
+	});
 });
 
 describe('object keys', () => {
@@ -1843,6 +1868,12 @@ describe('object_with_rest', () => {
 			);
 			const output = s.parse_or_throw(Defaulted, { [key]: 1, a: 'x' });
 			assert.deepEqual(keys_of(output), ['a', 'd', key]);
+			// and on an input that inherits from something else
+			for (const proto of [null, {}]) {
+				const make = (v: unknown) => Object.assign(Object.create(proto), { a: 'x', [key]: v });
+				assert(!s.is(Numbers, make('not a number')), key);
+				assert.deepEqual(keys_of(s.parse_or_throw(Defaulted, make(1))), ['a', 'd', key]);
+			}
 		}
 	});
 

@@ -597,6 +597,62 @@ run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
 `brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Each
 declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
 
+## Mutants
+
+Not a measurement either: a test of the tests. `src/test/mutants.ts` is a
+table of small breaks, each a name, a file (`src/lib/schema.ts` when
+omitted), and edits, each a `find` that occurs exactly once in the file and
+its `replace`, applied in order. Most break the library; some break a table
+the tests read, as a recognizer of the differential or a `SIDES` row.
+`gro check` typechecks and lints the table and never runs it.
+
+```bash
+npm run mutate
+npm run mutate -- --filter record --deep
+```
+
+It copies the working tree's `src` and `docs`, `package.json`, and
+`tsconfig.json`, with `node_modules` linked, to a directory of the run's own
+under `~/.cache/fuz_schema_mutate/`, a copy to a worker, with a vitest config
+of its own, as `vite.config.ts` reads the git HEAD, and a test timeout of
+60 s, as the tests that take seconds alone are slower beside the other
+copies. Each copy's vitest gets an even share of the cores. It runs the tests
+of the unmutated copy first and stops if they fail, then for each mutant
+applies its edits, runs `vitest run --bail=1` without `sizes.test.ts`, and
+restores the file. Each mutant is:
+
+- **killed**: a test failed, and the test files reported failed before the
+  kill are printed, usually the first. The tests' process group is killed at
+  the first test file it reports failed, as a break can leave another test
+  looping.
+- **hung**: the tests outlived the timeout with none failed, and their whole
+  process group was killed. Counted as killed: a break that makes a test loop
+  forever is found, if slowly.
+- **survived**: the tests passed.
+- **error**: vitest exited nonzero or by a signal with no test failed, so
+  the mutant is neither killed nor survived, and the tail of its output is
+  printed.
+
+The run fails on a stale anchor, a `find` that doesn't occur exactly once,
+or edits that leave the file unparsable to TypeScript, checked of every
+mutant in the table before any runs, whichever are selected; on an error; on
+a survivor whose entry has no `survives`, the reason the suite can't kill it;
+and on an entry with a `survives` that is killed or hung. An edit TypeScript
+parses that the engine still refuses to load, a bad regex literal or a
+duplicate `let`, fails its test file and reads as killed. `--filter <substr>` runs the mutants whose names have it,
+`--workers` sets the copies run at once, 2 by default, `--timeout <s>` the
+timeout, by default 120 s or three times the unmutated run where that is
+longer, and refused under one and a half times the unmutated run, where a
+slow run would read as hung. The copies are removed at the end, or left by
+`--keep` or an interrupt, and the next run removes those of runs no longer
+running. `--deep` also runs `differential.ts` on each survivor, over a few
+seeds, and a survivor it fails is killed. The npm script caps the run at
+6 GB of memory and no swap where `systemd-run --user` can start a scope, as
+for the differential.
+
+A review that finds a break the suite misses adds it as a mutant with the
+test that kills it. One it decides not to test gets a `survives` saying why.
+
 ## Extending
 
 - A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, and a
