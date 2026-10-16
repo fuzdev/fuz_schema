@@ -719,7 +719,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "number",
 					"path": [
 						"kinds"
@@ -756,7 +756,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "string",
 					"path": [
 						"kinds"
@@ -772,7 +772,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "string",
 					"path": [
 						"kinds"
@@ -802,7 +802,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "array",
 					"path": [
 						"kinds"
@@ -818,7 +818,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "object",
 					"path": [
 						"kinds"
@@ -848,7 +848,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | one_of | nullable | lazy | number | object | strip_object | loose_object | record | variant | bigint | string | safe_integer",
+					"expected": "1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer",
 					"received": "object",
 					"path": [
 						"kinds"
@@ -1644,7 +1644,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "variant | string",
+					"expected": "object | string",
 					"received": "object",
 					"path": [
 						"either"
@@ -1660,7 +1660,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "variant | string",
+					"expected": "object | string",
 					"received": "object",
 					"path": [
 						"either"
@@ -1676,7 +1676,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "variant | string",
+					"expected": "object | string",
 					"received": "number",
 					"path": [
 						"either"
@@ -1801,7 +1801,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "variant | string",
+					"expected": "object | string",
 					"received": "array",
 					"path": [
 						"either"

@@ -62,7 +62,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "boolean",
 					"path": []
 				}
@@ -76,7 +76,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -90,7 +90,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -104,7 +104,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -136,7 +136,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -151,7 +151,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -166,7 +166,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "array",
 					"path": []
 				}
@@ -181,7 +181,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | number | nullable",
+					"expected": "string | number | object | null",
 					"received": "object",
 					"path": []
 				}

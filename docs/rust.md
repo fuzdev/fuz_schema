@@ -164,9 +164,12 @@ the same order. A `SchemaIssue` owns what it holds:
   `a required key`, the issue of a `union` none of whose options takes it,
   and otherwise the issue of the entry's schema. It is at the entry's place
   in the order.
-- **A failed `union` is one issue**, at the union's value, expecting the kinds
-  of its options, each once: a `union` among them by its own options, at any
-  depth, and a `pipe` by its first schema.
+- **A failed `union` is one issue**, at the union's value, naming its options
+  as the library does, each part once by its text: a `union` among them by
+  its own options, at any depth, a `pipe` by its first schema, a `nullable`
+  by its schema's and then `null`, an `optional` or a `with_default` by its
+  schema's, a `literal` or a `one_of` by its values, and any object schema as
+  `object`.
 - **A `variant` reports at its discriminator** when no option has the value
   there, expecting the options' values, and otherwise leaves the report to
   the option selected.

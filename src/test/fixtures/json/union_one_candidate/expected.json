@@ -54,7 +54,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "number",
 					"path": [
 						0
@@ -70,7 +70,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "array",
 					"path": [
 						0
@@ -86,7 +86,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "array",
 					"path": [
 						0
@@ -102,7 +102,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -118,7 +118,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -134,7 +134,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -165,7 +165,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -217,7 +217,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "array",
 					"path": [
 						0
@@ -234,7 +234,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "array",
 					"path": [
 						0
@@ -251,7 +251,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -276,7 +276,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "object",
 					"path": [
 						0
@@ -293,7 +293,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | literal | array | object",
+					"expected": "string | null | array | object",
 					"received": "array",
 					"path": [
 						0

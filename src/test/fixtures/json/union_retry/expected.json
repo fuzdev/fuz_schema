@@ -372,7 +372,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "lazy | with_default",
+					"expected": "lazy | \"b\"",
 					"received": "string",
 					"path": [
 						"lazy_default"
@@ -409,7 +409,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "lazy | string | with_default",
+					"expected": "lazy | string | boolean",
 					"received": "number",
 					"path": [
 						"nested_default"
@@ -432,7 +432,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | with_default",
+					"expected": "string | number",
 					"received": "null",
 					"path": [
 						"string_default"
@@ -455,7 +455,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | with_default",
+					"expected": "string",
 					"received": "boolean",
 					"path": [
 						"piped_default"

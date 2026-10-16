@@ -423,13 +423,23 @@ is only bundled when used. There is no message registry.
   received NaN`, as Zod does, and a `string` given `-Infinity` reads
   `expected string, received -Infinity`. `fail` tells it apart, a test of a
   number in every bundle that can fail, so the text says why `number` refused a number.
-- **A failed `union` expects the kinds of its options**, each once where it
-  first appears. A `union` among them adds its own options, at any depth, and
-  a `pipe` its first schema's: `union([string, union([object({...}),
-  pipe(string, check(..))])])` expects `string | object`. Any other schema
-  that holds one is its kind, `nullable` and `lazy` included, so a recursive
-  union is never followed back to itself. The text is built on the union's
-  first failure and kept, by code only `union` reaches.
+- **A failed `union` names its options as `received` names values**, each
+  part once by its text, where it first appears. A `union` among them adds
+  its own options, at any depth, and a `pipe` its first schema's. A
+  `nullable` adds its schema's and then `null`, and an `optional`, a
+  `with_default`, or a `with_default_fn` its schema's. A `literal` or a
+  `one_of` adds each of its values as it writes them standalone, with no cap
+  on how many, and any object schema, `record` and `variant` included, is
+  `object`: `union([nullable(string), literal(null), one_of(['a', 'b']),
+  loose_object({...})])` expects `string | null | "a" | "b" | object`.
+  A schema of another kind that holds a schema under `def.schema` reads as
+  that schema.
+  Any other schema is its kind, `lazy` included, so a recursive union is
+  never followed back to itself, and a union with nothing to name, as
+  `union([])` has, expects `''`. The object schemas are told apart by kind
+  before the wrappers by `def.schema`, which an `object` can have as an
+  entry. The text is built on the union's first failure and kept, by code
+  only `union` reaches.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the

@@ -2062,7 +2062,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('number | nullable')
+			union_issue('number | unknown | null')
 		],
 		[
 			'union with lazy unknown',
@@ -2242,7 +2242,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('string | literal')
+			union_issue('string | undefined')
 		],
 		[
 			'union with a one_of with undefined',
@@ -2250,7 +2250,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('number | one_of')
+			union_issue('number | "x" | undefined')
 		],
 		[
 			'union with an undefined literal and unknown',
@@ -2258,7 +2258,7 @@ describe('missing keys', () => {
 			false,
 			true,
 			undefined,
-			union_issue('literal | unknown')
+			union_issue('undefined | unknown')
 		],
 		// an `optional` or a `with_default` takes the `undefined` first
 		['optional undefined literal', s.optional(s.literal(undefined)), true, true],
@@ -2864,7 +2864,7 @@ describe('missing keys', () => {
 			assert.deepEqual(issues_of(U, { b: 1 }), [
 				{
 					kind: 'union',
-					expected: `${O.kind} | string`,
+					expected: 'object | string',
 					received: 'object',
 					path: [],
 					message: undefined
@@ -3229,7 +3229,7 @@ describe('missing keys', () => {
 			> = [
 				['nullable', (schema) => s.nullable(schema), refused],
 				['lazy', (schema) => s.lazy(() => schema), refused],
-				['union', (schema) => s.union([s.number, schema]), union_issue('number | optional')],
+				['union', (schema) => s.union([s.number, schema]), union_issue('number | string')],
 				['nullable lazy', (schema) => s.nullable(s.lazy(() => schema)), refused],
 				[
 					'message nullable',
@@ -3546,7 +3546,7 @@ describe('missing keys', () => {
 			// with none, one issue, which is the union's and not an option's
 			const N = factory({ a: s.union([s.string, s.unknown, s.nullable(s.unknown)]), b: s.string });
 			assert.deepEqual(issues_of(N, { b: 1 }), [
-				union_issue('string | unknown | nullable'),
+				union_issue('string | unknown | null'),
 				{ kind: 'string', expected: 'string', received: 'number', path: ['b'], message: undefined }
 			]);
 			assert.deepEqual(s.get_issue_value(issues_of(N, {})[0]!, {}), { ok: true, value: undefined });
@@ -4146,7 +4146,7 @@ describe('array, union, variant', () => {
 		]);
 	});
 
-	test('union expects the kinds of its options, through a nested union or a pipe', () => {
+	test('union names its options as received names values, through a nested union or a pipe', () => {
 		const expected_of = (schema: s.AnySchema, value: unknown = Symbol('none')): string => {
 			const issues = issues_of(schema, value);
 			assert.strictEqual(issues.length, 1);
@@ -4185,15 +4185,66 @@ describe('array, union, variant', () => {
 				'number | string | boolean'
 			],
 			[s.union([s.pipe(s.string, s.min_length(1)), s.string]), 'string'],
-			// the schemas that hold another are their kind
-			[s.union([s.number, s.nullable(s.union([s.string, s.boolean]))]), 'number | nullable'],
-			[s.union([s.number, s.optional(s.string)]), 'number | optional'],
-			[s.union([s.number, s.with_default(s.string, 'd')]), 'number | with_default'],
-			[s.union([s.number, s.with_default_fn(s.string, () => 'd')]), 'number | with_default_fn'],
-			[s.union([s.number, s.lazy(() => s.union([s.string]))]), 'number | lazy'],
+			// a wrapper is what its schema adds, and a `nullable` then `null`
+			[s.union([s.nullable(s.string), s.number]), 'string | null | number'],
+			[
+				s.union([s.number, s.nullable(s.union([s.string, s.boolean]))]),
+				'number | string | boolean | null'
+			],
+			[s.union([s.nullable(s.nullable(s.string)), s.number]), 'string | null | number'],
+			[s.union([s.nullable(s.string), s.nullable(s.number)]), 'string | null | number'],
+			[s.union([s.number, s.optional(s.string)]), 'number | string'],
+			[s.union([s.number, s.with_default(s.string, 'd')]), 'number | string'],
+			[s.union([s.number, s.with_default_fn(s.string, () => 'd')]), 'number | string'],
+			[s.union([s.optional(s.nullable(s.string)), s.number]), 'string | null | number'],
+			[s.union([s.nullable(s.optional(s.number))]), 'number | null'],
+			// a literal or a one_of is each value, as standalone they write it, all of them
+			[s.union([s.literal('a'), s.literal(1)]), '"a" | 1'],
+			[s.union([s.literal('a"b'), s.literal('x | y'), s.literal('')]), '"a\\"b" | "x | y" | ""'],
+			[
+				s.union([s.literal(true), s.literal(null), s.literal(undefined), s.literal(10n)]),
+				'true | null | undefined | 10'
+			],
+			[s.union([s.one_of(['a', 'b', 'c']), s.number]), '"a" | "b" | "c" | number'],
+			[
+				s.union([s.one_of(Array.from({ length: 30 }, (_, i) => i))]),
+				Array.from({ length: 30 }, (_, i) => i).join(' | ')
+			],
+			// each part by its text: a nullable's `null` and a literal's are one, and
+			// `0` and `-0`, and two `NaN`s, are each one
+			[s.union([s.nullable(s.string), s.literal(null)]), 'string | null'],
+			[s.union([s.literal(null), s.nullable(s.string)]), 'null | string'],
+			[s.union([s.one_of(['a', 'b']), s.literal('a'), s.one_of(['b', 'c'])]), '"a" | "b" | "c"'],
+			[s.union([s.literal(0), s.literal(-0), s.one_of([NaN, NaN])]), '0 | NaN'],
+			// the string `"null"` is quoted, and not the `null` of a `nullable`
+			[s.union([s.literal('null'), s.nullable(s.string)]), '"null" | string | null'],
+			// an empty union or one_of adds nothing, so a union of only those expects ''
+			[s.union([s.one_of([])]), ''],
+			[s.union([s.one_of([]), s.union([])]), ''],
+			[s.union([s.one_of([]), s.string]), 'string'],
+			// every object schema is `object`, an array is `array`
+			[
+				s.union([
+					s.object({ a: s.string }),
+					s.loose_object({ b: s.string }),
+					s.strip_object({ c: s.string }),
+					s.object_with_rest({}, s.string),
+					s.record(s.number),
+					s.variant('k', [s.object({ k: s.literal('a') })])
+				]),
+				'object'
+			],
+			[s.union([s.number, s.variant('k', [s.object({ k: s.literal('a') })])]), 'number | object'],
+			[s.union([s.array(s.string), s.record(s.string)]), 'array | object'],
 			[s.union([s.number, s.array(s.union([s.string]))]), 'number | array'],
-			[s.union([s.literal('a'), s.one_of(['b']), s.literal(1)]), 'literal | one_of'],
-			[s.union([s.number, s.variant('k', [s.object({ k: s.literal('a') })])]), 'number | variant'],
+			// an entry named `schema` is not a wrapper's
+			[s.union([s.object({ schema: s.string }), s.number]), 'object | number'],
+			[s.union([s.strip_object({ schema: s.string }), s.number]), 'object | number'],
+			[s.union([s.loose_object({ schema: s.string }), s.number]), 'object | number'],
+			[s.union([s.message(s.object({ schema: s.string }), 'x')]), 'object'],
+			// a `lazy` is its kind
+			[s.union([s.number, s.lazy(() => s.union([s.string]))]), 'number | lazy'],
+			[s.union([s.nullable(s.lazy(() => s.string))]), 'lazy | null'],
 			// a recursive union is not followed back through its `lazy`
 			[s.union([s.number, Self]), 'number | lazy'],
 			// `message`, `flavor`, and `brand` keep the kind and def of the schema

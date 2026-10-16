@@ -120,7 +120,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "string",
 					"path": []
 				}
@@ -141,7 +141,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "number",
 					"path": []
 				}
@@ -169,7 +169,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "array",
 					"path": []
 				}
@@ -183,7 +183,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "array",
 					"path": []
 				}
@@ -197,7 +197,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "object",
 					"path": []
 				}
@@ -218,7 +218,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "bigint | nullable",
+					"expected": "bigint | lazy | null",
 					"received": "array",
 					"path": []
 				}

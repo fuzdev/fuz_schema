@@ -192,7 +192,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | optional",
+					"expected": "number | string",
 					"received": "null",
 					"path": [
 						"optional_option",
@@ -223,7 +223,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | with_default",
+					"expected": "number | string",
 					"received": "boolean",
 					"path": [
 						"default_option",
@@ -281,7 +281,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | nullable",
+					"expected": "string | number | null",
 					"received": "undefined",
 					"path": [
 						"nullable_option",

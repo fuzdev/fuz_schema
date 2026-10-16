@@ -777,7 +777,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | boolean | number | string | array | record",
+					"expected": "null | boolean | number | string | array | object",
 					"received": "Infinity",
 					"path": []
 				}
@@ -792,7 +792,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | boolean | number | string | array | record",
+					"expected": "null | boolean | number | string | array | object",
 					"received": "-Infinity",
 					"path": []
 				}
@@ -807,7 +807,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | boolean | number | string | array | record",
+					"expected": "null | boolean | number | string | array | object",
 					"received": "Infinity",
 					"path": []
 				}
@@ -822,7 +822,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | boolean | number | string | array | record",
+					"expected": "null | boolean | number | string | array | object",
 					"received": "array",
 					"path": []
 				}
@@ -837,7 +837,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "literal | boolean | number | string | array | record",
+					"expected": "null | boolean | number | string | array | object",
 					"received": "object",
 					"path": []
 				}

@@ -213,6 +213,78 @@
 							]
 						}
 					}
+				},
+				"named": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "nullable",
+									"def": {
+										"schema": {
+											"kind": "string"
+										}
+									}
+								},
+								{
+									"kind": "literal",
+									"def": null
+								},
+								{
+									"kind": "one_of",
+									"def": [
+										"a",
+										"x | y",
+										"a\"b",
+										0,
+										"a"
+									]
+								},
+								{
+									"kind": "literal",
+									"def": 0
+								},
+								{
+									"kind": "optional",
+									"def": {
+										"schema": {
+											"kind": "boolean"
+										}
+									}
+								},
+								{
+									"kind": "with_default",
+									"def": {
+										"schema": {
+											"kind": "array",
+											"def": {
+												"kind": "number"
+											}
+										},
+										"value": []
+									}
+								},
+								{
+									"kind": "strip_object",
+									"def": {
+										"schema": {
+											"kind": "number"
+										}
+									}
+								},
+								{
+									"kind": "union",
+									"def": []
+								},
+								{
+									"kind": "one_of",
+									"def": []
+								}
+							]
+						}
+					}
 				}
 			}
 		},
@@ -271,7 +343,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | loose_object | literal | array | number",
+					"expected": "string | object | null | array | number",
 					"received": "object",
 					"path": [
 						"flat"
@@ -287,7 +359,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | loose_object | literal | array | number",
+					"expected": "string | object | null | array | number",
 					"received": "boolean",
 					"path": [
 						"flat"
@@ -303,7 +375,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | loose_object | literal | array | number",
+					"expected": "string | object | null | array | number",
 					"received": "array",
 					"path": [
 						"flat"
@@ -319,7 +391,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | array | boolean | record",
+					"expected": "string | array | boolean | object",
 					"received": "string",
 					"path": [
 						"piped"
@@ -349,7 +421,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | array | boolean | record",
+					"expected": "string | array | boolean | object",
 					"received": "number",
 					"path": [
 						"piped"
@@ -365,7 +437,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | array | boolean | record",
+					"expected": "string | array | boolean | object",
 					"received": "array",
 					"path": [
 						"piped"
@@ -388,7 +460,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | array | boolean | record",
+					"expected": "string | array | boolean | object",
 					"received": "null",
 					"path": [
 						"piped"
@@ -418,7 +490,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "nullable | lazy | array | variant | one_of",
+					"expected": "string | null | lazy | array | object | \"a\" | 1",
 					"received": "object",
 					"path": [
 						"held"
@@ -434,7 +506,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "nullable | lazy | array | variant | one_of",
+					"expected": "string | null | lazy | array | object | \"a\" | 1",
 					"received": "array",
 					"path": [
 						"held"
@@ -475,6 +547,59 @@
 			]
 		},
 		{
+			"name": "named_string",
+			"text": "{\"named\":\"b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "named_null",
+			"text": "{\"named\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "named_zero",
+			"text": "{\"named\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "named_number",
+			"text": "{\"named\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | null | \"a\" | \"x | y\" | \"a\\\"b\" | 0 | boolean | array | object",
+					"received": "number",
+					"path": [
+						"named"
+					]
+				}
+			]
+		},
+		{
+			"name": "named_object",
+			"text": "{\"named\":{\"schema\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | null | \"a\" | \"x | y\" | \"a\\\"b\" | 0 | boolean | array | object",
+					"received": "object",
+					"path": [
+						"named"
+					]
+				}
+			]
+		},
+		{
 			"name": "flat_overflow",
 			"text": "{\"flat\":1e400}",
 			"json": true,
@@ -482,7 +607,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | loose_object | literal | array | number",
+					"expected": "string | object | null | array | number",
 					"received": "Infinity",
 					"path": [
 						"flat"
@@ -499,7 +624,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | array | boolean | record",
+					"expected": "string | array | boolean | object",
 					"received": "-Infinity",
 					"path": [
 						"piped"
@@ -516,7 +641,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | loose_object | literal | array | number",
+					"expected": "string | object | null | array | number",
 					"received": "boolean",
 					"path": [
 						"flat"
@@ -524,7 +649,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "nullable | lazy | array | variant | one_of",
+					"expected": "string | null | lazy | array | object | \"a\" | 1",
 					"received": "boolean",
 					"path": [
 						"held"

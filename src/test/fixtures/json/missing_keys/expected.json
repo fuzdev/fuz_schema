@@ -1716,7 +1716,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strict",
@@ -1868,7 +1868,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strict",
@@ -1964,7 +1964,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | optional",
+					"expected": "number | string",
 					"received": "null",
 					"path": [
 						"strict",
@@ -1973,7 +1973,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "string | with_default",
+					"expected": "string | number",
 					"received": "null",
 					"path": [
 						"strict",
@@ -2080,7 +2080,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strict",
@@ -2386,7 +2386,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strict",
@@ -2646,7 +2646,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"loose",
@@ -2798,7 +2798,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"loose",
@@ -2894,7 +2894,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | optional",
+					"expected": "number | string",
 					"received": "null",
 					"path": [
 						"loose",
@@ -2903,7 +2903,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "string | with_default",
+					"expected": "string | number",
 					"received": "null",
 					"path": [
 						"loose",
@@ -3010,7 +3010,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"loose",
@@ -3298,7 +3298,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"loose",
@@ -3558,7 +3558,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strip",
@@ -3710,7 +3710,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strip",
@@ -3806,7 +3806,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | optional",
+					"expected": "number | string",
 					"received": "null",
 					"path": [
 						"strip",
@@ -3815,7 +3815,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "string | with_default",
+					"expected": "string | number",
 					"received": "null",
 					"path": [
 						"strip",
@@ -3922,7 +3922,7 @@
 				},
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strip",
@@ -4210,7 +4210,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "number | nullable",
+					"expected": "number | unknown | null",
 					"received": "undefined",
 					"path": [
 						"strip",

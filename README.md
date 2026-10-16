@@ -87,9 +87,12 @@ and the input is never mutated.
 
 - `pipe` stops at its first failing step.
 - A failed `union` reports one issue, not its options' issues.
-  It expects the kinds of its options, each once, a `union` among them by its own options
-  and a `pipe` by its first schema: `union([string, union([number, pipe(string, check(..))])])`
-  reads `expected string | number`.
+  It names its options as `received` names values, each once:
+  a `union` among them by its own options, a `pipe` by its first schema,
+  a `nullable` by its schema's and then `null`, an `optional` or a default by its schema's,
+  a `literal` or a `one_of` by its values, and any object schema as `object`:
+  `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])`
+  reads `expected string | null | "a" | "b" | number`.
 - A missing object key is the `undefined` it reads as, except to an `unknown`, a `literal(undefined)`,
   and a `one_of` with `undefined` among its values, which need their key
   wherever their entry reaches them, as in Valibot and Zod.

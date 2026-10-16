@@ -1,9 +1,11 @@
 import * as s from '#lib/schema.ts';
 import type { JsonFixture } from '../json_test_helpers.ts';
 
-// a union expects the kinds of its options, each once: a union among them by
-// its own options, at any depth, and a `pipe` by its first schema, through a
-// pipe that starts with a pipe. Any other schema that holds one is its kind
+// a union names its options as `received` names values, each part once by its
+// text: a union among them by its own options, at any depth, a `pipe` by its
+// first schema, through a pipe that starts with a pipe, a wrapper by its
+// schema and a `nullable` then `null`, a `literal` or a `one_of` by its values,
+// and any object schema as `object`. A `lazy` is its kind
 export const fixture: JsonFixture = {
 	schema: s.object({
 		flat: s.optional(
@@ -31,6 +33,19 @@ export const fixture: JsonFixture = {
 		),
 		twice: s.optional(
 			s.union([s.object({ a: s.number }), s.union([s.object({ b: s.number }), s.number]), s.number])
+		),
+		named: s.optional(
+			s.union([
+				s.nullable(s.string),
+				s.literal(null),
+				s.one_of(['a', 'x | y', 'a"b', 0, 'a']),
+				s.literal(-0),
+				s.optional(s.boolean),
+				s.with_default(s.array(s.number), []),
+				s.strip_object({ schema: s.number }),
+				s.union([]),
+				s.one_of([])
+			])
 		)
 	}),
 	cases: {
@@ -55,6 +70,11 @@ export const fixture: JsonFixture = {
 		held_array: '{"held":[1]}',
 		twice_wrong: '{"twice":{"c":1}}',
 		twice_string: '{"twice":"a"}',
+		named_string: '{"named":"b"}',
+		named_null: '{"named":null}',
+		named_zero: '{"named":0}',
+		named_number: '{"named":1}',
+		named_object: '{"named":{"schema":"a"}}',
 		// a number past a double is an infinity to `JSON.parse`, received as one
 		flat_overflow: { text: '{"flat":1e400}', diverges: 'number_overflow' },
 		piped_negative_overflow: { text: '{"piped":-1e400}', diverges: 'number_overflow' },

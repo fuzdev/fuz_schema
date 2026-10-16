@@ -17,6 +17,7 @@
 //! value again, it computes its verdict on it once. The verdicts are held by
 //! the report's `Probe` and dropped with it.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::error::JsonError;
@@ -281,11 +282,14 @@ fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
 }
 
 /// What an option adds to a union's `expected`, as the library's
-/// `describe_option` has it, each part once where it first appears: a union
-/// its options', at any depth, a `pipe` what its first schema adds, and any
-/// other node its kind. A `lazy` is its kind, so a recursive union is never
-/// followed back to itself, and the builder bounds the rest.
-fn describe_option(schema: &Schema, id: NodeId, parts: &mut Vec<&'static str>) {
+/// `describe_option` has it, each part once by its text, where it first
+/// appears: a union its options', at any depth, a `pipe` what its first
+/// schema adds, a `literal` or a `one_of` each value as `format_literals`
+/// writes it, any object schema `object`, an `optional` or a `with_default`
+/// what its schema adds, a `nullable` that and then `null`, and any other node
+/// its kind. A `lazy` is its kind, so a recursive union is never followed back
+/// to itself, and the builder bounds the rest.
+fn describe_option(schema: &Schema, id: NodeId, parts: &mut Vec<Cow<'static, str>>) {
     match schema.at(id) {
         SchemaNode::Union(options) => {
             for &option in options {
@@ -297,28 +301,53 @@ fn describe_option(schema: &Schema, id: NodeId, parts: &mut Vec<&'static str>) {
                 describe_option(schema, first, parts);
             }
         }
-        node => {
-            let kind = node.kind().as_str();
-            if !parts.contains(&kind) {
-                parts.push(kind);
+        SchemaNode::Literal(literal) => add_part(parts, Cow::Owned(format_literal(literal))),
+        SchemaNode::OneOf(literals) => {
+            for literal in literals {
+                add_part(parts, Cow::Owned(format_literal(literal)));
             }
         }
+        SchemaNode::Object(_)
+        | SchemaNode::LooseObject(_)
+        | SchemaNode::StripObject(_)
+        | SchemaNode::Record(_)
+        | SchemaNode::Variant(_) => add_part(parts, Cow::Borrowed("object")),
+        SchemaNode::Optional(inner) => describe_option(schema, *inner, parts),
+        SchemaNode::WithDefault(def) => describe_option(schema, def.schema, parts),
+        SchemaNode::Nullable(inner) => {
+            describe_option(schema, *inner, parts);
+            add_part(parts, Cow::Borrowed("null"));
+        }
+        node => add_part(parts, Cow::Borrowed(node.kind().as_str())),
     }
 }
 
-/// The library's `format_literals`: each value as JavaScript's `String`
-/// writes it, a string quoted as `JSON.stringify` quotes it, joined by ` | `.
+/// Adds `part` unless a part of the same text is there.
+fn add_part(parts: &mut Vec<Cow<'static, str>>, part: Cow<'static, str>) {
+    if !parts.contains(&part) {
+        parts.push(part);
+    }
+}
+
+/// The library's `format_literals`: each value as `format_literal` writes it,
+/// joined by ` | `.
 fn format_literals<'a>(literals: impl IntoIterator<Item = &'a SchemaLiteral>) -> String {
     literals
         .into_iter()
-        .map(|literal| match literal {
-            SchemaLiteral::Null => "null".to_owned(),
-            SchemaLiteral::Boolean(value) => value.to_string(),
-            SchemaLiteral::Number(value) => js::number_to_string(*value),
-            SchemaLiteral::String(value) => js::quote(value),
-        })
+        .map(format_literal)
         .collect::<Vec<_>>()
         .join(" | ")
+}
+
+/// A value as JavaScript's `String` writes it, a string quoted as
+/// `JSON.stringify` quotes it.
+fn format_literal(literal: &SchemaLiteral) -> String {
+    match literal {
+        SchemaLiteral::Null => "null".to_owned(),
+        SchemaLiteral::Boolean(value) => value.to_string(),
+        SchemaLiteral::Number(value) => js::number_to_string(*value),
+        SchemaLiteral::String(value) => js::quote(value),
+    }
 }
 
 /// Whether `text` is JSON that matches `schema`, by parsing all of it into a
@@ -1598,7 +1627,7 @@ pub mod tests {
     }
 
     #[test]
-    fn a_union_expects_its_options_through_a_union_or_a_pipe() {
+    fn a_union_names_its_options_through_a_union_or_a_pipe() {
         let schema = build(|b| {
             let string = b.string();
             let number = b.number();
@@ -1632,7 +1661,7 @@ pub mod tests {
         });
         assert_eq!(
             expects(&schema, "{}"),
-            ["string | number | boolean | array | nullable | literal | lazy"]
+            ["string | number | boolean | array | null | lazy"]
         );
         let lazy = build(|b| {
             let string = b.string();
@@ -1643,6 +1672,82 @@ pub mod tests {
             lazy
         });
         assert_eq!(expects(&lazy, "1"), ["string | array"]);
+    }
+
+    #[test]
+    fn a_union_names_its_options_as_received_names_values() {
+        let expects_union = |make: fn(&mut SchemaBuilder) -> NodeId| expects(&build(make), "[]");
+        // a `nullable` is what its schema adds and then `null`
+        assert_eq!(
+            expects_union(|b| {
+                let string = b.string();
+                let number = b.number();
+                let held = b.nullable(string);
+                b.union([held, number])
+            }),
+            ["string | null | number"]
+        );
+        // `optional` and `with_default` are what their schema adds
+        assert_eq!(
+            expects_union(|b| {
+                let string = b.string();
+                let number = b.number();
+                let boolean = b.boolean();
+                let optional = b.optional(string);
+                let held = b.nullable(boolean);
+                let defaulted = b.with_default(held, Json::Null);
+                b.union([number, optional, defaulted])
+            }),
+            ["number | string | boolean | null"]
+        );
+        // a `literal` or a `one_of` is each of its values, deduplicated by text
+        // with a `nullable`'s `null` and each other
+        assert_eq!(
+            expects_union(|b| {
+                let string = b.string();
+                let held = b.nullable(string);
+                let null = b.literal(SchemaLiteral::Null);
+                let a = b.literal("a");
+                let zero = b.literal(0.0);
+                let values = b.one_of([
+                    SchemaLiteral::from("a"),
+                    SchemaLiteral::from("null"),
+                    SchemaLiteral::from(-0.0),
+                    SchemaLiteral::from(true),
+                    SchemaLiteral::from("x | y"),
+                ]);
+                b.union([held, null, a, zero, values])
+            }),
+            [r#"string | null | "a" | 0 | "null" | true | "x | y""#]
+        );
+        // every object schema is `object`, and an array `array`
+        assert_eq!(
+            expects(
+                &build(|b| {
+                    let number = b.number();
+                    let strict = b.object([("schema", number)]);
+                    let loose = b.loose_object::<&str>([]);
+                    let strip = b.strip_object::<&str>([]);
+                    let record = b.record(number);
+                    let items = b.array(number);
+                    let tag = b.literal("t");
+                    let tagged = b.object([("k", tag)]);
+                    let variant = b.variant("k", [tagged]);
+                    b.union([strict, loose, strip, record, items, variant])
+                }),
+                "true"
+            ),
+            ["object | array"]
+        );
+        // a union with nothing to name expects nothing
+        assert_eq!(
+            expects_union(|b| {
+                let none = b.one_of::<SchemaLiteral>([]);
+                let empty = b.union([]);
+                b.union([none, empty])
+            }),
+            [""]
+        );
     }
 
     #[test]
@@ -1736,7 +1841,7 @@ pub mod tests {
         assert_eq!(
             expects(&schema, "null"),
             // a pipe by its first schema, and the union's string once
-            ["string | literal | optional | integer | loose_object | lazy"]
+            ["string | 1 | integer | object | lazy"]
         );
         assert_eq!(expects(&build(|b| b.union([])), "null"), [""]);
     }

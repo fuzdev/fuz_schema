@@ -1289,27 +1289,48 @@ export const array = <T extends Schema>(
 	}
 });
 
-// what an option adds to a union's `expected`: a union its options', at any
-// depth, a `pipe` what its first schema adds, and any other schema its kind.
-// A `lazy` is its kind, so a recursive union is never followed back to itself
-const describe_option = ({ kind, def }: AnySchema): Array<string> =>
-	kind === 'union'
-		? (def as Array<AnySchema>).flatMap(describe_option)
-		: kind === 'pipe'
-			? describe_option((def as Array<AnySchema>)[0]!)
-			: [kind];
-
-// a union's `expected`, each part once, where it first appears
-const describe_options = (options: ReadonlyArray<Schema>): string =>
-	Array.from(new Set(options.flatMap(describe_option))).join(' | ');
+// what an option adds to a union's `expected`, named as `received` names a
+// value: any object schema `object`, a `literal` or a `one_of` each value as
+// `format_literals` writes it, a union its options', at any depth, a `pipe`
+// what its first schema adds, a wrapper what its schema adds, and a `nullable`
+// `null` after that, and any other schema its kind. The object schemas come
+// before the wrappers, as an `object`'s `def` can have an entry named
+// `schema`. A `lazy` is its kind, so a recursive union is never followed back
+// to itself. A part alone is returned bare, which `flatMap` and `flat` keep
+// as it is. The values are written here and not by a call of
+// `format_literals`, and the parts are joined in `union`, which measured fewer
+// bytes in a union's bundle
+const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
+	kind === 'object' ||
+	kind === 'loose_object' ||
+	kind === 'strip_object' ||
+	kind === 'object_with_rest' ||
+	kind === 'record' ||
+	kind === 'variant'
+		? 'object'
+		: kind === 'literal' || kind === 'one_of'
+			? [def].flat().map((v) => (typeof v === 'string' ? JSON.stringify(v) : String(v)))
+			: kind === 'union'
+				? (def as Array<AnySchema>).flatMap(describe_option)
+				: kind === 'pipe'
+					? describe_option((def as Array<AnySchema>)[0]!)
+					: def?.schema?.run
+						? [describe_option(def.schema), kind === 'nullable' ? 'null' : []].flat()
+						: kind;
 
 /**
  * Matches the first of `options` that accepts the value.
- * On failure reports one issue, not the options' own. It expects the kinds of
- * the options, each once: a union among them by its own options, at any
- * depth, and a `pipe` by its first schema, so
- * `union([number, union([string, pipe(string, min_length(1)), array(string)])])`
- * expects `number | string | array`.
+ * On failure reports one issue, not the options' own. It names the options
+ * as `received` names values, each part once by its text, where it first
+ * appears: a union among them by its own options, at any depth, a `pipe` by
+ * its first schema, a `nullable` by its schema's and then `null`, an
+ * `optional`, a `with_default`, or a `with_default_fn` by its schema's, a
+ * `literal` or a `one_of` by each of its values as they write them, any object
+ * schema, a `record` and a `variant` included, as `object`, and any other
+ * schema by its kind. So
+ * `union([number, union([nullable(string), pipe(one_of(['a', 'b']), check(..)), loose_object({})])])`
+ * expects `number | string | null | "a" | "b" | object`, and a union with
+ * nothing to name, as `union([])` has, expects `''`.
  *
  * As an object entry it hands every option the object and the key when any of
  * them takes them. So a missing key matches only where an option lets its key
@@ -1335,7 +1356,8 @@ export const union = <const T extends ReadonlyArray<Schema>>(
 	options: T
 ): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
 	// built on first failure and kept, as in `literal`: a union that misses
-	// inside another that matches describes itself once
+	// inside another that matches describes itself once. Each part is named
+	// once, where it first appears
 	let expected: string | undefined;
 	return {
 		kind: 'union',
@@ -1374,7 +1396,12 @@ export const union = <const T extends ReadonlyArray<Schema>>(
 						ctx.fails = count;
 					}
 					ctx.probe = probe;
-					return fail(ctx, 'union', value, (expected ??= describe_options(options)));
+					return fail(
+						ctx,
+						'union',
+						value,
+						(expected ??= [...new Set(options.flatMap(describe_option))].join(' | '))
+					);
 				}
 			: (value, ctx) => {
 					const { probe } = ctx;
@@ -1389,7 +1416,12 @@ export const union = <const T extends ReadonlyArray<Schema>>(
 						ctx.fails = count;
 					}
 					ctx.probe = probe;
-					return fail(ctx, 'union', value, (expected ??= describe_options(options)));
+					return fail(
+						ctx,
+						'union',
+						value,
+						(expected ??= [...new Set(options.flatMap(describe_option))].join(' | '))
+					);
 				}
 	};
 };

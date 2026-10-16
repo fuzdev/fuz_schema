@@ -75,7 +75,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | variant",
+					"expected": "string | object",
 					"received": "object",
 					"path": []
 				}
@@ -89,7 +89,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | variant",
+					"expected": "string | object",
 					"received": "object",
 					"path": []
 				}
@@ -103,7 +103,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | variant",
+					"expected": "string | object",
 					"received": "object",
 					"path": []
 				}
@@ -117,7 +117,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | variant",
+					"expected": "string | object",
 					"received": "array",
 					"path": []
 				}
@@ -131,7 +131,7 @@
 			"issues": [
 				{
 					"kind": "union",
-					"expected": "string | variant",
+					"expected": "string | object",
 					"received": "number",
 					"path": []
 				}
