@@ -15,6 +15,8 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
 | `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot and Zod, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
+| `npm run differential` | not a measurement: generated cases against Zod and Valibot ([below](#the-differential)) |
+| `npm run mutate` | not a measurement: the tests against mutants ([below](#mutants)) |
 
 ## Scenarios and cases
 
