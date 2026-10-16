@@ -1,0 +1,1 @@
+export{t as component}from"../chunks/5TFEJ_P2.js";
