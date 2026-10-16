@@ -1,5 +1,5 @@
 /**
- * `npm run differential`: the differential of `differential_helpers.ts` at a
+ * `npm run differential`: the differential of `differential_classify.ts` at a
  * depth for review, outside `gro check`. Each seed is run and reported in
  * turn: its tallies, the cases each rule of a declared difference was needed
  * for, and every finding minimized, printed as a case to paste into the
@@ -15,11 +15,8 @@
 import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 
 import * as s from '#lib/schema.ts';
-import {
-	DIFFERENTIAL_KINDS,
-	format_differential_report,
-	run_differential
-} from './differential_helpers.ts';
+import { format_differential_report, run_differential } from './differential_classify.ts';
+import { DIFFERENTIAL_KINDS } from './differential_generate.ts';
 
 const Seeds = s.pipe(
 	s.union([s.number, s.array(s.number)]),

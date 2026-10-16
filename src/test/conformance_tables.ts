@@ -3,7 +3,7 @@
  * valibot that are declared, which of the two this library goes with where
  * they disagree, and what arktype and typebox do, pinned.
  * `schema.conformance.test.ts` holds the matrix's rows to them, and the
- * differential (`differential_helpers.ts`) classifies what it generates by
+ * differential (`differential_classify.ts`) classifies what it generates by
  * them.
  *
  * A row is a case's name, with ` / strip`, ` / strict` or ` / loose` after it
@@ -32,8 +32,8 @@ export interface ConformanceDifference {
 	rows: Record<string, { both: string; ours: string }>;
 }
 
-/** Where zod and valibot agree and this library differs. */
-export const DIFFERENCES: Array<ConformanceDifference> = [
+// the table, its row names kept as the type `ConformanceDifferencesRow`
+const differences = [
 	{
 		reason:
 			'a `check` that is the entry itself, or that another schema holds as one, takes a missing key as `undefined`',
@@ -505,7 +505,16 @@ export const DIFFERENCES: Array<ConformanceDifference> = [
 			}
 		}
 	}
-];
+] as const satisfies ReadonlyArray<ConformanceDifference>;
+
+/** Where zod and valibot agree and this library differs. */
+export const DIFFERENCES: ReadonlyArray<ConformanceDifference> = differences;
+
+/** A declared row of `DIFFERENCES`, as the table writes it. */
+export type ConformanceDifferencesRow = DifferenceRows<(typeof differences)[number]>;
+
+// the keys of the rows of each difference, distributed over the union
+type DifferenceRows<T> = T extends { status: 'declared'; rows: infer R } ? keyof R & string : never;
 
 export interface ConformanceSide {
 	/** Whose result this library's is, as `is_same_result` tells. */
@@ -516,8 +525,8 @@ export interface ConformanceSide {
 	ours?: string;
 }
 
-/** Where zod and valibot disagree: which of them this library goes with. */
-export const SIDES: Record<string, ConformanceSide> = {
+// the table, its row names kept as the type `ConformanceSidesRow`
+const sides = {
 	// arrays given to object and record schemas: valibot takes one as an object.
 	// The first is a refusal by all three, which differ in the path
 	'array / *': { side: 'zod', zod: 'fail at <root>', valibot: 'fail at a' },
@@ -1098,7 +1107,13 @@ export const SIDES: Record<string, ConformanceSide> = {
 		zod: 'fail at [1]',
 		valibot: 'ok [1, Infinity]'
 	}
-};
+} satisfies Record<string, ConformanceSide>;
+
+/** A row of `SIDES`, as the table writes it. */
+export type ConformanceSidesRow = keyof typeof sides;
+
+/** Where zod and valibot disagree: which of them this library goes with. */
+export const SIDES: Record<ConformanceSidesRow, ConformanceSide> = sides;
 
 /**
  * What arktype and typebox did with the cases that name them in `also`.

@@ -1,24 +1,28 @@
 import { describe, test, assert } from 'vitest';
 
-import { DIFFERENCES, SIDES } from './conformance_tables.ts';
+import { DIFFERENCES, SIDES, type ConformanceSidesRow } from './conformance_tables.ts';
+import {
+	classify_differential_case,
+	format_differential_report,
+	run_differential,
+	type DifferentialVerdict
+} from './differential_classify.ts';
 import {
 	DIFFERENTIAL_KINDS,
-	DIFFERENTIAL_RULES,
-	DIFFERENTIAL_UNRULED,
-	SPLIT_RECOGNIZERS,
-	classify_differential_case,
 	create_differential_rng,
-	format_differential_report,
 	gen_root_spec,
-	run_differential,
 	show_input,
 	show_spec,
 	spec_has_kind,
 	type DifferentialInput,
-	type DifferentialRuleName,
-	type DifferentialSpec,
-	type DifferentialVerdict
-} from './differential_helpers.ts';
+	type DifferentialSpec
+} from './differential_generate.ts';
+import { SPLIT_RECOGNIZERS } from './differential_recognizers.ts';
+import {
+	DIFFERENTIAL_RULES,
+	DIFFERENTIAL_UNRULED,
+	type DifferentialRuleName
+} from './differential_rules.ts';
 
 // The differential at a fixed depth: the same seeds and counts on every run
 // and in CI, so what passes here passes there. A deeper run, of any seed, is
@@ -130,7 +134,7 @@ const strip = (entries: Array<[string, DifferentialSpec]>): DifferentialSpec => 
 
 interface DifferentialPin {
 	/** The entries of `SPLIT_RECOGNIZERS`, by row, without any of which the case is not declared. */
-	recognizers: Array<string>;
+	recognizers: Array<ConformanceSidesRow>;
 	/** The rules the case is credited to. */
 	rules: Array<DifferentialRuleName>;
 	spec: DifferentialSpec;
@@ -309,7 +313,7 @@ const PINS: Array<DifferentialPin> = [
 // the verdict on a case with an entry of `SPLIT_RECOGNIZERS` recognizing
 // nothing, put back after
 const classify_without = (
-	row: string,
+	row: ConformanceSidesRow,
 	spec: DifferentialSpec,
 	input: DifferentialInput
 ): DifferentialVerdict => {

@@ -522,7 +522,7 @@ and never a table.
 ## The differential
 
 Not a measurement: a test of conformance over generated cases.
-`src/test/differential_helpers.ts` generates schemas from a seed, over every
+`src/test/differential_generate.ts` generates schemas from a seed, over every
 kind with a counterpart in Zod and Valibot, and inputs shaped by each schema
 with edges mixed in: inherited and hidden keys, null and class prototypes,
 symbol keys, holes, array subclasses, frozen objects, numbers past `2 ** 53`,
@@ -549,7 +549,8 @@ and is classified by the tables of `src/test/conformance_tables.ts`:
   library's result is the result of the row's side, and where a rule
   recomputes a result, it is from what Zod or Valibot gives a part of the
   input. A disagreement no entry recognizes, or more than one, is
-  undeclared.
+  undeclared, and its finding says which, with the rows of the entries
+  that recognized it.
 - **disagree**: Zod and Valibot disagree, tallied as this library being on
   Zod's side, Valibot's, both, or neither. Reported, never a failure:
   `SIDES` is the gate for those.
