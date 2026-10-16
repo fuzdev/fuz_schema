@@ -1,5 +1,40 @@
 # @fuzdev/fuz_schema
 
+## 0.3.0
+
+### Minor Changes
+
+- **breaking** fix: an action used as an entry or option is typed from `unknown`, not `any` ([202f445](https://github.com/fuzdev/fuz_schema/commit/202f445))
+
+  - a `check` or `transform` with an unannotated parameter, as an object entry, a `union` option, an entry of a `variant` option, or a `message` there, is given `unknown`: `object({a: check((v) => v.foo)})` no longer compiles. Put it in a `pipe`, or annotate the parameter
+  - `min_length` and `max_length` there take `{length: number}`, and `min_value` and `max_value` `number | bigint`, where all four were `any`
+  - `SchemaEntries` and the schemas the factories and `parse`, `parse_or_throw`, and `is` take are typed `Schema`, of `unknown` output, where they were `AnySchema`. Every schema is still accepted, and a function generic over `T extends AnySchema` still passes its `T`
+
+- **breaking** fix: a `pipe` that ends in an unannotated `check` infers its type as an entry or option ([a08e921](https://github.com/fuzdev/fuz_schema/commit/a08e921))
+
+  - `object({name: pipe(string, check((v) => v.length > 0))})` infers `name: string`, and `v` is a `string`, where both were `any`, with any steps before the `check` too, in a `union` option, an entry of a `variant` option, and a `message` there
+  - code that compiled through that `any` may now have type errors to fix, as a typo in the `check`'s function
+  - a `pipe` no longer takes its output type from the type it is assigned or returned as: a `transform` that returns a single literal, as `() => 'a'` or `() => ({k: 'a'})`, now gives `string` or `{k: string}` there and needs `as const` or an annotated return. One that returns either of several strings, numbers, or booleans, as `(v) => (v ? 'a' : 'b')`, keeps them; either of several objects, as `(v) => (v ? {k: 'a'} : {k: 'b'})`, gives `{k: string}` and needs `as const` too
+
+- **breaking** fix: a number that isn't finite is received as `NaN`, `Infinity`, or `-Infinity` ([9a70a76](https://github.com/fuzdev/fuz_schema/commit/9a70a76))
+
+  - an issue's `received` is `'NaN'`, `'Infinity'`, or `'-Infinity'` for such a number, wherever it fails, where it was `'number'`: code that reads `received === 'number'` no longer sees them
+  - so `number` refusing `NaN` reads `expected number, received NaN`, as in Zod, and `string` given `-Infinity` reads `expected string, received -Infinity`
+  - `get_issue_value` names types the same way, and finds the value it did before
+
+### Patch Changes
+
+- fix: `record` leaves an own `__proto__` key that failed out of the copy it makes after it ([8ccf655](https://github.com/fuzdev/fuz_schema/commit/8ccf655))
+
+  - an own `__proto__` key whose value fails, followed by a value the schema changes, no longer sets the copy's prototype: the parse fails at `__proto__` instead of throwing or calling a setter that prototype has
+
+- fix: a failed `union` expects the options of a `union` or a `pipe` among its options ([9a70a76](https://github.com/fuzdev/fuz_schema/commit/9a70a76))
+
+  - a `union` among the options adds its own, at any depth, so `union([string, union([string, loose_object({...})])])` reads `expected string | loose_object` where it read `expected string | union`
+  - a `pipe` among them adds its first schema's, so `union([number, pipe(string, check(..))])` reads `expected number | string` where it read `expected number | pipe`
+  - each kind is named once, where it first appears: `union([object({a}), object({b})])` reads `expected object`
+  - any other option is its kind, as before: `nullable`, `literal`, and `lazy` among them
+
 ## 0.2.2
 
 ### Patch Changes
