@@ -591,10 +591,12 @@ what it cost, and what would reopen it.
 Where Zod 4 and Valibot 1 agree on what a schema does with an input, this
 library does the same, unless the difference is one of these. The rule is
 held by `src/test/schema.conformance.test.ts`: it runs a matrix of schemas
-and inputs through the three and fails on a difference that its table doesn't
-declare, and on a declared one that is no longer there. Where the two
-disagree, the table records which this library goes with. This list is that
-table in words.
+and inputs through the three and fails on a difference that its table, in
+`src/test/conformance_tables.ts`, doesn't declare, and on a declared one that
+is no longer there. Where the two disagree, the table records which this
+library goes with. This list is that table in words. The differential,
+`src/test/schema.differential.test.ts`, holds generated schemas and inputs to
+the same table, see [benchmarks.md](benchmarks.md#the-differential).
 
 Each entry that has a reason on record says it, as one of three:
 
@@ -613,12 +615,17 @@ issues. These it holds:
   - a key read through the prototype, which stays inherited
   - an enumerable key a `record` input inherits, which is still read through it
   - an own `__proto__` key, of a `loose_object` input and of an entry named so
+  - an input that comes back still inherits an enumerable `__proto__` key,
+    which both copies drop, of a `loose_object` and an `object_with_rest`. It
+    follows from returning the input: `for..in` over the output sees it, and
+    `Object.keys`, a spread, and `JSON.stringify` don't
   - an array's holes, and its own keys that are not items
   - an array copy's hole before the first item that changed, and its subclass:
     the copy is one `slice` of the whole length, where building it an item at
     a time regrows it
 - `record` validates the value of an own `__proto__` key, and fails where it
-  is refused, where both drop the key unread and pass. By design: every own
+  is refused, where both drop the key unread and pass, and a `union` with the
+  record as an option goes on to the next. By design: every own
   key's value is validated, which is the stricter answer, and is what the
   Rust crate does.
 - Valibot and Zod need the key of every entry that isn't optional. Here a key
@@ -636,10 +643,27 @@ issues. These it holds:
   [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
   can't choose its closure when it is made, as a `literal` does: what its
   function accepts isn't known until it is called.
+
+  Where both refuse the missing key, their refusal can hide a disagreement
+  of theirs that the key would bring out, so this library's result is a row
+  of its own, that of the side it is on there: a `loose_object` with an
+  unknown key named `constructor` or `prototype`, or one it inherits, comes
+  back, and so does an `object_with_rest` with an own key named `constructor`
+  or `prototype`, or one it inherits, and a `record` beside the check keeps
+  its own key named `constructor`. A `with_default` under an `optional`, and
+  a `with_default` of `undefined`, leave a missing key out, a `with_default`
+  whose schema gives `undefined` fills its value in, and keeps the
+  `undefined` for a value given, a `pipe` that starts with a `with_default` of
+  `undefined` runs its steps for a missing key, a `loose_object` keeps an
+  own key named `constructor` beside a `with_default` it fills in as it is,
+  and beside a `with_default` of `undefined` whose missing key it leaves out,
+  a check after a `strict_object` with an unknown key is not run, and a
+  `union` matches an object of a bare `check` and a bare `transform` whose
+  keys are missing, as Zod's `transform` lets its key be missing.
 - a `pipe` that starts with a `with_default` or a `with_default_fn` and whose
   steps give `undefined` leaves a missing key out, where both write the key as
   `undefined`: as the entry itself, under a `message`, and as the first schema
-  of another pipe.
+  of another pipe, and with the default under a `message`.
 
   Cost declined: the object loops leave out a missing key whose entry gives
   `undefined`, and telling them that this one is written took bytes in the
@@ -668,6 +692,39 @@ issues. These it holds:
   run, where both run it and report it too, at the container's path. By
   design: a step runs only on a value every step before it accepted.
 
+Where the two agree only because two of their disagreements below cancel,
+this library, on one side of each, differs from both. These follow from the
+sides it is on:
+
+- a `max_length` after an array too long that holds an item Zod refuses and
+  Valibot takes reports the item, where both report the length: Zod checks
+  the length first, and Valibot takes the item. The item is an infinity, an
+  array where an object or a record is, or one with an own key named
+  `constructor` or `prototype` whose value is wrong, or is itself such a
+  length check after an array too long whose item is wrong, which reports
+  that item.
+- an own key named `constructor` or `prototype` of an `object_with_rest` or
+  `record` input fails where Valibot refuses its value and Zod takes it, where
+  both pass it, as Valibot leaves the key out unread: a `max_length` its
+  string passes counting a surrogate pair as one, or a `with_default` whose
+  schema gives `undefined` for a value given, then a check.
+- a `union` that both take, by different options, fails where this library
+  refuses each option with the one of the two that refuses it: an array
+  whose string is too long counted in UTF-16 code units, as Valibot counts
+  it and Zod doesn't, and the same array as a `record`, which Valibot takes
+  and Zod refuses.
+- a class instance given to a `record`, and an `object_with_rest` input that
+  inherits a key, are read by their own keys, where Zod refuses the class
+  instance and reads the inherited key. So a `union` with such an option of a
+  default that doesn't match its schema takes the input with an `undefined`
+  value, as a copy with the default, where both refuse it, as Valibot refuses
+  the default. A check after the record reports an own key named `prototype`
+  whose value is wrong, which Valibot leaves out unread, and a `union` with
+  an option of such a record beside a bare `transform` whose key is missing
+  takes the class instance. And an input that a
+  `union`'s option with a rest takes comes back, still inheriting the key,
+  where Zod takes a later option and Valibot copies it.
+
 Where the two disagree, this library goes with:
 
 - **Zod on a default that doesn't match its schema.** What a `with_default`
@@ -676,7 +733,9 @@ Where the two disagree, this library goes with:
   doesn't match it. So a `with_default_fn`'s `make` gives the value it
   returned, where Valibot's array schema copies it. By design: the default
   is the consumer's, and running it through the schema costs every parse
-  that fills it in.
+  that fills it in. A value given, and not filled in, whose schema gives
+  `undefined` stays `undefined`, as in Valibot, where Zod fills the default
+  in.
 - **Zod on an optional key under another schema.** An `optional`, a
   `with_default`, or a `with_default_fn` under a `nullable`, a `lazy`, or a
   `union` lets the key be
@@ -767,15 +826,22 @@ Where the two disagree, this library goes with:
   symbol key out of its copy. By design, for consistency with the object
   schemas, which take any object that isn't an array, as Zod's own `object`
   does. Refusing would also read the prototype on every parse.
+- **Valibot on a length check after an array whose item fails.** Zod checks
+  the length of an array too long before its items and reports only that,
+  and of one too short after them and reports both. Valibot reports the
+  item, as here, where a `pipe` stops at its first failing step.
+- **Valibot on the length of a string.** `min_length` and `max_length` read
+  `length`, which counts a surrogate pair as two, as Valibot's do, where
+  Zod's count it as one.
+- **Zod on an own key of a `record` named `constructor` or `prototype`.**
+  Valibot leaves it out unread, and Zod validates it, as here: every own
+  key's value is validated.
 - **Zod on the infinities.** `number` refuses `Infinity` and `-Infinity`, as
   Zod's does, where Valibot's takes them. By design: a JSON text carries one
   through a plain `number` as a number too large for a double, which
   `JSON.parse` reads `1e999` as, and `JSON.stringify` writes it back as
   `null`. A `literal` or a `one_of` of an infinity still matches it, as in
   both, and a bound may be one.
-- **Valibot on an integer past the safe ones.** `integer` takes one, where
-  Zod's refuses it. By design: it is an integer, and `safe_integer` is the
-  opt-in for the stricter claim.
 
 These the test doesn't see, as they are in the count of the issues, in the
 API, or in the names:
@@ -785,6 +851,11 @@ API, or in the names:
   By design: every issue is the same five fields with a path to what is
   wrong, where one issue for all of them needs a list of keys on the issue,
   and reporting the first hides the rest.
+- `integer` takes an integer past the safe ones, as Valibot's `integer`
+  does. Zod's `int` is `safe_integer`, and Zod has no built-in check of an
+  integer of any size, so the test compares `integer` with Zod's `number`
+  refined by `Number.isInteger`. By design: it is an integer, and
+  `safe_integer` is the opt-in for the stricter claim.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   Dropping is `strip_object`, and keeping is `loose_object`. The test
   compares each with the other libraries' schema that does the same. By

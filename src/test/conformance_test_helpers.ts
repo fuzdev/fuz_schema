@@ -1,8 +1,8 @@
 /**
  * The conformance matrix: cases written once and run through zod, valibot and
  * this library, with what each did reduced to a text that can be compared.
- * `schema.conformance.test.ts` holds the rule they are judged by and the
- * tables of what is declared.
+ * `schema.conformance.test.ts` holds the rule they are judged by, and
+ * `conformance_tables.ts` the tables of what is declared.
  *
  * To add a case, add an entry to `CONFORMANCE_CASES`. The test then says what
  * it needs: nothing where the three agree, a side where zod and valibot
@@ -48,8 +48,10 @@ export interface ConformanceLib {
 	string: any;
 	/** The library's own `number`, whatever it does with `NaN` and the infinities. */
 	number: any;
-	/** A number with no fraction. */
+	/** A number with no fraction, of any size. */
 	integer: any;
+	/** An integer from `-(2 ** 53 - 1)` to `2 ** 53 - 1`, each a double of its own. */
+	safe_integer: any;
 	boolean: any;
 	bigint: any;
 	unknown: any;
@@ -76,6 +78,16 @@ export interface ConformanceLib {
 	transform: (fn: (value: any) => any) => any;
 	/** `schema` with the text of its issues set, which changes no verdict. */
 	message: (schema: any) => any;
+	/** `schema`, then a check that the output's `length` is at least `min`. */
+	min_length: (schema: any, min: number) => any;
+	/** `schema`, then a check that the output's `length` is at most `max`. */
+	max_length: (schema: any, max: number) => any;
+	/** `schema`, then a check that the output is at least `min`, a number or a bigint. */
+	min_value: (schema: any, min: number | bigint) => any;
+	/** `schema`, then a check that the output is at most `max`, a number or a bigint. */
+	max_value: (schema: any, max: number | bigint) => any;
+	/** `schema`, then a test of `pattern` on the output, a string. */
+	regex: (schema: any, pattern: RegExp) => any;
 	strip: (entries: Record<string, any>) => any;
 	strict: (entries: Record<string, any>) => any;
 	loose: (entries: Record<string, any>) => any;
@@ -90,7 +102,11 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 	zod: {
 		string: z.string(),
 		number: z.number(),
-		integer: z.int(),
+		// zod has no check of an integer of any size: `z.int()` and `.int()` are of
+		// the safe ones, and `.multipleOf(1)` takes a fraction near enough to an
+		// integer, as `2 ** 51 + 0.5`
+		integer: z.number().refine(Number.isInteger),
+		safe_integer: z.int(),
 		boolean: z.boolean(),
 		bigint: z.bigint(),
 		unknown: z.unknown(),
@@ -110,6 +126,11 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		transform: (fn) => z.transform(fn),
 		// the text is an option of each factory, and nothing wraps a schema to set it
 		message: (schema) => schema,
+		min_length: (schema, min) => schema.check(z.minLength(min)),
+		max_length: (schema, max) => schema.check(z.maxLength(max)),
+		min_value: (schema, min) => schema.check(z.gte(min)),
+		max_value: (schema, max) => schema.check(z.lte(max)),
+		regex: (schema, pattern) => schema.check(z.regex(pattern)),
 		strip: (entries) => z.object(entries),
 		strict: (entries) => z.strictObject(entries),
 		loose: (entries) => z.looseObject(entries),
@@ -131,6 +152,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		string: v.string(),
 		number: v.number(),
 		integer: v.pipe(v.number(), v.integer()),
+		safe_integer: v.pipe(v.number(), v.safeInteger()),
 		boolean: v.boolean(),
 		bigint: v.bigint(),
 		unknown: v.unknown(),
@@ -151,6 +173,11 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		// an action, which needs a schema before it: the nearest is one that takes anything
 		transform: (fn) => v.pipe(v.unknown(), v.transform(fn)),
 		message: (schema) => schema,
+		min_length: (schema, min) => v.pipe(schema, v.minLength(min)),
+		max_length: (schema, max) => v.pipe(schema, v.maxLength(max)),
+		min_value: (schema, min) => v.pipe(schema, v.minValue(min)),
+		max_value: (schema, max) => v.pipe(schema, v.maxValue(max)),
+		regex: (schema, pattern) => v.pipe(schema, v.regex(pattern)),
 		strip: (entries) => v.object(entries),
 		strict: (entries) => v.strictObject(entries),
 		loose: (entries) => v.looseObject(entries),
@@ -178,7 +205,8 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 	fuz_schema: {
 		string: s.string,
 		number: s.number,
-		integer: s.pipe(s.number, s.integer),
+		integer: s.integer,
+		safe_integer: s.safe_integer,
 		boolean: s.boolean,
 		bigint: s.bigint,
 		unknown: s.unknown,
@@ -197,6 +225,11 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		check: (fn) => s.check(fn),
 		transform: (fn) => s.transform(fn),
 		message: (schema) => s.message(schema, 'text'),
+		min_length: (schema, min) => s.pipe(schema, s.min_length(min)),
+		max_length: (schema, max) => s.pipe(schema, s.max_length(max)),
+		min_value: (schema, min) => s.pipe(schema, s.min_value(min)),
+		max_value: (schema, max) => s.pipe(schema, s.max_value(max)),
+		regex: (schema, pattern) => s.pipe(schema, s.regex(pattern)),
 		strip: (entries) => s.strip_object(entries),
 		strict: (entries) => s.object(entries),
 		loose: (entries) => s.loose_object(entries),
@@ -322,9 +355,11 @@ export const render_value = (value: unknown): string => {
 
 const is_index = (key: PropertyKey): boolean => typeof key === 'string' && /^\d+$/.test(key);
 
-// what an object is past its keys and values: its prototype, when that isn't
-// the plain one, and which keys aren't enumerable
-const render_shape = (value: object): string => {
+/**
+ * Writes what an object is past its keys and values: its prototype, when that
+ * isn't the plain one, and which keys aren't enumerable.
+ */
+export const render_shape = (value: object): string => {
 	const proto = Object.getPrototypeOf(value);
 	const hidden = Reflect.ownKeys(value).filter(
 		(key) =>
@@ -531,6 +566,12 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'unknown own __proto__ key',
 		entries: AB,
 		input: () => JSON.parse('{"a": "x", "__proto__": {"q": 1}}')
+	},
+	// an enumerable `__proto__` key of the prototype, which a copy can't write
+	{
+		name: 'unknown inherited __proto__ key',
+		entries: AB,
+		input: () => inheriting(JSON.parse('{"__proto__": 1}'), { a: 'x' })
 	},
 	{ name: 'unknown key named toString', entries: AB, input: () => ({ a: 'x', toString: 1 }) },
 	{ name: 'unknown key named constructor', entries: AB, input: () => ({ a: 'x', constructor: 1 }) },
@@ -849,6 +890,188 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		l.union([l.string, l.check(() => true)])
 	),
 	...missing_and_undefined('bare transform to "T" entry', (l) => l.transform(() => 'T')),
+	// the missing key beside a disagreement of the two that their refusals hide
+	{
+		name: 'loose, a bare check entry, key missing, an unknown key named constructor',
+		schema: (l) => l.loose({ a: l.check(() => true) }),
+		input: () => ({ constructor: 'x' })
+	},
+	{
+		name: 'loose, a bare check entry, key missing, an unknown inherited key',
+		schema: (l) => l.loose({ a: l.check(() => true) }),
+		input: () => inheriting({ z: 'x' })
+	},
+	{
+		name: 'rest, a bare check entry, key missing, an own key named constructor',
+		schema: (l) => l.rest({ a: l.check(() => true) }, l.string),
+		input: () => ({ constructor: 'x' })
+	},
+	// and in a copy, beside another unknown key
+	{
+		name: 'loose, a bare check entry, key missing, an unknown key named constructor beside another, an entry that changes',
+		schema: (l) => l.loose({ a: l.check(() => true), b: l.map(l.string, () => 'T') }),
+		input: () => ({ b: 'x', constructor: 'c', z: 1 })
+	},
+	// a default zod fills in as it is and valibot runs through its schema,
+	// beside an own key named `constructor` zod keeps and valibot drops
+	{
+		name: 'loose, a default of a transform, an unknown key named constructor',
+		schema: (l) =>
+			l.loose({
+				d: l.with_default(
+					l.transform(() => 'T'),
+					'x'
+				)
+			}),
+		input: () => ({ constructor: 1 })
+	},
+	{
+		name: 'loose, a bare check entry, key missing, a default of a transform, an unknown key named constructor',
+		schema: (l) =>
+			l.loose({
+				a: l.check(() => true),
+				d: l.with_default(
+					l.transform(() => 'T'),
+					'x'
+				)
+			}),
+		input: () => ({ constructor: 1 })
+	},
+	// and beside a default of `undefined`, whose missing key zod writes
+	{
+		name: 'loose, a default of undefined, an unknown key named constructor',
+		schema: (l) => l.loose({ d: l.with_default(l.optional(l.string), undefined) }),
+		input: () => ({ constructor: 1 })
+	},
+	{
+		name: 'loose, a bare check entry, key missing, a default of undefined, an unknown key named constructor',
+		schema: (l) =>
+			l.loose({ a: l.check(() => true), d: l.with_default(l.optional(l.string), undefined) }),
+		input: () => ({ constructor: 1 })
+	},
+	{
+		name: 'loose, a bare check entry, key missing, an unknown key named prototype',
+		schema: (l) => l.loose({ a: l.check(() => true) }),
+		input: () => ({ prototype: 'x' })
+	},
+	{
+		name: 'rest, a bare check entry, key missing, an own key named prototype',
+		schema: (l) => l.rest({ a: l.check(() => true) }, l.string),
+		input: () => ({ prototype: 'x' })
+	},
+	{
+		name: 'rest, a bare check entry, key missing, an inherited key',
+		schema: (l) => l.rest({ a: l.check(() => true) }, l.string),
+		input: () => inheriting({ z: 'x' })
+	},
+	// and where the key brings out a disagreement of the two of another kind
+	{
+		name: 'a bare check entry and an optional(default) entry, keys missing',
+		schema: (l) =>
+			l.strip({ a: l.check(() => true), b: l.optional(l.with_default(l.string, 'D')) }),
+		input: () => ({})
+	},
+	{
+		name: 'a bare check entry and a default of undefined entry, keys missing',
+		schema: (l) =>
+			l.strip({ a: l.check(() => true), b: l.with_default(l.optional(l.string), undefined) }),
+		input: () => ({})
+	},
+	{
+		name: 'a bare check entry and a default of a transform to undefined entry, keys missing',
+		schema: (l) =>
+			l.strip({
+				a: l.check(() => true),
+				b: l.with_default(
+					l.transform(() => undefined),
+					'D'
+				)
+			}),
+		input: () => ({})
+	},
+	{
+		name: 'a bare check entry, key missing, and a default of a transform to undefined entry, a value given',
+		schema: (l) =>
+			l.strip({
+				a: l.check(() => true),
+				b: l.with_default(
+					l.transform(() => undefined),
+					'D'
+				)
+			}),
+		input: () => ({ b: 'x' })
+	},
+	{
+		name: 'a bare check entry and a default of undefined then a transform to "T" entry, keys missing',
+		schema: (l) =>
+			l.strip({
+				a: l.check(() => true),
+				b: l.map(l.with_default(l.optional(l.string), undefined), () => 'T')
+			}),
+		input: () => ({})
+	},
+	{
+		name: 'loose, a bare check entry, key missing, an unknown inherited key, an entry that changes',
+		schema: (l) =>
+			l.loose({
+				a: l.check(() => true),
+				b: l.map(l.string, () => 'T')
+			}),
+		input: () => inheriting({ z: 'x' }, { b: 'x' })
+	},
+	{
+		name: 'a bare check entry, key missing, a record with an own key named constructor',
+		schema: (l) => l.strip({ a: l.check(() => true), r: l.record(l.number) }),
+		input: () => ({ r: { constructor: 1 } })
+	},
+	{
+		name: 'loose, union[unknown then a transform to "T", check] entry, key missing, an unknown key named constructor',
+		schema: (l) =>
+			l.loose({
+				a: l.union([l.map(l.unknown, () => 'T'), l.check(() => true)])
+			}),
+		input: () => ({ constructor: 'x' })
+	},
+	// a check in an object that is an option of a union
+	{
+		name: 'union[object of unknown then a transform to null, object of a bare check], key missing',
+		schema: (l) =>
+			l.union([l.map(l.strip({ a: l.unknown }), () => null), l.strip({ a: l.check(() => true) })]),
+		input: () => ({})
+	},
+	{
+		name: 'union[strict object of a bare check, object of a check of defined], keys missing',
+		schema: (l) =>
+			l.union([
+				l.strict({ a: l.check(() => true) }),
+				l.strip({ d: l.check((x) => x !== undefined) })
+			]),
+		input: () => ({})
+	},
+	// a check after an option that refuses a missing key and takes an own
+	// `undefined`: the check's `undefined` is the union's, and the key stays out
+	// of the input that comes back, whatever its prototype
+	{
+		name: 'union[unknown then a transform to null, check] entry, key missing',
+		entries: (l) => ({ a: l.union([l.map(l.unknown, () => null), l.check(() => true)]) }),
+		input: () => ({})
+	},
+	{
+		name: 'union[unknown then a transform to null, check] entry, key missing, null prototype',
+		entries: (l) => ({ a: l.union([l.map(l.unknown, () => null), l.check(() => true)]) }),
+		input: () => inheriting(null)
+	},
+	{
+		name: 'union[unknown then a transform to null, check] entry, key missing, class instance',
+		entries: (l) => ({ a: l.union([l.map(l.unknown, () => null), l.check(() => true)]) }),
+		input: () => Object.create(ConformancePoint.prototype)
+	},
+	{
+		name: 'union[string, object of a bare check and a bare transform], keys missing',
+		schema: (l) =>
+			l.union([l.string, l.strip({ a: l.check(() => true), b: l.transform((x) => x) })]),
+		input: () => ({})
+	},
 	...missing_and_undefined('string entry', (l) => l.string),
 	...missing_and_undefined('nullable(string) entry', (l) => l.nullable(l.string)),
 	{
@@ -1096,6 +1319,20 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('default_fn of a wrong value entry', (l) =>
 		l.with_default_fn(l.string, () => 5)
 	),
+	// a value given to a default whose schema gives `undefined`: zod fills the
+	// default in, and valibot keeps the `undefined`, as here
+	{
+		name: 'a default of a transform to undefined then a check, a value given',
+		schema: (l) =>
+			l.refine(
+				l.with_default(
+					l.transform(() => undefined),
+					'x'
+				),
+				(x) => !!x
+			),
+		input: () => 'x'
+	},
 	...missing_and_undefined('default_fn of a string then a transform entry', (l) =>
 		l.with_default_fn(
 			l.map(l.string, (x) => x + '!'),
@@ -1107,6 +1344,10 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 			l.with_default_fn(l.string, () => 'D'),
 			() => undefined
 		)
+	),
+	// the default under a `message`
+	...missing_and_undefined('message(default_fn of undefined) then a transform entry', (l) =>
+		l.map(l.message(l.with_default_fn(l.optional(l.string), () => undefined)), (x) => x)
 	),
 	// what it makes is `undefined`
 	...missing_and_undefined('default_fn of undefined entry', (l) =>
@@ -1271,6 +1512,31 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.record(l.number),
 		input: () => JSON.parse('{"a": 1, "__proto__": "p"}')
 	},
+	// and as an option of a union, which reports one issue at its own path
+	{
+		name: 'union[string, record], own __proto__ key whose value is wrong',
+		schema: (l) => l.union([l.string, l.record(l.number)]),
+		input: () => JSON.parse('{"a": 1, "__proto__": "p"}')
+	},
+	// and the check after it is not run, as a pipe stops at its first failing step
+	{
+		name: 'a check after a record, own __proto__ key whose value is wrong',
+		schema: (l) => l.refine(l.record(l.number), () => false),
+		input: () => JSON.parse('{"a": 1, "__proto__": "p"}')
+	},
+	// and as an option of a union that another option takes
+	{
+		name: 'union[record, check then a transform to null], own __proto__ key whose value is wrong',
+		schema: (l) =>
+			l.union([
+				l.record(l.number),
+				l.map(
+					l.check((x) => !!x),
+					() => null
+				)
+			]),
+		input: () => JSON.parse('{"__proto__": "x"}')
+	},
 	{
 		name: 'record of defaults, own __proto__ key',
 		schema: (l) => l.record(l.with_default(l.number, 0)),
@@ -1306,11 +1572,83 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.record(l.string),
 		input: () => new ConformancePoint()
 	},
+	// one of a default that doesn't match its schema, which zod fills in as it
+	// is and valibot refuses, as an option of a union, which reports the two
+	// refusals alike
+	{
+		name: 'union[string, record(default of a wrong value)], class instance, a value undefined',
+		schema: (l) => l.union([l.string, l.record(l.with_default(l.string, 1))]),
+		input: () => Object.assign(Object.create(ConformancePoint.prototype), { k0: undefined })
+	},
+	// and the keys an object with a rest inherits, which zod reads and valibot
+	// doesn't, beside a default valibot refuses, or another option of a union
+	{
+		name: 'union[string, rest(default of a wrong value)], an inherited key undefined',
+		schema: (l) => l.union([l.string, l.rest({ a: l.with_default(l.string, 1) }, l.string)]),
+		input: () => inheriting({ z: undefined })
+	},
+	{
+		name: 'union[rest(default of a wrong value), unknown then a transform to "U"], a value undefined, an inherited key wrong',
+		schema: (l) => l.union([l.rest({}, l.with_default(l.string, 1)), l.map(l.unknown, () => 'U')]),
+		input: () => inheriting({ z: {} }, { y: undefined })
+	},
+	{
+		name: 'union[rest, object], an inherited key wrong',
+		schema: (l) => l.union([l.rest({}, l.strip({ b: l.string })), l.strip({})]),
+		input: () => inheriting({ z: 'x' })
+	},
+	// a class instance and a key of it named `prototype`, which zod validates
+	// and beside a bare transform to undefined whose key is missing, which zod
+	// lets be missing and valibot doesn't
+	{
+		name: 'union[string, object of a record and a bare transform to undefined], class instance, key missing',
+		schema: (l) =>
+			l.union([l.string, l.strip({ a: l.record(l.string), b: l.transform(() => undefined) })]),
+		input: () => ({ a: Object.assign(new ConformancePoint(), { k0: 'x' }) })
+	},
+	{
+		name: 'a check after a record, class instance, own key named prototype, wrong',
+		schema: (l) => l.refine(l.record(l.string), () => false),
+		input: () => Object.assign(new ConformancePoint(), { prototype: undefined })
+	},
 	{ name: 'record, array', schema: (l) => l.record(l.unknown), input: () => [] },
+	// a union both take by different options, a disagreement of theirs on each:
+	// an array whose string is too long by valibot's count, which valibot takes
+	// as a record
+	{
+		name: 'union[array(max_length(string, 1)), record(string)] entry, an array of a surrogate pair, beside a key missing',
+		schema: (l) =>
+			l.strip({
+				a: l.string,
+				b: l.union([l.array(l.max_length(l.string, 1)), l.record(l.string)])
+			}),
+		input: () => ({ b: ['\uD83D\uDE00'] })
+	},
 	{
 		name: 'record, key named toString',
 		schema: (l) => l.record(l.number),
 		input: () => ({ toString: 1 })
+	},
+	// valibot leaves out an own key named `constructor` or `prototype` unread
+	{
+		name: 'record, own key named constructor',
+		schema: (l) => l.record(l.number),
+		input: () => ({ a: 1, constructor: 2 })
+	},
+	{
+		name: 'record, own key named constructor, wrong',
+		schema: (l) => l.record(l.number),
+		input: () => ({ a: 1, constructor: 'x' })
+	},
+	{
+		name: 'record, own key named prototype, wrong',
+		schema: (l) => l.record(l.number),
+		input: () => ({ a: 1, prototype: 'x' })
+	},
+	{
+		name: 'record, own key named prototype, a surrogate pair too long',
+		schema: (l) => l.record(l.max_length(l.string, 1)),
+		input: () => ({ a: 1, prototype: '\uD83D\uDE00' })
 	},
 	{
 		name: 'record of defaults, an inherited key',
@@ -1427,6 +1765,39 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'integer, Infinity', schema: (l) => l.integer, input: () => Infinity },
 	{ name: 'integer, the largest double', schema: (l) => l.integer, input: () => Number.MAX_VALUE },
 	{ name: 'integer, the last safe one', schema: (l) => l.integer, input: () => 2 ** 53 - 1 },
+	{
+		name: 'integer, past the safe ones, negative',
+		schema: (l) => l.integer,
+		input: () => -(2 ** 53)
+	},
+	{ name: 'integer, NaN', schema: (l) => l.integer, input: () => NaN },
+	{ name: 'integer, a string', schema: (l) => l.integer, input: () => '1' },
+	{ name: 'integer, -0', schema: (l) => l.integer, input: () => -0 },
+	{ name: 'safe_integer, a fraction', schema: (l) => l.safe_integer, input: () => 1.5 },
+	{
+		name: 'safe_integer, the last safe one',
+		schema: (l) => l.safe_integer,
+		input: () => 2 ** 53 - 1
+	},
+	{
+		name: 'safe_integer, the first safe one',
+		schema: (l) => l.safe_integer,
+		input: () => -(2 ** 53 - 1)
+	},
+	{ name: 'safe_integer, past the safe ones', schema: (l) => l.safe_integer, input: () => 2 ** 53 },
+	{
+		name: 'safe_integer, past the safe ones, negative',
+		schema: (l) => l.safe_integer,
+		input: () => -(2 ** 53)
+	},
+	{
+		name: 'safe_integer, the largest double',
+		schema: (l) => l.safe_integer,
+		input: () => Number.MAX_VALUE
+	},
+	{ name: 'safe_integer, Infinity', schema: (l) => l.safe_integer, input: () => Infinity },
+	{ name: 'safe_integer, NaN', schema: (l) => l.safe_integer, input: () => NaN },
+	{ name: 'safe_integer, a string', schema: (l) => l.safe_integer, input: () => '1' },
 	{ name: 'string, a String object', schema: (l) => l.string, input: () => Object('x') },
 	{ name: 'boolean, 0', schema: (l) => l.boolean, input: () => 0 },
 	{ name: 'bigint, a number', schema: (l) => l.bigint, input: () => 1 },
@@ -1640,6 +2011,90 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.refine(l.strict({ a: l.string }), () => false),
 		input: () => ({ a: 'x', z: 1 })
 	},
+	{
+		name: 'a check after a strict object of a bare check entry, key missing, an unknown key',
+		schema: (l) => l.refine(l.strict({ a: l.check(() => true) }), () => false),
+		input: () => ({ z: 1 })
+	},
+	// a length check after an array whose item is wrong: zod checks a too long
+	// array's length before its items, and reports only that
+	{
+		name: 'a max_length after an array too long, an item wrong',
+		schema: (l) => l.max_length(l.array(l.number), 1),
+		input: () => ['x', 1]
+	},
+	// and an item of whose own key named `prototype` the same is true
+	{
+		name: 'a max_length after an array too long, an item with an own key named prototype, a max_length after an array too long, an item wrong',
+		schema: (l) => l.max_length(l.array(l.record(l.max_length(l.array(l.string), 0))), 0),
+		input: () => [{ prototype: [1] }]
+	},
+	// and with an infinity, which zod's `number` refuses and valibot's takes
+	{
+		name: 'a max_length after an array too long, an Infinity item',
+		schema: (l) => l.max_length(l.array(l.number), 1),
+		input: () => [Infinity, 1]
+	},
+	// and with another item zod refuses and valibot takes
+	{
+		name: 'a max_length after an array too long, an array item of an object',
+		schema: (l) => l.max_length(l.array(l.strip({})), 1),
+		input: () => [[], {}]
+	},
+	{
+		name: 'a max_length after an array too long, an array item of a record',
+		schema: (l) => l.max_length(l.array(l.record(l.string)), 1),
+		input: () => [[], {}]
+	},
+	{
+		name: 'a max_length after an array too long, an array item of an object with a rest',
+		schema: (l) => l.max_length(l.array(l.rest({}, l.string)), 1),
+		input: () => [[], {}]
+	},
+	{
+		name: 'a max_length after an array too long, an item with an own key named constructor, wrong',
+		schema: (l) => l.max_length(l.array(l.rest({}, l.number)), 1),
+		input: () => [{ constructor: 'x' }, {}]
+	},
+	{
+		name: 'a max_length after an array too long, an item with an own key named prototype, wrong',
+		schema: (l) => l.max_length(l.array(l.record(l.number)), 1),
+		input: () => [{ prototype: 'x' }, {}]
+	},
+	{
+		name: 'a min_length after an array too short, an item wrong',
+		schema: (l) => l.min_length(l.array(l.number), 2),
+		input: () => ['x']
+	},
+	{
+		name: 'min_length, a string too short',
+		schema: (l) => l.min_length(l.string, 2),
+		input: () => 'x'
+	},
+	{
+		name: 'max_length, a string of a surrogate pair',
+		schema: (l) => l.max_length(l.string, 1),
+		input: () => '\uD83D\uDE00'
+	},
+	{
+		name: 'max_length, an array too long',
+		schema: (l) => l.max_length(l.array(l.number), 1),
+		input: () => [1, 2]
+	},
+	{ name: 'min_value, a bigint below', schema: (l) => l.min_value(l.bigint, 1n), input: () => 0n },
+	{ name: 'max_value, -0 at 0', schema: (l) => l.max_value(l.number, 0), input: () => -0 },
+	{
+		name: 'min_value, past the safe integers',
+		schema: (l) => l.min_value(l.integer, 2 ** 53),
+		input: () => 2 ** 53 + 2
+	},
+	{ name: 'regex, a match', schema: (l) => l.regex(l.string, /x/), input: () => 'ax' },
+	{
+		name: 'regex, a lone surrogate',
+		schema: (l) => l.regex(l.string, /\uD800/),
+		input: () => '\uD800'
+	},
+	{ name: 'regex, a number', schema: (l) => l.regex(l.string, /5/), input: () => 5 },
 	{ name: 'a transform', schema: (l) => l.map(l.string, (x) => x + '!'), input: () => 'x' },
 	{ name: 'a bare check', schema: (l) => l.check(() => true), input: () => undefined },
 	{ name: 'a bare transform', schema: (l) => l.transform(() => 'T'), input: () => undefined },
@@ -1691,9 +2146,36 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => ({ a: 'x', constructor: 1 })
 	},
 	{
+		name: 'rest, own key named prototype',
+		schema: REST,
+		input: () => ({ a: 'x', prototype: 1 })
+	},
+	{
 		name: 'rest, own key named constructor, wrong',
 		schema: REST,
 		input: () => ({ a: 'x', constructor: 'c' })
+	},
+	// whose string is a surrogate pair, which zod's `max_length` counts as one
+	{
+		name: 'rest, own key named constructor, a surrogate pair too long',
+		schema: (l) => l.rest({ a: l.string }, l.max_length(l.string, 1)),
+		input: () => ({ constructor: '\uD83D\uDE00' })
+	},
+	// and whose value valibot refuses and zod takes, given it
+	{
+		name: 'rest, own key named constructor, a default of a transform to undefined then a check',
+		schema: (l) =>
+			l.rest(
+				{ a: l.string },
+				l.refine(
+					l.with_default(
+						l.transform(() => undefined),
+						'x'
+					),
+					(x) => !!x
+				)
+			),
+		input: () => ({ constructor: 'x' })
 	},
 	{
 		name: 'rest, own key named prototype, wrong',
@@ -1729,6 +2211,11 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'rest, a default, inherited key, wrong',
 		schema: REST_DEFAULT,
 		input: () => inheriting({ z: 'z' }, { a: 'x' })
+	},
+	{
+		name: 'rest, inherited __proto__ key',
+		schema: REST,
+		input: () => inheriting(JSON.parse('{"__proto__": 1}'), { a: 'x' })
 	},
 	{
 		name: 'rest, own __proto__ key',
@@ -1859,10 +2346,12 @@ const collect_objects = (value: unknown, found: Set<object> = new Set()): Set<ob
 	return found;
 };
 
-// everything of `value` that can be read: every own key, whether it is
-// enumerable, and its value, the same of its prototype where that isn't the
-// plain one, and of every object it reaches
-const render_whole = (value: unknown): string => {
+/**
+ * Writes everything of `value` that can be read: every own key, whether it is
+ * enumerable, and its value, the same of its prototype where that isn't the
+ * plain one, and of every object it reaches.
+ */
+export const render_whole = (value: unknown): string => {
 	if (!is_object(value)) return render_value(value);
 	const keys = Reflect.ownKeys(value).map(
 		(key) =>

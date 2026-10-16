@@ -519,6 +519,79 @@ and never a table.
 
   A difference under 10% is not a win: nothing here measures its own noise.
 
+## The differential
+
+Not a measurement: a test of conformance over generated cases.
+`src/test/differential_helpers.ts` generates schemas from a seed, over every
+kind with a counterpart in Zod and Valibot, and inputs shaped by each schema
+with edges mixed in: inherited and hidden keys, null and class prototypes,
+symbol keys, holes, array subclasses, frozen objects, numbers past `2 ** 53`,
+and surrogates. Each case runs through the adapters of the conformance matrix
+and is classified by the tables of `src/test/conformance_tables.ts`:
+
+- **agree**: this library's result is Zod's, and Zod's is Valibot's.
+- **declared**: Zod and Valibot agree, this library doesn't, and the rules
+  explain it. A rule, in `DIFFERENTIAL_RULES`, names a row of a declared
+  difference and allows only what that row says this library does: a
+  rewrite of the input that takes away what triggers it, applied only where
+  this library does the same on the rewritten input apart from the keys it
+  touched, or a relaxation of the comparison. A case is credited to the rules
+  left once each is dropped in turn, the last first, where the case is still
+  explained without it.
+- **UNDECLARED**: nothing explains it. It is minimized and printed as a case
+  to paste into `CONFORMANCE_CASES`, where the conformance test asks for a
+  ruling. A difference that is a combination of recorded behaviors is one
+  of these until it has a row of its own: two `SIDES` rows that cancel, a
+  declared difference with a `SIDES` row, or a `SIDES` row with the copies'
+  drop of a `__proto__` key. Its rule credits only those behaviors: where a
+  rewrite brings out a disagreement of the two, exactly one entry of
+  `SPLIT_RECOGNIZERS` must recognize it as that of its `SIDES` row, and this
+  library's result is the result of the row's side, and where a rule
+  recomputes a result, it is from what Zod or Valibot gives a part of the
+  input. A disagreement no entry recognizes, or more than one, is
+  undeclared.
+- **disagree**: Zod and Valibot disagree, tallied as this library being on
+  Zod's side, Valibot's, both, or neither. Reported, never a failure:
+  `SIDES` is the gate for those.
+- **refused**: Zod or Valibot threw, building the schema or parsing.
+  Reported, with the error.
+- **THROWS**: this library threw. A failure.
+
+Every case also runs through this library's invariants: the input is not
+mutated, every issue is the five fields, `is` agrees with `parse`, a second
+parse gives the same, and the context's count is kept.
+
+It compares the verdict and the paths of the issues, and not their text, so
+the name an issue gives `NaN` and a `union`'s `expected` are held by
+`src/test/schema.test.ts`, and this library moving to the other side of a
+recorded disagreement is only a change in the tallies, which the conformance
+test's `SIDES` fails on.
+
+`gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a
+fixed count, the same everywhere, and fails on an undeclared difference, a
+throw, or a broken invariant. For a review, run it deeper:
+
+```bash
+npm run differential -- --seed 1 --seed 2 --count 200000
+npm run differential -- --focus variant --count 50000 --neither
+```
+
+`--seed` defaults to a random one, printed. `--focus <kind>` generates a kind
+often, and puts it in every root schema it can: a kind of `DIFFERENTIAL_KINDS`,
+where `rest` is `object_with_rest`, `refine` and `map` are a `pipe` to a check
+and to a transform, and `default` and `default_fn` are `with_default` and
+`with_default_fn`. `--limit` caps the findings minimized, and `--neither`
+minimizes the cases where this library goes with neither. It exits nonzero
+when `gro check` would fail. The script runs under a 2 GB V8 heap, and where
+`systemd-run --user` can start a scope, inside one capped at 3 GB of memory
+and no swap, so a runaway case ends the run and not the session: the npm
+script checks for that and runs Node directly otherwise.
+
+Not generated, as no counterpart in Zod and Valibot exists or as they have no
+run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
+`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Each
+declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
+
 ## Extending
 
 - A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, and a
