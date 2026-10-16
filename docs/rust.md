@@ -283,6 +283,31 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   case reports, too few groups or cases, and a constant that differs from
   `contract.json`. It reads the generated files with serde_json's tree and
   not the crate's.
+- The `generated_*` groups are written by `json_generate.ts` from fixed
+  seeds: each a random schema the crate carries, drawn from every kind
+  `to_schema_json` writes, and texts aimed at it, near and wrong, with edge
+  numbers, escaped Unicode, missing, extra, and repeated keys, deep nesting,
+  and texts cut short or with something after them. A text is kept only
+  where what the crate does is known from the library's answer: one deeper
+  than the parser reads is dropped, and so is one that matches with a key
+  written twice to a different value first. A text cut short is one that
+  matches, cut after a `[`, `{`, `,`, or `:`. One with something after a
+  whole value declares `malformed_tail` when the value doesn't match. No
+  text has a number past a double, a lone surrogate, or nesting past the
+  parser, so of the flags only `malformed_tail` is declared. A union has
+  the recursion in one option at most: two that reach the same `lazy` make
+  the library's time exponential in a text's depth.
+- `npm run fixtures:deep` runs more of them, outside `gro check` and the repo:
+  it writes each group's `expected.json` under `--dir`
+  (`~/.cache/fuz_schema/fixtures_deep` by default) and runs
+  `tests/fixtures.rs`, which loads the groups of `FUZ_SCHEMA_FIXTURES_DIR`
+  beside the committed ones when it is set. It marks the directory with a
+  `.fuz_schema_fixtures_deep` file, refuses one that is not empty without
+  it, and clears only the groups of an earlier run. It takes `--seed`
+  (repeatable, random when left out), `--count` groups a seed, and `--cases`
+  a group. It prints each seed before its groups, and a group slow to
+  generate. A failure names the group and the case, and the group's
+  `expected.json` holds the schema and the text.
 - An issue's path is written as the library has it: a key as a string and an
   index as a number.
 - A text must be well-formed Unicode, because it is written into a JSON

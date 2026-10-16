@@ -1,0 +1,447 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"é": {
+					"kind": "boolean"
+				},
+				"😀": {
+					"kind": "literal",
+					"def": 0
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_near",
+			"text": "{\"é\":false,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "01_tail",
+			"text": "{\"é\":false,\"😀\":0,\"constructor\":[[],\"ab\"],\"constructor\":[[],\"ab\"]},",
+			"json": false
+		},
+		{
+			"name": "02_aimed",
+			"text": "{\"é\":true,\"\\ud83d\\ude00\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "03_aimed",
+			"text": "\"x\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "04_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "05_near",
+			"text": "{\"\\u00E9\":false,\"\\uD83D\\ude00\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "06_aimed",
+			"text": "{\"é\":true,\"😀\":0E+0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "07_aimed",
+			"text": "{\"é\":false,\"😀\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "array",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "08_tail",
+			"text": "{\"é\":false,\"é\":false} 1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "09_aimed",
+			"text": "{\t\"é\"\r\n:true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "10_aimed",
+			"text": "{\"é\":false,\"😀\":0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "11_near",
+			"text": "{\"é\":true,\"constructor\":-1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "12_aimed",
+			"text": "{\"é\":true,\"😀\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "array",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "13_aimed",
+			"text": "{\"é\":true,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "14_aimed",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "15_near",
+			"text": "{\"😀\":  0e5,  \"é\" :false\t}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "16_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "17_aimed",
+			"text": "{\"é\":false,\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "18_aimed",
+			"text": "{\"é\":null,\"😀\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "19_aimed",
+			"text": "-1.5",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "20_near",
+			"text": "{\t\"é\" :\tfalse}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "21_cut",
+			"text": "{  \"é\":",
+			"json": false
+		},
+		{
+			"name": "22_cut",
+			"text": "{\"\\u00e9\":true,\"\\ud83d\\uDE00\":",
+			"json": false
+		},
+		{
+			"name": "23_aimed",
+			"text": "{\"é\":false,\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "24_aimed",
+			"text": "{\t\"é\":false,\"😀\"\t: 0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "25_tail",
+			"text": "{\"é\":true} null",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "26_aimed",
+			"text": "{\n\"é\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"😀\"\r\n:0e0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "array",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "27_aimed",
+			"text": "{\"é\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "28_aimed",
+			"text": "{\"é\":false,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "29_aimed",
+			"text": "{\"é\":true,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "30_aimed",
+			"text": "{\"é\":true,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_near",
+			"text": "{\"\\u00e9\":false,\"\\uD83D\\uDE00\":0e0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "32_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "33_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "34_aimed",
+			"text": "{\t\"é\"\t:null,\"😀\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "35_near",
+			"text": "{\"é\":true,\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "null",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "36_aimed",
+			"text": "{\"é\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "0",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "37_near",
+			"text": "{\"é\":true,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "38_aimed",
+			"text": "{\"\\u00E9\":null,\"\\ud83d\\uDE00\":0e5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "39_aimed",
+			"text": "{\"é\":true,\"😀\":0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

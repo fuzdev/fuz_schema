@@ -33,6 +33,7 @@ npm run benchmark:survey      # many small shapes against valibot and zod, by wh
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 npm run differential          # generated schemas and inputs against zod and valibot, memory-capped where systemd-run can
 npm run mutate                # break the library on purpose and check the tests fail, see docs/benchmarks.md
+npm run fixtures:deep         # generated JSON fixtures, many seeds, through the Rust fixture tests, see docs/rust.md
 gro src/test/fixtures/json/update # regenerate the JSON fixtures' expected.json
 gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
 ```
@@ -47,7 +48,8 @@ gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
 `--lib`, `--passes`, `--duration`, and `--alone`. `npm run differential` takes
 `--seed` (repeatable), `--count`, `--focus`, `--limit`, and `--neither`, and
 `npm run mutate` takes `--filter`, `--workers`, `--timeout`, `--deep`, and
-`--keep`, see `docs/benchmarks.md`.
+`--keep`, see `docs/benchmarks.md`. `npm run fixtures:deep` takes `--seed`
+(repeatable), `--count`, `--cases`, and `--dir`, see `docs/rust.md`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
 dev server.
@@ -106,6 +108,8 @@ dev server.
   `differential_classify.ts`, the classifying, invariants, minimizer, and
   report. `differential.ts` is `npm run differential`, a deeper run of any
   seed
+- `src/test/seeded_rng.ts` - the seeded generator the differential and the
+  generated JSON fixtures draw from
 - `src/test/mutants.ts`, `mutate.ts` - the table of mutants, small breaks
   of the library or of a table the tests read, and `npm run mutate`, which
   runs the tests on a copy of the working tree with each applied and fails
@@ -117,6 +121,10 @@ dev server.
   - `json_test_helpers.ts`, `update.task.ts` - the oracle, the loader, and the
     task that regenerates
   - `json_syntax_texts.ts` - texts several groups share
+  - `json_generate.ts` - a random schema and texts aimed at it from a seed,
+    what the `generated_*` groups export
+  - `deep.ts` - `npm run fixtures:deep`, many more generated groups, written
+    outside the repo and run through the Rust fixture tests
 - `src/test/json.fixtures.test.ts` - fails when a generated file is stale
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
 - `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
@@ -380,7 +388,8 @@ whether a JSON text matches a schema, and the issues of one that doesn't.
 - `stream.rs` - the streaming evaluator behind `matches_json`
 - `error.rs` - `JsonError` and `SchemaBuildError`
 - `tests/fixtures.rs` - both evaluators and the issues against
-  `src/test/fixtures/json/`
+  `src/test/fixtures/json/`, and the groups of `FUZ_SCHEMA_FIXTURES_DIR`
+  when it is set
 
 `crates/fuz_schema_wasm` is that crate behind wasm-bindgen: one class,
 `CompiledSchema`, whose verdicts are booleans. It isn't published and the

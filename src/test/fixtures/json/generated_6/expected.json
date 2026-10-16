@@ -1,0 +1,822 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"😀": {
+					"kind": "string"
+				},
+				"a b": {
+					"kind": "string"
+				},
+				"b": {
+					"kind": "object",
+					"def": {
+						"a b": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "array",
+											"def": {
+												"kind": "literal",
+												"def": 1.5
+											}
+										},
+										{
+											"kind": "min_length",
+											"def": 1
+										},
+										{
+											"kind": "max_length",
+											"def": 2
+										}
+									]
+								},
+								{
+									"kind": "lazy",
+									"def": "$0"
+								},
+								{
+									"kind": "array",
+									"def": {
+										"kind": "unknown"
+									}
+								}
+							]
+						},
+						"k\"q": {
+							"kind": "literal",
+							"def": "é"
+						},
+						"b": {
+							"kind": "variant",
+							"def": {
+								"key": "type",
+								"options": [
+									{
+										"kind": "object",
+										"def": {
+											"k\"q": {
+												"kind": "number"
+											},
+											"type": {
+												"kind": "literal",
+												"def": true
+											}
+										}
+									},
+									{
+										"kind": "loose_object",
+										"def": {
+											"type": {
+												"kind": "literal",
+												"def": "b"
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "bigint"
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_near",
+			"text": "{\"😀\":\"😀\",\"a b\":\"null\",\"b\":{\"a b\":[1.5],\"k\\\"q\":\"é\",\"b\":{\"k\\\"q\":9007199254740993,\"type\":true}},\"b\":{\"a b\":[1.5],\"k\\\"q\":\"é\",\"b\":{\"k\\\"q\":9007199254740993,\"type\":true}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "01_tail",
+			"text": "\"\" {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "02_aimed",
+			"text": "{\"😀\":\"x\",\"\\u0061 \\u0062\":\"ab\",\"\\u0062\":{\"k\\u0022q\":true,\"\\u0062\":null,\"\\u0074oSt\\u0072ing\":\"\\u002F\"},\"\\u0030\":\" \"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "undefined",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "boolean",
+					"path": [
+						"b",
+						"k\"q"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"b",
+						"b"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"b",
+						"toString"
+					]
+				}
+			]
+		},
+		{
+			"name": "03_tail",
+			"text": "[[]] {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "04_near",
+			"text": "{\"😀\":\"/\",\"a b\":\"\\n\",\"b\":{\"a b\":[1.5],\"b\":{\"type\":\"b\"},\"k\\\"q\":\"é\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "05_near",
+			"text": "{\r\n\"😀\":\n\"\\u65E5\\u672C\"\r\n,\"\\u0061 \\u0062\"\t:  \"\\u000A\"\r\n,\"b\":\r\nnull\r\n,\"\\ud83d\\ude00\"\t:  \"\\u65E5\\u672C\" }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "06_aimed",
+			"text": "{\"😀\":\"😀\",\"a b\":\"日本\",\"b\":{\"a\":1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "undefined",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "undefined",
+					"path": [
+						"b",
+						"k\"q"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"b",
+						"b"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"b",
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "07_tail",
+			"text": "{\"😀\":\"a\\\\b\"\n,\"a b\"\t: \"b\"} 1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "08_near",
+			"text": "{\t\"😀\":\r\n\"a\\\"b\"\t,\t\"a b\":\"null\"\t,\t\"b\"\t:{\"a b\":[true\t,1E2]\t,\"k\\\"q\" :\"é\"\t,\"b\":  {\"k\\\"q\":\r\n1E2\r\n,\"type\":true}\r\n}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "09_tail",
+			"text": "{\"\\ud83d\\uDE00\":null,\"a b\":\"a\\u005c\\u0062\",\"b\":[[[[[[[[[[]]]]]]]]]]},",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "10_aimed",
+			"text": "{\"😀\":\"ab\",\"a b\":null,\"b\":{\"b\":{},\"k\\\"q\":\"é\",\"z\":{\"10\":2.5e-3,\"a\\\"b\":2e0},\"a b\":[1.5]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"a b"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "true | \"b\"",
+					"received": "undefined",
+					"path": [
+						"b",
+						"b",
+						"type"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"b",
+						"z"
+					]
+				}
+			]
+		},
+		{
+			"name": "11_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "12_aimed",
+			"text": "{\"😀\":1e300,\"a b\":\"\\u0000\",\"b\":{\"a b\":null,\"k\\\"q\":\"é\",\"b\":0}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "null",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"b",
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "13_aimed",
+			"text": "{\"\\ud83d\\ude00\":\"\\/\",\"\\u0061\\u0020b\":\"ab\",\"\\u0062\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "14_tail",
+			"text": "{\"😀\":\"x\",\"a b\":[[]],\"b\":null} x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "15_near",
+			"text": "{\"😀\":\"b\",\"a b\":\"a\\\\b\",\"b\":{\"b\":{\"type\":\"b\",\"toString\":[[[[[[[[[[]]]]]]]]]]},\"a b\":\"\\n\",\"k\\\"q\":null}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "string",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "null",
+					"path": [
+						"b",
+						"k\"q"
+					]
+				}
+			]
+		},
+		{
+			"name": "16_aimed",
+			"text": "0",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "number",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "17_near",
+			"text": "{\"😀\": \"a\\\"b\",\t\"b\"  :\r\n{\t\"k\\\"q\"  :\n\"é\",\t\"b\": {\t\"type\"\t:\"b\"}  },\t\"a b\"\r\n:\t\"é\" }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "undefined",
+					"path": [
+						"b",
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "18_tail",
+			"text": "{\"a b\":null} {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "19_aimed",
+			"text": "{\"😀\":\"\",\"\\u0061\\u0020b\":\"a\\\"b\",\"\\u0062\":{\"\\u0061\\u0020b\":true,\"k\\u0022\\u0071\":\"\\u00e9\",\"b\":{\"t\\u0079\\u0070\\u0065\":\"\\u0062\"}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "boolean",
+					"path": [
+						"b",
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "20_near",
+			"text": "{\"a b\":\"😀\",\"constructor\":\" \"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "21_aimed",
+			"text": "\"x\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "22_near",
+			"text": "{\"😀\":\"日本\",\"\\u0062\":{\"\\u0061\\u0020\\u0062\":\"\\u0030\",\"\\u006b\\u0022\\u0071\":\"\\u00e9\",\"\\u0062\":{\"\\u0074\\u0079pe\":\"b\"}},\"\\u0061 b\":\"\\u2028\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "string",
+					"path": [
+						"b",
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "23_aimed",
+			"text": "{\"a b\":\"é\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "24_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "25_tail",
+			"text": "{\"😀\":null,\"a b\":\" \"}}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "26_aimed",
+			"text": "{\"\\u0062\":{\"\\u0061 b\":-1.5,\"\\u006B\\u0022\\u0071\":\"é\",\"b\":{\"\\u0074\\u0079p\\u0065\":true,\"\\u006B\\u0022q\":1}},\"😀\":\"b\",\"\\u0061\\u0020\\u0062\":\"\\u002F\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "number",
+					"path": [
+						"b",
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "27_tail",
+			"text": "{\"😀\":\"null\",\"a b\":\"😀\",\"b\":{\"k\\\"q\":{\"a\":1},\"b\":{\"type\":{},\"k\\\"q\":[[]]}}} ]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "28_near",
+			"text": "{  \"b\"\r\n:{ \"a b\"\r\n:\t[1e-400\r\n,-9007199254740992\t],\"k\\\"q\"\r\n:  \"é\",\"b\":\n{\t\"type\":  true }},\"a b\"\r\n:  \"ab\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "undefined",
+					"path": [
+						"b",
+						"b",
+						"k\"q"
+					]
+				}
+			]
+		},
+		{
+			"name": "29_aimed",
+			"text": "{\"😀\":{\"\":{}},\"a b\":\"/\",\"b\":{\"a b\":null,\"k\\\"q\":\"é\",\"b\":{\"type\":{\"\":{}}}},\"__proto__\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "null",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "true | \"b\"",
+					"received": "object",
+					"path": [
+						"b",
+						"b",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "30_near",
+			"text": "{\"b\":{\"k\\\"q\":\"é\",\"a b\":[],\"b\":{\"type\":true,\"k\\\"q\":-9007199254740992}},\"😀\":\"/\",\"a b\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_aimed",
+			"text": "{\"toString\":[],\"a b\":\"null\",\"b\":{\"b\":{\"type\":true,\"k\\\"q\":0.1},\"k\\\"q\":\"é\",\"a b\":[\"x\",1.5]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "32_near",
+			"text": "{\"a b\":\"é\",\"b\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "33_aimed",
+			"text": "{\"😀\":\"a\\\\\\u0062\",\"\\u0062\":{\"a\\u0020b\":null,\"k\\u0022\\u0071\":[null],\"\\u0062\":{\"k\\u0022\\u0071\":-0.0}},\"a\\u0020b\":null,\"\\u007A\":\"\\ud83d\\uDE00\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"a b"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "null",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "array",
+					"path": [
+						"b",
+						"k\"q"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "true | \"b\"",
+					"received": "undefined",
+					"path": [
+						"b",
+						"b",
+						"type"
+					]
+				}
+			]
+		},
+		{
+			"name": "34_tail",
+			"text": "{\"b\":{\"a b\":[true,\"日本\",\"x\"],\"b\":{\"type\":\"b\"}}},",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "35_aimed",
+			"text": "{\"a b\"\n:false  ,\"b\": {\t\"b\"\n:\n1e300,\n\"a b\"\r\n:  false,\n\"k\\\"q\"\t:\t[null]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"a b"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "boolean",
+					"path": [
+						"b",
+						"a b"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"é\"",
+					"received": "array",
+					"path": [
+						"b",
+						"k\"q"
+					]
+				},
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"b",
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "36_aimed",
+			"text": "{\"\\u0061 \\u0062\":\"\\u65e5本\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"b"
+					]
+				}
+			]
+		},
+		{
+			"name": "37_near",
+			"text": "{\"\\ud83d\\uDE00\":\"\\u00E9\",\"\\u0062\":{\"\\u0061\\u0020b\":\"\\/\",\"k\\\"q\":\"\\u00E9\",\"\\u0062\":{\"\\u0074y\\u0070\\u0065\":\"b\"}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"a b"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "array | lazy",
+					"received": "string",
+					"path": [
+						"b",
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "38_aimed",
+			"text": "{\"😀\":\"\\u0000\",\"a b\":\"é\",\"b\":{\"a b\":[1.5],\"k\\\"q\":\"é\",\"b\":{\"type\":\"b\"}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "39_tail",
+			"text": "{\"😀\":\"\\n\",\"a b\":null,\"b\":[[]]} //",
+			"json": false,
+			"diverges": "malformed_tail"
+		}
+	]
+}

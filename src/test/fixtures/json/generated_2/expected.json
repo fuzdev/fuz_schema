@@ -1,0 +1,369 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "pipe",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "max_length",
+					"def": 1
+				},
+				{
+					"kind": "min_length",
+					"def": 0
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "00_tail",
+			"text": "\"\\u00e9\"}",
+			"json": false
+		},
+		{
+			"name": "01_aimed",
+			"text": "\"é\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "02_tail",
+			"text": "\"\" ]",
+			"json": false
+		},
+		{
+			"name": "03_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "04_tail",
+			"text": "\"\" {}",
+			"json": false
+		},
+		{
+			"name": "05_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "06_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "07_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "08_near",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "09_near",
+			"text": "\"abc\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "10_near",
+			"text": "\"\\u006Eu\\u006cl\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "11_near",
+			"text": "\"a\\\"b\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "12_near",
+			"text": "\"é\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "13_tail",
+			"text": "-1.5 //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "14_near",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "15_near",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "16_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "17_near",
+			"text": "\"\\ud83d\\uDE00\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "18_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "19_near",
+			"text": "\"é\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "20_near",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "21_near",
+			"text": "\"abc\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "22_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "23_near",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "24_near",
+			"text": "\"é\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "25_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "26_aimed",
+			"text": "\"\\u0061\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "27_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "28_tail",
+			"text": "\"\",",
+			"json": false
+		},
+		{
+			"name": "29_tail",
+			"text": "1e300 //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "30_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "32_near",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "33_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "34_near",
+			"text": "\"null\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "35_near",
+			"text": "\"\\u2028\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "36_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "37_near",
+			"text": "\"\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "38_near",
+			"text": "\"a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "39_near",
+			"text": "\"éé\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": []
+				}
+			]
+		}
+	]
+}

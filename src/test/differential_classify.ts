@@ -51,7 +51,6 @@ import {
 import type { ConformanceSidesRow } from './conformance_tables.ts';
 import {
 	build_spec,
-	create_differential_rng,
 	create_differential_run,
 	differential_error_line,
 	gen_input,
@@ -107,6 +106,7 @@ import {
 	type DifferentialRuleName
 } from './differential_rules.ts';
 import { split_side, type DifferentialSplit } from './differential_recognizers.ts';
+import { create_seeded_rng } from './seeded_rng.ts';
 
 //
 // Comparing
@@ -1092,7 +1092,7 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 		minimize_budget = 4000,
 		minimize_neither = false
 	} = options;
-	const rng = create_differential_rng(seed);
+	const rng = create_seeded_rng(seed);
 	const report: DifferentialReport = {
 		seed,
 		count,

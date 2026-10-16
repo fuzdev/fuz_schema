@@ -1,0 +1,611 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"é": {
+					"kind": "union",
+					"def": [
+						{
+							"kind": "union",
+							"def": [
+								{
+									"kind": "safe_integer"
+								}
+							]
+						}
+					]
+				},
+				"a": {
+					"kind": "literal",
+					"def": "b"
+				},
+				"": {
+					"kind": "union",
+					"def": [
+						{
+							"kind": "with_default",
+							"def": {
+								"schema": {
+									"kind": "number"
+								},
+								"value": "D"
+							}
+						}
+					]
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_near",
+			"text": "{\"é\":9007199254740992,\"\\u0061\":\"\\u0062\",\"\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "01_aimed",
+			"text": "{\"é\":9007199254740994,\"\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"b\"",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "02_near",
+			"text": "{\"é\":0,\"a\":\"b\",\"\":0.1,\"toString\":-0.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "03_tail",
+			"text": "{\"é\":9007199254740994,\"a\":\"b\"},",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "04_tail",
+			"text": "{\"é\"\r\n:-1,\n\"a\":\t\"b\",\n\"\":  null} //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "05_aimed",
+			"text": "{\t\"\"  :false, \"z\" :false, \"é\" :1, \"a\"\r\n:null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "literal",
+					"expected": "\"b\"",
+					"received": "null",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "boolean",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "06_aimed",
+			"text": "[[[[[[[[[[]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "07_near",
+			"text": "{\"é\":-1,\"a\":\"b\",\"\":9007199254740991}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "08_near",
+			"text": "{\"é\":null,\"a\":\"b\",\"\":null,\"con\\u0073t\\u0072uct\\u006f\\u0072\":{\"\\u006B\\u0031\":0}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "09_near",
+			"text": "{\"a\":\"b\",\"é\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "10_near",
+			"text": "{\"é\":1e21,\"a\":\"b\",\"\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "11_tail",
+			"text": "{ \"\\u00E9\":  [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]\t,\"a\":\"\\u0062\"\t,\"\"\t:true} x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "12_near",
+			"text": "{\"é\"\t:\tnull,  \"a\":\n\"b\"\r\n}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "13_tail",
+			"text": "{\"a\":null,\"\":null,\"é\":1e0} {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "14_aimed",
+			"text": "{\"é\":1e21,\"a\":\"x\",\"\":{\"\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"b\"",
+					"received": "string",
+					"path": [
+						"a"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "object",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "15_aimed",
+			"text": "{\"é\":-1e21,\"a\":\"b\",\"\":null,\"__proto__\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "16_aimed",
+			"text": "[null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "17_near",
+			"text": "{\"\":-0.0,\"a\":\"b\",\"é\":1}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "18_aimed",
+			"text": "{\"a\":\"b\",\"\":1e21}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "undefined",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "19_aimed",
+			"text": "{\"é\":null,\"a\":\"b\",\"\":2.5e-3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "20_aimed",
+			"text": "{\n\"a\"  :\"b\",\"\":100  }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "undefined",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "21_aimed",
+			"text": "{\"é\":-0,\"a\":\"b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "22_near",
+			"text": "{\"é\" :\r\n-1e21,\"a\"  :\"\\u0062\",\"\"\t:9007199254740992}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "23_aimed",
+			"text": "{\"é\":\"\",\"\":-1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "string",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "literal",
+					"expected": "\"b\"",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "24_aimed",
+			"text": "{\"a\":\"b\",\"é\":false,\"\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "boolean",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "25_aimed",
+			"text": "{\"\":1e-400,\"é\":1e21,\"a\":\"b\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "26_aimed",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "27_near",
+			"text": "{\"é\":-0,\"a\":\"b\",\"\":2e0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "28_near",
+			"text": "{\"\":null,\"é\":1.0,\"a\":\"b\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "29_near",
+			"text": "{\"é\":1e0,\"a\":\"b\",\"\":null,\"z\":1e300}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "30_aimed",
+			"text": "{\"é\":9007199254740991,\"a\":\"b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_near",
+			"text": "{\"é\":1e21,\"a\":\"b\",\"\":9007199254740993}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "32_near",
+			"text": "{\"é\"\t:null,\t\"a\":\"b\",\t\"\"\r\n:null }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"é"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number",
+					"received": "null",
+					"path": [
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "33_near",
+			"text": "{\"é\":9007199254740994,\"a\":\"b\",\"\":1E+21}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				}
+			]
+		},
+		{
+			"name": "34_near",
+			"text": "{\"é\":-0,\"a\":\"b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "35_tail",
+			"text": "{\"a\":{},\"é\":\"\",\"a\":[null],\"\":\"x\"} ]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "36_tail",
+			"text": "{\"\":1.0,\"a\":\"b\",\"é\":0} null",
+			"json": false
+		},
+		{
+			"name": "37_tail",
+			"text": "false,",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "38_tail",
+			"text": "{\r\n\"é\":\"x\",\"é\": 0,\"a\"  :null,\"\":\n{}} x",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "39_near",
+			"text": "{\"é\" :  1e21,\"a\":\"b\",\"\"  : 1e2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é"
+					]
+				}
+			]
+		}
+	]
+}

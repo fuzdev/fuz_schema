@@ -9,7 +9,6 @@ import {
 } from './differential_classify.ts';
 import {
 	DIFFERENTIAL_KINDS,
-	create_differential_rng,
 	gen_root_spec,
 	show_input,
 	show_spec,
@@ -23,6 +22,7 @@ import {
 	DIFFERENTIAL_UNRULED,
 	type DifferentialRuleName
 } from './differential_rules.ts';
+import { create_seeded_rng } from './seeded_rng.ts';
 
 // The differential at a fixed depth: the same seeds and counts on every run
 // and in CI, so what passes here passes there. A deeper run, of any seed, is
@@ -93,7 +93,7 @@ describe('the differential', () => {
 	});
 
 	test('every kind is generated', () => {
-		const rng = create_differential_rng(1);
+		const rng = create_seeded_rng(1);
 		const specs = Array.from({ length: 2000 }, () => gen_root_spec(rng));
 		assert.deepEqual(
 			DIFFERENTIAL_KINDS.filter(

@@ -37,6 +37,7 @@
     "build:wasm": "wasm-pack build crates/fuz_schema_wasm --target web --release --out-dir ../../target/fuz_schema_wasm",
     "grade": "node src/benchmarks/grade.ts",
     "differential": "sh -c 'if systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 true >/dev/null 2>&1; then exec systemd-run --user --scope -q -p MemoryMax=3G -p MemorySwapMax=0 node --max-old-space-size=2048 src/test/differential.ts \"$@\"; else exec node --max-old-space-size=2048 src/test/differential.ts \"$@\"; fi' differential",
+    "fixtures:deep": "node src/test/fixtures/json/deep.ts",
     "mutate": "sh -c 'if systemd-run --user --scope -q -p MemoryMax=6G -p MemorySwapMax=0 true >/dev/null 2>&1; then exec systemd-run --user --scope -q -p MemoryMax=6G -p MemorySwapMax=0 node src/test/mutate.ts \"$@\"; else exec node src/test/mutate.ts \"$@\"; fi' mutate"
   },
   "type": "module",

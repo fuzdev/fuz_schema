@@ -1,0 +1,1148 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"1": {
+					"kind": "array",
+					"def": {
+						"kind": "loose_object",
+						"def": {
+							"k\"q": {
+								"kind": "record",
+								"def": {
+									"kind": "boolean"
+								}
+							},
+							"😀": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "pipe",
+										"def": [
+											{
+												"kind": "string"
+											},
+											{
+												"kind": "max_length",
+												"def": 2
+											},
+											{
+												"kind": "max_length",
+												"def": 3
+											}
+										]
+									}
+								}
+							},
+							"a b": {
+								"kind": "union",
+								"def": [
+									{
+										"kind": "pipe",
+										"def": [
+											{
+												"kind": "number"
+											},
+											{
+												"kind": "max_value",
+												"def": 1.5
+											},
+											{
+												"kind": "safe_integer"
+											}
+										]
+									},
+									{
+										"kind": "number"
+									},
+									{
+										"kind": "bigint"
+									}
+								]
+							}
+						}
+					}
+				},
+				"a": {
+					"kind": "array",
+					"def": {
+						"kind": "optional",
+						"def": {
+							"schema": {
+								"kind": "object",
+								"def": {}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_near",
+			"text": "{\"1\":[\t]\t, \"a\"\n:\n[ {\n}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "01_cut",
+			"text": "{\"a\":[{},{}],\"1\":[",
+			"json": false
+		},
+		{
+			"name": "02_aimed",
+			"text": "{\"1\":[[]],\"1\":[{\"k\\\"q\":{\"0\":false},\"😀\":\"😀\"},{\"k\\\"q\":{\" \":false},\"😀\":\"é\",\"a b\":5e-324},{\"😀\":\"ab\",\"toString\":true,\"k\\\"q\":{},\"a b\":null}],\"a\":[null],\"constructor\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"a b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "03_aimed",
+			"text": "{\"1\":-1.5,\"a\":[{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"1"
+					]
+				}
+			]
+		},
+		{
+			"name": "04_aimed",
+			"text": "{\"a\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "05_aimed",
+			"text": "{\"a\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "boolean",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "06_aimed",
+			"text": "{\"1\":[{\"\\u006b\\\"\\u0071\":{\"a\":1},\"\\ud83d\\uDE00\":\"\\u0061😀\",\"a\\u0020\\u0062\":0},{\"\\u006b\\\"\\u0071\":{\" \":{\"a\":1},\"0\":false},\"\\uD83D\\ude00\":\"\\uD83D\\uDE00\",\"a b\":null},{\"k\\\"\\u0071\":{\"\\u006b\\u0030\":true},\"\\ud83d\\ude00\":null,\"a\\u0020\\u0062\":\"x\",\"z\":1.5}],\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],{\"\":{}}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"k\"q",
+						"a"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "object",
+					"path": [
+						"1",
+						1,
+						"k\"q",
+						" "
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"a b"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "string",
+					"path": [
+						"1",
+						2,
+						"a b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a",
+						0
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"a",
+						1,
+						""
+					]
+				}
+			]
+		},
+		{
+			"name": "07_near",
+			"text": "{ \"\\u0031\":\r\n[\r\n{ \"\\u006B\\u0022\\u0071\"\n:{\"\\u006B1\" :\nfalse, \"😀\":\r\ntrue },\"\\ud83d\\uDE00\": \"a\\u0062\\u0063\",\"\\u0061 \\u0062\"\t:\"\\u0020\"}\t,\t{  \"\\ud83d\\ude00\" :\"\\uD83D\\ude00b\"  ,  \"\\u007A\"\n:false  ,  \"k\\u0022q\":\t{\"k\\u0030\":true,  \"\\ud83d\\ude00\":false}  ,  \"a\\u0020b\" :null\r\n} ],  \"\\u0061\":\n[{  },{},{ }  ]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "08_near",
+			"text": "{\"1\":[{\"\\u006b\\\"\\u0071\":{},\"😀\":\"😀\",\"a b\":{\"\":null,\"\\ud83d\\uDE00\":1e300}}],\"a\":[{\"\\u0074\\u006f\\u0053t\\u0072\\u0069\\u006E\\u0067\":\"b\"}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "object",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"a",
+						0,
+						"toString"
+					]
+				}
+			]
+		},
+		{
+			"name": "09_aimed",
+			"text": "{\"\\u0031\":[{\"k\\\"\\u0071\":{\"\\u006b0\":0,\"_\\u005fp\\u0072\\u006f\\u0074o_\\u005F\":false,\"k\\u0031\":false},\"\\u0061\\u0020b\":9007199254740991},{\"\\u006b\\\"q\":{\"k\\u0030\":false},\"\\u0061 b\":-0,\"😀\":\"\\u00e9\"},{\"k\\\"\\u0071\":{\"\\ud83d\\uDE00\":true},\"😀\":\" \",\"\\u0061 \\u0062\":null}],\"\\u0061\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"k\"q",
+						"k0"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"a b"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "10_tail",
+			"text": "{\"a\":[{},{}],\"1\":[{\"k\\\"q\":[],\"😀\":\"éb😀\",\"a b\":1e21},{\"😀\":null,\"a b\":{\"\":{}},\"k\\\"q\":{}}]} 1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "11_near",
+			"text": "{\"1\":[{\"\\u006b\\u0022\\u0071\":{},\"\\uD83D\\ude00\":\"\\u0061\\u0062\"},{\"k\\\"\\u0071\":null,\"a b\":100},{\"\\u006b\\u0022q\":{\"c\\u006F\\u006E\\u0073tr\\u0075ct\\u006f\\u0072\":true,\"\\uD83D\\ude00\":false},\"\\uD83D\\ude00\":null,\"a\\u0020\\u0062\":1.5}],\"a\":[{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "12_tail",
+			"text": "{\"1\":[{\"k\\\"q\":{\"k0\":true,\" \":true,\"__proto__\":false},\"😀\":\"abba\",\"a b\":null},{\"k\\\"q\":{\"0\":true},\"😀\":\"😀😀\",\"a b\":1E+21},{\"k\\\"q\":{\"10\":true},\"😀\":\"éba\",\"a b\":1.5}],\"a\":[]}}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "13_aimed",
+			"text": "{\"1\":[],\"a\":[{}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "14_aimed",
+			"text": "{\"1\":0,\"a\":true}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "number",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "boolean",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "15_near",
+			"text": "{ \"a\":  [\nnull ]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "16_aimed",
+			"text": "{\"a\":null,\"z\":{\"constructor\":\"\\u0000\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "17_aimed",
+			"text": "{\"1\":null,\"a\":[null,{\"0\":-1.5,\"0\":-1.5},{}],\"\":1.5}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a",
+						1,
+						"0"
+					]
+				}
+			]
+		},
+		{
+			"name": "18_aimed",
+			"text": "{ \"a\":[\t{ \n} ,  {\t}  ]  }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				}
+			]
+		},
+		{
+			"name": "19_tail",
+			"text": "{\r\n\"1\":[\t],\"a\"\r\n:[{\t}]} ]",
+			"json": false
+		},
+		{
+			"name": "20_near",
+			"text": "{\"a\":[{},null],\"1\":[{\"k\\\"q\":{},\"😀\":null,\"a b\":123456789012345678901234567890},{\"a b\":2,\"😀\":null,\"k\\\"q\":{}}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "21_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":null,\"😀\":\" \",\"a b\":{}}],\"a\":[null,{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "object",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					]
+				}
+			]
+		},
+		{
+			"name": "22_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":{\"\":[[]],\"😀\":true},\"😀\":null,\"a b\":-1.5},{\"k\\\"q\":{\" \":true},\"😀\":\"é😀é\"}],\"a\":[{},{}],\"1\":[{\"k\\\"q\":{\"\":[[]],\"😀\":true},\"😀\":null,\"a b\":-1.5},{\"k\\\"q\":{\" \":true},\"😀\":\"é😀é\"}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "array",
+					"path": [
+						"1",
+						0,
+						"k\"q",
+						""
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						1,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "23_near",
+			"text": "{\"a\":[{},null],\"1\":[{\"k\\\"q\":{},\"😀\":null,\"a b\":2.0}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "24_near",
+			"text": "{\"1\":[{\"k\\\"q\":{},\"😀\":\"éb\",\"a b\":null}],\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "25_near",
+			"text": "{\r\n\"\\u0031\"\t:[  {\"\\u006b\\u0022\\u0071\":{\"k\\u0031\" :true\r\n}\r\n,\"😀\"  :null\r\n,\"\\u0061 \\u0062\"  :false}]\t,\n\"a\"  :[{\n},  {\n},  {   }] }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "boolean",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "26_aimed",
+			"text": "{\"a\":{\"\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "27_aimed",
+			"text": "{ \"1\":\t[\r\n{\"\":{}},  {\"a b\"\t:1e21,  \"😀\":\n\"ébb\"},  {\"😀\":\t\"b\" }  ], \"a\"\t:[ {\n}  ,{}]\r\n}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						1,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				},
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						2,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						2,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "28_aimed",
+			"text": "{\n\"a\":[{\r\n\"constructor\" :\r\n{\"a\":1}\t,\"constructor\"\t:\r\n{\"a\":1}},\nnull]  }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"a",
+						0,
+						"constructor"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "29_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":{},\"\\u0061\\u0020b\":1e300,\"\\ud83d\\ude00\":\"\\u0061b\\u0063\"}],\"a\":[[[[[[[[[[[]]]]]]]]]],null,null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"a",
+						0
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						2
+					]
+				}
+			]
+		},
+		{
+			"name": "30_tail",
+			"text": "{\"a\":[null,1e300]} 1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "31_near",
+			"text": "{\"1\":null,\"a\":[{},null,{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					]
+				}
+			]
+		},
+		{
+			"name": "32_near",
+			"text": "{\"\\u0031\":[{\"k\\u0022q\":{\"\":true,\"\\u0020\":false},\"\\uD83D\\uDE00\":\"\\u00e9\\u00e9\\u00E9\",\"\\u0061 b\":1.5},{\"k\\u0022\\u0071\":{},\"😀\":\"b😀\",\"\\u0061 \\u0062\":1e-400}],\"\\u0061\":[{},{},{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				}
+			]
+		},
+		{
+			"name": "33_near",
+			"text": "{\"1\":[\"x\",\"😀\"],\"1\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "34_near",
+			"text": "{ \"1\"  : [   ],\n\"a\"\r\n:[  {\r\n}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "35_aimed",
+			"text": "{\"1\":null,\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"1"
+					]
+				}
+			]
+		},
+		{
+			"name": "36_near",
+			"text": "{\"1\":[{\"k\\\"q\":null,\"a b\":0},{\"k\\\"q\":{\"10\":false},\"😀\":null,\"a b\":-9007199254740992},{\"k\\\"q\":{\"k1\":false},\"😀\":\"😀😀\",\"a\":true}],\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					]
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"😀"
+					]
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 2",
+					"received": "string",
+					"path": [
+						"1",
+						2,
+						"😀"
+					]
+				},
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "undefined",
+					"path": [
+						"1",
+						2,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "37_near",
+			"text": "{\"1\":[{\"k\\\"\\u0071\":{\"\\u006B0\":false},\"a\\u0020\\u0062\":null},{\"\\u0061 b\":1e21,\"\\u007a\":[\"\\n\"],\"\\u006b\\\"\\u0071\":{\"é\":true,\"__\\u0070r\\u006fto__\":false},\"😀\":\"\\u00e9a\"}],\"\\u0061\":[{},{},{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "number | bigint",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b"
+					]
+				}
+			]
+		},
+		{
+			"name": "38_aimed",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					]
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"a"
+					]
+				}
+			]
+		},
+		{
+			"name": "39_aimed",
+			"text": "{\"a\":[{}],\"1\":[]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

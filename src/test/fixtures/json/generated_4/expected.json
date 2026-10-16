@@ -1,0 +1,295 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "number"
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_near",
+			"text": "1",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "01_tail",
+			"text": "1e2}",
+			"json": false
+		},
+		{
+			"name": "02_near",
+			"text": "0.1",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "03_tail",
+			"text": "1 null",
+			"json": false
+		},
+		{
+			"name": "04_near",
+			"text": "9007199254740993",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "05_aimed",
+			"text": "123456789012345678901234567890",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "06_aimed",
+			"text": "100",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "07_aimed",
+			"text": "9007199254740992",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "08_tail",
+			"text": "1e+2 x",
+			"json": false
+		},
+		{
+			"name": "09_near",
+			"text": "9007199254740992",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "10_aimed",
+			"text": "9007199254740992",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "11_near",
+			"text": "2e0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "12_aimed",
+			"text": "2.5e-3",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "13_aimed",
+			"text": "1.0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "14_aimed",
+			"text": "123456789012345678901234567890",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "15_aimed",
+			"text": "-0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "16_near",
+			"text": "123456789012345678901234567890",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "17_aimed",
+			"text": "1e21",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "18_aimed",
+			"text": "0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "19_near",
+			"text": "1e-7",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "20_tail",
+			"text": "1.7976931348623157e308 x",
+			"json": false
+		},
+		{
+			"name": "21_near",
+			"text": "1e-7",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "22_aimed",
+			"text": "2.5e-3",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "23_tail",
+			"text": "\"\"}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "24_near",
+			"text": "1E+21",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "25_near",
+			"text": "0.30000000000000004",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "26_aimed",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "27_tail",
+			"text": "{} {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "28_near",
+			"text": "1.7976931348623157e308",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "29_aimed",
+			"text": "2e0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "30_aimed",
+			"text": "2e0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_aimed",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "number",
+					"expected": "number",
+					"received": "array",
+					"path": []
+				}
+			]
+		},
+		{
+			"name": "32_tail",
+			"text": "1e300}",
+			"json": false
+		},
+		{
+			"name": "33_near",
+			"text": "0.1",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "34_near",
+			"text": "1e2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "35_tail",
+			"text": "-1.5 null",
+			"json": false
+		},
+		{
+			"name": "36_aimed",
+			"text": "1E2",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "37_aimed",
+			"text": "9007199254740992",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "38_near",
+			"text": "0",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "39_near",
+			"text": "5e-324",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

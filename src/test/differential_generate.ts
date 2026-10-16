@@ -19,35 +19,7 @@ import {
 	type ConformanceLibName,
 	type ConformanceParsed
 } from './conformance_test_helpers.ts';
-
-//
-// Randomness
-//
-
-/** What the generator draws from. */
-export interface DifferentialRng {
-	/** An integer from `0` to below `n`. */
-	int: (n: number) => number;
-	chance: (p: number) => boolean;
-	pick: <T>(items: ReadonlyArray<T>) => T;
-}
-
-/** A seeded generator, mulberry32, so a seed gives the same cases everywhere. */
-export const create_differential_rng = (seed: number): DifferentialRng => {
-	let a = seed >>> 0;
-	const next = (): number => {
-		a = (a + 0x6d2b79f5) >>> 0;
-		let t = a;
-		t = Math.imul(t ^ (t >>> 15), t | 1);
-		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-	return {
-		int: (n: number): number => Math.floor(next() * n),
-		chance: (p: number): boolean => next() < p,
-		pick: <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!
-	};
-};
+import type { SeededRng } from './seeded_rng.ts';
 
 //
 // Schemas
@@ -298,7 +270,7 @@ const INNER_KINDS: Array<DifferentialKind> = [
 ];
 
 const gen_entries = (
-	rng: DifferentialRng,
+	rng: SeededRng,
 	keys: Array<string>,
 	depth: number,
 	focus: DifferentialKind | null
@@ -306,7 +278,7 @@ const gen_entries = (
 
 /** A node of `kind`, its children generated. */
 const gen_node = (
-	rng: DifferentialRng,
+	rng: SeededRng,
 	kind: DifferentialKind,
 	depth: number,
 	focus: DifferentialKind | null
@@ -411,7 +383,7 @@ const gen_node = (
 
 /** A schema of at most `depth` levels, the `focus` kind made often. */
 export const gen_spec = (
-	rng: DifferentialRng,
+	rng: SeededRng,
 	depth: number,
 	focus: DifferentialKind | null = null
 ): DifferentialSpec => {
@@ -479,7 +451,7 @@ export const map_spec_children = (
 
 /** The root schema of a case: most often an object, as most differences are in one. */
 export const gen_root_spec = (
-	rng: DifferentialRng,
+	rng: SeededRng,
 	focus: DifferentialKind | null = null
 ): DifferentialSpec => {
 	for (let tries = 0; ; tries++) {
@@ -598,7 +570,7 @@ const EXTRA_KEYS = [
 	'valueOf'
 ];
 
-const edge = (rng: DifferentialRng): DifferentialInput =>
+const edge = (rng: SeededRng): DifferentialInput =>
 	rng.chance(0.15) ? (rng.chance(0.5) ? arr_in([]) : obj_in([])) : value_in(rng.pick(EDGES));
 
 const dedupe = (list: DifferentialEntries): DifferentialEntries => {
@@ -606,7 +578,7 @@ const dedupe = (list: DifferentialEntries): DifferentialEntries => {
 	return list.filter(([key]) => !seen.has(key) && !!seen.add(key));
 };
 
-const shuffle = (rng: DifferentialRng, list: Array<unknown>): void => {
+const shuffle = (rng: SeededRng, list: Array<unknown>): void => {
 	for (let i = list.length - 1; i > 0; i--) {
 		const j = rng.int(i + 1);
 		[list[i], list[j]] = [list[j], list[i]];
@@ -614,7 +586,7 @@ const shuffle = (rng: DifferentialRng, list: Array<unknown>): void => {
 };
 
 // what an object input is past its own enumerable keys, now and then
-const vary_object = (rng: DifferentialRng, input: DifferentialInput & { t: 'obj' }): void => {
+const vary_object = (rng: SeededRng, input: DifferentialInput & { t: 'obj' }): void => {
 	if (!input.proto.length) {
 		const r = rng.int(100);
 		if (r < 4) input.base = 'null';
@@ -626,7 +598,7 @@ const vary_object = (rng: DifferentialRng, input: DifferentialInput & { t: 'obj'
 };
 
 const gen_object_input = (
-	rng: DifferentialRng,
+	rng: SeededRng,
 	entries: Array<[string, DifferentialSpec]>,
 	rest: DifferentialSpec | null,
 	depth: number
@@ -657,11 +629,7 @@ const gen_object_input = (
 };
 
 /** An input shaped by `spec`, with an edge in place of a value now and then. */
-export const gen_input = (
-	rng: DifferentialRng,
-	spec: DifferentialSpec,
-	depth = 0
-): DifferentialInput => {
+export const gen_input = (rng: SeededRng, spec: DifferentialSpec, depth = 0): DifferentialInput => {
 	if (rng.chance(0.12) || depth > 6) return edge(rng);
 	switch (spec.t) {
 		case 'string':

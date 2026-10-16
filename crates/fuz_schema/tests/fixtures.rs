@@ -8,6 +8,9 @@
 //! declares how the crate diverges, and then they must do exactly what is
 //! declared. Wherever the tree evaluator gives a verdict, `validate_json`
 //! must give the library's issues, each one whole and in its order.
+//!
+//! When `FUZ_SCHEMA_FIXTURES_DIR` is set, the groups under it are loaded too:
+//! `npm run fixtures:deep` writes generated groups there.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -152,12 +155,29 @@ fn strings(value: &Value, key: &str, what: &str) -> Result<Vec<String>, String> 
         .collect()
 }
 
-/// Loads every group, or says what about the fixtures is not as generated.
+/// Loads every group, or says what about the fixtures is not as generated:
+/// the committed groups, and those under `FUZ_SCHEMA_FIXTURES_DIR` when it is
+/// set, which the deep lane of `src/test/fixtures/json/deep.ts` writes.
 fn load_groups() -> Result<Vec<Group>, String> {
-    let dir = fixtures_dir();
+    let mut groups = load_dir(&fixtures_dir())?;
+    if let Some(extra) = std::env::var_os("FUZ_SCHEMA_FIXTURES_DIR") {
+        if extra.is_empty() {
+            return Err("FUZ_SCHEMA_FIXTURES_DIR is set but empty".to_owned());
+        }
+        let extra = load_dir(Path::new(&extra))?;
+        if extra.is_empty() {
+            return Err("FUZ_SCHEMA_FIXTURES_DIR has no groups".to_owned());
+        }
+        groups.extend(extra);
+    }
+    Ok(groups)
+}
+
+/// Loads the groups of one directory, a group to a subdirectory.
+fn load_dir(dir: &Path) -> Result<Vec<Group>, String> {
     let read = |error: std::io::Error| format!("cannot read {}: {error}", dir.display());
     let mut names = Vec::new();
-    for entry in fs::read_dir(&dir).map_err(read)? {
+    for entry in fs::read_dir(dir).map_err(read)? {
         let entry = entry.map_err(read)?;
         if entry.file_type().map_err(read)?.is_dir() {
             names.push(entry.file_name().to_string_lossy().into_owned());
@@ -166,7 +186,7 @@ fn load_groups() -> Result<Vec<Group>, String> {
     names.sort();
     names
         .into_iter()
-        .map(|name| load_group(&dir, name))
+        .map(|name| load_group(dir, name))
         .collect()
 }
 
