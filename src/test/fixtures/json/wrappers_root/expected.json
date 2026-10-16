@@ -80,7 +80,8 @@
 					"received": "number",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected string, received number"
 				}
 			]
 		},
@@ -96,7 +97,8 @@
 					"received": "array",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string, received array"
 				}
 			]
 		},
@@ -110,7 +112,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received string"
 				}
 			]
 		},
@@ -124,7 +127,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received number"
 				}
 			]
 		},
@@ -138,7 +142,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "boolean",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received boolean"
 				}
 			]
 		},
@@ -152,7 +157,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received object"
 				}
 			]
 		}

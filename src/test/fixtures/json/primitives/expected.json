@@ -66,7 +66,8 @@
 					"received": "null",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received null"
 				}
 			]
 		},
@@ -82,7 +83,8 @@
 					"received": "boolean",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received boolean"
 				}
 			]
 		},
@@ -98,7 +100,8 @@
 					"received": "boolean",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received boolean"
 				}
 			]
 		},
@@ -114,7 +117,8 @@
 					"received": "number",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received number"
 				}
 			]
 		},
@@ -130,7 +134,8 @@
 					"received": "number",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received number"
 				}
 			]
 		},
@@ -167,7 +172,8 @@
 					"received": "array",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received array"
 				}
 			]
 		},
@@ -183,7 +189,8 @@
 					"received": "array",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received array"
 				}
 			]
 		},
@@ -199,7 +206,8 @@
 					"received": "object",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received object"
 				}
 			]
 		},
@@ -215,7 +223,8 @@
 					"received": "object",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received object"
 				}
 			]
 		},
@@ -231,7 +240,8 @@
 					"received": "null",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received null"
 				}
 			]
 		},
@@ -247,7 +257,8 @@
 					"received": "boolean",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received boolean"
 				}
 			]
 		},
@@ -263,7 +274,8 @@
 					"received": "boolean",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received boolean"
 				}
 			]
 		},
@@ -293,7 +305,8 @@
 					"received": "string",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received string"
 				}
 			]
 		},
@@ -309,7 +322,8 @@
 					"received": "string",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received string"
 				}
 			]
 		},
@@ -325,7 +339,8 @@
 					"received": "string",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received string"
 				}
 			]
 		},
@@ -341,7 +356,8 @@
 					"received": "array",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received array"
 				}
 			]
 		},
@@ -357,7 +373,8 @@
 					"received": "array",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received array"
 				}
 			]
 		},
@@ -373,7 +390,8 @@
 					"received": "object",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received object"
 				}
 			]
 		},
@@ -389,7 +407,8 @@
 					"received": "object",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received object"
 				}
 			]
 		},
@@ -405,7 +424,8 @@
 					"received": "null",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received null"
 				}
 			]
 		},
@@ -435,7 +455,8 @@
 					"received": "number",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received number"
 				}
 			]
 		},
@@ -451,7 +472,8 @@
 					"received": "number",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received number"
 				}
 			]
 		},
@@ -467,7 +489,8 @@
 					"received": "string",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received string"
 				}
 			]
 		},
@@ -483,7 +506,8 @@
 					"received": "string",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received string"
 				}
 			]
 		},
@@ -499,7 +523,8 @@
 					"received": "string",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received string"
 				}
 			]
 		},
@@ -515,7 +540,8 @@
 					"received": "array",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received array"
 				}
 			]
 		},
@@ -531,7 +557,8 @@
 					"received": "array",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received array"
 				}
 			]
 		},
@@ -547,7 +574,8 @@
 					"received": "object",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received object"
 				}
 			]
 		},
@@ -563,7 +591,8 @@
 					"received": "object",
 					"path": [
 						"boolean"
-					]
+					],
+					"formatted": "boolean: expected boolean, received object"
 				}
 			]
 		},
@@ -579,7 +608,8 @@
 					"received": "null",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received null"
 				}
 			]
 		},
@@ -595,7 +625,8 @@
 					"received": "boolean",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received boolean"
 				}
 			]
 		},
@@ -611,7 +642,8 @@
 					"received": "boolean",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received boolean"
 				}
 			]
 		},
@@ -627,7 +659,8 @@
 					"received": "number",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received number"
 				}
 			]
 		},
@@ -643,7 +676,8 @@
 					"received": "number",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received number"
 				}
 			]
 		},
@@ -659,7 +693,8 @@
 					"received": "string",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received string"
 				}
 			]
 		},
@@ -675,7 +710,8 @@
 					"received": "string",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received string"
 				}
 			]
 		},
@@ -691,7 +727,8 @@
 					"received": "string",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received string"
 				}
 			]
 		},
@@ -707,7 +744,8 @@
 					"received": "array",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received array"
 				}
 			]
 		},
@@ -723,7 +761,8 @@
 					"received": "array",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received array"
 				}
 			]
 		},
@@ -739,7 +778,8 @@
 					"received": "object",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received object"
 				}
 			]
 		},
@@ -755,7 +795,8 @@
 					"received": "object",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received object"
 				}
 			]
 		},
@@ -904,7 +945,8 @@
 					"received": "Infinity",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -921,7 +963,8 @@
 					"received": "Infinity",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -946,7 +989,8 @@
 					"received": "-Infinity",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received -Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -963,7 +1007,8 @@
 					"received": "-Infinity",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received -Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -988,7 +1033,8 @@
 					"received": "Infinity",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -1005,7 +1051,8 @@
 					"received": "Infinity",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -1030,7 +1077,8 @@
 					"received": "Infinity",
 					"path": [
 						"number"
-					]
+					],
+					"formatted": "number: expected number, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -1047,7 +1095,8 @@
 					"received": "Infinity",
 					"path": [
 						"string"
-					]
+					],
+					"formatted": "string: expected string, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -1079,7 +1128,8 @@
 					"received": "number",
 					"path": [
 						"bigint"
-					]
+					],
+					"formatted": "bigint: expected bigint, received number"
 				}
 			]
 		}

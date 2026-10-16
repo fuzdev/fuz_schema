@@ -77,7 +77,8 @@
 					"kind": "union",
 					"expected": "string | object",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected string | object, received object"
 				}
 			]
 		},
@@ -91,7 +92,8 @@
 					"kind": "union",
 					"expected": "string | object",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected string | object, received object"
 				}
 			]
 		},
@@ -105,7 +107,8 @@
 					"kind": "union",
 					"expected": "string | object",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected string | object, received object"
 				}
 			]
 		},
@@ -119,7 +122,8 @@
 					"kind": "union",
 					"expected": "string | object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | object, received array"
 				}
 			]
 		},
@@ -133,7 +137,8 @@
 					"kind": "union",
 					"expected": "string | object",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected string | object, received number"
 				}
 			]
 		},

@@ -176,9 +176,11 @@ the same order. A `SchemaIssue` owns what it holds:
 - **A number in `expected` is written as JavaScript's `String` writes it**,
   and a string as `JSON.stringify` quotes it. Both are in `js.rs`.
 - **There is no `message`.** The interchange form holds none, so a schema
-  loaded from it reports as one without any. The crate writes no text for an
-  issue: the library's `format_issue` derives one from `path`, `expected`,
-  and `received`.
+  loaded from it reports as one without any.
+- **An issue displays as `format_issue` writes it**, without a `message`:
+  `path: expected X, received Y`, or `expected X, received Y` at the root,
+  a key that isn't only ASCII word characters quoted as `JSON.stringify`
+  quotes it.
 - **There is no streaming form.** Issues need every failure, so nothing is
   skipped and nothing stops early.
 - `unknown`, the wrappers, `lazy`, and `pipe` never fail a value, and have no
@@ -267,21 +269,22 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   is written is part of what's tested.
 - `gro src/test/fixtures/json/update` generates each group's `expected.json`:
   the schema in the interchange form, and for each text whether `JSON.parse`
-  reads it, whether `is` accepts it, the issues `parse` reports, and any
-  declared divergence. It asserts `is` and `parse` agree, and that a case
-  declares an overflow, a lone surrogate, or the depth limit exactly when the
-  value read has one. The file is never edited by hand.
+  reads it, whether `is` accepts it, the issues `parse` reports with the
+  text `format_issue` writes of each, and any declared divergence. It
+  asserts `is` and `parse` agree, and that a case declares an overflow, a
+  lone surrogate, or the depth limit exactly when the value read has one.
+  The file is never edited by hand.
 - It also generates `contract.json`, the constants both sides hold: the
   nesting limit, the parser's depth, the refused key names and kinds, and
   the flags.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
   evaluators against the oracle or the declared divergence, and the issues
-  of `validate_json` against the oracle's wherever the tree evaluator gives
-  the oracle's verdict. It also fails on an unknown flag, a flag no case
-  declares, a kind no fixture schema has, a kind of issue or received type no
-  case reports, too few groups or cases, and a constant that differs from
-  `contract.json`. It reads the generated files with serde_json's tree and
+  of `validate_json` against the oracle's, each with its `Display`, wherever
+  the tree evaluator gives the oracle's verdict. It also fails on an unknown
+  flag, a flag no case declares, a kind no fixture schema has, a kind of
+  issue or received type no case reports, a path with no key it quotes, too
+  few groups or cases, and a constant that differs from `contract.json`. It reads the generated files with serde_json's tree and
   not the crate's.
 - The `generated_*` groups are written by `json_generate.ts` from fixed
   seeds: each a random schema the crate carries, drawn from every kind

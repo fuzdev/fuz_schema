@@ -67,7 +67,8 @@
 					"received": "undefined",
 					"path": [
 						"children"
-					]
+					],
+					"formatted": "children: expected array, received undefined"
 				}
 			]
 		},
@@ -85,7 +86,8 @@
 						"children",
 						0,
 						"children"
-					]
+					],
+					"formatted": "children.0.children: expected array, received undefined"
 				}
 			]
 		},
@@ -103,7 +105,8 @@
 						"children",
 						0,
 						"value"
-					]
+					],
+					"formatted": "children.0.value: expected number, received string"
 				}
 			]
 		},
@@ -137,7 +140,8 @@
 						"children",
 						0,
 						"value"
-					]
+					],
+					"formatted": "children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.value: expected number, received null"
 				}
 			]
 		},
@@ -153,7 +157,8 @@
 					"received": "string",
 					"path": [
 						"value"
-					]
+					],
+					"formatted": "value: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -163,7 +168,8 @@
 						"children",
 						0,
 						"value"
-					]
+					],
+					"formatted": "children.0.value: expected number, received string"
 				},
 				{
 					"kind": "object",
@@ -174,7 +180,8 @@
 						0,
 						"children",
 						0
-					]
+					],
+					"formatted": "children.0.children.0: expected object, received number"
 				},
 				{
 					"kind": "number",
@@ -186,7 +193,8 @@
 						"children",
 						1,
 						"value"
-					]
+					],
+					"formatted": "children.0.children.1.value: expected number, received undefined"
 				},
 				{
 					"kind": "array",
@@ -198,7 +206,8 @@
 						"children",
 						1,
 						"children"
-					]
+					],
+					"formatted": "children.0.children.1.children: expected array, received object"
 				},
 				{
 					"kind": "object",
@@ -207,7 +216,8 @@
 					"path": [
 						"children",
 						1
-					]
+					],
+					"formatted": "children.1: expected object, received null"
 				},
 				{
 					"kind": "unknown_key",
@@ -215,7 +225,8 @@
 					"received": "number",
 					"path": [
 						"extra"
-					]
+					],
+					"formatted": "extra: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -232,7 +243,8 @@
 					"path": [
 						"children",
 						0
-					]
+					],
+					"formatted": "children.0: expected object, received number"
 				}
 			]
 		},
@@ -250,7 +262,8 @@
 						"children",
 						0,
 						"extra"
-					]
+					],
+					"formatted": "children.0.extra: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -264,7 +277,8 @@
 					"kind": "object",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -426,7 +440,8 @@
 						0,
 						"children",
 						0
-					]
+					],
+					"formatted": "children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0: expected object, received null"
 				}
 			]
 		},
@@ -655,7 +670,8 @@
 						0,
 						"children",
 						0
-					]
+					],
+					"formatted": "children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0.children.0: expected object, received null"
 				}
 			],
 			"diverges": "depth_limit"
@@ -672,7 +688,8 @@
 					"received": "string",
 					"path": [
 						"value"
-					]
+					],
+					"formatted": "value: expected number, received string"
 				}
 			],
 			"diverges": "depth_limit_unread"

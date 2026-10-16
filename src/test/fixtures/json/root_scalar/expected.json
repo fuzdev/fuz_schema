@@ -85,7 +85,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "null",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received null"
 				}
 			]
 		},
@@ -99,7 +100,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "boolean",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received boolean"
 				}
 			]
 		},
@@ -113,7 +115,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received number"
 				}
 			]
 		},
@@ -127,7 +130,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received array"
 				}
 			]
 		},
@@ -141,7 +145,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received object"
 				}
 			]
 		},
@@ -155,7 +160,8 @@
 					"kind": "string",
 					"expected": "string",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string, received array"
 				}
 			]
 		}

@@ -300,7 +300,8 @@
 					"received": "object",
 					"path": [
 						"tree"
-					]
+					],
+					"formatted": "tree: expected object, received object"
 				}
 			]
 		},
@@ -316,7 +317,8 @@
 					"received": "object",
 					"path": [
 						"tree"
-					]
+					],
+					"formatted": "tree: expected object, received object"
 				}
 			]
 		},
@@ -339,7 +341,8 @@
 					"received": "object",
 					"path": [
 						"tree"
-					]
+					],
+					"formatted": "tree: expected object, received object"
 				}
 			]
 		},
@@ -376,7 +379,8 @@
 					"received": "string",
 					"path": [
 						"lazy_default"
-					]
+					],
+					"formatted": "lazy_default: expected lazy | \"b\", received string"
 				}
 			]
 		},
@@ -413,7 +417,8 @@
 					"received": "number",
 					"path": [
 						"nested_default"
-					]
+					],
+					"formatted": "nested_default: expected lazy | string | boolean, received number"
 				}
 			]
 		},
@@ -436,7 +441,8 @@
 					"received": "null",
 					"path": [
 						"string_default"
-					]
+					],
+					"formatted": "string_default: expected string | number, received null"
 				}
 			]
 		},
@@ -459,7 +465,8 @@
 					"received": "boolean",
 					"path": [
 						"piped_default"
-					]
+					],
+					"formatted": "piped_default: expected string, received boolean"
 				}
 			]
 		},

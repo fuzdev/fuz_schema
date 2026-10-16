@@ -27,7 +27,8 @@
 					"received": "string",
 					"path": [
 						"__proto__"
-					]
+					],
+					"formatted": "__proto__: expected number, received string"
 				}
 			]
 		},
@@ -51,7 +52,8 @@
 					"received": "string",
 					"path": [
 						"__proto__"
-					]
+					],
+					"formatted": "__proto__: expected number, received string"
 				}
 			]
 		},
@@ -83,7 +85,8 @@
 					"received": "string",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected number, received string"
 				}
 			]
 		},

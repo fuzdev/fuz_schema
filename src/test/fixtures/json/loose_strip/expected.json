@@ -97,7 +97,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received undefined"
 				}
 			]
 		},
@@ -114,7 +115,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received undefined"
 				}
 			]
 		},
@@ -131,7 +133,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received undefined"
 				}
 			]
 		},
@@ -148,7 +151,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received string"
 				}
 			]
 		},
@@ -165,7 +169,8 @@
 					"path": [
 						"loose",
 						"b"
-					]
+					],
+					"formatted": "loose.b: expected string, received number"
 				}
 			]
 		},
@@ -197,7 +202,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received string"
 				}
 			]
 		},
@@ -213,7 +219,8 @@
 					"received": "array",
 					"path": [
 						"loose"
-					]
+					],
+					"formatted": "loose: expected object, received array"
 				}
 			]
 		},
@@ -229,7 +236,8 @@
 					"received": "null",
 					"path": [
 						"loose"
-					]
+					],
+					"formatted": "loose: expected object, received null"
 				}
 			]
 		},
@@ -245,7 +253,8 @@
 					"received": "number",
 					"path": [
 						"loose"
-					]
+					],
+					"formatted": "loose: expected object, received number"
 				}
 			]
 		},
@@ -297,7 +306,8 @@
 					"path": [
 						"strip",
 						"a"
-					]
+					],
+					"formatted": "strip.a: expected number, received undefined"
 				}
 			]
 		},
@@ -314,7 +324,8 @@
 					"path": [
 						"strip",
 						"a"
-					]
+					],
+					"formatted": "strip.a: expected number, received undefined"
 				}
 			]
 		},
@@ -331,7 +342,8 @@
 					"path": [
 						"strip",
 						"a"
-					]
+					],
+					"formatted": "strip.a: expected number, received undefined"
 				}
 			]
 		},
@@ -348,7 +360,8 @@
 					"path": [
 						"strip",
 						"a"
-					]
+					],
+					"formatted": "strip.a: expected number, received string"
 				}
 			]
 		},
@@ -365,7 +378,8 @@
 					"path": [
 						"strip",
 						"b"
-					]
+					],
+					"formatted": "strip.b: expected string, received number"
 				}
 			]
 		},
@@ -397,7 +411,8 @@
 					"path": [
 						"strip",
 						"a"
-					]
+					],
+					"formatted": "strip.a: expected number, received string"
 				}
 			]
 		},
@@ -413,7 +428,8 @@
 					"received": "array",
 					"path": [
 						"strip"
-					]
+					],
+					"formatted": "strip: expected object, received array"
 				}
 			]
 		},
@@ -429,7 +445,8 @@
 					"received": "null",
 					"path": [
 						"strip"
-					]
+					],
+					"formatted": "strip: expected object, received null"
 				}
 			]
 		},
@@ -445,7 +462,8 @@
 					"received": "number",
 					"path": [
 						"strip"
-					]
+					],
+					"formatted": "strip: expected object, received number"
 				}
 			]
 		},

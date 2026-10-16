@@ -50,7 +50,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				},
 				{
 					"kind": "union",
@@ -58,7 +59,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -74,7 +76,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				},
 				{
 					"kind": "literal",
@@ -82,7 +85,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected \"b\", received undefined"
 				},
 				{
 					"kind": "union",
@@ -90,7 +94,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -125,7 +130,8 @@
 					"received": "null",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected \"b\", received null"
 				},
 				{
 					"kind": "union",
@@ -133,7 +139,8 @@
 					"received": "boolean",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received boolean"
 				}
 			]
 		},
@@ -147,7 +154,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -170,7 +178,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received null"
 				},
 				{
 					"kind": "union",
@@ -178,7 +187,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -201,7 +211,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				},
 				{
 					"kind": "union",
@@ -209,7 +220,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -231,7 +243,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received null"
 				}
 			]
 		},
@@ -253,7 +266,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				},
 				{
 					"kind": "literal",
@@ -261,7 +275,8 @@
 					"received": "string",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected \"b\", received string"
 				},
 				{
 					"kind": "union",
@@ -269,7 +284,8 @@
 					"received": "object",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received object"
 				}
 			]
 		},
@@ -285,7 +301,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				},
 				{
 					"kind": "union",
@@ -293,7 +310,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -307,7 +325,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -330,7 +349,8 @@
 					"received": "undefined",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received undefined"
 				}
 			]
 		},
@@ -346,7 +366,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received null"
 				}
 			]
 		},
@@ -362,7 +383,8 @@
 					"received": "undefined",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received undefined"
 				}
 			]
 		},
@@ -385,7 +407,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				}
 			]
 		},
@@ -401,7 +424,8 @@
 					"received": "string",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received string"
 				},
 				{
 					"kind": "literal",
@@ -409,7 +433,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected \"b\", received undefined"
 				}
 			]
 		},
@@ -425,7 +450,8 @@
 					"received": "boolean",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received boolean"
 				}
 			]
 		},
@@ -441,7 +467,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				}
 			]
 		},
@@ -455,7 +482,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -478,7 +506,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -494,7 +523,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -517,7 +547,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				}
 			]
 		},
@@ -533,7 +564,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received null"
 				},
 				{
 					"kind": "union",
@@ -541,7 +573,8 @@
 					"received": "null",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected number, received null"
 				}
 			]
 		},
@@ -557,7 +590,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				}
 			]
 		},
@@ -603,7 +637,8 @@
 					"received": "number",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected safe_integer, received number"
 				}
 			]
 		}

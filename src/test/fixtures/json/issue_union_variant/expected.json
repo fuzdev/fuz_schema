@@ -723,7 +723,8 @@
 					"received": "number",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received number"
 				}
 			]
 		},
@@ -760,7 +761,8 @@
 					"received": "string",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received string"
 				}
 			]
 		},
@@ -776,7 +778,8 @@
 					"received": "string",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received string"
 				}
 			]
 		},
@@ -806,7 +809,8 @@
 					"received": "array",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received array"
 				}
 			]
 		},
@@ -822,7 +826,8 @@
 					"received": "object",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received object"
 				}
 			]
 		},
@@ -852,7 +857,8 @@
 					"received": "object",
 					"path": [
 						"kinds"
-					]
+					],
+					"formatted": "kinds: expected 1 | \"a\" | 2 | boolean | null | lazy | number | object | bigint | string | safe_integer, received object"
 				}
 			]
 		},
@@ -868,7 +874,8 @@
 					"received": "null",
 					"path": [
 						"none"
-					]
+					],
+					"formatted": "none: expected , received null"
 				}
 			]
 		},
@@ -884,7 +891,8 @@
 					"received": "object",
 					"path": [
 						"none"
-					]
+					],
+					"formatted": "none: expected , received object"
 				}
 			]
 		},
@@ -900,7 +908,8 @@
 					"received": "string",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected integer, received string"
 				}
 			]
 		},
@@ -931,7 +940,8 @@
 					"path": [
 						"nested",
 						0
-					]
+					],
+					"formatted": "nested.0: expected string | array, received number"
 				},
 				{
 					"kind": "union",
@@ -940,7 +950,8 @@
 					"path": [
 						"nested",
 						1
-					]
+					],
+					"formatted": "nested.1: expected string | array, received null"
 				},
 				{
 					"kind": "union",
@@ -949,7 +960,8 @@
 					"path": [
 						"nested",
 						2
-					]
+					],
+					"formatted": "nested.2: expected string | array, received object"
 				},
 				{
 					"kind": "union",
@@ -958,7 +970,8 @@
 					"path": [
 						"nested",
 						4
-					]
+					],
+					"formatted": "nested.4: expected string | array, received boolean"
 				}
 			]
 		},
@@ -975,7 +988,8 @@
 					"path": [
 						"nested",
 						0
-					]
+					],
+					"formatted": "nested.0: expected string | array, received array"
 				},
 				{
 					"kind": "union",
@@ -984,7 +998,8 @@
 					"path": [
 						"nested",
 						2
-					]
+					],
+					"formatted": "nested.2: expected string | array, received array"
 				}
 			]
 		},
@@ -1000,7 +1015,8 @@
 					"received": "string",
 					"path": [
 						"nested"
-					]
+					],
+					"formatted": "nested: expected array, received string"
 				}
 			]
 		},
@@ -1017,7 +1033,8 @@
 					"path": [
 						"entries",
 						"x"
-					]
+					],
+					"formatted": "entries.x: expected number | string, received null"
 				},
 				{
 					"kind": "number",
@@ -1026,7 +1043,8 @@
 					"path": [
 						"entries",
 						"z"
-					]
+					],
+					"formatted": "entries.z: expected number, received null"
 				}
 			]
 		},
@@ -1043,7 +1061,8 @@
 					"path": [
 						"entries",
 						"x"
-					]
+					],
+					"formatted": "entries.x: expected number | string, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1052,7 +1071,8 @@
 					"path": [
 						"entries",
 						"y"
-					]
+					],
+					"formatted": "entries.y: expected unknown, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1061,7 +1081,8 @@
 					"path": [
 						"entries",
 						"z"
-					]
+					],
+					"formatted": "entries.z: expected number, received undefined"
 				}
 			]
 		},
@@ -1078,7 +1099,8 @@
 					"path": [
 						"entries",
 						"x"
-					]
+					],
+					"formatted": "entries.x: expected number | string, received array"
 				},
 				{
 					"kind": "union",
@@ -1087,7 +1109,8 @@
 					"path": [
 						"entries",
 						"y"
-					]
+					],
+					"formatted": "entries.y: expected unknown, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1096,7 +1119,8 @@
 					"path": [
 						"entries",
 						"w"
-					]
+					],
+					"formatted": "entries.w: expected no unknown keys, received object"
 				}
 			]
 		},
@@ -1112,7 +1136,8 @@
 					"received": "string",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected number, received string"
 				}
 			]
 		},
@@ -1128,7 +1153,8 @@
 					"received": "null",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected number, received null"
 				}
 			]
 		},
@@ -1151,7 +1177,8 @@
 					"received": "array",
 					"path": [
 						"shape"
-					]
+					],
+					"formatted": "shape: expected object, received array"
 				}
 			]
 		},
@@ -1167,7 +1194,8 @@
 					"received": "null",
 					"path": [
 						"shape"
-					]
+					],
+					"formatted": "shape: expected object, received null"
 				}
 			]
 		},
@@ -1183,7 +1211,8 @@
 					"received": "string",
 					"path": [
 						"shape"
-					]
+					],
+					"formatted": "shape: expected object, received string"
 				}
 			]
 		},
@@ -1199,7 +1228,8 @@
 					"received": "number",
 					"path": [
 						"shape"
-					]
+					],
+					"formatted": "shape: expected object, received number"
 				}
 			]
 		},
@@ -1216,7 +1246,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received undefined"
 				}
 			]
 		},
@@ -1233,7 +1264,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received string"
 				}
 			]
 		},
@@ -1250,7 +1282,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received array"
 				}
 			]
 		},
@@ -1267,7 +1300,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received object"
 				}
 			]
 		},
@@ -1284,7 +1318,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received boolean"
 				}
 			]
 		},
@@ -1301,7 +1336,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received number"
 				}
 			]
 		},
@@ -1318,7 +1354,8 @@
 					"path": [
 						"shape",
 						"n"
-					]
+					],
+					"formatted": "shape.n: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -1327,7 +1364,8 @@
 					"path": [
 						"shape",
 						"m"
-					]
+					],
+					"formatted": "shape.m: expected number, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -1336,7 +1374,8 @@
 					"path": [
 						"shape",
 						"other"
-					]
+					],
+					"formatted": "shape.other: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1353,7 +1392,8 @@
 					"path": [
 						"shape",
 						"n"
-					]
+					],
+					"formatted": "shape.n: expected number, received undefined"
 				}
 			]
 		},
@@ -1370,7 +1410,8 @@
 					"path": [
 						"shape",
 						"u"
-					]
+					],
+					"formatted": "shape.u: expected string | number, received null"
 				}
 			]
 		},
@@ -1387,7 +1428,8 @@
 					"path": [
 						"shape",
 						"n"
-					]
+					],
+					"formatted": "shape.n: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1411,7 +1453,8 @@
 					"path": [
 						"shape",
 						"n"
-					]
+					],
+					"formatted": "shape.n: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1428,7 +1471,8 @@
 					"path": [
 						"shape",
 						"n"
-					]
+					],
+					"formatted": "shape.n: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1446,7 +1490,8 @@
 						"shape",
 						"deep",
 						"t"
-					]
+					],
+					"formatted": "shape.deep.t: expected true | false, received undefined"
 				}
 			]
 		},
@@ -1464,7 +1509,8 @@
 						"shape",
 						"deep",
 						"t"
-					]
+					],
+					"formatted": "shape.deep.t: expected true | false, received string"
 				}
 			]
 		},
@@ -1481,7 +1527,8 @@
 					"path": [
 						"shape",
 						"deep"
-					]
+					],
+					"formatted": "shape.deep: expected object, received array"
 				}
 			]
 		},
@@ -1499,7 +1546,8 @@
 						"shape",
 						"deep",
 						"x"
-					]
+					],
+					"formatted": "shape.deep.x: expected string, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1509,7 +1557,8 @@
 						"shape",
 						"deep",
 						"y"
-					]
+					],
+					"formatted": "shape.deep.y: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1527,7 +1576,8 @@
 						"shapes",
 						"1",
 						0
-					]
+					],
+					"formatted": "shapes.1.0: expected object, received null"
 				},
 				{
 					"kind": "variant",
@@ -1538,7 +1588,8 @@
 						"b",
 						1,
 						"type"
-					]
+					],
+					"formatted": "shapes.b.1.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received string"
 				},
 				{
 					"kind": "variant",
@@ -1548,7 +1599,8 @@
 						"shapes",
 						"b",
 						2
-					]
+					],
+					"formatted": "shapes.b.2: expected object, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -1559,7 +1611,8 @@
 						"b",
 						3,
 						"x"
-					]
+					],
+					"formatted": "shapes.b.3.x: expected no unknown keys, received number"
 				},
 				{
 					"kind": "array",
@@ -1568,7 +1621,8 @@
 					"path": [
 						"shapes",
 						"a"
-					]
+					],
+					"formatted": "shapes.a: expected array, received object"
 				}
 			]
 		},
@@ -1585,7 +1639,8 @@
 					"path": [
 						"no_options",
 						"k"
-					]
+					],
+					"formatted": "no_options.k: expected , received string"
 				}
 			]
 		},
@@ -1602,7 +1657,8 @@
 					"path": [
 						"no_options",
 						"k"
-					]
+					],
+					"formatted": "no_options.k: expected , received undefined"
 				}
 			]
 		},
@@ -1618,7 +1674,8 @@
 					"received": "array",
 					"path": [
 						"no_options"
-					]
+					],
+					"formatted": "no_options: expected object, received array"
 				}
 			]
 		},
@@ -1648,7 +1705,8 @@
 					"received": "object",
 					"path": [
 						"either"
-					]
+					],
+					"formatted": "either: expected object | string, received object"
 				}
 			]
 		},
@@ -1664,7 +1722,8 @@
 					"received": "object",
 					"path": [
 						"either"
-					]
+					],
+					"formatted": "either: expected object | string, received object"
 				}
 			]
 		},
@@ -1680,7 +1739,8 @@
 					"received": "number",
 					"path": [
 						"either"
-					]
+					],
+					"formatted": "either: expected object | string, received number"
 				}
 			]
 		},
@@ -1704,7 +1764,8 @@
 					"path": [
 						"index",
 						"0"
-					]
+					],
+					"formatted": "index.0: expected 0, received undefined"
 				}
 			]
 		},
@@ -1721,7 +1782,8 @@
 					"path": [
 						"index",
 						"1"
-					]
+					],
+					"formatted": "index.1: expected number, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -1730,7 +1792,8 @@
 					"path": [
 						"index",
 						"2"
-					]
+					],
+					"formatted": "index.2: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1746,7 +1809,8 @@
 					"received": "array",
 					"path": [
 						"index"
-					]
+					],
+					"formatted": "index: expected object, received array"
 				}
 			]
 		},
@@ -1762,7 +1826,8 @@
 					"received": "number",
 					"path": [
 						"none"
-					]
+					],
+					"formatted": "none: expected , received number"
 				},
 				{
 					"kind": "union",
@@ -1770,7 +1835,8 @@
 					"received": "string",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected integer, received string"
 				},
 				{
 					"kind": "union",
@@ -1779,7 +1845,8 @@
 					"path": [
 						"nested",
 						0
-					]
+					],
+					"formatted": "nested.0: expected string | array, received number"
 				},
 				{
 					"kind": "variant",
@@ -1788,7 +1855,8 @@
 					"path": [
 						"shape",
 						"type"
-					]
+					],
+					"formatted": "shape.type: expected \"a\" | 1.5 | 0 | null | \"a\\\"b\" | 1e+21, received string"
 				},
 				{
 					"kind": "variant",
@@ -1797,7 +1865,8 @@
 					"path": [
 						"no_options",
 						"k"
-					]
+					],
+					"formatted": "no_options.k: expected , received undefined"
 				},
 				{
 					"kind": "union",
@@ -1805,7 +1874,8 @@
 					"received": "array",
 					"path": [
 						"either"
-					]
+					],
+					"formatted": "either: expected object | string, received array"
 				}
 			]
 		}

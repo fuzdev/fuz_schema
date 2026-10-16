@@ -77,12 +77,14 @@ export interface JsonFixture {
 	cases: Record<string, JsonFixtureText>;
 }
 
-/** An issue as the library reports it, without `message`. */
+/** An issue as the library reports it, without `message`, and its text. */
 export interface JsonFixtureIssue {
 	kind: string;
 	expected: string;
 	received: string;
 	path: Array<string | number>;
+	/** What `format_issue` writes of it without its `message`. */
+	formatted: string;
 }
 
 /** What the library makes of one text. */
@@ -209,19 +211,20 @@ export const generate_json_fixture_case = (
 	}
 	const issues = result.ok
 		? []
-		: result.issues.map(({ kind, expected, received, path }) => ({
-				kind,
-				expected,
-				received,
+		: result.issues.map((issue) => ({
+				kind: issue.kind,
+				expected: issue.expected,
+				received: issue.received,
 				// the keys of what `JSON.parse` returns, which are strings and indices
-				path: path.map((key) => {
+				path: issue.path.map((key) => {
 					const segment = typeof key === 'number' ? key : String(key);
 					// a path's keys are the input's, and the file can't hold this one either
 					if (typeof segment === 'string' && !segment.isWellFormed()) {
 						throw Error(`case "${name}" has an issue at a key that is not well-formed Unicode`);
 					}
 					return segment;
-				})
+				}),
+				formatted: s.format_issue({ ...issue, message: undefined })
 			}));
 	return diverges === undefined
 		? { name, text, json, valid, issues }

@@ -39,7 +39,8 @@
 					"received": "string",
 					"path": [
 						"1"
-					]
+					],
+					"formatted": "1: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -47,7 +48,8 @@
 					"received": "string",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected number, received string"
 				}
 			]
 		},
@@ -63,7 +65,8 @@
 					"received": "undefined",
 					"path": [
 						"1"
-					]
+					],
+					"formatted": "1: expected number, received undefined"
 				}
 			]
 		},
@@ -79,7 +82,8 @@
 					"received": "number",
 					"path": [
 						"0"
-					]
+					],
+					"formatted": "0: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -103,7 +107,8 @@
 					"received": "string",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected number, received string"
 				}
 			]
 		},

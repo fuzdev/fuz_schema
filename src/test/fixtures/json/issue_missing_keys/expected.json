@@ -912,7 +912,8 @@
 					"path": [
 						"strict",
 						"string"
-					]
+					],
+					"formatted": "strict.string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -921,7 +922,8 @@
 					"path": [
 						"strict",
 						"number"
-					]
+					],
+					"formatted": "strict.number: expected number, received undefined"
 				},
 				{
 					"kind": "boolean",
@@ -930,7 +932,8 @@
 					"path": [
 						"strict",
 						"boolean"
-					]
+					],
+					"formatted": "strict.boolean: expected boolean, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -939,7 +942,8 @@
 					"path": [
 						"strict",
 						"bigint"
-					]
+					],
+					"formatted": "strict.bigint: expected bigint, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -948,7 +952,8 @@
 					"path": [
 						"strict",
 						"literal"
-					]
+					],
+					"formatted": "strict.literal: expected \"a\", received undefined"
 				},
 				{
 					"kind": "literal",
@@ -957,7 +962,8 @@
 					"path": [
 						"strict",
 						"literal_null"
-					]
+					],
+					"formatted": "strict.literal_null: expected null, received undefined"
 				},
 				{
 					"kind": "one_of",
@@ -966,7 +972,8 @@
 					"path": [
 						"strict",
 						"one_of"
-					]
+					],
+					"formatted": "strict.one_of: expected \"a\" | 1 | null, received undefined"
 				},
 				{
 					"kind": "object",
@@ -975,7 +982,8 @@
 					"path": [
 						"strict",
 						"object"
-					]
+					],
+					"formatted": "strict.object: expected object, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -984,7 +992,8 @@
 					"path": [
 						"strict",
 						"loose_object"
-					]
+					],
+					"formatted": "strict.loose_object: expected object, received undefined"
 				},
 				{
 					"kind": "strip_object",
@@ -993,7 +1002,8 @@
 					"path": [
 						"strict",
 						"strip_object"
-					]
+					],
+					"formatted": "strict.strip_object: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1002,7 +1012,8 @@
 					"path": [
 						"strict",
 						"record"
-					]
+					],
+					"formatted": "strict.record: expected object, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1011,7 +1022,8 @@
 					"path": [
 						"strict",
 						"array"
-					]
+					],
+					"formatted": "strict.array: expected array, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1020,7 +1032,8 @@
 					"path": [
 						"strict",
 						"union"
-					]
+					],
+					"formatted": "strict.union: expected string | number | null, received undefined"
 				},
 				{
 					"kind": "variant",
@@ -1029,7 +1042,8 @@
 					"path": [
 						"strict",
 						"variant"
-					]
+					],
+					"formatted": "strict.variant: expected object, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1038,7 +1052,8 @@
 					"path": [
 						"strict",
 						"integer"
-					]
+					],
+					"formatted": "strict.integer: expected integer, received undefined"
 				},
 				{
 					"kind": "safe_integer",
@@ -1047,7 +1062,8 @@
 					"path": [
 						"strict",
 						"safe_integer"
-					]
+					],
+					"formatted": "strict.safe_integer: expected safe_integer, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1056,7 +1072,8 @@
 					"path": [
 						"strict",
 						"long_string"
-					]
+					],
+					"formatted": "strict.long_string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1065,7 +1082,8 @@
 					"path": [
 						"strict",
 						"bounded_number"
-					]
+					],
+					"formatted": "strict.bounded_number: expected number, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1074,7 +1092,8 @@
 					"path": [
 						"strict",
 						"bounded_integer"
-					]
+					],
+					"formatted": "strict.bounded_integer: expected integer, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1083,7 +1102,8 @@
 					"path": [
 						"strict",
 						"short_array"
-					]
+					],
+					"formatted": "strict.short_array: expected array, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1092,7 +1112,8 @@
 					"path": [
 						"strict",
 						"nullable"
-					]
+					],
+					"formatted": "strict.nullable: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1101,7 +1122,8 @@
 					"path": [
 						"strict",
 						"lazy"
-					]
+					],
+					"formatted": "strict.lazy: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1110,7 +1132,8 @@
 					"path": [
 						"strict",
 						"unknown"
-					]
+					],
+					"formatted": "strict.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1119,7 +1142,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1128,7 +1152,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1137,7 +1162,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1146,7 +1172,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1155,7 +1182,8 @@
 					"path": [
 						"strict",
 						"lazy_union_unknown"
-					]
+					],
+					"formatted": "strict.lazy_union_unknown: expected unknown | null, received undefined"
 				}
 			]
 		},
@@ -1172,7 +1200,8 @@
 					"path": [
 						"loose",
 						"string"
-					]
+					],
+					"formatted": "loose.string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1181,7 +1210,8 @@
 					"path": [
 						"loose",
 						"number"
-					]
+					],
+					"formatted": "loose.number: expected number, received undefined"
 				},
 				{
 					"kind": "boolean",
@@ -1190,7 +1220,8 @@
 					"path": [
 						"loose",
 						"boolean"
-					]
+					],
+					"formatted": "loose.boolean: expected boolean, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -1199,7 +1230,8 @@
 					"path": [
 						"loose",
 						"bigint"
-					]
+					],
+					"formatted": "loose.bigint: expected bigint, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1208,7 +1240,8 @@
 					"path": [
 						"loose",
 						"literal"
-					]
+					],
+					"formatted": "loose.literal: expected \"a\", received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1217,7 +1250,8 @@
 					"path": [
 						"loose",
 						"literal_null"
-					]
+					],
+					"formatted": "loose.literal_null: expected null, received undefined"
 				},
 				{
 					"kind": "one_of",
@@ -1226,7 +1260,8 @@
 					"path": [
 						"loose",
 						"one_of"
-					]
+					],
+					"formatted": "loose.one_of: expected \"a\" | 1 | null, received undefined"
 				},
 				{
 					"kind": "object",
@@ -1235,7 +1270,8 @@
 					"path": [
 						"loose",
 						"object"
-					]
+					],
+					"formatted": "loose.object: expected object, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1244,7 +1280,8 @@
 					"path": [
 						"loose",
 						"loose_object"
-					]
+					],
+					"formatted": "loose.loose_object: expected object, received undefined"
 				},
 				{
 					"kind": "strip_object",
@@ -1253,7 +1290,8 @@
 					"path": [
 						"loose",
 						"strip_object"
-					]
+					],
+					"formatted": "loose.strip_object: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1262,7 +1300,8 @@
 					"path": [
 						"loose",
 						"record"
-					]
+					],
+					"formatted": "loose.record: expected object, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1271,7 +1310,8 @@
 					"path": [
 						"loose",
 						"array"
-					]
+					],
+					"formatted": "loose.array: expected array, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1280,7 +1320,8 @@
 					"path": [
 						"loose",
 						"union"
-					]
+					],
+					"formatted": "loose.union: expected string | number | null, received undefined"
 				},
 				{
 					"kind": "variant",
@@ -1289,7 +1330,8 @@
 					"path": [
 						"loose",
 						"variant"
-					]
+					],
+					"formatted": "loose.variant: expected object, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1298,7 +1340,8 @@
 					"path": [
 						"loose",
 						"integer"
-					]
+					],
+					"formatted": "loose.integer: expected integer, received undefined"
 				},
 				{
 					"kind": "safe_integer",
@@ -1307,7 +1350,8 @@
 					"path": [
 						"loose",
 						"safe_integer"
-					]
+					],
+					"formatted": "loose.safe_integer: expected safe_integer, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1316,7 +1360,8 @@
 					"path": [
 						"loose",
 						"long_string"
-					]
+					],
+					"formatted": "loose.long_string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1325,7 +1370,8 @@
 					"path": [
 						"loose",
 						"bounded_number"
-					]
+					],
+					"formatted": "loose.bounded_number: expected number, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1334,7 +1380,8 @@
 					"path": [
 						"loose",
 						"bounded_integer"
-					]
+					],
+					"formatted": "loose.bounded_integer: expected integer, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1343,7 +1390,8 @@
 					"path": [
 						"loose",
 						"short_array"
-					]
+					],
+					"formatted": "loose.short_array: expected array, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1352,7 +1400,8 @@
 					"path": [
 						"loose",
 						"nullable"
-					]
+					],
+					"formatted": "loose.nullable: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1361,7 +1410,8 @@
 					"path": [
 						"loose",
 						"lazy"
-					]
+					],
+					"formatted": "loose.lazy: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1370,7 +1420,8 @@
 					"path": [
 						"loose",
 						"unknown"
-					]
+					],
+					"formatted": "loose.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1379,7 +1430,8 @@
 					"path": [
 						"loose",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "loose.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1388,7 +1440,8 @@
 					"path": [
 						"loose",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1397,7 +1450,8 @@
 					"path": [
 						"loose",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "loose.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1406,7 +1460,8 @@
 					"path": [
 						"loose",
 						"union_unknown"
-					]
+					],
+					"formatted": "loose.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1415,7 +1470,8 @@
 					"path": [
 						"loose",
 						"lazy_union_unknown"
-					]
+					],
+					"formatted": "loose.lazy_union_unknown: expected unknown | null, received undefined"
 				}
 			]
 		},
@@ -1432,7 +1488,8 @@
 					"path": [
 						"strip",
 						"string"
-					]
+					],
+					"formatted": "strip.string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1441,7 +1498,8 @@
 					"path": [
 						"strip",
 						"number"
-					]
+					],
+					"formatted": "strip.number: expected number, received undefined"
 				},
 				{
 					"kind": "boolean",
@@ -1450,7 +1508,8 @@
 					"path": [
 						"strip",
 						"boolean"
-					]
+					],
+					"formatted": "strip.boolean: expected boolean, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -1459,7 +1518,8 @@
 					"path": [
 						"strip",
 						"bigint"
-					]
+					],
+					"formatted": "strip.bigint: expected bigint, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1468,7 +1528,8 @@
 					"path": [
 						"strip",
 						"literal"
-					]
+					],
+					"formatted": "strip.literal: expected \"a\", received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1477,7 +1538,8 @@
 					"path": [
 						"strip",
 						"literal_null"
-					]
+					],
+					"formatted": "strip.literal_null: expected null, received undefined"
 				},
 				{
 					"kind": "one_of",
@@ -1486,7 +1548,8 @@
 					"path": [
 						"strip",
 						"one_of"
-					]
+					],
+					"formatted": "strip.one_of: expected \"a\" | 1 | null, received undefined"
 				},
 				{
 					"kind": "object",
@@ -1495,7 +1558,8 @@
 					"path": [
 						"strip",
 						"object"
-					]
+					],
+					"formatted": "strip.object: expected object, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1504,7 +1568,8 @@
 					"path": [
 						"strip",
 						"loose_object"
-					]
+					],
+					"formatted": "strip.loose_object: expected object, received undefined"
 				},
 				{
 					"kind": "strip_object",
@@ -1513,7 +1578,8 @@
 					"path": [
 						"strip",
 						"strip_object"
-					]
+					],
+					"formatted": "strip.strip_object: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1522,7 +1588,8 @@
 					"path": [
 						"strip",
 						"record"
-					]
+					],
+					"formatted": "strip.record: expected object, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1531,7 +1598,8 @@
 					"path": [
 						"strip",
 						"array"
-					]
+					],
+					"formatted": "strip.array: expected array, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1540,7 +1608,8 @@
 					"path": [
 						"strip",
 						"union"
-					]
+					],
+					"formatted": "strip.union: expected string | number | null, received undefined"
 				},
 				{
 					"kind": "variant",
@@ -1549,7 +1618,8 @@
 					"path": [
 						"strip",
 						"variant"
-					]
+					],
+					"formatted": "strip.variant: expected object, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1558,7 +1628,8 @@
 					"path": [
 						"strip",
 						"integer"
-					]
+					],
+					"formatted": "strip.integer: expected integer, received undefined"
 				},
 				{
 					"kind": "safe_integer",
@@ -1567,7 +1638,8 @@
 					"path": [
 						"strip",
 						"safe_integer"
-					]
+					],
+					"formatted": "strip.safe_integer: expected safe_integer, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1576,7 +1648,8 @@
 					"path": [
 						"strip",
 						"long_string"
-					]
+					],
+					"formatted": "strip.long_string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1585,7 +1658,8 @@
 					"path": [
 						"strip",
 						"bounded_number"
-					]
+					],
+					"formatted": "strip.bounded_number: expected number, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1594,7 +1668,8 @@
 					"path": [
 						"strip",
 						"bounded_integer"
-					]
+					],
+					"formatted": "strip.bounded_integer: expected integer, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1603,7 +1678,8 @@
 					"path": [
 						"strip",
 						"short_array"
-					]
+					],
+					"formatted": "strip.short_array: expected array, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1612,7 +1688,8 @@
 					"path": [
 						"strip",
 						"nullable"
-					]
+					],
+					"formatted": "strip.nullable: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1621,7 +1698,8 @@
 					"path": [
 						"strip",
 						"lazy"
-					]
+					],
+					"formatted": "strip.lazy: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1630,7 +1708,8 @@
 					"path": [
 						"strip",
 						"unknown"
-					]
+					],
+					"formatted": "strip.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1639,7 +1718,8 @@
 					"path": [
 						"strip",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strip.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1648,7 +1728,8 @@
 					"path": [
 						"strip",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1657,7 +1738,8 @@
 					"path": [
 						"strip",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strip.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1666,7 +1748,8 @@
 					"path": [
 						"strip",
 						"union_unknown"
-					]
+					],
+					"formatted": "strip.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1675,7 +1758,8 @@
 					"path": [
 						"strip",
 						"lazy_union_unknown"
-					]
+					],
+					"formatted": "strip.lazy_union_unknown: expected unknown | null, received undefined"
 				}
 			]
 		},
@@ -1692,7 +1776,8 @@
 					"path": [
 						"strict",
 						"bigint"
-					]
+					],
+					"formatted": "strict.bigint: expected bigint, received undefined"
 				}
 			]
 		},
@@ -1709,7 +1794,8 @@
 					"path": [
 						"loose",
 						"bigint"
-					]
+					],
+					"formatted": "loose.bigint: expected bigint, received undefined"
 				}
 			]
 		},
@@ -1726,7 +1812,8 @@
 					"path": [
 						"strict",
 						"string"
-					]
+					],
+					"formatted": "strict.string: expected string, received null"
 				},
 				{
 					"kind": "number",
@@ -1735,7 +1822,8 @@
 					"path": [
 						"strict",
 						"number"
-					]
+					],
+					"formatted": "strict.number: expected number, received undefined"
 				},
 				{
 					"kind": "boolean",
@@ -1744,7 +1832,8 @@
 					"path": [
 						"strict",
 						"boolean"
-					]
+					],
+					"formatted": "strict.boolean: expected boolean, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -1753,7 +1842,8 @@
 					"path": [
 						"strict",
 						"bigint"
-					]
+					],
+					"formatted": "strict.bigint: expected bigint, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1762,7 +1852,8 @@
 					"path": [
 						"strict",
 						"literal"
-					]
+					],
+					"formatted": "strict.literal: expected \"a\", received undefined"
 				},
 				{
 					"kind": "literal",
@@ -1771,7 +1862,8 @@
 					"path": [
 						"strict",
 						"literal_null"
-					]
+					],
+					"formatted": "strict.literal_null: expected null, received undefined"
 				},
 				{
 					"kind": "one_of",
@@ -1780,7 +1872,8 @@
 					"path": [
 						"strict",
 						"one_of"
-					]
+					],
+					"formatted": "strict.one_of: expected \"a\" | 1 | null, received undefined"
 				},
 				{
 					"kind": "object",
@@ -1789,7 +1882,8 @@
 					"path": [
 						"strict",
 						"object"
-					]
+					],
+					"formatted": "strict.object: expected object, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1798,7 +1892,8 @@
 					"path": [
 						"strict",
 						"loose_object"
-					]
+					],
+					"formatted": "strict.loose_object: expected object, received undefined"
 				},
 				{
 					"kind": "strip_object",
@@ -1807,7 +1902,8 @@
 					"path": [
 						"strict",
 						"strip_object"
-					]
+					],
+					"formatted": "strict.strip_object: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1816,7 +1912,8 @@
 					"path": [
 						"strict",
 						"record"
-					]
+					],
+					"formatted": "strict.record: expected object, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1825,7 +1922,8 @@
 					"path": [
 						"strict",
 						"array"
-					]
+					],
+					"formatted": "strict.array: expected array, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1834,7 +1932,8 @@
 					"path": [
 						"strict",
 						"union"
-					]
+					],
+					"formatted": "strict.union: expected string | number | null, received undefined"
 				},
 				{
 					"kind": "variant",
@@ -1843,7 +1942,8 @@
 					"path": [
 						"strict",
 						"variant"
-					]
+					],
+					"formatted": "strict.variant: expected object, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1852,7 +1952,8 @@
 					"path": [
 						"strict",
 						"integer"
-					]
+					],
+					"formatted": "strict.integer: expected integer, received undefined"
 				},
 				{
 					"kind": "safe_integer",
@@ -1861,7 +1962,8 @@
 					"path": [
 						"strict",
 						"safe_integer"
-					]
+					],
+					"formatted": "strict.safe_integer: expected safe_integer, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1870,7 +1972,8 @@
 					"path": [
 						"strict",
 						"long_string"
-					]
+					],
+					"formatted": "strict.long_string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1879,7 +1982,8 @@
 					"path": [
 						"strict",
 						"bounded_number"
-					]
+					],
+					"formatted": "strict.bounded_number: expected number, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -1888,7 +1992,8 @@
 					"path": [
 						"strict",
 						"bounded_integer"
-					]
+					],
+					"formatted": "strict.bounded_integer: expected integer, received undefined"
 				},
 				{
 					"kind": "array",
@@ -1897,7 +2002,8 @@
 					"path": [
 						"strict",
 						"short_array"
-					]
+					],
+					"formatted": "strict.short_array: expected array, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1906,7 +2012,8 @@
 					"path": [
 						"strict",
 						"nullable"
-					]
+					],
+					"formatted": "strict.nullable: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1915,7 +2022,8 @@
 					"path": [
 						"strict",
 						"lazy"
-					]
+					],
+					"formatted": "strict.lazy: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1924,7 +2032,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1933,7 +2042,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1942,7 +2052,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1951,7 +2062,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1960,7 +2072,8 @@
 					"path": [
 						"strict",
 						"lazy_union_unknown"
-					]
+					],
+					"formatted": "strict.lazy_union_unknown: expected unknown | null, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1969,7 +2082,8 @@
 					"path": [
 						"strict",
 						"optional"
-					]
+					],
+					"formatted": "strict.optional: expected string, received null"
 				},
 				{
 					"kind": "string",
@@ -1978,7 +2092,8 @@
 					"path": [
 						"strict",
 						"with_default"
-					]
+					],
+					"formatted": "strict.with_default: expected string, received null"
 				}
 			]
 		},
@@ -1995,7 +2110,8 @@
 					"path": [
 						"strict",
 						"string"
-					]
+					],
+					"formatted": "strict.string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -2004,7 +2120,8 @@
 					"path": [
 						"strict",
 						"number"
-					]
+					],
+					"formatted": "strict.number: expected number, received undefined"
 				},
 				{
 					"kind": "boolean",
@@ -2013,7 +2130,8 @@
 					"path": [
 						"strict",
 						"boolean"
-					]
+					],
+					"formatted": "strict.boolean: expected boolean, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -2022,7 +2140,8 @@
 					"path": [
 						"strict",
 						"bigint"
-					]
+					],
+					"formatted": "strict.bigint: expected bigint, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -2031,7 +2150,8 @@
 					"path": [
 						"strict",
 						"literal"
-					]
+					],
+					"formatted": "strict.literal: expected \"a\", received undefined"
 				},
 				{
 					"kind": "literal",
@@ -2040,7 +2160,8 @@
 					"path": [
 						"strict",
 						"literal_null"
-					]
+					],
+					"formatted": "strict.literal_null: expected null, received undefined"
 				},
 				{
 					"kind": "one_of",
@@ -2049,7 +2170,8 @@
 					"path": [
 						"strict",
 						"one_of"
-					]
+					],
+					"formatted": "strict.one_of: expected \"a\" | 1 | null, received undefined"
 				},
 				{
 					"kind": "object",
@@ -2058,7 +2180,8 @@
 					"path": [
 						"strict",
 						"object"
-					]
+					],
+					"formatted": "strict.object: expected object, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -2067,7 +2190,8 @@
 					"path": [
 						"strict",
 						"loose_object"
-					]
+					],
+					"formatted": "strict.loose_object: expected object, received undefined"
 				},
 				{
 					"kind": "strip_object",
@@ -2076,7 +2200,8 @@
 					"path": [
 						"strict",
 						"strip_object"
-					]
+					],
+					"formatted": "strict.strip_object: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -2085,7 +2210,8 @@
 					"path": [
 						"strict",
 						"record"
-					]
+					],
+					"formatted": "strict.record: expected object, received undefined"
 				},
 				{
 					"kind": "array",
@@ -2094,7 +2220,8 @@
 					"path": [
 						"strict",
 						"array"
-					]
+					],
+					"formatted": "strict.array: expected array, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2103,7 +2230,8 @@
 					"path": [
 						"strict",
 						"union"
-					]
+					],
+					"formatted": "strict.union: expected string | number | null, received undefined"
 				},
 				{
 					"kind": "variant",
@@ -2112,7 +2240,8 @@
 					"path": [
 						"strict",
 						"variant"
-					]
+					],
+					"formatted": "strict.variant: expected object, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -2121,7 +2250,8 @@
 					"path": [
 						"strict",
 						"integer"
-					]
+					],
+					"formatted": "strict.integer: expected integer, received undefined"
 				},
 				{
 					"kind": "safe_integer",
@@ -2130,7 +2260,8 @@
 					"path": [
 						"strict",
 						"safe_integer"
-					]
+					],
+					"formatted": "strict.safe_integer: expected safe_integer, received undefined"
 				},
 				{
 					"kind": "string",
@@ -2139,7 +2270,8 @@
 					"path": [
 						"strict",
 						"long_string"
-					]
+					],
+					"formatted": "strict.long_string: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -2148,7 +2280,8 @@
 					"path": [
 						"strict",
 						"bounded_number"
-					]
+					],
+					"formatted": "strict.bounded_number: expected number, received undefined"
 				},
 				{
 					"kind": "integer",
@@ -2157,7 +2290,8 @@
 					"path": [
 						"strict",
 						"bounded_integer"
-					]
+					],
+					"formatted": "strict.bounded_integer: expected integer, received undefined"
 				},
 				{
 					"kind": "array",
@@ -2166,7 +2300,8 @@
 					"path": [
 						"strict",
 						"short_array"
-					]
+					],
+					"formatted": "strict.short_array: expected array, received undefined"
 				},
 				{
 					"kind": "string",
@@ -2175,7 +2310,8 @@
 					"path": [
 						"strict",
 						"nullable"
-					]
+					],
+					"formatted": "strict.nullable: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -2184,7 +2320,8 @@
 					"path": [
 						"strict",
 						"lazy"
-					]
+					],
+					"formatted": "strict.lazy: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2193,7 +2330,8 @@
 					"path": [
 						"strict",
 						"unknown"
-					]
+					],
+					"formatted": "strict.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2202,7 +2340,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2211,7 +2350,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2220,7 +2360,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2229,7 +2370,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2238,7 +2380,8 @@
 					"path": [
 						"strict",
 						"lazy_union_unknown"
-					]
+					],
+					"formatted": "strict.lazy_union_unknown: expected unknown | null, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -2247,7 +2390,8 @@
 					"path": [
 						"strict",
 						"0"
-					]
+					],
+					"formatted": "strict.0: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -2256,7 +2400,8 @@
 					"path": [
 						"strict",
 						"zz"
-					]
+					],
+					"formatted": "strict.zz: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -2273,7 +2418,8 @@
 					"path": [
 						"nested",
 						"a"
-					]
+					],
+					"formatted": "nested.a: expected object, received undefined"
 				}
 			]
 		},
@@ -2291,7 +2437,8 @@
 						"nested",
 						"a",
 						"b"
-					]
+					],
+					"formatted": "nested.a.b: expected object, received undefined"
 				}
 			]
 		},
@@ -2310,7 +2457,8 @@
 						"a",
 						"b",
 						"c"
-					]
+					],
+					"formatted": "nested.a.b.c: expected string, received undefined"
 				}
 			]
 		},
@@ -2328,7 +2476,8 @@
 						"nested",
 						"a",
 						"b"
-					]
+					],
+					"formatted": "nested.a.b: expected object, received null"
 				}
 			]
 		},
@@ -2346,7 +2495,8 @@
 						"items",
 						0,
 						"id"
-					]
+					],
+					"formatted": "items.0.id: expected number, received undefined"
 				},
 				{
 					"kind": "array",
@@ -2356,7 +2506,8 @@
 						"items",
 						0,
 						"tags"
-					]
+					],
+					"formatted": "items.0.tags: expected array, received undefined"
 				},
 				{
 					"kind": "array",
@@ -2366,7 +2517,8 @@
 						"items",
 						1,
 						"tags"
-					]
+					],
+					"formatted": "items.1.tags: expected array, received undefined"
 				},
 				{
 					"kind": "number",
@@ -2376,7 +2528,8 @@
 						"items",
 						2,
 						"id"
-					]
+					],
+					"formatted": "items.2.id: expected number, received undefined"
 				},
 				{
 					"kind": "number",
@@ -2386,7 +2539,8 @@
 						"items",
 						3,
 						"id"
-					]
+					],
+					"formatted": "items.3.id: expected number, received string"
 				},
 				{
 					"kind": "string",
@@ -2397,7 +2551,8 @@
 						3,
 						"tags",
 						0
-					]
+					],
+					"formatted": "items.3.tags.0: expected string, received number"
 				},
 				{
 					"kind": "object",
@@ -2406,7 +2561,8 @@
 					"path": [
 						"items",
 						4
-					]
+					],
+					"formatted": "items.4: expected object, received null"
 				}
 			]
 		},
@@ -2423,7 +2579,8 @@
 					"path": [
 						"tagged",
 						"kind"
-					]
+					],
+					"formatted": "tagged.kind: expected \"a\" | \"b\", received undefined"
 				}
 			]
 		},
@@ -2440,7 +2597,8 @@
 					"path": [
 						"tagged",
 						"x"
-					]
+					],
+					"formatted": "tagged.x: expected number, received undefined"
 				},
 				{
 					"kind": "number",
@@ -2449,7 +2607,8 @@
 					"path": [
 						"tagged",
 						"y"
-					]
+					],
+					"formatted": "tagged.y: expected number, received undefined"
 				}
 			]
 		},
@@ -2466,7 +2625,8 @@
 					"path": [
 						"tagged",
 						"x"
-					]
+					],
+					"formatted": "tagged.x: expected number, received undefined"
 				}
 			]
 		},

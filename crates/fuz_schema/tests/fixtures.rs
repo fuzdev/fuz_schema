@@ -264,7 +264,8 @@ fn check(expect: Expect, actual: &Result<bool, JsonError>, oracle: Option<bool>)
 }
 
 /// An issue as `expected.json` holds one: the library's, without `message`.
-/// A key of the path is a string and an index a number, as they are there.
+/// A key of the path is a string and an index a number, as they are there,
+/// and `formatted` is what `format_issue` writes of it.
 fn issue_json(issue: &SchemaIssue) -> Value {
     let path: Vec<Value> = issue
         .path()
@@ -279,6 +280,7 @@ fn issue_json(issue: &SchemaIssue) -> Value {
         "expected": issue.expected(),
         "received": issue.received().as_str(),
         "path": path,
+        "formatted": issue.to_string(),
     })
 }
 
@@ -450,10 +452,14 @@ fn every_issue_kind_and_received_type_is_reported_by_a_case() {
             "no case has an issue that received `{received}`"
         );
     }
-    // a path of each kind of step, and the root's, which has none
+    // a path of each kind of step, a key `Display` quotes, and the root's, which has none
     let has =
         |find: fn(&PathSegment) -> bool| issues.iter().any(|issue| issue.path().iter().any(find));
     assert!(has(|segment| matches!(segment, PathSegment::Key(_))));
+    assert!(has(|segment| matches!(
+        segment,
+        PathSegment::Key(key) if !key.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+    )));
     assert!(has(|segment| matches!(segment, PathSegment::Index(_))));
     assert!(issues.iter().any(|issue| issue.path().is_empty()));
 }

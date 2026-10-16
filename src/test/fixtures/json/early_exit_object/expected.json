@@ -101,7 +101,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected number, received undefined"
 				}
 			]
 		},
@@ -123,7 +124,8 @@
 					"received": "string",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected number, received string"
 				},
 				{
 					"kind": "string",
@@ -132,7 +134,8 @@
 					"path": [
 						"b",
 						0
-					]
+					],
+					"formatted": "b.0: expected string, received Infinity"
 				}
 			],
 			"diverges": "number_overflow_unread"
@@ -149,7 +152,8 @@
 					"received": "string",
 					"path": [
 						"z"
-					]
+					],
+					"formatted": "z: expected no unknown keys, received string"
 				}
 			],
 			"diverges": "lone_surrogate_unread"

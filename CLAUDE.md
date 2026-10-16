@@ -384,7 +384,8 @@ whether a JSON text matches a schema, and the issues of one that doesn't.
 - `js.rs` - the JavaScript semantics both evaluators share
 - `walk.rs` - the tree evaluator behind `matches_json_exact` and
   `validate_json`, the reference
-- `issue.rs` - `SchemaIssue` and what it holds
+- `issue.rs` - `SchemaIssue`, what it holds, and its `Display`, the text
+  of `format_issue`
 - `stream.rs` - the streaming evaluator behind `matches_json`
 - `error.rs` - `JsonError` and `SchemaBuildError`
 - `tests/fixtures.rs` - both evaluators and the issues against

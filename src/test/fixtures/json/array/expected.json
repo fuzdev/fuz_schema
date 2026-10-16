@@ -58,7 +58,8 @@
 						0,
 						0,
 						"n"
-					]
+					],
+					"formatted": "0.0.n: expected number, received string"
 				}
 			]
 		},
@@ -76,7 +77,8 @@
 						1,
 						0,
 						"n"
-					]
+					],
+					"formatted": "1.0.n: expected number, received null"
 				}
 			]
 		},
@@ -94,7 +96,8 @@
 						0,
 						0,
 						"n"
-					]
+					],
+					"formatted": "0.0.n: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -104,7 +107,8 @@
 						0,
 						1,
 						"n"
-					]
+					],
+					"formatted": "0.1.n: expected number, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -114,7 +118,8 @@
 						0,
 						1,
 						"m"
-					]
+					],
+					"formatted": "0.1.m: expected no unknown keys, received number"
 				},
 				{
 					"kind": "object",
@@ -123,7 +128,8 @@
 					"path": [
 						1,
 						0
-					]
+					],
+					"formatted": "1.0: expected object, received number"
 				},
 				{
 					"kind": "array",
@@ -131,7 +137,8 @@
 					"received": "null",
 					"path": [
 						2
-					]
+					],
+					"formatted": "2: expected array, received null"
 				}
 			]
 		},
@@ -147,7 +154,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected array, received object"
 				}
 			]
 		},
@@ -163,7 +171,8 @@
 					"received": "null",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected array, received null"
 				}
 			]
 		},
@@ -180,7 +189,8 @@
 					"path": [
 						0,
 						0
-					]
+					],
+					"formatted": "0.0: expected object, received number"
 				}
 			]
 		},
@@ -197,7 +207,8 @@
 					"path": [
 						0,
 						0
-					]
+					],
+					"formatted": "0.0: expected object, received array"
 				}
 			]
 		},
@@ -214,7 +225,8 @@
 					"path": [
 						0,
 						0
-					]
+					],
+					"formatted": "0.0: expected object, received array"
 				}
 			]
 		},
@@ -228,7 +240,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received object"
 				}
 			]
 		},
@@ -242,7 +255,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received object"
 				}
 			]
 		},
@@ -256,7 +270,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "null",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received null"
 				}
 			]
 		},
@@ -270,7 +285,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received string"
 				}
 			]
 		},
@@ -284,7 +300,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received number"
 				}
 			]
 		}

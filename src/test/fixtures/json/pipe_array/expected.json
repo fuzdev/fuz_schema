@@ -124,7 +124,8 @@
 					"received": "array",
 					"path": [
 						"bounded"
-					]
+					],
+					"formatted": "bounded: expected length >= 1, received array"
 				}
 			]
 		},
@@ -154,7 +155,8 @@
 					"received": "array",
 					"path": [
 						"bounded"
-					]
+					],
+					"formatted": "bounded: expected length <= 3, received array"
 				}
 			]
 		},
@@ -171,7 +173,8 @@
 					"path": [
 						"bounded",
 						1
-					]
+					],
+					"formatted": "bounded.1: expected number, received string"
 				}
 			]
 		},
@@ -188,7 +191,8 @@
 					"path": [
 						"bounded",
 						0
-					]
+					],
+					"formatted": "bounded.0: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -197,7 +201,8 @@
 					"path": [
 						"bounded",
 						4
-					]
+					],
+					"formatted": "bounded.4: expected number, received null"
 				}
 			]
 		},
@@ -213,7 +218,8 @@
 					"received": "string",
 					"path": [
 						"bounded"
-					]
+					],
+					"formatted": "bounded: expected array, received string"
 				}
 			]
 		},
@@ -229,7 +235,8 @@
 					"received": "object",
 					"path": [
 						"bounded"
-					]
+					],
+					"formatted": "bounded: expected array, received object"
 				}
 			]
 		},
@@ -245,7 +252,8 @@
 					"received": "null",
 					"path": [
 						"bounded"
-					]
+					],
+					"formatted": "bounded: expected array, received null"
 				}
 			]
 		},
@@ -276,7 +284,8 @@
 					"path": [
 						"pairs",
 						1
-					]
+					],
+					"formatted": "pairs.1: expected length >= 2, received array"
 				}
 			]
 		},
@@ -293,7 +302,8 @@
 					"path": [
 						"pairs",
 						0
-					]
+					],
+					"formatted": "pairs.0: expected length <= 2, received array"
 				}
 			]
 		},
@@ -310,7 +320,8 @@
 					"path": [
 						"pairs",
 						1
-					]
+					],
+					"formatted": "pairs.1: expected array, received string"
 				}
 			]
 		},
@@ -326,7 +337,8 @@
 					"received": "array",
 					"path": [
 						"fractional"
-					]
+					],
+					"formatted": "fractional: expected length >= 0.5, received array"
 				}
 			]
 		},
@@ -349,7 +361,8 @@
 					"received": "array",
 					"path": [
 						"fractional"
-					]
+					],
+					"formatted": "fractional: expected length <= 1.5, received array"
 				}
 			]
 		},
@@ -379,7 +392,8 @@
 					"received": "array",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected length <= 1, received array"
 				}
 			]
 		},
@@ -396,7 +410,8 @@
 					"path": [
 						"nullable",
 						0
-					]
+					],
+					"formatted": "nullable.0: expected string, received number"
 				}
 			]
 		}

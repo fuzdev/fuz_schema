@@ -197,7 +197,8 @@
 					"path": [
 						"optional_option",
 						"u"
-					]
+					],
+					"formatted": "optional_option.u: expected number | string, received null"
 				}
 			]
 		},
@@ -228,7 +229,8 @@
 					"path": [
 						"default_option",
 						"u"
-					]
+					],
+					"formatted": "default_option.u: expected number | string, received boolean"
 				}
 			]
 		},
@@ -252,7 +254,8 @@
 					"path": [
 						"lazy_optional",
 						"u"
-					]
+					],
+					"formatted": "lazy_optional.u: expected string, received number"
 				}
 			]
 		},
@@ -269,7 +272,8 @@
 					"path": [
 						"unknown_option",
 						"u"
-					]
+					],
+					"formatted": "unknown_option.u: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -286,7 +290,8 @@
 					"path": [
 						"nullable_option",
 						"u"
-					]
+					],
+					"formatted": "nullable_option.u: expected string | number | null, received undefined"
 				}
 			]
 		},
@@ -311,7 +316,8 @@
 						"unknown_entries",
 						"l",
 						"a"
-					]
+					],
+					"formatted": "unknown_entries.l.a: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -321,7 +327,8 @@
 						"unknown_entries",
 						"t",
 						"a"
-					]
+					],
+					"formatted": "unknown_entries.t.a: expected a required key, received undefined"
 				}
 			]
 		},
@@ -345,7 +352,8 @@
 					"path": [
 						"integer",
 						"i"
-					]
+					],
+					"formatted": "integer.i: expected integer, received undefined"
 				}
 			]
 		}

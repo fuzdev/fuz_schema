@@ -117,7 +117,8 @@
 					"kind": "union",
 					"expected": "bigint | array",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | array, received array"
 				}
 			]
 		},
@@ -138,7 +139,8 @@
 					"kind": "union",
 					"expected": "bigint | array",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | array, received number"
 				}
 			]
 		},
@@ -152,7 +154,8 @@
 					"kind": "union",
 					"expected": "bigint | array",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | array, received array"
 				}
 			]
 		},
@@ -166,7 +169,8 @@
 					"kind": "union",
 					"expected": "bigint | array",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | array, received object"
 				}
 			]
 		},
@@ -194,7 +198,8 @@
 					"kind": "union",
 					"expected": "bigint | array",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | array, received array"
 				}
 			]
 		},

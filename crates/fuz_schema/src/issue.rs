@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use crate::js::quote;
 use crate::json::Value;
 use crate::schema::SchemaKind;
 
@@ -41,6 +42,40 @@ impl SchemaIssue {
     pub fn path(&self) -> &[PathSegment] {
         &self.path
     }
+}
+
+/// The text the TypeScript library's `format_issue` writes of an issue
+/// without a `message`: `path: expected X, received Y`, the path's keys joined
+/// with `.`, and only `expected X, received Y` at the root.
+///
+/// A key that isn't only ASCII word characters is quoted as `JSON.stringify`
+/// quotes it, so `a.b` is two keys and `"a.b"` is one, and a key with a
+/// newline stays on its line.
+impl fmt::Display for SchemaIssue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (place, segment) in self.path.iter().enumerate() {
+            if place > 0 {
+                f.write_str(".")?;
+            }
+            match segment {
+                PathSegment::Index(index) => write!(f, "{index}")?,
+                PathSegment::Key(key) if is_word(key) => f.write_str(key)?,
+                PathSegment::Key(key) => f.write_str(&quote(key))?,
+            }
+        }
+        if !self.path.is_empty() {
+            f.write_str(": ")?;
+        }
+        write!(f, "expected {}, received {}", self.expected, self.received)
+    }
+}
+
+/// Whether `key` matches `/^\w+$/`, which is ASCII.
+fn is_word(key: &str) -> bool {
+    !key.is_empty()
+        && key
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
 }
 
 /// A step of an issue's path.
@@ -357,6 +392,29 @@ mod tests {
             assert_eq!(SchemaKind::from_name(kind.as_str()), None);
         }
         assert_eq!(found, SchemaIssueKind::ALL);
+    }
+
+    #[test]
+    fn an_issue_displays_as_format_issue_writes_it() {
+        let issue = |path: Vec<PathSegment>| SchemaIssue {
+            kind: SchemaIssueKind::String,
+            expected: "string".to_owned(),
+            received: Received::Number,
+            path,
+        };
+        let key = |key: &str| PathSegment::Key(key.to_owned());
+        assert_eq!(
+            issue(vec![]).to_string(),
+            "expected string, received number"
+        );
+        assert_eq!(
+            issue(vec![key("a"), PathSegment::Index(0), key("b_1")]).to_string(),
+            "a.0.b_1: expected string, received number"
+        );
+        assert_eq!(
+            issue(vec![key("a.b"), key(""), key("é"), key("x\ny")]).to_string(),
+            r#""a.b".""."é"."x\ny": expected string, received number"#
+        );
     }
 
     #[test]

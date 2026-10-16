@@ -218,7 +218,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -292,7 +293,8 @@
 					"path": [
 						"needed",
 						"u"
-					]
+					],
+					"formatted": "needed.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -359,7 +361,8 @@
 					"path": [
 						"loose",
 						"a"
-					]
+					],
+					"formatted": "loose.a: expected number, received string"
 				}
 			]
 		},
@@ -375,7 +378,8 @@
 					"received": "array",
 					"path": [
 						"strip"
-					]
+					],
+					"formatted": "strip: expected object, received array"
 				}
 			]
 		},
@@ -391,7 +395,8 @@
 					"received": "object",
 					"path": [
 						"items"
-					]
+					],
+					"formatted": "items: expected array, received object"
 				}
 			]
 		},
@@ -407,7 +412,8 @@
 					"received": "number",
 					"path": [
 						"other"
-					]
+					],
+					"formatted": "other: expected no unknown keys, received number"
 				}
 			]
 		}

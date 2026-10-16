@@ -48,7 +48,8 @@
 					"received": "undefined",
 					"path": [
 						"0"
-					]
+					],
+					"formatted": "0: expected \"a\", received undefined"
 				}
 			]
 		},
@@ -64,7 +65,8 @@
 					"received": "string",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected number, received string"
 				}
 			]
 		},
@@ -80,7 +82,8 @@
 					"received": "string",
 					"path": [
 						"0"
-					]
+					],
+					"formatted": "0: expected \"a\", received string"
 				}
 			]
 		},
@@ -94,7 +97,8 @@
 					"kind": "variant",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		}

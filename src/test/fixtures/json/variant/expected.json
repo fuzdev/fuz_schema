@@ -217,7 +217,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected number, received undefined"
 				}
 			]
 		},
@@ -233,7 +234,8 @@
 					"received": "string",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected number, received string"
 				}
 			]
 		},
@@ -249,7 +251,8 @@
 					"received": "number",
 					"path": [
 						"other"
-					]
+					],
+					"formatted": "other: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -265,7 +268,8 @@
 					"received": "number",
 					"path": [
 						"other"
-					]
+					],
+					"formatted": "other: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -281,7 +285,8 @@
 					"received": "undefined",
 					"path": [
 						"side"
-					]
+					],
+					"formatted": "side: expected number, received undefined"
 				}
 			]
 		},
@@ -297,7 +302,8 @@
 					"received": "number",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -313,7 +319,8 @@
 					"received": "undefined",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received undefined"
 				}
 			]
 		},
@@ -329,7 +336,8 @@
 					"received": "undefined",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received undefined"
 				}
 			]
 		},
@@ -345,7 +353,8 @@
 					"received": "string",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received string"
 				}
 			]
 		},
@@ -361,7 +370,8 @@
 					"received": "string",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received string"
 				}
 			]
 		},
@@ -377,7 +387,8 @@
 					"received": "string",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received string"
 				}
 			]
 		},
@@ -393,7 +404,8 @@
 					"received": "boolean",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received boolean"
 				}
 			]
 		},
@@ -409,7 +421,8 @@
 					"received": "string",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received string"
 				}
 			]
 		},
@@ -425,7 +438,8 @@
 					"received": "array",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received array"
 				}
 			]
 		},
@@ -441,7 +455,8 @@
 					"received": "object",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received object"
 				}
 			]
 		},
@@ -455,7 +470,8 @@
 					"kind": "variant",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -469,7 +485,8 @@
 					"kind": "variant",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -483,7 +500,8 @@
 					"kind": "variant",
 					"expected": "object",
 					"received": "null",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received null"
 				}
 			]
 		},
@@ -497,7 +515,8 @@
 					"kind": "variant",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		},
@@ -544,7 +563,8 @@
 					"received": "undefined",
 					"path": [
 						"side"
-					]
+					],
+					"formatted": "side: expected number, received undefined"
 				}
 			]
 		},
@@ -560,7 +580,8 @@
 					"received": "string",
 					"path": [
 						"kind"
-					]
+					],
+					"formatted": "kind: expected \"circle\" | \"square\" | 1 | null | false | 0, received string"
 				}
 			]
 		},
@@ -583,7 +604,8 @@
 					"received": "undefined",
 					"path": [
 						"side"
-					]
+					],
+					"formatted": "side: expected number, received undefined"
 				}
 			]
 		},

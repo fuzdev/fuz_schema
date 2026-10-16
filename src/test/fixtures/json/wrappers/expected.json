@@ -153,7 +153,8 @@
 					"received": "undefined",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -161,7 +162,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -169,7 +171,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable_unknown"
-					]
+					],
+					"formatted": "nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "bigint",
@@ -177,7 +180,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received undefined"
 				}
 			]
 		},
@@ -200,7 +204,8 @@
 					"received": "undefined",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received undefined"
 				}
 			]
 		},
@@ -216,7 +221,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received undefined"
 				}
 			]
 		},
@@ -232,7 +238,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable_unknown"
-					]
+					],
+					"formatted": "nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -248,7 +255,8 @@
 					"received": "undefined",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received undefined"
 				}
 			]
 		},
@@ -264,7 +272,8 @@
 					"received": "null",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received null"
 				}
 			]
 		},
@@ -287,7 +296,8 @@
 					"received": "number",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received number"
 				}
 			]
 		},
@@ -303,7 +313,8 @@
 					"received": "boolean",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received boolean"
 				}
 			]
 		},
@@ -319,7 +330,8 @@
 					"received": "array",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received array"
 				}
 			]
 		},
@@ -335,7 +347,8 @@
 					"received": "array",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received array"
 				}
 			]
 		},
@@ -351,7 +364,8 @@
 					"received": "object",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received object"
 				}
 			]
 		},
@@ -367,7 +381,8 @@
 					"received": "object",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received object"
 				}
 			]
 		},
@@ -383,7 +398,8 @@
 					"received": "object",
 					"path": [
 						"required"
-					]
+					],
+					"formatted": "required: expected string, received object"
 				}
 			]
 		},
@@ -399,7 +415,8 @@
 					"received": "null",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received null"
 				}
 			]
 		},
@@ -422,7 +439,8 @@
 					"received": "number",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received number"
 				}
 			]
 		},
@@ -438,7 +456,8 @@
 					"received": "boolean",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received boolean"
 				}
 			]
 		},
@@ -454,7 +473,8 @@
 					"received": "array",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received array"
 				}
 			]
 		},
@@ -470,7 +490,8 @@
 					"received": "array",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received array"
 				}
 			]
 		},
@@ -486,7 +507,8 @@
 					"received": "object",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received object"
 				}
 			]
 		},
@@ -502,7 +524,8 @@
 					"received": "object",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received object"
 				}
 			]
 		},
@@ -518,7 +541,8 @@
 					"received": "object",
 					"path": [
 						"optional"
-					]
+					],
+					"formatted": "optional: expected string, received object"
 				}
 			]
 		},
@@ -548,7 +572,8 @@
 					"received": "number",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received number"
 				}
 			]
 		},
@@ -564,7 +589,8 @@
 					"received": "boolean",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received boolean"
 				}
 			]
 		},
@@ -580,7 +606,8 @@
 					"received": "array",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received array"
 				}
 			]
 		},
@@ -596,7 +623,8 @@
 					"received": "array",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received array"
 				}
 			]
 		},
@@ -612,7 +640,8 @@
 					"received": "object",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received object"
 				}
 			]
 		},
@@ -628,7 +657,8 @@
 					"received": "object",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received object"
 				}
 			]
 		},
@@ -644,7 +674,8 @@
 					"received": "object",
 					"path": [
 						"nullable"
-					]
+					],
+					"formatted": "nullable: expected string, received object"
 				}
 			]
 		},
@@ -660,7 +691,8 @@
 					"received": "null",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received null"
 				}
 			]
 		},
@@ -683,7 +715,8 @@
 					"received": "number",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received number"
 				}
 			]
 		},
@@ -699,7 +732,8 @@
 					"received": "boolean",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received boolean"
 				}
 			]
 		},
@@ -715,7 +749,8 @@
 					"received": "array",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received array"
 				}
 			]
 		},
@@ -731,7 +766,8 @@
 					"received": "array",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received array"
 				}
 			]
 		},
@@ -747,7 +783,8 @@
 					"received": "object",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received object"
 				}
 			]
 		},
@@ -763,7 +800,8 @@
 					"received": "object",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received object"
 				}
 			]
 		},
@@ -779,7 +817,8 @@
 					"received": "object",
 					"path": [
 						"with_default"
-					]
+					],
+					"formatted": "with_default: expected string, received object"
 				}
 			]
 		},
@@ -809,7 +848,8 @@
 					"received": "number",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received number"
 				}
 			]
 		},
@@ -825,7 +865,8 @@
 					"received": "boolean",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received boolean"
 				}
 			]
 		},
@@ -841,7 +882,8 @@
 					"received": "array",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received array"
 				}
 			]
 		},
@@ -857,7 +899,8 @@
 					"received": "array",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received array"
 				}
 			]
 		},
@@ -873,7 +916,8 @@
 					"received": "object",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received object"
 				}
 			]
 		},
@@ -889,7 +933,8 @@
 					"received": "object",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received object"
 				}
 			]
 		},
@@ -905,7 +950,8 @@
 					"received": "object",
 					"path": [
 						"optional_nullable"
-					]
+					],
+					"formatted": "optional_nullable: expected string, received object"
 				}
 			]
 		},
@@ -935,7 +981,8 @@
 					"received": "number",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received number"
 				}
 			]
 		},
@@ -951,7 +998,8 @@
 					"received": "boolean",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received boolean"
 				}
 			]
 		},
@@ -967,7 +1015,8 @@
 					"received": "array",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received array"
 				}
 			]
 		},
@@ -983,7 +1032,8 @@
 					"received": "array",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received array"
 				}
 			]
 		},
@@ -999,7 +1049,8 @@
 					"received": "object",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received object"
 				}
 			]
 		},
@@ -1015,7 +1066,8 @@
 					"received": "object",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received object"
 				}
 			]
 		},
@@ -1031,7 +1083,8 @@
 					"received": "object",
 					"path": [
 						"nullable_optional"
-					]
+					],
+					"formatted": "nullable_optional: expected string, received object"
 				}
 			]
 		},
@@ -1054,7 +1107,8 @@
 					"received": "string",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received string"
 				}
 			]
 		},
@@ -1077,7 +1131,8 @@
 					"received": "boolean",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received boolean"
 				}
 			]
 		},
@@ -1093,7 +1148,8 @@
 					"received": "array",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received array"
 				}
 			]
 		},
@@ -1109,7 +1165,8 @@
 					"received": "array",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received array"
 				}
 			]
 		},
@@ -1125,7 +1182,8 @@
 					"received": "object",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received object"
 				}
 			]
 		},
@@ -1141,7 +1199,8 @@
 					"received": "object",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received object"
 				}
 			]
 		},
@@ -1157,7 +1216,8 @@
 					"received": "object",
 					"path": [
 						"default_nullable"
-					]
+					],
+					"formatted": "default_nullable: expected number, received object"
 				}
 			]
 		},
@@ -1173,7 +1233,8 @@
 					"received": "null",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received null"
 				}
 			]
 		},
@@ -1196,7 +1257,8 @@
 					"received": "number",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received number"
 				}
 			]
 		},
@@ -1212,7 +1274,8 @@
 					"received": "boolean",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received boolean"
 				}
 			]
 		},
@@ -1228,7 +1291,8 @@
 					"received": "array",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received array"
 				}
 			]
 		},
@@ -1244,7 +1308,8 @@
 					"received": "array",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received array"
 				}
 			]
 		},
@@ -1260,7 +1325,8 @@
 					"received": "object",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received object"
 				}
 			]
 		},
@@ -1276,7 +1342,8 @@
 					"received": "object",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received object"
 				}
 			]
 		},
@@ -1292,7 +1359,8 @@
 					"received": "object",
 					"path": [
 						"optional_default"
-					]
+					],
+					"formatted": "optional_default: expected string, received object"
 				}
 			]
 		},
@@ -1308,7 +1376,8 @@
 					"received": "null",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received null"
 				}
 			]
 		},
@@ -1324,7 +1393,8 @@
 					"received": "string",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received string"
 				}
 			]
 		},
@@ -1340,7 +1410,8 @@
 					"received": "number",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received number"
 				}
 			]
 		},
@@ -1356,7 +1427,8 @@
 					"received": "boolean",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received boolean"
 				}
 			]
 		},
@@ -1372,7 +1444,8 @@
 					"received": "array",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received array"
 				}
 			]
 		},
@@ -1388,7 +1461,8 @@
 					"received": "array",
 					"path": [
 						"default_object"
-					]
+					],
+					"formatted": "default_object: expected object, received array"
 				}
 			]
 		},
@@ -1405,7 +1479,8 @@
 					"path": [
 						"default_object",
 						"a"
-					]
+					],
+					"formatted": "default_object.a: expected number, received undefined"
 				}
 			]
 		},
@@ -1429,7 +1504,8 @@
 					"path": [
 						"default_object",
 						"a"
-					]
+					],
+					"formatted": "default_object.a: expected number, received string"
 				}
 			]
 		},
@@ -1445,7 +1521,8 @@
 					"received": "null",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received null"
 				}
 			]
 		},
@@ -1461,7 +1538,8 @@
 					"received": "string",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received string"
 				}
 			]
 		},
@@ -1477,7 +1555,8 @@
 					"received": "number",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received number"
 				}
 			]
 		},
@@ -1493,7 +1572,8 @@
 					"received": "boolean",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received boolean"
 				}
 			]
 		},
@@ -1523,7 +1603,8 @@
 					"received": "object",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received object"
 				}
 			]
 		},
@@ -1539,7 +1620,8 @@
 					"received": "object",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received object"
 				}
 			]
 		},
@@ -1555,7 +1637,8 @@
 					"received": "object",
 					"path": [
 						"default_array"
-					]
+					],
+					"formatted": "default_array: expected array, received object"
 				}
 			]
 		},
@@ -1704,7 +1787,8 @@
 					"received": "string",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received string"
 				}
 			]
 		},
@@ -1720,7 +1804,8 @@
 					"received": "number",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received number"
 				}
 			]
 		},
@@ -1736,7 +1821,8 @@
 					"received": "boolean",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received boolean"
 				}
 			]
 		},
@@ -1752,7 +1838,8 @@
 					"received": "array",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received array"
 				}
 			]
 		},
@@ -1768,7 +1855,8 @@
 					"received": "array",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received array"
 				}
 			]
 		},
@@ -1784,7 +1872,8 @@
 					"received": "object",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received object"
 				}
 			]
 		},
@@ -1800,7 +1889,8 @@
 					"received": "object",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received object"
 				}
 			]
 		},
@@ -1816,7 +1906,8 @@
 					"received": "object",
 					"path": [
 						"nullable_bigint"
-					]
+					],
+					"formatted": "nullable_bigint: expected bigint, received object"
 				}
 			]
 		}

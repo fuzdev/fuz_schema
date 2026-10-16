@@ -122,7 +122,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received string"
 				}
 			]
 		},
@@ -143,7 +144,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received number"
 				}
 			]
 		},
@@ -171,7 +173,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received array"
 				}
 			]
 		},
@@ -185,7 +188,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received array"
 				}
 			]
 		},
@@ -199,7 +203,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received object"
 				}
 			]
 		},
@@ -220,7 +225,8 @@
 					"kind": "union",
 					"expected": "bigint | lazy | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected bigint | lazy | null, received array"
 				}
 			]
 		},

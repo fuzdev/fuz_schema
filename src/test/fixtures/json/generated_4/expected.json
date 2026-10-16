@@ -194,7 +194,8 @@
 					"kind": "number",
 					"expected": "number",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected number, received array"
 				}
 			]
 		},
@@ -235,7 +236,8 @@
 					"kind": "number",
 					"expected": "number",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected number, received array"
 				}
 			]
 		},

@@ -1193,7 +1193,8 @@
 					"path": [
 						"tagged",
 						"u"
-					]
+					],
+					"formatted": "tagged.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1224,7 +1225,8 @@
 					"path": [
 						"tagged",
 						"u"
-					]
+					],
+					"formatted": "tagged.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1241,7 +1243,8 @@
 					"path": [
 						"tagged",
 						"u"
-					]
+					],
+					"formatted": "tagged.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1265,7 +1268,8 @@
 					"path": [
 						"tagged",
 						"u"
-					]
+					],
+					"formatted": "tagged.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1289,7 +1293,8 @@
 					"path": [
 						"tagged",
 						"u"
-					]
+					],
+					"formatted": "tagged.u: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1313,7 +1318,8 @@
 					"path": [
 						"order",
 						"1"
-					]
+					],
+					"formatted": "order.1: expected a required key, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1322,7 +1328,8 @@
 					"path": [
 						"order",
 						"a"
-					]
+					],
+					"formatted": "order.a: expected number, received string"
 				},
 				{
 					"kind": "missing_key",
@@ -1331,7 +1338,8 @@
 					"path": [
 						"order",
 						"b"
-					]
+					],
+					"formatted": "order.b: expected a required key, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1340,7 +1348,8 @@
 					"path": [
 						"order",
 						"c"
-					]
+					],
+					"formatted": "order.c: expected string, received number"
 				},
 				{
 					"kind": "missing_key",
@@ -1350,7 +1359,8 @@
 						"order",
 						"d",
 						"e"
-					]
+					],
+					"formatted": "order.d.e: expected a required key, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1359,7 +1369,8 @@
 					"path": [
 						"order",
 						"zz"
-					]
+					],
+					"formatted": "order.zz: expected no unknown keys, received boolean"
 				}
 			]
 		},
@@ -1376,7 +1387,8 @@
 					"path": [
 						"order",
 						"1"
-					]
+					],
+					"formatted": "order.1: expected a required key, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1385,7 +1397,8 @@
 					"path": [
 						"order",
 						"a"
-					]
+					],
+					"formatted": "order.a: expected number, received string"
 				},
 				{
 					"kind": "missing_key",
@@ -1394,7 +1407,8 @@
 					"path": [
 						"order",
 						"b"
-					]
+					],
+					"formatted": "order.b: expected a required key, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1403,7 +1417,8 @@
 					"path": [
 						"order",
 						"c"
-					]
+					],
+					"formatted": "order.c: expected string, received number"
 				},
 				{
 					"kind": "missing_key",
@@ -1413,7 +1428,8 @@
 						"order",
 						"d",
 						"e"
-					]
+					],
+					"formatted": "order.d.e: expected a required key, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1423,7 +1439,8 @@
 						"order",
 						"d",
 						"y"
-					]
+					],
+					"formatted": "order.d.y: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -1432,7 +1449,8 @@
 					"path": [
 						"order",
 						"7"
-					]
+					],
+					"formatted": "order.7: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1449,7 +1467,8 @@
 					"path": [
 						"order",
 						"1"
-					]
+					],
+					"formatted": "order.1: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1458,7 +1477,8 @@
 					"path": [
 						"order",
 						"b"
-					]
+					],
+					"formatted": "order.b: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1482,7 +1502,8 @@
 					"path": [
 						"order",
 						"d"
-					]
+					],
+					"formatted": "order.d: expected object, received null"
 				}
 			]
 		},
@@ -1500,7 +1521,8 @@
 						"items",
 						0,
 						"u"
-					]
+					],
+					"formatted": "items.0.u: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1510,7 +1532,8 @@
 						"items",
 						2,
 						"u"
-					]
+					],
+					"formatted": "items.2.u: expected a required key, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1519,7 +1542,8 @@
 					"path": [
 						"items",
 						3
-					]
+					],
+					"formatted": "items.3: expected object, received null"
 				}
 			]
 		},
@@ -1543,7 +1567,8 @@
 					"path": [
 						"tree",
 						"value"
-					]
+					],
+					"formatted": "tree.value: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1567,7 +1592,8 @@
 					"path": [
 						"tree",
 						"value"
-					]
+					],
+					"formatted": "tree.value: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1578,7 +1604,8 @@
 						"next",
 						"next",
 						"value"
-					]
+					],
+					"formatted": "tree.next.next.value: expected a required key, received undefined"
 				}
 			]
 		},
@@ -1597,7 +1624,8 @@
 						"next",
 						"next",
 						"value"
-					]
+					],
+					"formatted": "tree.next.next.value: expected a required key, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1608,7 +1636,8 @@
 						"next",
 						"next",
 						"other"
-					]
+					],
+					"formatted": "tree.next.next.other: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1625,7 +1654,8 @@
 					"path": [
 						"piped",
 						"p"
-					]
+					],
+					"formatted": "piped.p: expected string, received undefined"
 				}
 			]
 		},
@@ -1649,7 +1679,8 @@
 					"path": [
 						"strict",
 						"unknown"
-					]
+					],
+					"formatted": "strict.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1658,7 +1689,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1667,7 +1699,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1676,7 +1709,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1685,7 +1719,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1694,7 +1729,8 @@
 					"path": [
 						"strict",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strict.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1703,7 +1739,8 @@
 					"path": [
 						"strict",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1712,7 +1749,8 @@
 					"path": [
 						"strict",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strict.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1721,7 +1759,8 @@
 					"path": [
 						"strict",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strict.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1730,7 +1769,8 @@
 					"path": [
 						"strict",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strict.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1739,7 +1779,8 @@
 					"path": [
 						"strict",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strict.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1748,7 +1789,8 @@
 					"path": [
 						"strict",
 						"message_unknown"
-					]
+					],
+					"formatted": "strict.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1757,7 +1799,8 @@
 					"path": [
 						"strict",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strict.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1766,7 +1809,8 @@
 					"path": [
 						"strict",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strict.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1775,7 +1819,8 @@
 					"path": [
 						"strict",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strict.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1784,7 +1829,8 @@
 					"path": [
 						"strict",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strict.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1793,7 +1839,8 @@
 					"path": [
 						"strict",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strict.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -1810,7 +1857,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1819,7 +1867,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1828,7 +1877,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1837,7 +1887,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1846,7 +1897,8 @@
 					"path": [
 						"strict",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strict.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1855,7 +1907,8 @@
 					"path": [
 						"strict",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1864,7 +1917,8 @@
 					"path": [
 						"strict",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strict.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1873,7 +1927,8 @@
 					"path": [
 						"strict",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strict.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1882,7 +1937,8 @@
 					"path": [
 						"strict",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strict.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1891,7 +1947,8 @@
 					"path": [
 						"strict",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strict.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1900,7 +1957,8 @@
 					"path": [
 						"strict",
 						"message_unknown"
-					]
+					],
+					"formatted": "strict.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1909,7 +1967,8 @@
 					"path": [
 						"strict",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strict.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1918,7 +1977,8 @@
 					"path": [
 						"strict",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strict.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -1927,7 +1987,8 @@
 					"path": [
 						"strict",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strict.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1936,7 +1997,8 @@
 					"path": [
 						"strict",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strict.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -1945,7 +2007,8 @@
 					"path": [
 						"strict",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strict.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -1969,7 +2032,8 @@
 					"path": [
 						"strict",
 						"union_optional"
-					]
+					],
+					"formatted": "strict.union_optional: expected number | string, received null"
 				},
 				{
 					"kind": "union",
@@ -1978,7 +2042,8 @@
 					"path": [
 						"strict",
 						"union_with_default"
-					]
+					],
+					"formatted": "strict.union_with_default: expected string | number, received null"
 				},
 				{
 					"kind": "string",
@@ -1987,7 +2052,8 @@
 					"path": [
 						"strict",
 						"lazy_optional"
-					]
+					],
+					"formatted": "strict.lazy_optional: expected string, received null"
 				},
 				{
 					"kind": "string",
@@ -1996,7 +2062,8 @@
 					"path": [
 						"strict",
 						"lazy_with_default"
-					]
+					],
+					"formatted": "strict.lazy_with_default: expected string, received null"
 				}
 			]
 		},
@@ -2013,7 +2080,8 @@
 					"path": [
 						"strict",
 						"unknown"
-					]
+					],
+					"formatted": "strict.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2022,7 +2090,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2031,7 +2100,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2040,7 +2110,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2049,7 +2120,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2058,7 +2130,8 @@
 					"path": [
 						"strict",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strict.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2067,7 +2140,8 @@
 					"path": [
 						"strict",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2076,7 +2150,8 @@
 					"path": [
 						"strict",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strict.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2085,7 +2160,8 @@
 					"path": [
 						"strict",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strict.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2094,7 +2170,8 @@
 					"path": [
 						"strict",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strict.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2103,7 +2180,8 @@
 					"path": [
 						"strict",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strict.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2112,7 +2190,8 @@
 					"path": [
 						"strict",
 						"message_unknown"
-					]
+					],
+					"formatted": "strict.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2121,7 +2200,8 @@
 					"path": [
 						"strict",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strict.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2130,7 +2210,8 @@
 					"path": [
 						"strict",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strict.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2139,7 +2220,8 @@
 					"path": [
 						"strict",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strict.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2148,7 +2230,8 @@
 					"path": [
 						"strict",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strict.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2157,7 +2240,8 @@
 					"path": [
 						"strict",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strict.union_message_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -2166,7 +2250,8 @@
 					"path": [
 						"strict",
 						"0"
-					]
+					],
+					"formatted": "strict.0: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -2175,7 +2260,8 @@
 					"path": [
 						"strict",
 						"zz"
-					]
+					],
+					"formatted": "strict.zz: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -2192,7 +2278,8 @@
 					"path": [
 						"strict",
 						"unknown"
-					]
+					],
+					"formatted": "strict.unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2223,7 +2310,8 @@
 					"path": [
 						"strict",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strict.nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2254,7 +2342,8 @@
 					"path": [
 						"strict",
 						"union_unknown"
-					]
+					],
+					"formatted": "strict.union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2292,7 +2381,8 @@
 					"path": [
 						"strict",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2323,7 +2413,8 @@
 					"path": [
 						"strict",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strict.nullable_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2340,7 +2431,8 @@
 					"path": [
 						"strict",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strict.lazy_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2357,7 +2449,8 @@
 					"path": [
 						"strict",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strict.lazy_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2374,7 +2467,8 @@
 					"path": [
 						"strict",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strict.nullable_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2391,7 +2485,8 @@
 					"path": [
 						"strict",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strict.union_nullable_unknown: expected number | unknown | null, received undefined"
 				}
 			]
 		},
@@ -2408,7 +2503,8 @@
 					"path": [
 						"strict",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strict.union_lazy_unknown: expected number | lazy, received undefined"
 				}
 			]
 		},
@@ -2425,7 +2521,8 @@
 					"path": [
 						"strict",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strict.union_union_unknown: expected number | string | unknown, received undefined"
 				}
 			]
 		},
@@ -2463,7 +2560,8 @@
 					"path": [
 						"strict",
 						"message_unknown"
-					]
+					],
+					"formatted": "strict.message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2487,7 +2585,8 @@
 					"path": [
 						"strict",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strict.message_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2504,7 +2603,8 @@
 					"path": [
 						"strict",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strict.nullable_message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2521,7 +2621,8 @@
 					"path": [
 						"strict",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strict.message_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -2538,7 +2639,8 @@
 					"path": [
 						"strict",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strict.message_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2555,7 +2657,8 @@
 					"path": [
 						"strict",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strict.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2579,7 +2682,8 @@
 					"path": [
 						"loose",
 						"unknown"
-					]
+					],
+					"formatted": "loose.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2588,7 +2692,8 @@
 					"path": [
 						"loose",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "loose.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2597,7 +2702,8 @@
 					"path": [
 						"loose",
 						"union_unknown"
-					]
+					],
+					"formatted": "loose.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2606,7 +2712,8 @@
 					"path": [
 						"loose",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2615,7 +2722,8 @@
 					"path": [
 						"loose",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "loose.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2624,7 +2732,8 @@
 					"path": [
 						"loose",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "loose.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2633,7 +2742,8 @@
 					"path": [
 						"loose",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2642,7 +2752,8 @@
 					"path": [
 						"loose",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "loose.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2651,7 +2762,8 @@
 					"path": [
 						"loose",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "loose.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2660,7 +2772,8 @@
 					"path": [
 						"loose",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "loose.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2669,7 +2782,8 @@
 					"path": [
 						"loose",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "loose.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2678,7 +2792,8 @@
 					"path": [
 						"loose",
 						"message_unknown"
-					]
+					],
+					"formatted": "loose.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2687,7 +2802,8 @@
 					"path": [
 						"loose",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "loose.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2696,7 +2812,8 @@
 					"path": [
 						"loose",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "loose.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2705,7 +2822,8 @@
 					"path": [
 						"loose",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "loose.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2714,7 +2832,8 @@
 					"path": [
 						"loose",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "loose.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2723,7 +2842,8 @@
 					"path": [
 						"loose",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "loose.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2740,7 +2860,8 @@
 					"path": [
 						"loose",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "loose.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2749,7 +2870,8 @@
 					"path": [
 						"loose",
 						"union_unknown"
-					]
+					],
+					"formatted": "loose.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2758,7 +2880,8 @@
 					"path": [
 						"loose",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2767,7 +2890,8 @@
 					"path": [
 						"loose",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "loose.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2776,7 +2900,8 @@
 					"path": [
 						"loose",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "loose.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2785,7 +2910,8 @@
 					"path": [
 						"loose",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2794,7 +2920,8 @@
 					"path": [
 						"loose",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "loose.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2803,7 +2930,8 @@
 					"path": [
 						"loose",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "loose.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2812,7 +2940,8 @@
 					"path": [
 						"loose",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "loose.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2821,7 +2950,8 @@
 					"path": [
 						"loose",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "loose.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2830,7 +2960,8 @@
 					"path": [
 						"loose",
 						"message_unknown"
-					]
+					],
+					"formatted": "loose.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2839,7 +2970,8 @@
 					"path": [
 						"loose",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "loose.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2848,7 +2980,8 @@
 					"path": [
 						"loose",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "loose.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2857,7 +2990,8 @@
 					"path": [
 						"loose",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "loose.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2866,7 +3000,8 @@
 					"path": [
 						"loose",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "loose.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2875,7 +3010,8 @@
 					"path": [
 						"loose",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "loose.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -2899,7 +3035,8 @@
 					"path": [
 						"loose",
 						"union_optional"
-					]
+					],
+					"formatted": "loose.union_optional: expected number | string, received null"
 				},
 				{
 					"kind": "union",
@@ -2908,7 +3045,8 @@
 					"path": [
 						"loose",
 						"union_with_default"
-					]
+					],
+					"formatted": "loose.union_with_default: expected string | number, received null"
 				},
 				{
 					"kind": "string",
@@ -2917,7 +3055,8 @@
 					"path": [
 						"loose",
 						"lazy_optional"
-					]
+					],
+					"formatted": "loose.lazy_optional: expected string, received null"
 				},
 				{
 					"kind": "string",
@@ -2926,7 +3065,8 @@
 					"path": [
 						"loose",
 						"lazy_with_default"
-					]
+					],
+					"formatted": "loose.lazy_with_default: expected string, received null"
 				}
 			]
 		},
@@ -2943,7 +3083,8 @@
 					"path": [
 						"loose",
 						"unknown"
-					]
+					],
+					"formatted": "loose.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2952,7 +3093,8 @@
 					"path": [
 						"loose",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "loose.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -2961,7 +3103,8 @@
 					"path": [
 						"loose",
 						"union_unknown"
-					]
+					],
+					"formatted": "loose.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2970,7 +3113,8 @@
 					"path": [
 						"loose",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2979,7 +3123,8 @@
 					"path": [
 						"loose",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "loose.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2988,7 +3133,8 @@
 					"path": [
 						"loose",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "loose.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -2997,7 +3143,8 @@
 					"path": [
 						"loose",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3006,7 +3153,8 @@
 					"path": [
 						"loose",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "loose.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3015,7 +3163,8 @@
 					"path": [
 						"loose",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "loose.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3024,7 +3173,8 @@
 					"path": [
 						"loose",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "loose.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3033,7 +3183,8 @@
 					"path": [
 						"loose",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "loose.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3042,7 +3193,8 @@
 					"path": [
 						"loose",
 						"message_unknown"
-					]
+					],
+					"formatted": "loose.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3051,7 +3203,8 @@
 					"path": [
 						"loose",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "loose.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3060,7 +3213,8 @@
 					"path": [
 						"loose",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "loose.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3069,7 +3223,8 @@
 					"path": [
 						"loose",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "loose.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3078,7 +3233,8 @@
 					"path": [
 						"loose",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "loose.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3087,7 +3243,8 @@
 					"path": [
 						"loose",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "loose.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3104,7 +3261,8 @@
 					"path": [
 						"loose",
 						"unknown"
-					]
+					],
+					"formatted": "loose.unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3135,7 +3293,8 @@
 					"path": [
 						"loose",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "loose.nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3166,7 +3325,8 @@
 					"path": [
 						"loose",
 						"union_unknown"
-					]
+					],
+					"formatted": "loose.union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3204,7 +3364,8 @@
 					"path": [
 						"loose",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3235,7 +3396,8 @@
 					"path": [
 						"loose",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "loose.nullable_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3252,7 +3414,8 @@
 					"path": [
 						"loose",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "loose.lazy_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3269,7 +3432,8 @@
 					"path": [
 						"loose",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "loose.lazy_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3286,7 +3450,8 @@
 					"path": [
 						"loose",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "loose.nullable_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3303,7 +3468,8 @@
 					"path": [
 						"loose",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "loose.union_nullable_unknown: expected number | unknown | null, received undefined"
 				}
 			]
 		},
@@ -3320,7 +3486,8 @@
 					"path": [
 						"loose",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "loose.union_lazy_unknown: expected number | lazy, received undefined"
 				}
 			]
 		},
@@ -3337,7 +3504,8 @@
 					"path": [
 						"loose",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "loose.union_union_unknown: expected number | string | unknown, received undefined"
 				}
 			]
 		},
@@ -3375,7 +3543,8 @@
 					"path": [
 						"loose",
 						"message_unknown"
-					]
+					],
+					"formatted": "loose.message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3399,7 +3568,8 @@
 					"path": [
 						"loose",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "loose.message_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3416,7 +3586,8 @@
 					"path": [
 						"loose",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "loose.nullable_message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3433,7 +3604,8 @@
 					"path": [
 						"loose",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "loose.message_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -3450,7 +3622,8 @@
 					"path": [
 						"loose",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "loose.message_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3467,7 +3640,8 @@
 					"path": [
 						"loose",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "loose.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3491,7 +3665,8 @@
 					"path": [
 						"strip",
 						"unknown"
-					]
+					],
+					"formatted": "strip.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3500,7 +3675,8 @@
 					"path": [
 						"strip",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strip.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3509,7 +3685,8 @@
 					"path": [
 						"strip",
 						"union_unknown"
-					]
+					],
+					"formatted": "strip.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3518,7 +3695,8 @@
 					"path": [
 						"strip",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3527,7 +3705,8 @@
 					"path": [
 						"strip",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strip.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3536,7 +3715,8 @@
 					"path": [
 						"strip",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strip.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3545,7 +3725,8 @@
 					"path": [
 						"strip",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3554,7 +3735,8 @@
 					"path": [
 						"strip",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strip.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3563,7 +3745,8 @@
 					"path": [
 						"strip",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strip.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3572,7 +3755,8 @@
 					"path": [
 						"strip",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strip.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3581,7 +3765,8 @@
 					"path": [
 						"strip",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strip.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3590,7 +3775,8 @@
 					"path": [
 						"strip",
 						"message_unknown"
-					]
+					],
+					"formatted": "strip.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3599,7 +3785,8 @@
 					"path": [
 						"strip",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strip.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3608,7 +3795,8 @@
 					"path": [
 						"strip",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strip.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3617,7 +3805,8 @@
 					"path": [
 						"strip",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strip.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3626,7 +3815,8 @@
 					"path": [
 						"strip",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strip.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3635,7 +3825,8 @@
 					"path": [
 						"strip",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strip.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3652,7 +3843,8 @@
 					"path": [
 						"strip",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strip.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3661,7 +3853,8 @@
 					"path": [
 						"strip",
 						"union_unknown"
-					]
+					],
+					"formatted": "strip.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3670,7 +3863,8 @@
 					"path": [
 						"strip",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3679,7 +3873,8 @@
 					"path": [
 						"strip",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strip.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3688,7 +3883,8 @@
 					"path": [
 						"strip",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strip.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3697,7 +3893,8 @@
 					"path": [
 						"strip",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3706,7 +3903,8 @@
 					"path": [
 						"strip",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strip.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3715,7 +3913,8 @@
 					"path": [
 						"strip",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strip.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3724,7 +3923,8 @@
 					"path": [
 						"strip",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strip.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3733,7 +3933,8 @@
 					"path": [
 						"strip",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strip.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3742,7 +3943,8 @@
 					"path": [
 						"strip",
 						"message_unknown"
-					]
+					],
+					"formatted": "strip.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3751,7 +3953,8 @@
 					"path": [
 						"strip",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strip.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3760,7 +3963,8 @@
 					"path": [
 						"strip",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strip.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3769,7 +3973,8 @@
 					"path": [
 						"strip",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strip.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3778,7 +3983,8 @@
 					"path": [
 						"strip",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strip.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3787,7 +3993,8 @@
 					"path": [
 						"strip",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strip.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -3811,7 +4018,8 @@
 					"path": [
 						"strip",
 						"union_optional"
-					]
+					],
+					"formatted": "strip.union_optional: expected number | string, received null"
 				},
 				{
 					"kind": "union",
@@ -3820,7 +4028,8 @@
 					"path": [
 						"strip",
 						"union_with_default"
-					]
+					],
+					"formatted": "strip.union_with_default: expected string | number, received null"
 				},
 				{
 					"kind": "string",
@@ -3829,7 +4038,8 @@
 					"path": [
 						"strip",
 						"lazy_optional"
-					]
+					],
+					"formatted": "strip.lazy_optional: expected string, received null"
 				},
 				{
 					"kind": "string",
@@ -3838,7 +4048,8 @@
 					"path": [
 						"strip",
 						"lazy_with_default"
-					]
+					],
+					"formatted": "strip.lazy_with_default: expected string, received null"
 				}
 			]
 		},
@@ -3855,7 +4066,8 @@
 					"path": [
 						"strip",
 						"unknown"
-					]
+					],
+					"formatted": "strip.unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3864,7 +4076,8 @@
 					"path": [
 						"strip",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strip.nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3873,7 +4086,8 @@
 					"path": [
 						"strip",
 						"union_unknown"
-					]
+					],
+					"formatted": "strip.union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3882,7 +4096,8 @@
 					"path": [
 						"strip",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3891,7 +4106,8 @@
 					"path": [
 						"strip",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strip.nullable_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3900,7 +4116,8 @@
 					"path": [
 						"strip",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strip.lazy_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3909,7 +4126,8 @@
 					"path": [
 						"strip",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3918,7 +4136,8 @@
 					"path": [
 						"strip",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strip.nullable_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3927,7 +4146,8 @@
 					"path": [
 						"strip",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strip.union_nullable_unknown: expected number | unknown | null, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3936,7 +4156,8 @@
 					"path": [
 						"strip",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strip.union_lazy_unknown: expected number | lazy, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3945,7 +4166,8 @@
 					"path": [
 						"strip",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strip.union_union_unknown: expected number | string | unknown, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3954,7 +4176,8 @@
 					"path": [
 						"strip",
 						"message_unknown"
-					]
+					],
+					"formatted": "strip.message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3963,7 +4186,8 @@
 					"path": [
 						"strip",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strip.message_nullable_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3972,7 +4196,8 @@
 					"path": [
 						"strip",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strip.nullable_message_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "missing_key",
@@ -3981,7 +4206,8 @@
 					"path": [
 						"strip",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strip.message_lazy_unknown: expected a required key, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3990,7 +4216,8 @@
 					"path": [
 						"strip",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strip.message_union_unknown: expected string | unknown, received undefined"
 				},
 				{
 					"kind": "union",
@@ -3999,7 +4226,8 @@
 					"path": [
 						"strip",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strip.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -4016,7 +4244,8 @@
 					"path": [
 						"strip",
 						"unknown"
-					]
+					],
+					"formatted": "strip.unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4047,7 +4276,8 @@
 					"path": [
 						"strip",
 						"nullable_unknown"
-					]
+					],
+					"formatted": "strip.nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4078,7 +4308,8 @@
 					"path": [
 						"strip",
 						"union_unknown"
-					]
+					],
+					"formatted": "strip.union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -4116,7 +4347,8 @@
 					"path": [
 						"strip",
 						"lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4147,7 +4379,8 @@
 					"path": [
 						"strip",
 						"nullable_lazy_unknown"
-					]
+					],
+					"formatted": "strip.nullable_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4164,7 +4397,8 @@
 					"path": [
 						"strip",
 						"lazy_nullable_unknown"
-					]
+					],
+					"formatted": "strip.lazy_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4181,7 +4415,8 @@
 					"path": [
 						"strip",
 						"lazy_lazy_unknown"
-					]
+					],
+					"formatted": "strip.lazy_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4198,7 +4433,8 @@
 					"path": [
 						"strip",
 						"nullable_union_unknown"
-					]
+					],
+					"formatted": "strip.nullable_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -4215,7 +4451,8 @@
 					"path": [
 						"strip",
 						"union_nullable_unknown"
-					]
+					],
+					"formatted": "strip.union_nullable_unknown: expected number | unknown | null, received undefined"
 				}
 			]
 		},
@@ -4232,7 +4469,8 @@
 					"path": [
 						"strip",
 						"union_lazy_unknown"
-					]
+					],
+					"formatted": "strip.union_lazy_unknown: expected number | lazy, received undefined"
 				}
 			]
 		},
@@ -4249,7 +4487,8 @@
 					"path": [
 						"strip",
 						"union_union_unknown"
-					]
+					],
+					"formatted": "strip.union_union_unknown: expected number | string | unknown, received undefined"
 				}
 			]
 		},
@@ -4287,7 +4526,8 @@
 					"path": [
 						"strip",
 						"message_unknown"
-					]
+					],
+					"formatted": "strip.message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4311,7 +4551,8 @@
 					"path": [
 						"strip",
 						"message_nullable_unknown"
-					]
+					],
+					"formatted": "strip.message_nullable_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4328,7 +4569,8 @@
 					"path": [
 						"strip",
 						"nullable_message_unknown"
-					]
+					],
+					"formatted": "strip.nullable_message_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4345,7 +4587,8 @@
 					"path": [
 						"strip",
 						"message_lazy_unknown"
-					]
+					],
+					"formatted": "strip.message_lazy_unknown: expected a required key, received undefined"
 				}
 			]
 		},
@@ -4362,7 +4605,8 @@
 					"path": [
 						"strip",
 						"message_union_unknown"
-					]
+					],
+					"formatted": "strip.message_union_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},
@@ -4379,7 +4623,8 @@
 					"path": [
 						"strip",
 						"union_message_unknown"
-					]
+					],
+					"formatted": "strip.union_message_unknown: expected string | unknown, received undefined"
 				}
 			]
 		},

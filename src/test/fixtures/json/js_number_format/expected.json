@@ -1634,7 +1634,8 @@
 					"received": "number",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected 1 | -1.5 | 0 | 0.1 | 0.30000000000000004 | 0.3333333333333333 | 100 | 9007199254740991 | 9007199254740994 | 1000000000000000.5 | 100000000000000000000 | 999999999999999900000 | 123456789012345680000 | 590295810358705700000 | 1.1805916207174113e+21 | 1e+21 | -1e+21 | 1.2345678901234568e+21 | 1e+100 | 1e+300 | 1.7976931348623157e+308 | -1.7976931348623157e+308 | 0.000001 | 0.0000015 | 9.5e-7 | 1e-7 | 1.234e-7 | -1e-7 | 2.2250738585072014e-308 | 5e-324 | -5e-324 | 703.2810668945312 | 936.5509643554688 | -19.037551879882812 | 232.10000610351562, received number"
 				}
 			]
 		},
@@ -1650,7 +1651,8 @@
 					"received": "string",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected 1 | -1.5 | 0 | 0.1 | 0.30000000000000004 | 0.3333333333333333 | 100 | 9007199254740991 | 9007199254740994 | 1000000000000000.5 | 100000000000000000000 | 999999999999999900000 | 123456789012345680000 | 590295810358705700000 | 1.1805916207174113e+21 | 1e+21 | -1e+21 | 1.2345678901234568e+21 | 1e+100 | 1e+300 | 1.7976931348623157e+308 | -1.7976931348623157e+308 | 0.000001 | 0.0000015 | 9.5e-7 | 1e-7 | 1.234e-7 | -1e-7 | 2.2250738585072014e-308 | 5e-324 | -5e-324 | 703.2810668945312 | 936.5509643554688 | -19.037551879882812 | 232.10000610351562, received string"
 				}
 			]
 		},
@@ -1666,7 +1668,8 @@
 					"received": "string",
 					"path": [
 						"longer"
-					]
+					],
+					"formatted": "longer: expected length >= 1e+21, received string"
 				}
 			]
 		},
@@ -1682,7 +1685,8 @@
 					"received": "string",
 					"path": [
 						"shorter"
-					]
+					],
+					"formatted": "shorter: expected length <= -1e-7, received string"
 				}
 			]
 		},
@@ -1698,7 +1702,8 @@
 					"received": "array",
 					"path": [
 						"between"
-					]
+					],
+					"formatted": "between: expected length >= 0.5, received array"
 				}
 			]
 		},
@@ -1721,7 +1726,8 @@
 					"received": "array",
 					"path": [
 						"between"
-					]
+					],
+					"formatted": "between: expected length <= 1.5, received array"
 				}
 			]
 		},
@@ -1744,7 +1750,8 @@
 					"received": "number",
 					"path": [
 						"min_one"
-					]
+					],
+					"formatted": "min_one: expected >= 1, received number"
 				},
 				{
 					"kind": "max_value",
@@ -1752,7 +1759,8 @@
 					"received": "number",
 					"path": [
 						"max_one"
-					]
+					],
+					"formatted": "max_one: expected <= 1, received number"
 				},
 				{
 					"kind": "literal",
@@ -1760,7 +1768,8 @@
 					"received": "string",
 					"path": [
 						"literal_one"
-					]
+					],
+					"formatted": "literal_one: expected 1, received string"
 				}
 			]
 		},
@@ -1776,7 +1785,8 @@
 					"received": "string",
 					"path": [
 						"min_one"
-					]
+					],
+					"formatted": "min_one: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -1784,7 +1794,8 @@
 					"received": "null",
 					"path": [
 						"max_one"
-					]
+					],
+					"formatted": "max_one: expected number, received null"
 				}
 			]
 		},
@@ -1807,7 +1818,8 @@
 					"received": "number",
 					"path": [
 						"min_negative"
-					]
+					],
+					"formatted": "min_negative: expected >= -1.5, received number"
 				},
 				{
 					"kind": "max_value",
@@ -1815,7 +1827,8 @@
 					"received": "number",
 					"path": [
 						"max_negative"
-					]
+					],
+					"formatted": "max_negative: expected <= -1.5, received number"
 				},
 				{
 					"kind": "literal",
@@ -1823,7 +1836,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative"
-					]
+					],
+					"formatted": "literal_negative: expected -1.5, received string"
 				}
 			]
 		},
@@ -1839,7 +1853,8 @@
 					"received": "string",
 					"path": [
 						"min_negative"
-					]
+					],
+					"formatted": "min_negative: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -1847,7 +1862,8 @@
 					"received": "null",
 					"path": [
 						"max_negative"
-					]
+					],
+					"formatted": "max_negative: expected number, received null"
 				}
 			]
 		},
@@ -1870,7 +1886,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_zero"
-					]
+					],
+					"formatted": "min_negative_zero: expected >= 0, received number"
 				},
 				{
 					"kind": "max_value",
@@ -1878,7 +1895,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_zero"
-					]
+					],
+					"formatted": "max_negative_zero: expected <= 0, received number"
 				},
 				{
 					"kind": "literal",
@@ -1886,7 +1904,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_zero"
-					]
+					],
+					"formatted": "literal_negative_zero: expected 0, received string"
 				}
 			]
 		},
@@ -1902,7 +1921,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_zero"
-					]
+					],
+					"formatted": "min_negative_zero: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -1910,7 +1930,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_zero"
-					]
+					],
+					"formatted": "max_negative_zero: expected number, received null"
 				}
 			]
 		},
@@ -1933,7 +1954,8 @@
 					"received": "number",
 					"path": [
 						"min_tenth"
-					]
+					],
+					"formatted": "min_tenth: expected >= 0.1, received number"
 				},
 				{
 					"kind": "max_value",
@@ -1941,7 +1963,8 @@
 					"received": "number",
 					"path": [
 						"max_tenth"
-					]
+					],
+					"formatted": "max_tenth: expected <= 0.1, received number"
 				},
 				{
 					"kind": "literal",
@@ -1949,7 +1972,8 @@
 					"received": "string",
 					"path": [
 						"literal_tenth"
-					]
+					],
+					"formatted": "literal_tenth: expected 0.1, received string"
 				}
 			]
 		},
@@ -1965,7 +1989,8 @@
 					"received": "string",
 					"path": [
 						"min_tenth"
-					]
+					],
+					"formatted": "min_tenth: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -1973,7 +1998,8 @@
 					"received": "null",
 					"path": [
 						"max_tenth"
-					]
+					],
+					"formatted": "max_tenth: expected number, received null"
 				}
 			]
 		},
@@ -1996,7 +2022,8 @@
 					"received": "number",
 					"path": [
 						"min_sum"
-					]
+					],
+					"formatted": "min_sum: expected >= 0.30000000000000004, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2004,7 +2031,8 @@
 					"received": "number",
 					"path": [
 						"max_sum"
-					]
+					],
+					"formatted": "max_sum: expected <= 0.30000000000000004, received number"
 				},
 				{
 					"kind": "literal",
@@ -2012,7 +2040,8 @@
 					"received": "string",
 					"path": [
 						"literal_sum"
-					]
+					],
+					"formatted": "literal_sum: expected 0.30000000000000004, received string"
 				}
 			]
 		},
@@ -2028,7 +2057,8 @@
 					"received": "string",
 					"path": [
 						"min_sum"
-					]
+					],
+					"formatted": "min_sum: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2036,7 +2066,8 @@
 					"received": "null",
 					"path": [
 						"max_sum"
-					]
+					],
+					"formatted": "max_sum: expected number, received null"
 				}
 			]
 		},
@@ -2059,7 +2090,8 @@
 					"received": "number",
 					"path": [
 						"min_third"
-					]
+					],
+					"formatted": "min_third: expected >= 0.3333333333333333, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2067,7 +2099,8 @@
 					"received": "number",
 					"path": [
 						"max_third"
-					]
+					],
+					"formatted": "max_third: expected <= 0.3333333333333333, received number"
 				},
 				{
 					"kind": "literal",
@@ -2075,7 +2108,8 @@
 					"received": "string",
 					"path": [
 						"literal_third"
-					]
+					],
+					"formatted": "literal_third: expected 0.3333333333333333, received string"
 				}
 			]
 		},
@@ -2091,7 +2125,8 @@
 					"received": "string",
 					"path": [
 						"min_third"
-					]
+					],
+					"formatted": "min_third: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2099,7 +2134,8 @@
 					"received": "null",
 					"path": [
 						"max_third"
-					]
+					],
+					"formatted": "max_third: expected number, received null"
 				}
 			]
 		},
@@ -2122,7 +2158,8 @@
 					"received": "number",
 					"path": [
 						"min_hundred"
-					]
+					],
+					"formatted": "min_hundred: expected >= 100, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2130,7 +2167,8 @@
 					"received": "number",
 					"path": [
 						"max_hundred"
-					]
+					],
+					"formatted": "max_hundred: expected <= 100, received number"
 				},
 				{
 					"kind": "literal",
@@ -2138,7 +2176,8 @@
 					"received": "string",
 					"path": [
 						"literal_hundred"
-					]
+					],
+					"formatted": "literal_hundred: expected 100, received string"
 				}
 			]
 		},
@@ -2154,7 +2193,8 @@
 					"received": "string",
 					"path": [
 						"min_hundred"
-					]
+					],
+					"formatted": "min_hundred: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2162,7 +2202,8 @@
 					"received": "null",
 					"path": [
 						"max_hundred"
-					]
+					],
+					"formatted": "max_hundred: expected number, received null"
 				}
 			]
 		},
@@ -2185,7 +2226,8 @@
 					"received": "number",
 					"path": [
 						"min_safe"
-					]
+					],
+					"formatted": "min_safe: expected >= 9007199254740991, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2193,7 +2235,8 @@
 					"received": "number",
 					"path": [
 						"max_safe"
-					]
+					],
+					"formatted": "max_safe: expected <= 9007199254740991, received number"
 				},
 				{
 					"kind": "literal",
@@ -2201,7 +2244,8 @@
 					"received": "string",
 					"path": [
 						"literal_safe"
-					]
+					],
+					"formatted": "literal_safe: expected 9007199254740991, received string"
 				}
 			]
 		},
@@ -2217,7 +2261,8 @@
 					"received": "string",
 					"path": [
 						"min_safe"
-					]
+					],
+					"formatted": "min_safe: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2225,7 +2270,8 @@
 					"received": "null",
 					"path": [
 						"max_safe"
-					]
+					],
+					"formatted": "max_safe: expected number, received null"
 				}
 			]
 		},
@@ -2248,7 +2294,8 @@
 					"received": "number",
 					"path": [
 						"min_past_safe"
-					]
+					],
+					"formatted": "min_past_safe: expected >= 9007199254740994, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2256,7 +2303,8 @@
 					"received": "number",
 					"path": [
 						"max_past_safe"
-					]
+					],
+					"formatted": "max_past_safe: expected <= 9007199254740994, received number"
 				},
 				{
 					"kind": "literal",
@@ -2264,7 +2312,8 @@
 					"received": "string",
 					"path": [
 						"literal_past_safe"
-					]
+					],
+					"formatted": "literal_past_safe: expected 9007199254740994, received string"
 				}
 			]
 		},
@@ -2280,7 +2329,8 @@
 					"received": "string",
 					"path": [
 						"min_past_safe"
-					]
+					],
+					"formatted": "min_past_safe: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2288,7 +2338,8 @@
 					"received": "null",
 					"path": [
 						"max_past_safe"
-					]
+					],
+					"formatted": "max_past_safe: expected number, received null"
 				}
 			]
 		},
@@ -2311,7 +2362,8 @@
 					"received": "number",
 					"path": [
 						"min_e15_and_a_half"
-					]
+					],
+					"formatted": "min_e15_and_a_half: expected >= 1000000000000000.5, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2319,7 +2371,8 @@
 					"received": "number",
 					"path": [
 						"max_e15_and_a_half"
-					]
+					],
+					"formatted": "max_e15_and_a_half: expected <= 1000000000000000.5, received number"
 				},
 				{
 					"kind": "literal",
@@ -2327,7 +2380,8 @@
 					"received": "string",
 					"path": [
 						"literal_e15_and_a_half"
-					]
+					],
+					"formatted": "literal_e15_and_a_half: expected 1000000000000000.5, received string"
 				}
 			]
 		},
@@ -2343,7 +2397,8 @@
 					"received": "string",
 					"path": [
 						"min_e15_and_a_half"
-					]
+					],
+					"formatted": "min_e15_and_a_half: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2351,7 +2406,8 @@
 					"received": "null",
 					"path": [
 						"max_e15_and_a_half"
-					]
+					],
+					"formatted": "max_e15_and_a_half: expected number, received null"
 				}
 			]
 		},
@@ -2374,7 +2430,8 @@
 					"received": "number",
 					"path": [
 						"min_e20"
-					]
+					],
+					"formatted": "min_e20: expected >= 100000000000000000000, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2382,7 +2439,8 @@
 					"received": "number",
 					"path": [
 						"max_e20"
-					]
+					],
+					"formatted": "max_e20: expected <= 100000000000000000000, received number"
 				},
 				{
 					"kind": "literal",
@@ -2390,7 +2448,8 @@
 					"received": "string",
 					"path": [
 						"literal_e20"
-					]
+					],
+					"formatted": "literal_e20: expected 100000000000000000000, received string"
 				}
 			]
 		},
@@ -2406,7 +2465,8 @@
 					"received": "string",
 					"path": [
 						"min_e20"
-					]
+					],
+					"formatted": "min_e20: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2414,7 +2474,8 @@
 					"received": "null",
 					"path": [
 						"max_e20"
-					]
+					],
+					"formatted": "max_e20: expected number, received null"
 				}
 			]
 		},
@@ -2437,7 +2498,8 @@
 					"received": "number",
 					"path": [
 						"min_below_e21"
-					]
+					],
+					"formatted": "min_below_e21: expected >= 999999999999999900000, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2445,7 +2507,8 @@
 					"received": "number",
 					"path": [
 						"max_below_e21"
-					]
+					],
+					"formatted": "max_below_e21: expected <= 999999999999999900000, received number"
 				},
 				{
 					"kind": "literal",
@@ -2453,7 +2516,8 @@
 					"received": "string",
 					"path": [
 						"literal_below_e21"
-					]
+					],
+					"formatted": "literal_below_e21: expected 999999999999999900000, received string"
 				}
 			]
 		},
@@ -2469,7 +2533,8 @@
 					"received": "string",
 					"path": [
 						"min_below_e21"
-					]
+					],
+					"formatted": "min_below_e21: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2477,7 +2542,8 @@
 					"received": "null",
 					"path": [
 						"max_below_e21"
-					]
+					],
+					"formatted": "max_below_e21: expected number, received null"
 				}
 			]
 		},
@@ -2500,7 +2566,8 @@
 					"received": "number",
 					"path": [
 						"min_rounded"
-					]
+					],
+					"formatted": "min_rounded: expected >= 123456789012345680000, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2508,7 +2575,8 @@
 					"received": "number",
 					"path": [
 						"max_rounded"
-					]
+					],
+					"formatted": "max_rounded: expected <= 123456789012345680000, received number"
 				},
 				{
 					"kind": "literal",
@@ -2516,7 +2584,8 @@
 					"received": "string",
 					"path": [
 						"literal_rounded"
-					]
+					],
+					"formatted": "literal_rounded: expected 123456789012345680000, received string"
 				}
 			]
 		},
@@ -2532,7 +2601,8 @@
 					"received": "string",
 					"path": [
 						"min_rounded"
-					]
+					],
+					"formatted": "min_rounded: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2540,7 +2610,8 @@
 					"received": "null",
 					"path": [
 						"max_rounded"
-					]
+					],
+					"formatted": "max_rounded: expected number, received null"
 				}
 			]
 		},
@@ -2563,7 +2634,8 @@
 					"received": "number",
 					"path": [
 						"min_two_to_69"
-					]
+					],
+					"formatted": "min_two_to_69: expected >= 590295810358705700000, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2571,7 +2643,8 @@
 					"received": "number",
 					"path": [
 						"max_two_to_69"
-					]
+					],
+					"formatted": "max_two_to_69: expected <= 590295810358705700000, received number"
 				},
 				{
 					"kind": "literal",
@@ -2579,7 +2652,8 @@
 					"received": "string",
 					"path": [
 						"literal_two_to_69"
-					]
+					],
+					"formatted": "literal_two_to_69: expected 590295810358705700000, received string"
 				}
 			]
 		},
@@ -2595,7 +2669,8 @@
 					"received": "string",
 					"path": [
 						"min_two_to_69"
-					]
+					],
+					"formatted": "min_two_to_69: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2603,7 +2678,8 @@
 					"received": "null",
 					"path": [
 						"max_two_to_69"
-					]
+					],
+					"formatted": "max_two_to_69: expected number, received null"
 				}
 			]
 		},
@@ -2626,7 +2702,8 @@
 					"received": "number",
 					"path": [
 						"min_two_to_70"
-					]
+					],
+					"formatted": "min_two_to_70: expected >= 1.1805916207174113e+21, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2634,7 +2711,8 @@
 					"received": "number",
 					"path": [
 						"max_two_to_70"
-					]
+					],
+					"formatted": "max_two_to_70: expected <= 1.1805916207174113e+21, received number"
 				},
 				{
 					"kind": "literal",
@@ -2642,7 +2720,8 @@
 					"received": "string",
 					"path": [
 						"literal_two_to_70"
-					]
+					],
+					"formatted": "literal_two_to_70: expected 1.1805916207174113e+21, received string"
 				}
 			]
 		},
@@ -2658,7 +2737,8 @@
 					"received": "string",
 					"path": [
 						"min_two_to_70"
-					]
+					],
+					"formatted": "min_two_to_70: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2666,7 +2746,8 @@
 					"received": "null",
 					"path": [
 						"max_two_to_70"
-					]
+					],
+					"formatted": "max_two_to_70: expected number, received null"
 				}
 			]
 		},
@@ -2689,7 +2770,8 @@
 					"received": "number",
 					"path": [
 						"min_e21"
-					]
+					],
+					"formatted": "min_e21: expected >= 1e+21, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2697,7 +2779,8 @@
 					"received": "number",
 					"path": [
 						"max_e21"
-					]
+					],
+					"formatted": "max_e21: expected <= 1e+21, received number"
 				},
 				{
 					"kind": "literal",
@@ -2705,7 +2788,8 @@
 					"received": "string",
 					"path": [
 						"literal_e21"
-					]
+					],
+					"formatted": "literal_e21: expected 1e+21, received string"
 				}
 			]
 		},
@@ -2721,7 +2805,8 @@
 					"received": "string",
 					"path": [
 						"min_e21"
-					]
+					],
+					"formatted": "min_e21: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2729,7 +2814,8 @@
 					"received": "null",
 					"path": [
 						"max_e21"
-					]
+					],
+					"formatted": "max_e21: expected number, received null"
 				}
 			]
 		},
@@ -2752,7 +2838,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_e21"
-					]
+					],
+					"formatted": "min_negative_e21: expected >= -1e+21, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2760,7 +2847,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_e21"
-					]
+					],
+					"formatted": "max_negative_e21: expected <= -1e+21, received number"
 				},
 				{
 					"kind": "literal",
@@ -2768,7 +2856,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_e21"
-					]
+					],
+					"formatted": "literal_negative_e21: expected -1e+21, received string"
 				}
 			]
 		},
@@ -2784,7 +2873,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_e21"
-					]
+					],
+					"formatted": "min_negative_e21: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2792,7 +2882,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_e21"
-					]
+					],
+					"formatted": "max_negative_e21: expected number, received null"
 				}
 			]
 		},
@@ -2815,7 +2906,8 @@
 					"received": "number",
 					"path": [
 						"min_past_e21"
-					]
+					],
+					"formatted": "min_past_e21: expected >= 1.2345678901234568e+21, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2823,7 +2915,8 @@
 					"received": "number",
 					"path": [
 						"max_past_e21"
-					]
+					],
+					"formatted": "max_past_e21: expected <= 1.2345678901234568e+21, received number"
 				},
 				{
 					"kind": "literal",
@@ -2831,7 +2924,8 @@
 					"received": "string",
 					"path": [
 						"literal_past_e21"
-					]
+					],
+					"formatted": "literal_past_e21: expected 1.2345678901234568e+21, received string"
 				}
 			]
 		},
@@ -2847,7 +2941,8 @@
 					"received": "string",
 					"path": [
 						"min_past_e21"
-					]
+					],
+					"formatted": "min_past_e21: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2855,7 +2950,8 @@
 					"received": "null",
 					"path": [
 						"max_past_e21"
-					]
+					],
+					"formatted": "max_past_e21: expected number, received null"
 				}
 			]
 		},
@@ -2878,7 +2974,8 @@
 					"received": "number",
 					"path": [
 						"min_e100"
-					]
+					],
+					"formatted": "min_e100: expected >= 1e+100, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2886,7 +2983,8 @@
 					"received": "number",
 					"path": [
 						"max_e100"
-					]
+					],
+					"formatted": "max_e100: expected <= 1e+100, received number"
 				},
 				{
 					"kind": "literal",
@@ -2894,7 +2992,8 @@
 					"received": "string",
 					"path": [
 						"literal_e100"
-					]
+					],
+					"formatted": "literal_e100: expected 1e+100, received string"
 				}
 			]
 		},
@@ -2910,7 +3009,8 @@
 					"received": "string",
 					"path": [
 						"min_e100"
-					]
+					],
+					"formatted": "min_e100: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2918,7 +3018,8 @@
 					"received": "null",
 					"path": [
 						"max_e100"
-					]
+					],
+					"formatted": "max_e100: expected number, received null"
 				}
 			]
 		},
@@ -2941,7 +3042,8 @@
 					"received": "number",
 					"path": [
 						"min_e300"
-					]
+					],
+					"formatted": "min_e300: expected >= 1e+300, received number"
 				},
 				{
 					"kind": "max_value",
@@ -2949,7 +3051,8 @@
 					"received": "number",
 					"path": [
 						"max_e300"
-					]
+					],
+					"formatted": "max_e300: expected <= 1e+300, received number"
 				},
 				{
 					"kind": "literal",
@@ -2957,7 +3060,8 @@
 					"received": "string",
 					"path": [
 						"literal_e300"
-					]
+					],
+					"formatted": "literal_e300: expected 1e+300, received string"
 				}
 			]
 		},
@@ -2973,7 +3077,8 @@
 					"received": "string",
 					"path": [
 						"min_e300"
-					]
+					],
+					"formatted": "min_e300: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -2981,7 +3086,8 @@
 					"received": "null",
 					"path": [
 						"max_e300"
-					]
+					],
+					"formatted": "max_e300: expected number, received null"
 				}
 			]
 		},
@@ -3004,7 +3110,8 @@
 					"received": "number",
 					"path": [
 						"min_max"
-					]
+					],
+					"formatted": "min_max: expected >= 1.7976931348623157e+308, received number"
 				},
 				{
 					"kind": "literal",
@@ -3012,7 +3119,8 @@
 					"received": "string",
 					"path": [
 						"literal_max"
-					]
+					],
+					"formatted": "literal_max: expected 1.7976931348623157e+308, received string"
 				}
 			]
 		},
@@ -3028,7 +3136,8 @@
 					"received": "string",
 					"path": [
 						"min_max"
-					]
+					],
+					"formatted": "min_max: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3036,7 +3145,8 @@
 					"received": "null",
 					"path": [
 						"max_max"
-					]
+					],
+					"formatted": "max_max: expected number, received null"
 				}
 			]
 		},
@@ -3059,7 +3169,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_max"
-					]
+					],
+					"formatted": "max_negative_max: expected <= -1.7976931348623157e+308, received number"
 				},
 				{
 					"kind": "literal",
@@ -3067,7 +3178,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_max"
-					]
+					],
+					"formatted": "literal_negative_max: expected -1.7976931348623157e+308, received string"
 				}
 			]
 		},
@@ -3083,7 +3195,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_max"
-					]
+					],
+					"formatted": "min_negative_max: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3091,7 +3204,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_max"
-					]
+					],
+					"formatted": "max_negative_max: expected number, received null"
 				}
 			]
 		},
@@ -3114,7 +3228,8 @@
 					"received": "number",
 					"path": [
 						"min_e_6"
-					]
+					],
+					"formatted": "min_e_6: expected >= 0.000001, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3122,7 +3237,8 @@
 					"received": "number",
 					"path": [
 						"max_e_6"
-					]
+					],
+					"formatted": "max_e_6: expected <= 0.000001, received number"
 				},
 				{
 					"kind": "literal",
@@ -3130,7 +3246,8 @@
 					"received": "string",
 					"path": [
 						"literal_e_6"
-					]
+					],
+					"formatted": "literal_e_6: expected 0.000001, received string"
 				}
 			]
 		},
@@ -3146,7 +3263,8 @@
 					"received": "string",
 					"path": [
 						"min_e_6"
-					]
+					],
+					"formatted": "min_e_6: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3154,7 +3272,8 @@
 					"received": "null",
 					"path": [
 						"max_e_6"
-					]
+					],
+					"formatted": "max_e_6: expected number, received null"
 				}
 			]
 		},
@@ -3177,7 +3296,8 @@
 					"received": "number",
 					"path": [
 						"min_e_6_digits"
-					]
+					],
+					"formatted": "min_e_6_digits: expected >= 0.0000015, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3185,7 +3305,8 @@
 					"received": "number",
 					"path": [
 						"max_e_6_digits"
-					]
+					],
+					"formatted": "max_e_6_digits: expected <= 0.0000015, received number"
 				},
 				{
 					"kind": "literal",
@@ -3193,7 +3314,8 @@
 					"received": "string",
 					"path": [
 						"literal_e_6_digits"
-					]
+					],
+					"formatted": "literal_e_6_digits: expected 0.0000015, received string"
 				}
 			]
 		},
@@ -3209,7 +3331,8 @@
 					"received": "string",
 					"path": [
 						"min_e_6_digits"
-					]
+					],
+					"formatted": "min_e_6_digits: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3217,7 +3340,8 @@
 					"received": "null",
 					"path": [
 						"max_e_6_digits"
-					]
+					],
+					"formatted": "max_e_6_digits: expected number, received null"
 				}
 			]
 		},
@@ -3240,7 +3364,8 @@
 					"received": "number",
 					"path": [
 						"min_below_e_6"
-					]
+					],
+					"formatted": "min_below_e_6: expected >= 9.5e-7, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3248,7 +3373,8 @@
 					"received": "number",
 					"path": [
 						"max_below_e_6"
-					]
+					],
+					"formatted": "max_below_e_6: expected <= 9.5e-7, received number"
 				},
 				{
 					"kind": "literal",
@@ -3256,7 +3382,8 @@
 					"received": "string",
 					"path": [
 						"literal_below_e_6"
-					]
+					],
+					"formatted": "literal_below_e_6: expected 9.5e-7, received string"
 				}
 			]
 		},
@@ -3272,7 +3399,8 @@
 					"received": "string",
 					"path": [
 						"min_below_e_6"
-					]
+					],
+					"formatted": "min_below_e_6: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3280,7 +3408,8 @@
 					"received": "null",
 					"path": [
 						"max_below_e_6"
-					]
+					],
+					"formatted": "max_below_e_6: expected number, received null"
 				}
 			]
 		},
@@ -3303,7 +3432,8 @@
 					"received": "number",
 					"path": [
 						"min_e_7"
-					]
+					],
+					"formatted": "min_e_7: expected >= 1e-7, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3311,7 +3441,8 @@
 					"received": "number",
 					"path": [
 						"max_e_7"
-					]
+					],
+					"formatted": "max_e_7: expected <= 1e-7, received number"
 				},
 				{
 					"kind": "literal",
@@ -3319,7 +3450,8 @@
 					"received": "string",
 					"path": [
 						"literal_e_7"
-					]
+					],
+					"formatted": "literal_e_7: expected 1e-7, received string"
 				}
 			]
 		},
@@ -3335,7 +3467,8 @@
 					"received": "string",
 					"path": [
 						"min_e_7"
-					]
+					],
+					"formatted": "min_e_7: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3343,7 +3476,8 @@
 					"received": "null",
 					"path": [
 						"max_e_7"
-					]
+					],
+					"formatted": "max_e_7: expected number, received null"
 				}
 			]
 		},
@@ -3366,7 +3500,8 @@
 					"received": "number",
 					"path": [
 						"min_e_7_digits"
-					]
+					],
+					"formatted": "min_e_7_digits: expected >= 1.234e-7, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3374,7 +3509,8 @@
 					"received": "number",
 					"path": [
 						"max_e_7_digits"
-					]
+					],
+					"formatted": "max_e_7_digits: expected <= 1.234e-7, received number"
 				},
 				{
 					"kind": "literal",
@@ -3382,7 +3518,8 @@
 					"received": "string",
 					"path": [
 						"literal_e_7_digits"
-					]
+					],
+					"formatted": "literal_e_7_digits: expected 1.234e-7, received string"
 				}
 			]
 		},
@@ -3398,7 +3535,8 @@
 					"received": "string",
 					"path": [
 						"min_e_7_digits"
-					]
+					],
+					"formatted": "min_e_7_digits: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3406,7 +3544,8 @@
 					"received": "null",
 					"path": [
 						"max_e_7_digits"
-					]
+					],
+					"formatted": "max_e_7_digits: expected number, received null"
 				}
 			]
 		},
@@ -3429,7 +3568,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_e_7"
-					]
+					],
+					"formatted": "min_negative_e_7: expected >= -1e-7, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3437,7 +3577,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_e_7"
-					]
+					],
+					"formatted": "max_negative_e_7: expected <= -1e-7, received number"
 				},
 				{
 					"kind": "literal",
@@ -3445,7 +3586,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_e_7"
-					]
+					],
+					"formatted": "literal_negative_e_7: expected -1e-7, received string"
 				}
 			]
 		},
@@ -3461,7 +3603,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_e_7"
-					]
+					],
+					"formatted": "min_negative_e_7: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3469,7 +3612,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_e_7"
-					]
+					],
+					"formatted": "max_negative_e_7: expected number, received null"
 				}
 			]
 		},
@@ -3492,7 +3636,8 @@
 					"received": "number",
 					"path": [
 						"min_min_normal"
-					]
+					],
+					"formatted": "min_min_normal: expected >= 2.2250738585072014e-308, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3500,7 +3645,8 @@
 					"received": "number",
 					"path": [
 						"max_min_normal"
-					]
+					],
+					"formatted": "max_min_normal: expected <= 2.2250738585072014e-308, received number"
 				},
 				{
 					"kind": "literal",
@@ -3508,7 +3654,8 @@
 					"received": "string",
 					"path": [
 						"literal_min_normal"
-					]
+					],
+					"formatted": "literal_min_normal: expected 2.2250738585072014e-308, received string"
 				}
 			]
 		},
@@ -3524,7 +3671,8 @@
 					"received": "string",
 					"path": [
 						"min_min_normal"
-					]
+					],
+					"formatted": "min_min_normal: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3532,7 +3680,8 @@
 					"received": "null",
 					"path": [
 						"max_min_normal"
-					]
+					],
+					"formatted": "max_min_normal: expected number, received null"
 				}
 			]
 		},
@@ -3555,7 +3704,8 @@
 					"received": "number",
 					"path": [
 						"min_min"
-					]
+					],
+					"formatted": "min_min: expected >= 5e-324, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3563,7 +3713,8 @@
 					"received": "number",
 					"path": [
 						"max_min"
-					]
+					],
+					"formatted": "max_min: expected <= 5e-324, received number"
 				},
 				{
 					"kind": "literal",
@@ -3571,7 +3722,8 @@
 					"received": "string",
 					"path": [
 						"literal_min"
-					]
+					],
+					"formatted": "literal_min: expected 5e-324, received string"
 				}
 			]
 		},
@@ -3587,7 +3739,8 @@
 					"received": "string",
 					"path": [
 						"min_min"
-					]
+					],
+					"formatted": "min_min: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3595,7 +3748,8 @@
 					"received": "null",
 					"path": [
 						"max_min"
-					]
+					],
+					"formatted": "max_min: expected number, received null"
 				}
 			]
 		},
@@ -3618,7 +3772,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_min"
-					]
+					],
+					"formatted": "min_negative_min: expected >= -5e-324, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3626,7 +3781,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_min"
-					]
+					],
+					"formatted": "max_negative_min: expected <= -5e-324, received number"
 				},
 				{
 					"kind": "literal",
@@ -3634,7 +3790,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_min"
-					]
+					],
+					"formatted": "literal_negative_min: expected -5e-324, received string"
 				}
 			]
 		},
@@ -3650,7 +3807,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_min"
-					]
+					],
+					"formatted": "min_negative_min: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3658,7 +3816,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_min"
-					]
+					],
+					"formatted": "max_negative_min: expected number, received null"
 				}
 			]
 		},
@@ -3681,7 +3840,8 @@
 					"received": "number",
 					"path": [
 						"min_tie_lower"
-					]
+					],
+					"formatted": "min_tie_lower: expected >= 703.2810668945312, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3689,7 +3849,8 @@
 					"received": "number",
 					"path": [
 						"max_tie_lower"
-					]
+					],
+					"formatted": "max_tie_lower: expected <= 703.2810668945312, received number"
 				},
 				{
 					"kind": "literal",
@@ -3697,7 +3858,8 @@
 					"received": "string",
 					"path": [
 						"literal_tie_lower"
-					]
+					],
+					"formatted": "literal_tie_lower: expected 703.2810668945312, received string"
 				}
 			]
 		},
@@ -3713,7 +3875,8 @@
 					"received": "string",
 					"path": [
 						"min_tie_lower"
-					]
+					],
+					"formatted": "min_tie_lower: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3721,7 +3884,8 @@
 					"received": "null",
 					"path": [
 						"max_tie_lower"
-					]
+					],
+					"formatted": "max_tie_lower: expected number, received null"
 				}
 			]
 		},
@@ -3744,7 +3908,8 @@
 					"received": "number",
 					"path": [
 						"min_tie_higher"
-					]
+					],
+					"formatted": "min_tie_higher: expected >= 936.5509643554688, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3752,7 +3917,8 @@
 					"received": "number",
 					"path": [
 						"max_tie_higher"
-					]
+					],
+					"formatted": "max_tie_higher: expected <= 936.5509643554688, received number"
 				},
 				{
 					"kind": "literal",
@@ -3760,7 +3926,8 @@
 					"received": "string",
 					"path": [
 						"literal_tie_higher"
-					]
+					],
+					"formatted": "literal_tie_higher: expected 936.5509643554688, received string"
 				}
 			]
 		},
@@ -3776,7 +3943,8 @@
 					"received": "string",
 					"path": [
 						"min_tie_higher"
-					]
+					],
+					"formatted": "min_tie_higher: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3784,7 +3952,8 @@
 					"received": "null",
 					"path": [
 						"max_tie_higher"
-					]
+					],
+					"formatted": "max_tie_higher: expected number, received null"
 				}
 			]
 		},
@@ -3807,7 +3976,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_tie"
-					]
+					],
+					"formatted": "min_negative_tie: expected >= -19.037551879882812, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3815,7 +3985,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_tie"
-					]
+					],
+					"formatted": "max_negative_tie: expected <= -19.037551879882812, received number"
 				},
 				{
 					"kind": "literal",
@@ -3823,7 +3994,8 @@
 					"received": "string",
 					"path": [
 						"literal_negative_tie"
-					]
+					],
+					"formatted": "literal_negative_tie: expected -19.037551879882812, received string"
 				}
 			]
 		},
@@ -3839,7 +4011,8 @@
 					"received": "string",
 					"path": [
 						"min_negative_tie"
-					]
+					],
+					"formatted": "min_negative_tie: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3847,7 +4020,8 @@
 					"received": "null",
 					"path": [
 						"max_negative_tie"
-					]
+					],
+					"formatted": "max_negative_tie: expected number, received null"
 				}
 			]
 		},
@@ -3870,7 +4044,8 @@
 					"received": "number",
 					"path": [
 						"min_tie_single"
-					]
+					],
+					"formatted": "min_tie_single: expected >= 232.10000610351562, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3878,7 +4053,8 @@
 					"received": "number",
 					"path": [
 						"max_tie_single"
-					]
+					],
+					"formatted": "max_tie_single: expected <= 232.10000610351562, received number"
 				},
 				{
 					"kind": "literal",
@@ -3886,7 +4062,8 @@
 					"received": "string",
 					"path": [
 						"literal_tie_single"
-					]
+					],
+					"formatted": "literal_tie_single: expected 232.10000610351562, received string"
 				}
 			]
 		},
@@ -3902,7 +4079,8 @@
 					"received": "string",
 					"path": [
 						"min_tie_single"
-					]
+					],
+					"formatted": "min_tie_single: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -3910,7 +4088,8 @@
 					"received": "null",
 					"path": [
 						"max_tie_single"
-					]
+					],
+					"formatted": "max_tie_single: expected number, received null"
 				}
 			]
 		},
@@ -3933,7 +4112,8 @@
 					"received": "number",
 					"path": [
 						"min_negative_zero"
-					]
+					],
+					"formatted": "min_negative_zero: expected >= 0, received number"
 				},
 				{
 					"kind": "max_value",
@@ -3941,7 +4121,8 @@
 					"received": "number",
 					"path": [
 						"max_negative_zero"
-					]
+					],
+					"formatted": "max_negative_zero: expected <= 0, received number"
 				}
 			]
 		},
@@ -3964,7 +4145,8 @@
 					"received": "number",
 					"path": [
 						"max_e21"
-					]
+					],
+					"formatted": "max_e21: expected <= 1e+21, received number"
 				},
 				{
 					"kind": "literal",
@@ -3972,7 +4154,8 @@
 					"received": "number",
 					"path": [
 						"literal_e21"
-					]
+					],
+					"formatted": "literal_e21: expected 1e+21, received number"
 				}
 			]
 		}

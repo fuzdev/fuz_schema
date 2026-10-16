@@ -111,7 +111,8 @@
 					"received": "string",
 					"path": [
 						"fractional"
-					]
+					],
+					"formatted": "fractional: expected length >= 1.5, received string"
 				}
 			]
 		},
@@ -134,7 +135,8 @@
 					"received": "string",
 					"path": [
 						"fractional"
-					]
+					],
+					"formatted": "fractional: expected length <= 2.5, received string"
 				}
 			]
 		},
@@ -157,7 +159,8 @@
 					"received": "string",
 					"path": [
 						"negative"
-					]
+					],
+					"formatted": "negative: expected length <= 0, received string"
 				}
 			]
 		},
@@ -173,7 +176,8 @@
 					"received": "string",
 					"path": [
 						"impossible"
-					]
+					],
+					"formatted": "impossible: expected length >= 2, received string"
 				}
 			]
 		},
@@ -189,7 +193,8 @@
 					"received": "string",
 					"path": [
 						"impossible"
-					]
+					],
+					"formatted": "impossible: expected length <= 1, received string"
 				}
 			]
 		},
@@ -205,7 +210,8 @@
 					"received": "string",
 					"path": [
 						"repeated"
-					]
+					],
+					"formatted": "repeated: expected length >= 3, received string"
 				}
 			]
 		},
@@ -228,7 +234,8 @@
 					"received": "string",
 					"path": [
 						"repeated"
-					]
+					],
+					"formatted": "repeated: expected length <= 3, received string"
 				}
 			]
 		},
@@ -244,7 +251,8 @@
 					"received": "number",
 					"path": [
 						"repeated"
-					]
+					],
+					"formatted": "repeated: expected string, received number"
 				}
 			]
 		}

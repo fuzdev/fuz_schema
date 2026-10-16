@@ -77,7 +77,8 @@
 						0,
 						"x",
 						"n"
-					]
+					],
+					"formatted": "0.x.n: expected number, received undefined"
 				}
 			]
 		},
@@ -94,7 +95,8 @@
 					"path": [
 						0,
 						"x"
-					]
+					],
+					"formatted": "0.x: expected object, received null"
 				}
 			]
 		},
@@ -112,7 +114,8 @@
 						0,
 						"x",
 						"t"
-					]
+					],
+					"formatted": "0.x.t: expected \"a\" | \"b\", received string"
 				}
 			]
 		},
@@ -130,7 +133,8 @@
 						0,
 						"y",
 						"n"
-					]
+					],
+					"formatted": "0.y.n: expected number, received string"
 				}
 			]
 		},

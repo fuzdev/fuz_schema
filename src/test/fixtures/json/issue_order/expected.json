@@ -129,7 +129,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -137,7 +138,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -145,7 +147,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -153,7 +156,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -161,7 +165,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -169,7 +174,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -177,7 +183,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				}
 			]
 		},
@@ -193,7 +200,8 @@
 					"received": "number",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received number"
 				},
 				{
 					"kind": "number",
@@ -201,7 +209,8 @@
 					"received": "string",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -209,7 +218,8 @@
 					"received": "string",
 					"path": [
 						"4294967294"
-					]
+					],
+					"formatted": "4294967294: expected number, received string"
 				},
 				{
 					"kind": "string",
@@ -217,7 +227,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				},
 				{
 					"kind": "object",
@@ -225,7 +236,8 @@
 					"received": "array",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received array"
 				},
 				{
 					"kind": "record",
@@ -233,7 +245,8 @@
 					"received": "null",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received null"
 				},
 				{
 					"kind": "number",
@@ -241,7 +254,8 @@
 					"received": "string",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received string"
 				},
 				{
 					"kind": "loose_object",
@@ -249,7 +263,8 @@
 					"received": "string",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received string"
 				},
 				{
 					"kind": "array",
@@ -257,7 +272,8 @@
 					"received": "object",
 					"path": [
 						"t"
-					]
+					],
+					"formatted": "t: expected array, received object"
 				},
 				{
 					"kind": "number",
@@ -265,7 +281,8 @@
 					"received": "string",
 					"path": [
 						"4294967295"
-					]
+					],
+					"formatted": "4294967295: expected number, received string"
 				}
 			]
 		},
@@ -281,7 +298,8 @@
 					"received": "number",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received number"
 				},
 				{
 					"kind": "number",
@@ -289,7 +307,8 @@
 					"received": "string",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -297,7 +316,8 @@
 					"received": "string",
 					"path": [
 						"4294967294"
-					]
+					],
+					"formatted": "4294967294: expected number, received string"
 				},
 				{
 					"kind": "string",
@@ -305,7 +325,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				},
 				{
 					"kind": "object",
@@ -313,7 +334,8 @@
 					"received": "array",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received array"
 				},
 				{
 					"kind": "record",
@@ -321,7 +343,8 @@
 					"received": "null",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received null"
 				},
 				{
 					"kind": "number",
@@ -329,7 +352,8 @@
 					"received": "string",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received string"
 				},
 				{
 					"kind": "loose_object",
@@ -337,7 +361,8 @@
 					"received": "string",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received string"
 				},
 				{
 					"kind": "array",
@@ -345,7 +370,8 @@
 					"received": "object",
 					"path": [
 						"t"
-					]
+					],
+					"formatted": "t: expected array, received object"
 				},
 				{
 					"kind": "number",
@@ -353,7 +379,8 @@
 					"received": "string",
 					"path": [
 						"4294967295"
-					]
+					],
+					"formatted": "4294967295: expected number, received string"
 				}
 			]
 		},
@@ -369,7 +396,8 @@
 					"received": "number",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received number"
 				},
 				{
 					"kind": "number",
@@ -377,7 +405,8 @@
 					"received": "string",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received string"
 				},
 				{
 					"kind": "string",
@@ -385,7 +414,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				},
 				{
 					"kind": "number",
@@ -393,7 +423,8 @@
 					"received": "string",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -401,7 +432,8 @@
 					"received": "array",
 					"path": [
 						"3"
-					]
+					],
+					"formatted": "3: expected no unknown keys, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -409,7 +441,8 @@
 					"received": "null",
 					"path": [
 						"7"
-					]
+					],
+					"formatted": "7: expected no unknown keys, received null"
 				},
 				{
 					"kind": "unknown_key",
@@ -417,7 +450,8 @@
 					"received": "number",
 					"path": [
 						"zz"
-					]
+					],
+					"formatted": "zz: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -425,7 +459,8 @@
 					"received": "object",
 					"path": [
 						"-1"
-					]
+					],
+					"formatted": "\"-1\": expected no unknown keys, received object"
 				},
 				{
 					"kind": "unknown_key",
@@ -433,7 +468,8 @@
 					"received": "number",
 					"path": [
 						"4294967296"
-					]
+					],
+					"formatted": "4294967296: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -441,7 +477,8 @@
 					"received": "boolean",
 					"path": [
 						"00"
-					]
+					],
+					"formatted": "00: expected no unknown keys, received boolean"
 				},
 				{
 					"kind": "unknown_key",
@@ -449,7 +486,8 @@
 					"received": "string",
 					"path": [
 						"1e3"
-					]
+					],
+					"formatted": "1e3: expected no unknown keys, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -457,7 +495,8 @@
 					"received": "number",
 					"path": [
 						""
-					]
+					],
+					"formatted": "\"\": expected no unknown keys, received number"
 				}
 			]
 		},
@@ -473,7 +512,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -481,7 +521,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -489,7 +530,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -497,7 +539,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -505,7 +548,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -513,7 +557,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -521,7 +566,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -529,7 +575,8 @@
 					"received": "object",
 					"path": [
 						"9"
-					]
+					],
+					"formatted": "9: expected no unknown keys, received object"
 				},
 				{
 					"kind": "unknown_key",
@@ -537,7 +584,8 @@
 					"received": "null",
 					"path": [
 						"100"
-					]
+					],
+					"formatted": "100: expected no unknown keys, received null"
 				},
 				{
 					"kind": "unknown_key",
@@ -545,7 +593,8 @@
 					"received": "number",
 					"path": [
 						"z"
-					]
+					],
+					"formatted": "z: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -553,7 +602,8 @@
 					"received": "string",
 					"path": [
 						"y"
-					]
+					],
+					"formatted": "y: expected no unknown keys, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -561,7 +611,8 @@
 					"received": "array",
 					"path": [
 						"x"
-					]
+					],
+					"formatted": "x: expected no unknown keys, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -569,7 +620,8 @@
 					"received": "boolean",
 					"path": [
 						"w"
-					]
+					],
+					"formatted": "w: expected no unknown keys, received boolean"
 				}
 			]
 		},
@@ -586,7 +638,8 @@
 					"path": [
 						"a",
 						"0"
-					]
+					],
+					"formatted": "a.0: expected boolean, received array"
 				},
 				{
 					"kind": "string",
@@ -595,7 +648,8 @@
 					"path": [
 						"a",
 						"1"
-					]
+					],
+					"formatted": "a.1: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -604,7 +658,8 @@
 					"path": [
 						"a",
 						"z"
-					]
+					],
+					"formatted": "a.z: expected number, received string"
 				},
 				{
 					"kind": "boolean",
@@ -615,7 +670,8 @@
 						"y",
 						0,
 						"2"
-					]
+					],
+					"formatted": "a.y.0.2: expected boolean, received number"
 				},
 				{
 					"kind": "number",
@@ -626,7 +682,8 @@
 						"y",
 						0,
 						"x"
-					]
+					],
+					"formatted": "a.y.0.x: expected number, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -637,7 +694,8 @@
 						"y",
 						0,
 						"9"
-					]
+					],
+					"formatted": "a.y.0.9: expected no unknown keys, received number"
 				},
 				{
 					"kind": "object",
@@ -647,7 +705,8 @@
 						"a",
 						"y",
 						1
-					]
+					],
+					"formatted": "a.y.1: expected object, received number"
 				},
 				{
 					"kind": "boolean",
@@ -658,7 +717,8 @@
 						"y",
 						2,
 						"2"
-					]
+					],
+					"formatted": "a.y.2.2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -669,7 +729,8 @@
 						"y",
 						2,
 						"x"
-					]
+					],
+					"formatted": "a.y.2.x: expected number, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -680,7 +741,8 @@
 						"y",
 						2,
 						"w"
-					]
+					],
+					"formatted": "a.y.2.w: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -689,7 +751,8 @@
 					"path": [
 						"a",
 						"8"
-					]
+					],
+					"formatted": "a.8: expected no unknown keys, received null"
 				},
 				{
 					"kind": "unknown_key",
@@ -698,7 +761,8 @@
 					"path": [
 						"a",
 						"q"
-					]
+					],
+					"formatted": "a.q: expected no unknown keys, received number"
 				},
 				{
 					"kind": "string",
@@ -707,7 +771,8 @@
 					"path": [
 						"l",
 						"3"
-					]
+					],
+					"formatted": "l.3: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -716,7 +781,8 @@
 					"path": [
 						"l",
 						"5"
-					]
+					],
+					"formatted": "l.5: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -725,7 +791,8 @@
 					"path": [
 						"l",
 						"c"
-					]
+					],
+					"formatted": "l.c: expected string, received undefined"
 				}
 			]
 		},
@@ -742,7 +809,8 @@
 					"path": [
 						"r",
 						"0"
-					]
+					],
+					"formatted": "r.0: expected integer, received number"
 				},
 				{
 					"kind": "number",
@@ -751,7 +819,8 @@
 					"path": [
 						"r",
 						"3"
-					]
+					],
+					"formatted": "r.3: expected number, received string"
 				},
 				{
 					"kind": "integer",
@@ -760,7 +829,8 @@
 					"path": [
 						"r",
 						"k"
-					]
+					],
+					"formatted": "r.k: expected integer, received number"
 				},
 				{
 					"kind": "number",
@@ -769,7 +839,8 @@
 					"path": [
 						"r",
 						"j"
-					]
+					],
+					"formatted": "r.j: expected number, received null"
 				},
 				{
 					"kind": "number",
@@ -778,7 +849,8 @@
 					"path": [
 						"r",
 						"-1"
-					]
+					],
+					"formatted": "r.\"-1\": expected number, received array"
 				}
 			]
 		},
@@ -794,7 +866,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -802,7 +875,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -810,7 +884,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -818,7 +893,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -826,7 +902,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -834,7 +911,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -843,7 +921,8 @@
 					"path": [
 						"l",
 						"3"
-					]
+					],
+					"formatted": "l.3: expected string, received null"
 				},
 				{
 					"kind": "string",
@@ -852,7 +931,8 @@
 					"path": [
 						"l",
 						"5"
-					]
+					],
+					"formatted": "l.5: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -861,7 +941,8 @@
 					"path": [
 						"l",
 						"c"
-					]
+					],
+					"formatted": "l.c: expected string, received number"
 				}
 			]
 		},
@@ -877,7 +958,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -885,7 +967,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -893,7 +976,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -901,7 +985,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -909,7 +994,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -917,7 +1003,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -925,7 +1012,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -935,7 +1023,8 @@
 						"t",
 						0,
 						1
-					]
+					],
+					"formatted": "t.0.1: expected number, received string"
 				},
 				{
 					"kind": "array",
@@ -944,7 +1033,8 @@
 					"path": [
 						"t",
 						1
-					]
+					],
+					"formatted": "t.1: expected array, received string"
 				},
 				{
 					"kind": "number",
@@ -954,7 +1044,8 @@
 						"t",
 						2,
 						0
-					]
+					],
+					"formatted": "t.2.0: expected number, received null"
 				},
 				{
 					"kind": "number",
@@ -964,7 +1055,8 @@
 						"t",
 						2,
 						2
-					]
+					],
+					"formatted": "t.2.2: expected number, received array"
 				},
 				{
 					"kind": "array",
@@ -973,7 +1065,8 @@
 					"path": [
 						"t",
 						4
-					]
+					],
+					"formatted": "t.4: expected array, received object"
 				}
 			]
 		},
@@ -989,7 +1082,8 @@
 					"received": "string",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received string"
 				},
 				{
 					"kind": "number",
@@ -997,7 +1091,8 @@
 					"received": "array",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received array"
 				},
 				{
 					"kind": "string",
@@ -1005,7 +1100,8 @@
 					"received": "object",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received object"
 				},
 				{
 					"kind": "string",
@@ -1014,7 +1110,8 @@
 					"path": [
 						"a",
 						"1"
-					]
+					],
+					"formatted": "a.1: expected string, received number"
 				},
 				{
 					"kind": "number",
@@ -1023,7 +1120,8 @@
 					"path": [
 						"a",
 						"z"
-					]
+					],
+					"formatted": "a.z: expected number, received string"
 				},
 				{
 					"kind": "boolean",
@@ -1034,7 +1132,8 @@
 						"y",
 						0,
 						"2"
-					]
+					],
+					"formatted": "a.y.0.2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1045,7 +1144,8 @@
 						"y",
 						0,
 						"x"
-					]
+					],
+					"formatted": "a.y.0.x: expected number, received undefined"
 				},
 				{
 					"kind": "object",
@@ -1055,7 +1155,8 @@
 						"a",
 						"y",
 						1
-					]
+					],
+					"formatted": "a.y.1: expected object, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -1064,7 +1165,8 @@
 					"path": [
 						"a",
 						"k"
-					]
+					],
+					"formatted": "a.k: expected no unknown keys, received number"
 				},
 				{
 					"kind": "number",
@@ -1073,7 +1175,8 @@
 					"path": [
 						"r",
 						"1"
-					]
+					],
+					"formatted": "r.1: expected number, received array"
 				},
 				{
 					"kind": "number",
@@ -1082,7 +1185,8 @@
 					"path": [
 						"r",
 						"b"
-					]
+					],
+					"formatted": "r.b: expected number, received string"
 				},
 				{
 					"kind": "integer",
@@ -1091,7 +1195,8 @@
 					"path": [
 						"r",
 						"a"
-					]
+					],
+					"formatted": "r.a: expected integer, received number"
 				},
 				{
 					"kind": "number",
@@ -1099,7 +1204,8 @@
 					"received": "null",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received null"
 				},
 				{
 					"kind": "string",
@@ -1108,7 +1214,8 @@
 					"path": [
 						"l",
 						"3"
-					]
+					],
+					"formatted": "l.3: expected string, received number"
 				},
 				{
 					"kind": "string",
@@ -1117,7 +1224,8 @@
 					"path": [
 						"l",
 						"5"
-					]
+					],
+					"formatted": "l.5: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1126,7 +1234,8 @@
 					"path": [
 						"l",
 						"c"
-					]
+					],
+					"formatted": "l.c: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1136,7 +1245,8 @@
 						"t",
 						0,
 						0
-					]
+					],
+					"formatted": "t.0.0: expected number, received string"
 				},
 				{
 					"kind": "array",
@@ -1145,7 +1255,8 @@
 					"path": [
 						"t",
 						1
-					]
+					],
+					"formatted": "t.1: expected array, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -1153,7 +1264,8 @@
 					"received": "number",
 					"path": [
 						"0"
-					]
+					],
+					"formatted": "0: expected no unknown keys, received number"
 				},
 				{
 					"kind": "unknown_key",
@@ -1161,7 +1273,8 @@
 					"received": "number",
 					"path": [
 						"zz"
-					]
+					],
+					"formatted": "zz: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -1177,7 +1290,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1185,7 +1299,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1193,7 +1308,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -1201,7 +1317,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1209,7 +1326,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1217,7 +1335,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1225,7 +1344,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -1233,7 +1353,8 @@
 					"received": "object",
 					"path": [
 						"5"
-					]
+					],
+					"formatted": "5: expected no unknown keys, received object"
 				},
 				{
 					"kind": "unknown_key",
@@ -1241,7 +1362,8 @@
 					"received": "array",
 					"path": [
 						"y"
-					]
+					],
+					"formatted": "y: expected no unknown keys, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -1249,7 +1371,8 @@
 					"received": "null",
 					"path": [
 						"x"
-					]
+					],
+					"formatted": "x: expected no unknown keys, received null"
 				}
 			]
 		},
@@ -1265,7 +1388,8 @@
 					"received": "null",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received null"
 				},
 				{
 					"kind": "number",
@@ -1273,7 +1397,8 @@
 					"received": "array",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received array"
 				},
 				{
 					"kind": "string",
@@ -1281,7 +1406,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				},
 				{
 					"kind": "object",
@@ -1289,7 +1415,8 @@
 					"received": "undefined",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received undefined"
 				},
 				{
 					"kind": "record",
@@ -1297,7 +1424,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1305,7 +1433,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1313,7 +1442,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				}
 			]
 		},
@@ -1329,7 +1459,8 @@
 					"received": "undefined",
 					"path": [
 						"2"
-					]
+					],
+					"formatted": "2: expected boolean, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1337,7 +1468,8 @@
 					"received": "undefined",
 					"path": [
 						"10"
-					]
+					],
+					"formatted": "10: expected number, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1345,7 +1477,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -1354,7 +1487,8 @@
 					"path": [
 						"a",
 						"1"
-					]
+					],
+					"formatted": "a.1: expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1363,7 +1497,8 @@
 					"path": [
 						"a",
 						"z"
-					]
+					],
+					"formatted": "a.z: expected number, received string"
 				},
 				{
 					"kind": "boolean",
@@ -1374,7 +1509,8 @@
 						"y",
 						0,
 						"2"
-					]
+					],
+					"formatted": "a.y.0.2: expected boolean, received number"
 				},
 				{
 					"kind": "number",
@@ -1385,7 +1521,8 @@
 						"y",
 						0,
 						"x"
-					]
+					],
+					"formatted": "a.y.0.x: expected number, received string"
 				},
 				{
 					"kind": "unknown_key",
@@ -1394,7 +1531,8 @@
 					"path": [
 						"a",
 						"q"
-					]
+					],
+					"formatted": "a.q: expected no unknown keys, received string"
 				},
 				{
 					"kind": "record",
@@ -1402,7 +1540,8 @@
 					"received": "undefined",
 					"path": [
 						"r"
-					]
+					],
+					"formatted": "r: expected object, received undefined"
 				},
 				{
 					"kind": "number",
@@ -1410,7 +1549,8 @@
 					"received": "undefined",
 					"path": [
 						"01"
-					]
+					],
+					"formatted": "01: expected number, received undefined"
 				},
 				{
 					"kind": "loose_object",
@@ -1418,7 +1558,8 @@
 					"received": "undefined",
 					"path": [
 						"l"
-					]
+					],
+					"formatted": "l: expected object, received undefined"
 				}
 			]
 		}

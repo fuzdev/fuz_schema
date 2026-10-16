@@ -61,7 +61,8 @@
 					"kind": "one_of",
 					"expected": "0 | \"a\"",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected 0 | \"a\", received string"
 				}
 			]
 		},
@@ -82,7 +83,8 @@
 					"kind": "one_of",
 					"expected": "0 | \"a\"",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected 0 | \"a\", received string"
 				}
 			]
 		},
@@ -96,7 +98,8 @@
 					"kind": "one_of",
 					"expected": "0 | \"a\"",
 					"received": "boolean",
-					"path": []
+					"path": [],
+					"formatted": "expected 0 | \"a\", received boolean"
 				}
 			]
 		},
@@ -110,7 +113,8 @@
 					"kind": "one_of",
 					"expected": "0 | \"a\"",
 					"received": "null",
-					"path": []
+					"path": [],
+					"formatted": "expected 0 | \"a\", received null"
 				}
 			]
 		},
@@ -124,7 +128,8 @@
 					"kind": "one_of",
 					"expected": "0 | \"a\"",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected 0 | \"a\", received number"
 				}
 			]
 		}

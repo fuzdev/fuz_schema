@@ -66,7 +66,8 @@
 					"path": [
 						"a",
 						"__proto__"
-					]
+					],
+					"formatted": "a.__proto__: expected number, received string"
 				}
 			]
 		},
@@ -82,7 +83,8 @@
 					"received": "number",
 					"path": [
 						"__proto__"
-					]
+					],
+					"formatted": "__proto__: expected object, received number"
 				}
 			]
 		},
@@ -106,7 +108,8 @@
 					"path": [
 						"a",
 						"x"
-					]
+					],
+					"formatted": "a.x: expected number, received string"
 				}
 			]
 		},
@@ -123,7 +126,8 @@
 					"path": [
 						"a",
 						"x"
-					]
+					],
+					"formatted": "a.x: expected number, received null"
 				}
 			]
 		},
@@ -140,7 +144,8 @@
 					"path": [
 						"b",
 						"y"
-					]
+					],
+					"formatted": "b.y: expected number, received boolean"
 				}
 			]
 		},
@@ -156,7 +161,8 @@
 					"received": "null",
 					"path": [
 						"1"
-					]
+					],
+					"formatted": "1: expected object, received null"
 				},
 				{
 					"kind": "number",
@@ -165,7 +171,8 @@
 					"path": [
 						"b",
 						"2"
-					]
+					],
+					"formatted": "b.2: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -174,7 +181,8 @@
 					"path": [
 						"b",
 						"10"
-					]
+					],
+					"formatted": "b.10: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -183,7 +191,8 @@
 					"path": [
 						"b",
 						"z"
-					]
+					],
+					"formatted": "b.z: expected number, received string"
 				},
 				{
 					"kind": "record",
@@ -191,7 +200,8 @@
 					"received": "array",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received array"
 				}
 			]
 		},
@@ -207,7 +217,8 @@
 					"received": "array",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received array"
 				}
 			]
 		},
@@ -223,7 +234,8 @@
 					"received": "null",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received null"
 				}
 			]
 		},
@@ -239,7 +251,8 @@
 					"received": "number",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received number"
 				}
 			]
 		},
@@ -264,7 +277,8 @@
 					"path": [
 						"a",
 						"x"
-					]
+					],
+					"formatted": "a.x: expected number, received string"
 				}
 			]
 		},
@@ -288,7 +302,8 @@
 					"received": "number",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received number"
 				}
 			]
 		},
@@ -327,7 +342,8 @@
 					"received": "number",
 					"path": [
 						"a"
-					]
+					],
+					"formatted": "a: expected object, received number"
 				}
 			],
 			"diverges": "lone_surrogate_unread"
@@ -342,7 +358,8 @@
 					"kind": "record",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -356,7 +373,8 @@
 					"kind": "record",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -370,7 +388,8 @@
 					"kind": "record",
 					"expected": "object",
 					"received": "null",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received null"
 				}
 			]
 		},
@@ -384,7 +403,8 @@
 					"kind": "record",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		}

@@ -128,7 +128,8 @@
 					"received": "number",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received number"
 				}
 			]
 		},
@@ -158,7 +159,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received object"
 				}
 			]
 		},
@@ -174,7 +176,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received object"
 				}
 			]
 		},
@@ -190,7 +193,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received object"
 				}
 			]
 		},
@@ -206,7 +210,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received object"
 				}
 			]
 		},
@@ -236,7 +241,8 @@
 					"received": "array",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received array"
 				}
 			]
 		},
@@ -259,7 +265,8 @@
 					"received": "array",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received array"
 				}
 			]
 		},
@@ -275,7 +282,8 @@
 					"received": "boolean",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received boolean"
 				}
 			]
 		},
@@ -291,7 +299,8 @@
 					"received": "array",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received array"
 				}
 			]
 		},
@@ -307,7 +316,8 @@
 					"received": "boolean",
 					"path": [
 						3
-					]
+					],
+					"formatted": "3: expected string | number | object | array | lazy | true, received boolean"
 				}
 			]
 		},
@@ -323,7 +333,8 @@
 					"received": "boolean",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received boolean"
 				}
 			]
 		},
@@ -337,7 +348,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received string"
 				}
 			]
 		},
@@ -360,7 +372,8 @@
 					"received": "object",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected string | number | object | array | lazy | true, received object"
 				}
 			]
 		},

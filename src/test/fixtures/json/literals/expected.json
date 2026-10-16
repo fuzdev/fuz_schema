@@ -218,7 +218,8 @@
 					"received": "number",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected 1, received number"
 				}
 			]
 		},
@@ -234,7 +235,8 @@
 					"received": "string",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected 1, received string"
 				}
 			]
 		},
@@ -250,7 +252,8 @@
 					"received": "boolean",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected 1, received boolean"
 				}
 			]
 		},
@@ -266,7 +269,8 @@
 					"received": "array",
 					"path": [
 						"one"
-					]
+					],
+					"formatted": "one: expected 1, received array"
 				}
 			]
 		},
@@ -331,7 +335,8 @@
 					"received": "boolean",
 					"path": [
 						"zero"
-					]
+					],
+					"formatted": "zero: expected 0, received boolean"
 				}
 			]
 		},
@@ -347,7 +352,8 @@
 					"received": "null",
 					"path": [
 						"zero"
-					]
+					],
+					"formatted": "zero: expected 0, received null"
 				}
 			]
 		},
@@ -363,7 +369,8 @@
 					"received": "string",
 					"path": [
 						"zero"
-					]
+					],
+					"formatted": "zero: expected 0, received string"
 				}
 			]
 		},
@@ -393,7 +400,8 @@
 					"received": "number",
 					"path": [
 						"negative_zero"
-					]
+					],
+					"formatted": "negative_zero: expected 0, received number"
 				}
 			]
 		},
@@ -444,7 +452,8 @@
 					"received": "number",
 					"path": [
 						"tenth"
-					]
+					],
+					"formatted": "tenth: expected 0.1, received number"
 				}
 			]
 		},
@@ -460,7 +469,8 @@
 					"received": "number",
 					"path": [
 						"tenth"
-					]
+					],
+					"formatted": "tenth: expected 0.1, received number"
 				}
 			]
 		},
@@ -476,7 +486,8 @@
 					"received": "number",
 					"path": [
 						"tenth"
-					]
+					],
+					"formatted": "tenth: expected 0.1, received number"
 				}
 			]
 		},
@@ -499,7 +510,8 @@
 					"received": "number",
 					"path": [
 						"sum"
-					]
+					],
+					"formatted": "sum: expected 0.30000000000000004, received number"
 				}
 			]
 		},
@@ -522,7 +534,8 @@
 					"received": "number",
 					"path": [
 						"sum"
-					]
+					],
+					"formatted": "sum: expected 0.30000000000000004, received number"
 				}
 			]
 		},
@@ -594,7 +607,8 @@
 					"received": "number",
 					"path": [
 						"max"
-					]
+					],
+					"formatted": "max: expected 1.7976931348623157e+308, received number"
 				}
 			]
 		},
@@ -631,7 +645,8 @@
 					"received": "number",
 					"path": [
 						"min"
-					]
+					],
+					"formatted": "min: expected 5e-324, received number"
 				}
 			]
 		},
@@ -647,7 +662,8 @@
 					"received": "number",
 					"path": [
 						"min"
-					]
+					],
+					"formatted": "min: expected 5e-324, received number"
 				}
 			]
 		},
@@ -677,7 +693,8 @@
 					"received": "string",
 					"path": [
 						"text"
-					]
+					],
+					"formatted": "text: expected \"a\", received string"
 				}
 			]
 		},
@@ -693,7 +710,8 @@
 					"received": "string",
 					"path": [
 						"text"
-					]
+					],
+					"formatted": "text: expected \"a\", received string"
 				}
 			]
 		},
@@ -709,7 +727,8 @@
 					"received": "string",
 					"path": [
 						"text"
-					]
+					],
+					"formatted": "text: expected \"a\", received string"
 				}
 			]
 		},
@@ -725,7 +744,8 @@
 					"received": "number",
 					"path": [
 						"text"
-					]
+					],
+					"formatted": "text: expected \"a\", received number"
 				}
 			]
 		},
@@ -741,7 +761,8 @@
 					"received": "array",
 					"path": [
 						"text"
-					]
+					],
+					"formatted": "text: expected \"a\", received array"
 				}
 			]
 		},
@@ -764,7 +785,8 @@
 					"received": "string",
 					"path": [
 						"empty"
-					]
+					],
+					"formatted": "empty: expected \"\", received string"
 				}
 			]
 		},
@@ -780,7 +802,8 @@
 					"received": "null",
 					"path": [
 						"empty"
-					]
+					],
+					"formatted": "empty: expected \"\", received null"
 				}
 			]
 		},
@@ -803,7 +826,8 @@
 					"received": "string",
 					"path": [
 						"escaped"
-					]
+					],
+					"formatted": "escaped: expected \"a\\\"b\\\\c\\n é😀\", received string"
 				}
 			]
 		},
@@ -819,7 +843,8 @@
 					"received": "string",
 					"path": [
 						"escaped"
-					]
+					],
+					"formatted": "escaped: expected \"a\\\"b\\\\c\\n é😀\", received string"
 				}
 			]
 		},
@@ -849,7 +874,8 @@
 					"received": "boolean",
 					"path": [
 						"yes"
-					]
+					],
+					"formatted": "yes: expected true, received boolean"
 				}
 			]
 		},
@@ -865,7 +891,8 @@
 					"received": "number",
 					"path": [
 						"yes"
-					]
+					],
+					"formatted": "yes: expected true, received number"
 				}
 			]
 		},
@@ -881,7 +908,8 @@
 					"received": "string",
 					"path": [
 						"yes"
-					]
+					],
+					"formatted": "yes: expected true, received string"
 				}
 			]
 		},
@@ -904,7 +932,8 @@
 					"received": "boolean",
 					"path": [
 						"no"
-					]
+					],
+					"formatted": "no: expected false, received boolean"
 				}
 			]
 		},
@@ -920,7 +949,8 @@
 					"received": "number",
 					"path": [
 						"no"
-					]
+					],
+					"formatted": "no: expected false, received number"
 				}
 			]
 		},
@@ -936,7 +966,8 @@
 					"received": "null",
 					"path": [
 						"no"
-					]
+					],
+					"formatted": "no: expected false, received null"
 				}
 			]
 		},
@@ -959,7 +990,8 @@
 					"received": "boolean",
 					"path": [
 						"nothing"
-					]
+					],
+					"formatted": "nothing: expected null, received boolean"
 				}
 			]
 		},
@@ -975,7 +1007,8 @@
 					"received": "number",
 					"path": [
 						"nothing"
-					]
+					],
+					"formatted": "nothing: expected null, received number"
 				}
 			]
 		},
@@ -991,7 +1024,8 @@
 					"received": "string",
 					"path": [
 						"nothing"
-					]
+					],
+					"formatted": "nothing: expected null, received string"
 				}
 			]
 		},
@@ -1007,7 +1041,8 @@
 					"received": "array",
 					"path": [
 						"nothing"
-					]
+					],
+					"formatted": "nothing: expected null, received array"
 				}
 			]
 		},
@@ -1023,7 +1058,8 @@
 					"received": "object",
 					"path": [
 						"nothing"
-					]
+					],
+					"formatted": "nothing: expected null, received object"
 				}
 			]
 		},
@@ -1088,7 +1124,8 @@
 					"received": "string",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received string"
 				}
 			]
 		},
@@ -1104,7 +1141,8 @@
 					"received": "number",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received number"
 				}
 			]
 		},
@@ -1120,7 +1158,8 @@
 					"received": "boolean",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received boolean"
 				}
 			]
 		},
@@ -1136,7 +1175,8 @@
 					"received": "number",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received number"
 				}
 			]
 		},
@@ -1152,7 +1192,8 @@
 					"received": "array",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received array"
 				}
 			]
 		},
@@ -1168,7 +1209,8 @@
 					"received": "object",
 					"path": [
 						"any_of"
-					]
+					],
+					"formatted": "any_of: expected \"a\" | 1 | null | false | 0.5, received object"
 				}
 			]
 		},
@@ -1184,7 +1226,8 @@
 					"received": "null",
 					"path": [
 						"none_of"
-					]
+					],
+					"formatted": "none_of: expected , received null"
 				}
 			]
 		},
@@ -1200,7 +1243,8 @@
 					"received": "number",
 					"path": [
 						"none_of"
-					]
+					],
+					"formatted": "none_of: expected , received number"
 				}
 			]
 		},
@@ -1216,7 +1260,8 @@
 					"received": "Infinity",
 					"path": [
 						"max"
-					]
+					],
+					"formatted": "max: expected 1.7976931348623157e+308, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -1233,7 +1278,8 @@
 					"received": "Infinity",
 					"path": [
 						"zero"
-					]
+					],
+					"formatted": "zero: expected 0, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"

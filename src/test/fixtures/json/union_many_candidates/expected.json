@@ -78,7 +78,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received array"
 				}
 			]
 		},
@@ -106,7 +107,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received object"
 				}
 			]
 		},
@@ -120,7 +122,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received object"
 				}
 			]
 		},
@@ -141,7 +144,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received string"
 				}
 			]
 		},
@@ -162,7 +166,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received object"
 				}
 			]
 		},
@@ -198,7 +203,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received array"
 				}
 			],
 			"diverges": "number_overflow"
@@ -213,7 +219,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received array"
 				}
 			],
 			"diverges": "number_overflow"
@@ -228,7 +235,8 @@
 					"kind": "union",
 					"expected": "array | object | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array | object | null, received object"
 				}
 			],
 			"diverges": "lone_surrogate"

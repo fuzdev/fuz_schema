@@ -779,7 +779,8 @@
 					"kind": "union",
 					"expected": "null | boolean | number | string | array | object",
 					"received": "Infinity",
-					"path": []
+					"path": [],
+					"formatted": "expected null | boolean | number | string | array | object, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -794,7 +795,8 @@
 					"kind": "union",
 					"expected": "null | boolean | number | string | array | object",
 					"received": "-Infinity",
-					"path": []
+					"path": [],
+					"formatted": "expected null | boolean | number | string | array | object, received -Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -809,7 +811,8 @@
 					"kind": "union",
 					"expected": "null | boolean | number | string | array | object",
 					"received": "Infinity",
-					"path": []
+					"path": [],
+					"formatted": "expected null | boolean | number | string | array | object, received Infinity"
 				}
 			],
 			"diverges": "number_overflow"
@@ -824,7 +827,8 @@
 					"kind": "union",
 					"expected": "null | boolean | number | string | array | object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected null | boolean | number | string | array | object, received array"
 				}
 			],
 			"diverges": "number_overflow"
@@ -839,7 +843,8 @@
 					"kind": "union",
 					"expected": "null | boolean | number | string | array | object",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected null | boolean | number | string | array | object, received object"
 				}
 			],
 			"diverges": "number_overflow"

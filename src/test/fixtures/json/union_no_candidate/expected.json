@@ -64,7 +64,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "boolean",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received boolean"
 				}
 			]
 		},
@@ -78,7 +79,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			]
 		},
@@ -92,7 +94,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			]
 		},
@@ -106,7 +109,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			]
 		},
@@ -138,7 +142,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			],
 			"diverges": "number_overflow_unread"
@@ -153,7 +158,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			],
 			"diverges": "lone_surrogate_unread"
@@ -168,7 +174,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received array"
 				}
 			],
 			"diverges": "depth_limit_unread"
@@ -183,7 +190,8 @@
 					"kind": "union",
 					"expected": "string | number | object | null",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected string | number | object | null, received object"
 				}
 			]
 		},

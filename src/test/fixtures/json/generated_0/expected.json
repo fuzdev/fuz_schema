@@ -38,7 +38,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received null"
 				}
 			]
 		},
@@ -52,7 +53,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		},
@@ -73,7 +75,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received null"
 				}
 			]
 		},
@@ -96,7 +99,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received array"
 				}
 			]
 		},
@@ -118,7 +122,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received undefined"
 				}
 			]
 		},
@@ -141,7 +146,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received undefined"
 				}
 			]
 		},
@@ -157,7 +163,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received array"
 				}
 			]
 		},
@@ -178,7 +185,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "array",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
@@ -206,7 +214,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received null"
 				}
 			]
 		},
@@ -222,7 +231,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected boolean, received null"
 				}
 			]
 		},
@@ -236,7 +246,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received number"
 				}
 			]
 		},
@@ -252,7 +263,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received undefined"
 				}
 			]
 		},
@@ -278,7 +290,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received null"
 				}
 			]
 		},
@@ -307,7 +320,8 @@
 					"received": "array",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected boolean, received array"
 				}
 			]
 		},
@@ -323,7 +337,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received undefined"
 				}
 			]
 		},
@@ -377,7 +392,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected boolean, received null"
 				}
 			]
 		},
@@ -393,7 +409,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received null"
 				}
 			]
 		},
@@ -409,7 +426,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected 0, received undefined"
 				}
 			]
 		},
@@ -432,7 +450,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected boolean, received null"
 				}
 			]
 		},

@@ -27,7 +27,8 @@
 					"received": "string",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received string"
 				}
 			]
 		},
@@ -43,7 +44,8 @@
 					"received": "string",
 					"path": [
 						2
-					]
+					],
+					"formatted": "2: expected number, received string"
 				}
 			]
 		},
@@ -159,7 +161,8 @@
 					"received": "string",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -167,7 +170,8 @@
 					"received": "Infinity",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received Infinity"
 				}
 			],
 			"diverges": "number_overflow_unread"
@@ -184,7 +188,8 @@
 					"received": "Infinity",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received Infinity"
 				},
 				{
 					"kind": "number",
@@ -192,7 +197,8 @@
 					"received": "string",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received string"
 				}
 			],
 			"diverges": "number_overflow"
@@ -209,7 +215,8 @@
 					"received": "null",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received null"
 				},
 				{
 					"kind": "number",
@@ -217,7 +224,8 @@
 					"received": "string",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received string"
 				}
 			],
 			"diverges": "lone_surrogate_unread"
@@ -234,7 +242,8 @@
 					"received": "string",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received string"
 				},
 				{
 					"kind": "number",
@@ -242,7 +251,8 @@
 					"received": "null",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received null"
 				}
 			],
 			"diverges": "lone_surrogate"
@@ -259,7 +269,8 @@
 					"received": "null",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received null"
 				},
 				{
 					"kind": "number",
@@ -267,7 +278,8 @@
 					"received": "array",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received array"
 				}
 			],
 			"diverges": "depth_limit_unread"
@@ -284,7 +296,8 @@
 					"received": "array",
 					"path": [
 						0
-					]
+					],
+					"formatted": "0: expected number, received array"
 				},
 				{
 					"kind": "number",
@@ -292,7 +305,8 @@
 					"received": "null",
 					"path": [
 						1
-					]
+					],
+					"formatted": "1: expected number, received null"
 				}
 			],
 			"diverges": "depth_limit_unread"
@@ -307,7 +321,8 @@
 					"kind": "array",
 					"expected": "array",
 					"received": "object",
-					"path": []
+					"path": [],
+					"formatted": "expected array, received object"
 				}
 			],
 			"diverges": "depth_limit_unread"

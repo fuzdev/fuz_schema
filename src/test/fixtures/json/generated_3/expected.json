@@ -157,7 +157,8 @@
 					"received": "object",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received object"
 				},
 				{
 					"kind": "union",
@@ -165,7 +166,8 @@
 					"received": "number",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received number"
 				},
 				{
 					"kind": "string",
@@ -173,7 +175,8 @@
 					"received": "array",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received array"
 				}
 			]
 		},
@@ -189,7 +192,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received null"
 				}
 			]
 		},
@@ -212,7 +216,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received null"
 				},
 				{
 					"kind": "union",
@@ -220,7 +225,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received array"
 				}
 			]
 		},
@@ -242,7 +248,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received array"
 				}
 			]
 		},
@@ -258,7 +265,8 @@
 					"received": "string",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received string"
 				},
 				{
 					"kind": "union",
@@ -266,7 +274,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received null"
 				}
 			]
 		},
@@ -295,7 +304,8 @@
 					"received": "boolean",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received boolean"
 				},
 				{
 					"kind": "union",
@@ -303,7 +313,8 @@
 					"received": "null",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received null"
 				}
 			]
 		},
@@ -319,7 +330,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				}
 			]
 		},
@@ -341,7 +353,8 @@
 					"received": "object",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received object"
 				}
 			]
 		},
@@ -369,7 +382,8 @@
 					"received": "boolean",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received boolean"
 				}
 			]
 		},
@@ -385,7 +399,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				}
 			]
 		},
@@ -401,7 +416,8 @@
 					"received": "boolean",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received boolean"
 				},
 				{
 					"kind": "string",
@@ -409,7 +425,8 @@
 					"received": "object",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received object"
 				}
 			]
 		},
@@ -425,7 +442,8 @@
 					"received": "undefined",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received undefined"
 				}
 			]
 		},
@@ -439,7 +457,8 @@
 					"kind": "strip_object",
 					"expected": "object",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received number"
 				}
 			]
 		},
@@ -455,7 +474,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received array"
 				}
 			]
 		},
@@ -471,7 +491,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received null"
 				}
 			]
 		},
@@ -487,7 +508,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received undefined"
 				}
 			]
 		},
@@ -503,7 +525,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received null"
 				},
 				{
 					"kind": "string",
@@ -511,7 +534,8 @@
 					"received": "array",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received array"
 				}
 			]
 		},
@@ -527,7 +551,8 @@
 					"received": "null",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received null"
 				}
 			]
 		},
@@ -543,7 +568,8 @@
 					"received": "number",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received number"
 				}
 			]
 		},
@@ -565,7 +591,8 @@
 					"received": "boolean",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received boolean"
 				}
 			]
 		},
@@ -581,7 +608,8 @@
 					"received": "object",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received object"
 				},
 				{
 					"kind": "union",
@@ -589,7 +617,8 @@
 					"received": "array",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received array"
 				}
 			]
 		},
@@ -605,7 +634,8 @@
 					"received": "object",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received object"
 				}
 			]
 		},
@@ -621,7 +651,8 @@
 					"received": "number",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received number"
 				}
 			]
 		},
@@ -650,7 +681,8 @@
 					"received": "number",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected lazy | 1.5, received number"
 				}
 			]
 		},
@@ -673,7 +705,8 @@
 					"received": "undefined",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received undefined"
 				}
 			]
 		},
@@ -695,7 +728,8 @@
 					"received": "string",
 					"path": [
 						"é"
-					]
+					],
+					"formatted": "\"é\": expected number | object, received string"
 				},
 				{
 					"kind": "string",
@@ -703,7 +737,8 @@
 					"received": "boolean",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected string, received boolean"
 				}
 			]
 		},

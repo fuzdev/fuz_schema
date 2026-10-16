@@ -180,7 +180,8 @@
 					"path": [
 						"leaf",
 						"v"
-					]
+					],
+					"formatted": "leaf.v: expected number, received string"
 				}
 			]
 		},
@@ -197,7 +198,8 @@
 					"path": [
 						"other_leaf",
 						"v"
-					]
+					],
+					"formatted": "other_leaf.v: expected number, received undefined"
 				}
 			]
 		},
@@ -214,7 +216,8 @@
 					"path": [
 						"held_leaf",
 						"w"
-					]
+					],
+					"formatted": "held_leaf.w: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -238,7 +241,8 @@
 					"path": [
 						"b",
 						"n"
-					]
+					],
+					"formatted": "b.n: expected number, received undefined"
 				}
 			]
 		},
@@ -263,7 +267,8 @@
 						"b",
 						"a",
 						"extra"
-					]
+					],
+					"formatted": "b.a.extra: expected no unknown keys, received boolean"
 				}
 			]
 		},
@@ -291,7 +296,8 @@
 						0,
 						"b",
 						"n"
-					]
+					],
+					"formatted": "list.2.list.0.b.n: expected number, received undefined"
 				},
 				{
 					"kind": "object",
@@ -302,7 +308,8 @@
 						2,
 						"list",
 						1
-					]
+					],
+					"formatted": "list.2.list.1: expected object, received number"
 				}
 			]
 		}

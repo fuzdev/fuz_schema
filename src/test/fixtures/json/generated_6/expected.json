@@ -117,7 +117,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -126,7 +127,8 @@
 					"path": [
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.\"k\\\"q\": expected \"é\", received boolean"
 				},
 				{
 					"kind": "variant",
@@ -135,7 +137,8 @@
 					"path": [
 						"b",
 						"b"
-					]
+					],
+					"formatted": "b.b: expected object, received null"
 				},
 				{
 					"kind": "unknown_key",
@@ -144,7 +147,8 @@
 					"path": [
 						"b",
 						"toString"
-					]
+					],
+					"formatted": "b.toString: expected no unknown keys, received string"
 				}
 			]
 		},
@@ -173,7 +177,8 @@
 					"received": "null",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received null"
 				}
 			]
 		},
@@ -190,7 +195,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received undefined"
 				},
 				{
 					"kind": "literal",
@@ -199,7 +205,8 @@
 					"path": [
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.\"k\\\"q\": expected \"é\", received undefined"
 				},
 				{
 					"kind": "variant",
@@ -208,7 +215,8 @@
 					"path": [
 						"b",
 						"b"
-					]
+					],
+					"formatted": "b.b: expected object, received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -217,7 +225,8 @@
 					"path": [
 						"b",
 						"a"
-					]
+					],
+					"formatted": "b.a: expected no unknown keys, received number"
 				}
 			]
 		},
@@ -252,7 +261,8 @@
 					"received": "null",
 					"path": [
 						"a b"
-					]
+					],
+					"formatted": "\"a b\": expected string, received null"
 				},
 				{
 					"kind": "variant",
@@ -262,7 +272,8 @@
 						"b",
 						"b",
 						"type"
-					]
+					],
+					"formatted": "b.b.type: expected true | \"b\", received undefined"
 				},
 				{
 					"kind": "unknown_key",
@@ -271,7 +282,8 @@
 					"path": [
 						"b",
 						"z"
-					]
+					],
+					"formatted": "b.z: expected no unknown keys, received object"
 				}
 			]
 		},
@@ -285,7 +297,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		},
@@ -301,7 +314,8 @@
 					"received": "number",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received number"
 				},
 				{
 					"kind": "union",
@@ -310,7 +324,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received null"
 				},
 				{
 					"kind": "variant",
@@ -319,7 +334,8 @@
 					"path": [
 						"b",
 						"b"
-					]
+					],
+					"formatted": "b.b: expected object, received number"
 				}
 			]
 		},
@@ -335,7 +351,8 @@
 					"received": "null",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received null"
 				}
 			]
 		},
@@ -358,7 +375,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received string"
 				},
 				{
 					"kind": "literal",
@@ -367,7 +385,8 @@
 					"path": [
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.\"k\\\"q\": expected \"é\", received null"
 				}
 			]
 		},
@@ -381,7 +400,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "number",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received number"
 				}
 			]
 		},
@@ -398,7 +418,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received undefined"
 				}
 			]
 		},
@@ -421,7 +442,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received boolean"
 				}
 			]
 		},
@@ -437,7 +459,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -445,7 +468,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received undefined"
 				}
 			]
 		},
@@ -459,7 +483,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		},
@@ -476,7 +501,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received string"
 				}
 			]
 		},
@@ -492,7 +518,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -500,7 +527,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received undefined"
 				}
 			]
 		},
@@ -514,7 +542,8 @@
 					"kind": "loose_object",
 					"expected": "object",
 					"received": "string",
-					"path": []
+					"path": [],
+					"formatted": "expected object, received string"
 				}
 			]
 		},
@@ -537,7 +566,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received number"
 				}
 			]
 		},
@@ -559,7 +589,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "number",
@@ -569,7 +600,8 @@
 						"b",
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.b.\"k\\\"q\": expected number, received undefined"
 				}
 			]
 		},
@@ -585,7 +617,8 @@
 					"received": "object",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received object"
 				},
 				{
 					"kind": "union",
@@ -594,7 +627,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received null"
 				},
 				{
 					"kind": "variant",
@@ -604,7 +638,8 @@
 						"b",
 						"b",
 						"type"
-					]
+					],
+					"formatted": "b.b.type: expected true | \"b\", received object"
 				}
 			]
 		},
@@ -627,7 +662,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				}
 			]
 		},
@@ -643,7 +679,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -651,7 +688,8 @@
 					"received": "null",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received null"
 				}
 			]
 		},
@@ -667,7 +705,8 @@
 					"received": "null",
 					"path": [
 						"a b"
-					]
+					],
+					"formatted": "\"a b\": expected string, received null"
 				},
 				{
 					"kind": "union",
@@ -676,7 +715,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received null"
 				},
 				{
 					"kind": "literal",
@@ -685,7 +725,8 @@
 					"path": [
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.\"k\\\"q\": expected \"é\", received array"
 				},
 				{
 					"kind": "variant",
@@ -695,7 +736,8 @@
 						"b",
 						"b",
 						"type"
-					]
+					],
+					"formatted": "b.b.type: expected true | \"b\", received undefined"
 				}
 			]
 		},
@@ -717,7 +759,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "string",
@@ -725,7 +768,8 @@
 					"received": "boolean",
 					"path": [
 						"a b"
-					]
+					],
+					"formatted": "\"a b\": expected string, received boolean"
 				},
 				{
 					"kind": "union",
@@ -734,7 +778,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received boolean"
 				},
 				{
 					"kind": "literal",
@@ -743,7 +788,8 @@
 					"path": [
 						"b",
 						"k\"q"
-					]
+					],
+					"formatted": "b.\"k\\\"q\": expected \"é\", received array"
 				},
 				{
 					"kind": "variant",
@@ -752,7 +798,8 @@
 					"path": [
 						"b",
 						"b"
-					]
+					],
+					"formatted": "b.b: expected object, received number"
 				}
 			]
 		},
@@ -768,7 +815,8 @@
 					"received": "undefined",
 					"path": [
 						"😀"
-					]
+					],
+					"formatted": "\"😀\": expected string, received undefined"
 				},
 				{
 					"kind": "object",
@@ -776,7 +824,8 @@
 					"received": "undefined",
 					"path": [
 						"b"
-					]
+					],
+					"formatted": "b: expected object, received undefined"
 				}
 			]
 		},
@@ -792,7 +841,8 @@
 					"received": "undefined",
 					"path": [
 						"a b"
-					]
+					],
+					"formatted": "\"a b\": expected string, received undefined"
 				},
 				{
 					"kind": "union",
@@ -801,7 +851,8 @@
 					"path": [
 						"b",
 						"a b"
-					]
+					],
+					"formatted": "b.\"a b\": expected array | lazy, received string"
 				}
 			]
 		},
