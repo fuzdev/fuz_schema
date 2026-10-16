@@ -95,7 +95,8 @@ dev server.
   `conformance_test_helpers.ts`
 - `src/test/schema.differential.test.ts` - the same rule over schemas and
   inputs generated from fixed seeds, each difference explained by a rule of a
-  declared one, with this library's invariants on every case. The generator,
+  declared one, with this library's invariants on every case, and a pinned
+  case for each entry of `SPLIT_RECOGNIZERS`. The generator,
   the rules, and the minimizer are in `differential_helpers.ts`, and
   `differential.ts` is `npm run differential`, a deeper run of any seed
 - `src/test/fixtures/json/` - the fixtures shared with the Rust crate

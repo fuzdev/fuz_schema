@@ -569,7 +569,11 @@ test's `SIDES` fails on.
 
 `gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a
 fixed count, the same everywhere, and fails on an undeclared difference, a
-throw, or a broken invariant. For a review, run it deeper:
+throw, or a broken invariant. The seeds may reach none of the cases a split
+of zod and valibot is declared through, so it also pins a case for each entry
+of `SPLIT_RECOGNIZERS` and each rule of a split or of the prototype: its
+verdict and the rules it is credited to, and that its verdict, or the rules
+it is credited to, changes without its entry. For a review, run it deeper:
 
 ```bash
 npm run differential -- --seed 1 --seed 2 --count 200000
