@@ -511,6 +511,34 @@ describe('object', () => {
 		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
 		assert.deepEqual(Object.keys(output), ['a']);
 	});
+
+	test('record leaves a __proto__ key that failed out of a copy begun after it', () => {
+		const Next = s.record(
+			s.pipe(
+				s.number,
+				s.transform((x) => x + 1)
+			)
+		);
+		// a frozen prototype refuses the write of `a`, and a setter takes it
+		const written: Array<unknown> = [];
+		const protos = [
+			Object.freeze({ a: 0 }),
+			{
+				set a(value: unknown) {
+					written.push(value);
+				}
+			}
+		];
+		for (const proto of protos) {
+			const input = { ['__proto__']: proto, a: 1 };
+			assert(Object.hasOwn(input, '__proto__'));
+			assert.deepEqual(
+				issues_of(Next, input).map((issue) => issue.path),
+				[['__proto__']]
+			);
+		}
+		assert.deepEqual(written, []);
+	});
 });
 
 describe('arrays are not objects', () => {

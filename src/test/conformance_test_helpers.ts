@@ -1512,6 +1512,17 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.record(l.number),
 		input: () => JSON.parse('{"a": 1, "__proto__": "p"}')
 	},
+	// and a value after it that changes, whose copy leaves the key out, so a
+	// frozen prototype with the value's key refuses no write to it
+	{
+		name: 'record, own __proto__ key whose value is wrong, then a value that changes',
+		schema: (l) => l.record(l.map(l.number, (x) => x + 1)),
+		input: (): unknown => {
+			const input = JSON.parse('{"__proto__": {"a": 0}, "a": 1}');
+			Object.freeze(Object.getOwnPropertyDescriptor(input, '__proto__')!.value);
+			return input;
+		}
+	},
 	// and as an option of a union, which reports one issue at its own path
 	{
 		name: 'union[string, record], own __proto__ key whose value is wrong',

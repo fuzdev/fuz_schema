@@ -393,6 +393,11 @@ export const DIFFERENCES: Array<ConformanceDifference> = [
 				both: 'ok {a: 1}',
 				ours: 'fail at __proto__'
 			},
+			// and a value after it that changes, where the copy leaves the key out
+			'record, own __proto__ key whose value is wrong, then a value that changes': {
+				both: 'ok {a: 2}',
+				ours: 'fail at __proto__'
+			},
 			// and as an option of a union, which reports one issue at its own path
 			'union[string, record], own __proto__ key whose value is wrong': {
 				both: 'ok {a: 1}',

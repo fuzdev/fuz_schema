@@ -1244,7 +1244,8 @@ export const record = <T extends Schema>(
 				output = {};
 				for (const k in value) {
 					if (k === key) break;
-					if (Object.hasOwn(value, k)) output[k] = value[k];
+					// a `__proto__` key before this one failed, or it would have begun the copy
+					if (Object.hasOwn(value, k) && k !== '__proto__') output[k] = value[k];
 				}
 				if (keep) output[key] = v;
 			}
