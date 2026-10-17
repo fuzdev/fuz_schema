@@ -264,6 +264,18 @@ Things that are easy to break without a test noticing:
   fills the key in, runs twice in one parse, and a `transform` in it that the
   first run reached with it, once more for each enclosing union that tries it
   again: only a `transform` or a `check` with a side effect can tell.
+- **`memo_union` runs as `union` does, apart from its memo.** Its `run` has
+  `union`'s `length`, two closures chosen when it is made, so whatever holds
+  it passes the object and the key as it would to a `union`. It keeps a value
+  only while probing and only for an object or array, in a `WeakMap` per
+  context held in its closure, and a kept failure adds one to `ctx.fails` as
+  `fail` does in probe mode. A memo read anywhere else, or kept outside probe
+  mode, gives an answer `union` wouldn't.
+- **`~accepts` exists only in the types.** An action is a `SchemaAction`,
+  whose optional `~accepts` makes a `pipe` refuse it after a wider step; no
+  schema carries the key at runtime. A wrapper that gives back the schema it
+  holds (`message`, `meta`, `brand`, `flavor`) needs an overload for an
+  action first, or an action under it is checked by its input alone.
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and
