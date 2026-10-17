@@ -1176,6 +1176,118 @@ describe('inference by position', () => {
 		s.pipe(s.nullable(s.string), s.flavor(s.string, 'F'));
 	});
 
+	test('a pipe takes an action whose input is wider than the step before it, and a refinement keeps the narrower type', () => {
+		const _Literal = s.pipe(s.literal('abc'), s.regex(/a/));
+		expectTypeOf<s.Infer<typeof _Literal>>().toEqualTypeOf<'abc'>();
+		const _Branded = s.pipe(s.brand(s.string, 'B'), s.regex(/a/));
+		expectTypeOf<s.Infer<typeof _Branded>>().toEqualTypeOf<s.Branded<string, 'B'>>();
+		const _Integer = s.pipe(s.one_of([1, 2]), s.integer);
+		expectTypeOf<s.Infer<typeof _Integer>>().toEqualTypeOf<1 | 2>();
+		const _Safe = s.pipe(s.one_of([1, 2]), s.safe_integer);
+		expectTypeOf<s.Infer<typeof _Safe>>().toEqualTypeOf<1 | 2>();
+		const _Unknown = s.pipe(
+			s.string,
+			s.check((v: unknown) => v !== '')
+		);
+		expectTypeOf<s.Infer<typeof _Unknown>>().toEqualTypeOf<string>();
+		// through the steps after it, and as an entry
+		const _Steps = s.pipe(s.one_of([1, 2]), s.integer, s.min_value(0), s.max_value(9));
+		expectTypeOf<s.Infer<typeof _Steps>>().toEqualTypeOf<1 | 2>();
+		const _Lengths = s.pipe(s.literal('abc'), s.min_length(1), s.regex(/a/));
+		expectTypeOf<s.Infer<typeof _Lengths>>().toEqualTypeOf<'abc'>();
+		const _Entry = s.object({ a: s.pipe(s.one_of([1, 2]), s.integer) });
+		expectTypeOf<s.Infer<typeof _Entry>>().toEqualTypeOf<{ a: 1 | 2 }>();
+		// a `flavor` of a refinement is kept too
+		const _Flavored = s.pipe(s.flavor(s.number, 'F'), s.integer);
+		expectTypeOf<s.Infer<typeof _Flavored>>().toEqualTypeOf<s.Flavored<number, 'F'>>();
+		// a `transform` is not a refinement, so its output is its own
+		const _Transform = s.pipe(
+			s.literal('abc'),
+			s.transform((v: string) => v.toUpperCase())
+		);
+		expectTypeOf<s.Infer<typeof _Transform>>().toEqualTypeOf<string>();
+		// and nor is a refinement under `message`, which gives an action back
+		const _Message = s.pipe(s.one_of([1, 2]), s.message(s.integer, 'm'));
+		expectTypeOf<s.Infer<typeof _Message>>().toEqualTypeOf<number>();
+		// a `check` annotated wider still takes a value narrower than it says
+		const _Wider = s.pipe(
+			s.literal('abc'),
+			s.check((v: string) => v !== '')
+		);
+		expectTypeOf<s.Infer<typeof _Wider>>().toEqualTypeOf<'abc'>();
+		// and so does a `transform`
+		const _WiderTransform = s.pipe(
+			s.number,
+			s.transform((v: unknown) => String(v))
+		);
+		expectTypeOf<s.Infer<typeof _WiderTransform>>().toEqualTypeOf<string>();
+		// a schema as a step is checked by its input, as before, so one that holds
+		// an action keeps the action's input
+		const _Schema = s.pipe(s.string, s.union([s.literal('a'), s.literal('b')]));
+		expectTypeOf<s.Infer<typeof _Schema>>().toEqualTypeOf<'a' | 'b'>();
+		// @ts-expect-error `null` would reach `min_length`, which reads its `length`
+		s.pipe(s.nullable(s.number), s.union([s.min_length(1)]));
+		s.pipe(
+			s.nullable(s.string),
+			// @ts-expect-error and through a `lazy`
+			s.lazy(() => s.min_length(1))
+		);
+		// @ts-expect-error and at the start of a `pipe` as a step
+		s.pipe(s.nullable(s.string), s.pipe(s.min_length(1), s.max_length(3)));
+		// @ts-expect-error a number would reach `regex`, and the pipe output a string
+		s.pipe(s.number, s.union([s.regex(/a/)]));
+		// @ts-expect-error a schema whose input is wider is refused, as before, though it would match
+		s.pipe(s.string, s.union([s.string, s.number]));
+		// a known limitation: a holder keeps its action's input, so one narrower than
+		// what it is given compiles, and `null` reaches `regex`, which reads it as
+		// `'null'`, and `min_length`, which throws on it
+		const _HeldRegex = s.pipe(s.nullable(s.string), s.union([s.regex(/n/)]));
+		expectTypeOf<s.Infer<typeof _HeldRegex>>().toEqualTypeOf<string>();
+		const _HeldLength = s.pipe(
+			s.nullable(s.string),
+			s.lazy(() => s.min_length<string>(1))
+		);
+		expectTypeOf<s.Infer<typeof _HeldLength>>().toEqualTypeOf<string>();
+		// outside a `pipe` each is typed as before
+		expectTypeOf<s.Infer<typeof s.integer>>().toEqualTypeOf<number>();
+		expectTypeOf<s.InferInput<typeof s.integer>>().toEqualTypeOf<number>();
+		const _regex = s.regex(/a/);
+		expectTypeOf<s.Infer<typeof _regex>>().toEqualTypeOf<string>();
+		const _check = s.check((v: number) => v > 0);
+		expectTypeOf<s.Infer<typeof _check>>().toEqualTypeOf<number>();
+		expectTypeOf<s.InferInput<typeof _check>>().toEqualTypeOf<number>();
+		// and a narrower input is still refused
+		// @ts-expect-error `null` would reach `integer`
+		s.pipe(s.nullable(s.number), s.integer);
+		// @ts-expect-error `undefined` would reach `regex`, which reads it as `'undefined'`
+		s.pipe(s.optional(s.string), s.regex(/a/));
+		s.pipe(
+			s.nullable(s.string),
+			// @ts-expect-error `null` would reach a `check` that says it takes a string
+			s.check((v: string) => v !== '')
+		);
+		// @ts-expect-error a string's step after a number
+		s.pipe(s.number, s.regex(/a/));
+		// @ts-expect-error a number's step after a refinement of a string
+		s.pipe(s.literal('abc'), s.regex(/a/), s.integer);
+		// a step that may be a refinement or not outputs its own type
+		const either = Math.random() < 0.5 ? s.integer : s.transform((v: number) => v * 2);
+		const _Either = s.pipe(s.one_of([1, 2]), either);
+		expectTypeOf<s.Infer<typeof _Either>>().toEqualTypeOf<number>();
+		const either_schema =
+			Math.random() < 0.5
+				? s.integer
+				: s.pipe(
+						s.literal(1),
+						s.transform((): number => 5)
+					);
+		const _EitherSchema = s.pipe(s.one_of([1, 2]), either_schema);
+		expectTypeOf<s.Infer<typeof _EitherSchema>>().toEqualTypeOf<number>();
+		const takes_refinement = (_refinement: s.SchemaRefinement<string>) => {};
+		// @ts-expect-error a `transform` is not a refinement
+		takes_refinement(s.transform((v: string) => v.toUpperCase()));
+	});
+
 	test('optional', () => {
 		const _leaves = {
 			string: s.optional(s.string),

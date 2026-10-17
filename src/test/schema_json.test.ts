@@ -411,8 +411,10 @@ describe('to_schema_json refuses', () => {
 	});
 
 	test('bounds that are not finite numbers', () => {
+		// made apart from the `pipe`, which would type its bound as a number
+		const bigint_bound = s.min_value(1n);
 		refuses(
-			() => s.pipe(s.number, s.min_value(1n) as any),
+			() => s.pipe(s.number, bigint_bound),
 			'cannot serialize `min_value` at /schema/def/1/def: the bound is not a finite number'
 		);
 		refuses(

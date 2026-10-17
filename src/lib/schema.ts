@@ -130,6 +130,13 @@ export interface Schema<
 	) => TOutput;
 	/** Type-only, never set at runtime. */
 	readonly '~types'?: { readonly input: TInput };
+	/**
+	 * Type-only, never set at runtime. `true` on a `SchemaRefinement`, and a
+	 * `boolean` here, so a schema typed as one that isn't, a `transform`
+	 * included, is not assignable to one, and a `pipe` step that may be either
+	 * is typed by its own output.
+	 */
+	readonly '~refines'?: boolean;
 }
 
 /**
@@ -262,14 +269,19 @@ export type InferInput<T extends Schema> = NonNullable<T['~types']>['input'];
 /**
  * A schema that refines or transforms an already-typed value, for use in `pipe`.
  *
- * Every action the library makes is typed as one. Its `~accepts` is checked
- * as a parameter is, so a `pipe` refuses an action whose input is narrower than
- * the output of the step before it: `pipe(nullable(number), min_value(0))` is
- * a type error, as `null` would reach `min_value`. A step typed as a plain
- * `Schema` is checked by its input alone, and so is an action under `lazy` or
- * `union`, or at the start of a `pipe` that is itself a step: those don't give
- * an action back, so `pipe(nullable(string), union([regex(/n/)]))` compiles
- * and matches `null`, which `regex` reads as `'null'`.
+ * Every action the library makes is typed as one. Its `~types` holds an
+ * `action` marker, so a `pipe` checks the step by its `~accepts` alone, as a
+ * parameter is checked: a `pipe` refuses an action whose input is narrower
+ * than the output of the step before it, so
+ * `pipe(nullable(number), min_value(0))` is a type error, as `null` would
+ * reach `min_value`, and takes one whose input is wider, as
+ * `check((v: unknown) => ...)` after `string`. A step that isn't an action is
+ * checked by its input alone, which must be assignable to the output of the
+ * step before it, and that includes a `lazy` or a `union` that holds an
+ * action, or a `pipe` that starts with one: those keep the action's input and
+ * not its `~accepts`, so
+ * `pipe(nullable(string), union([regex(/n/)]))` compiles and matches `null`,
+ * which `regex` reads as `'null'`.
  */
 export interface SchemaAction<
 	TInput,
@@ -279,6 +291,26 @@ export interface SchemaAction<
 > extends Schema<TOutput, TInput, TKind, TDef> {
 	/** Type-only, never set at runtime: what the action takes, read as a parameter. */
 	readonly '~accepts'?: (input: TInput) => void;
+	/** Type-only, never set at runtime: `action` has a `pipe` check the step by `~accepts` alone. */
+	readonly '~types'?: { readonly input: TInput; readonly action: true };
+}
+
+/**
+ * An action whose `run` returns the value it is given or fails, so a `pipe`
+ * types the step's output as the output of the step before it:
+ * `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` alone is a
+ * `number`. Every action the library makes but `transform` is typed as one.
+ * `message`, `meta`, `brand`, and `flavor` give a `SchemaAction` back for one,
+ * so a pipe types a step under them by its own output.
+ */
+export interface SchemaRefinement<
+	TInput,
+	TOutput = TInput,
+	TKind extends string = string,
+	TDef = unknown
+> extends SchemaAction<TInput, TOutput, TKind, TDef> {
+	/** Type-only, never set at runtime: says `run` returns the value it is given. */
+	readonly '~refines'?: true;
 }
 
 export type SchemaEntries = Record<string, Schema>;
@@ -873,10 +905,9 @@ const label_issues = (
  */
 // @__NO_SIDE_EFFECTS__
 export const message: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
-	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
-	// second takes it, unless the message is of type `any`, which fails that pass for both, or the
-	// schema's type is an object literal's, of which that pass doesn't require the optional key
+	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
+	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
+	// an object literal written in the call without a `~types`, which the first takes as an action
 	<TInput, TOutput, TKind extends string, TDef>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		message: string | ((issue: SchemaIssue, value: unknown) => string)
@@ -997,10 +1028,10 @@ export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, nu
  */
 // @__NO_SIDE_EFFECTS__
 export const flavor: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
-	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
-	// second takes it, unless the schema's type is an object literal's, of which that pass doesn't
-	// require the optional key. A `name` of type `any` makes `TName` `any` and still passes it
+	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
+	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
+	// an object literal written in the call without a `~types`, which the first takes as an action.
+	// A `name` of type `any` makes `TName` `any` and still passes it
 	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		name: TName
@@ -1009,7 +1040,7 @@ export const flavor: {
 		schema: T,
 		name: TName
 	): Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
-} = (schema: AnySchema) => schema;
+} = <T extends AnySchema>(schema: T): T => schema;
 
 /**
  * Brands the output type of `schema` with `name`, see `Branded`.
@@ -1021,10 +1052,10 @@ export const flavor: {
  */
 // @__NO_SIDE_EFFECTS__
 export const brand: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
-	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
-	// second takes it, unless the schema's type is an object literal's, of which that pass doesn't
-	// require the optional key. A `name` of type `any` makes `TName` `any` and still passes it
+	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
+	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
+	// an object literal written in the call without a `~types`, which the first takes as an action.
+	// A `name` of type `any` makes `TName` `any` and still passes it
 	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		name: TName
@@ -1033,7 +1064,7 @@ export const brand: {
 		schema: T,
 		name: TName
 	): Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
-} = (schema: AnySchema) => schema;
+} = <T extends AnySchema>(schema: T): T => schema;
 
 //
 // Containers
@@ -1636,26 +1667,66 @@ export type PipeSchema<TOutput, T extends Schema> = Schema<
 	ReadonlyArray<SchemaNode>
 >;
 
+// what a `pipe` takes as a step. An action, whose `~types` says `action`, is
+// checked by its `~accepts` alone, as a parameter is, so one that takes more
+// than it is given is taken. Any other schema is checked by its input, as a
+// property is, so its input must be assignable to `TInput`: a wider one is
+// refused though it would match, and a `union` or a `lazy` that holds an
+// action, or a `pipe` that starts with one, keeps the action's input, so one
+// narrower is taken.
+// `TRefines` is `true` for a `SchemaRefinement`
+interface PipeStep<TInput, TOutput, TRefines> {
+	readonly kind: string;
+	readonly def: unknown;
+	readonly run: Schema<TOutput>['run'];
+	readonly '~types'?:
+		{ readonly input: TInput } | { readonly input: unknown; readonly action: true };
+	readonly '~accepts'?: (input: TInput) => void;
+	readonly '~refines'?: TRefines;
+}
+
+// what a step given `TInput` outputs: `TInput` itself, for a refinement. The
+// fold is of the pipe's output only: each step is given the declared output of
+// the step before it, so in `pipe(one_of([1, 2]), integer, check(...))` the
+// `check` is given a `number` and the pipe outputs `1 | 2`, and a `flavor` of a
+// step after `integer` flavors that `number`
+type PipeStepOutput<TInput, TOutput, TRefines> = [TRefines] extends [true] ? TInput : TOutput;
+
 export interface SchemaPipeFactory {
-	<T extends Schema, O1>(schema: T, a1: SchemaAction<Infer<T>, O1>): PipeSchema<Uninferred<O1>, T>;
-	<T extends Schema, O1, O2>(
+	<T extends Schema, O1, R1>(
 		schema: T,
-		a1: SchemaAction<Infer<T>, O1>,
-		a2: SchemaAction<O1, O2>
-	): PipeSchema<Uninferred<O2>, T>;
-	<T extends Schema, O1, O2, O3>(
+		a1: PipeStep<Infer<T>, O1, R1>
+	): PipeSchema<Uninferred<PipeStepOutput<Infer<T>, O1, R1>>, T>;
+	<T extends Schema, O1, R1, O2, R2>(
 		schema: T,
-		a1: SchemaAction<Infer<T>, O1>,
-		a2: SchemaAction<O1, O2>,
-		a3: SchemaAction<O2, O3>
-	): PipeSchema<Uninferred<O3>, T>;
-	<T extends Schema, O1, O2, O3, O4>(
+		a1: PipeStep<Infer<T>, O1, R1>,
+		a2: PipeStep<O1, O2, R2>
+	): PipeSchema<Uninferred<PipeStepOutput<PipeStepOutput<Infer<T>, O1, R1>, O2, R2>>, T>;
+	<T extends Schema, O1, R1, O2, R2, O3, R3>(
 		schema: T,
-		a1: SchemaAction<Infer<T>, O1>,
-		a2: SchemaAction<O1, O2>,
-		a3: SchemaAction<O2, O3>,
-		a4: SchemaAction<O3, O4>
-	): PipeSchema<Uninferred<O4>, T>;
+		a1: PipeStep<Infer<T>, O1, R1>,
+		a2: PipeStep<O1, O2, R2>,
+		a3: PipeStep<O2, O3, R3>
+	): PipeSchema<
+		Uninferred<PipeStepOutput<PipeStepOutput<PipeStepOutput<Infer<T>, O1, R1>, O2, R2>, O3, R3>>,
+		T
+	>;
+	<T extends Schema, O1, R1, O2, R2, O3, R3, O4, R4>(
+		schema: T,
+		a1: PipeStep<Infer<T>, O1, R1>,
+		a2: PipeStep<O1, O2, R2>,
+		a3: PipeStep<O2, O3, R3>,
+		a4: PipeStep<O3, O4, R4>
+	): PipeSchema<
+		Uninferred<
+			PipeStepOutput<
+				PipeStepOutput<PipeStepOutput<PipeStepOutput<Infer<T>, O1, R1>, O2, R2>, O3, R3>,
+				O4,
+				R4
+			>
+		>,
+		T
+	>;
 }
 
 /**
@@ -1750,7 +1821,7 @@ type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
-): SchemaAction<T, Uninferred<T>, 'min_length', number> => {
+): SchemaRefinement<T, Uninferred<T>, 'min_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_length',
@@ -1765,7 +1836,7 @@ export const min_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
-): SchemaAction<T, Uninferred<T>, 'max_length', number> => {
+): SchemaRefinement<T, Uninferred<T>, 'max_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_length',
@@ -1780,7 +1851,7 @@ export const max_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const min_value = <T extends number | bigint>(
 	min: T extends bigint ? bigint : number
-): SchemaAction<T, Uninferred<T>, 'min_value', number | bigint> => {
+): SchemaRefinement<T, Uninferred<T>, 'min_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_value',
@@ -1793,7 +1864,7 @@ export const min_value = <T extends number | bigint>(
 // @__NO_SIDE_EFFECTS__
 export const max_value = <T extends number | bigint>(
 	max: T extends bigint ? bigint : number
-): SchemaAction<T, Uninferred<T>, 'max_value', number | bigint> => {
+): SchemaRefinement<T, Uninferred<T>, 'max_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_value',
@@ -1806,9 +1877,10 @@ export const max_value = <T extends number | bigint>(
 /**
  * Fails a number that isn't an integer: one with a fraction, and alone `NaN`
  * and the infinities too. An integer past the safe range passes, as it is an
- * integer: `safe_integer` is the stricter test.
+ * integer: `safe_integer` is the stricter test. In a `pipe` its output is
+ * the type of the step before it: `pipe(one_of([1, 2]), integer)` gives `1 | 2`.
  */
-export const integer: SchemaAction<number, number, 'integer', undefined> = {
+export const integer: SchemaRefinement<number, number, 'integer', undefined> = {
 	kind: 'integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isInteger(value) ? value : fail(ctx, 'integer', value))
@@ -1817,22 +1889,26 @@ export const integer: SchemaAction<number, number, 'integer', undefined> = {
 /**
  * Fails a number that isn't a safe integer: an integer from
  * `Number.MIN_SAFE_INTEGER` to `Number.MAX_SAFE_INTEGER`, the range in which
- * every integer is a double of its own.
+ * every integer is a double of its own. In a `pipe` its output is the type of
+ * the step before it, as `integer`'s is.
  */
-export const safe_integer: SchemaAction<number, number, 'safe_integer', undefined> = {
+export const safe_integer: SchemaRefinement<number, number, 'safe_integer', undefined> = {
 	kind: 'safe_integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isSafeInteger(value) ? value : fail(ctx, 'safe_integer', value))
 };
 
 /**
+ * Fails a string that `pattern` doesn't match. In a `pipe` it is typed as the
+ * step before it, so a literal or a brand is kept.
+ *
  * @param pattern - must not have the `g` or `y` flag, whose `lastIndex` state would leak between calls
  */
 // @__NO_SIDE_EFFECTS__
-export const regex = (
+export const regex = <T extends string>(
 	pattern: RegExp,
 	expected: string = String(pattern)
-): SchemaAction<string, string, 'regex', RegExp> => ({
+): SchemaRefinement<T, Uninferred<T>, 'regex', RegExp> => ({
 	kind: 'regex',
 	def: pattern,
 	run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
@@ -1840,12 +1916,16 @@ export const regex = (
 
 /**
  * Fails when `fn` returns `false`.
+ *
+ * In a `pipe` it is typed as the step before it, and `fn` may take more than
+ * that, as `check((v: unknown) => ...)` after `string`, whose output is still
+ * a `string`. Outside a `pipe` it takes what `fn` does.
  */
 // @__NO_SIDE_EFFECTS__
-export const check = <T>(
+export const check = <V extends T, T = V>(
 	fn: (value: T) => boolean,
 	expected: string = 'check'
-): SchemaAction<T, T, 'check', (value: T) => boolean> => ({
+): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean> => ({
 	kind: 'check',
 	def: fn,
 	run: (value, ctx) => (fn(value) ? value : fail(ctx, 'check', value, expected))

@@ -510,22 +510,39 @@ through the input, and refuses instead of guessing:
 
 ## Actions in a pipe
 
-Every action is typed as a `SchemaAction`, which adds a type-only `~accepts`:
-a function of the action's input, compared as a parameter is. A `pipe` step
-checks it against the output of the step before, so an action that takes
-less than it is given is refused: `pipe(nullable(number), min_value(0))` and
-`pipe(optional(string), min_length(1))` don't compile, where `null` would
+Every action is typed as a `SchemaAction`, which adds a type-only `~accepts`,
+a function of the action's input, compared as a parameter is, and an `action`
+marker in its `~types`. A `pipe` step with the marker is checked by its
+`~accepts` alone, against the output of the step before, so an action that
+takes less than it is given is refused: `pipe(nullable(number), min_value(0))`
+and `pipe(optional(string), min_length(1))` don't compile, where `null` would
 pass the first and `undefined` throw in the second. The pipe goes inside,
-`nullable(pipe(number, min_value(0)))`. With the input type, compared the
-other way, an annotated `check` or `transform` takes exactly the type it is
-given. `message` and `meta` give an action back for an action, so one inside
-a `pipe` is still typed from the step before it, and so do `brand` and
-`flavor`. A step typed as a plain `Schema` is checked by its input alone, and
-so is an action under `lazy` or `union`, or at the start of a `pipe` used as
-a step, as those don't give an action back:
+`nullable(pipe(number, min_value(0)))`. One that takes more is taken, as
+`check((v: unknown) => ...)` after `string`. `message` and `meta` give an
+action back for an action, so one inside a `pipe` is still typed from the step
+before it, and so do `brand` and `flavor`.
+
+A step without the marker, a plain `Schema` or one that holds an action, is
+checked by its input alone, which must be assignable to the output of the
+step before: `pipe(string, number)` doesn't compile, and neither does
+`pipe(string, union([string, number]))`, though it would match. A `lazy` or a
+`union` keeps the input of an action it holds and not its `~accepts`, and so
+does a `pipe` used as a step that starts with one, so one narrower than what
+it is given is taken:
 `pipe(nullable(string), union([regex(/n/)]))` compiles, and matches `null`,
-which `regex` reads as `'null'`. The key is never set, so an action keeps the
-one shape.
+which `regex` reads as `'null'`.
+
+Every action but `transform` is a `SchemaRefinement` too, whose type-only
+`~refines` is `true`, where `Schema` declares it a `boolean`: its `run` returns
+the value it is given, so a `pipe` outputs the type of the step before it
+there. `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` is
+a constant typed `number`, and a brand or a literal before `regex` is kept. A
+step that may be a refinement or not, as `flag ? integer : transform(...)`, is
+typed by its own output, and a `transform` is not assignable to a
+`SchemaRefinement`. The fold is of the pipe's output only: each step is given
+the declared output of the step before it, so a `check` after that `integer`
+is given a `number`. The keys are never set, so an action keeps the one
+shape.
 
 ## Actions outside a pipe
 

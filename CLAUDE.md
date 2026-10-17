@@ -271,11 +271,16 @@ Things that are easy to break without a test noticing:
   context held in its closure, and a kept failure adds one to `ctx.fails` as
   `fail` does in probe mode. A memo read anywhere else, or kept outside probe
   mode, gives an answer `union` wouldn't.
-- **`~accepts` exists only in the types.** An action is a `SchemaAction`,
-  whose optional `~accepts` makes a `pipe` refuse it after a wider step; no
-  schema carries the key at runtime. A wrapper that gives back the schema it
-  holds (`message`, `meta`, `brand`, `flavor`) needs an overload for an
-  action first, or an action under it is checked by its input alone.
+- **`~types`, `~accepts`, and `~refines` exist only in the types.** An action
+  is a `SchemaAction`, whose `~types.action` has a `pipe` check it by its
+  optional `~accepts` alone, which refuses it after a wider step; any other
+  step is checked by its `~types.input`. `~refines` is a `boolean` on every
+  `Schema` and `true` on a `SchemaRefinement`, which makes a `pipe` output the
+  type of the step before it. No schema carries any of these keys at runtime.
+  A wrapper that gives back the schema it holds (`message`, `meta`, `brand`,
+  `flavor`) needs an overload for an action first, or an action under it is
+  not typed from the step before it. Only an action whose `run` returns the
+  value it is given is a `SchemaRefinement`.
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and

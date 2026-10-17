@@ -75,10 +75,9 @@ const registry: Registry = /* @__PURE__ */ (() =>
  */
 // @__NO_SIDE_EFFECTS__
 export const meta: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
-	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
-	// second takes it, unless `meta` is of type `any`, which fails that pass for both, or the
-	// schema's type is an object literal's, of which that pass doesn't require the optional key
+	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
+	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
+	// an object literal written in the call without a `~types`, which the first takes as an action
 	<TInput, TOutput, TKind extends string, TDef>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		meta: SchemaMeta
