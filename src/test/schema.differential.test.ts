@@ -5,11 +5,10 @@ import { DIFFERENCES, SIDES, type ConformanceSidesRow } from './conformance_tabl
 import {
 	CONFORMANCE_FLAVORS,
 	CONFORMANCE_LIBS,
-	render_parsed,
-	render_value,
 	type ConformanceFlavor,
 	type ConformanceParsed
-} from './conformance_test_helpers.ts';
+} from './conformance_adapters.ts';
+import { render_parsed, render_value } from './conformance_test_helpers.ts';
 import {
 	classify_differential_case,
 	format_differential_report,

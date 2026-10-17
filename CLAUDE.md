@@ -69,7 +69,19 @@ dev server.
   `get_schema_entries`, `get_schema_fields`, `format_schema_type`, reading a
   schema as data, separate so the core never carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
-  behavior and type inference
+  behavior and type inference: `schema.test.ts` holds the primitives, the
+  wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
+- `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
+  are not objects, copy on write, object keys, `loose_object`'s copy, and
+  `object_with_rest`
+- `src/test/schema.missing_keys.test.ts` - what a missing key does in every
+  schema and flavor
+- `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
+- `src/test/schema.pipe.test.ts` - `pipe` and actions, and `message`
+- `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
+  issues, `format_issue`, and `get_issue_value`
+- `src/test/schema_test_helpers.ts` - `issues_of`, which the six `schema`
+  test files above share
 - `src/test/schema.inference.test.ts` - what every schema and action infers
   in each position that has lost a type before
 - `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
@@ -97,8 +109,10 @@ dev server.
   library does the same, or the difference is in the tables of
   `conformance_tables.ts`: the declared differences, which of the two it goes
   with where they disagree, and what arktype and typebox do, pinned. Its
-  matrix of cases, the adapters, and the comparison are in
-  `conformance_test_helpers.ts`
+  modules, each importing only those before it: `conformance_adapters.ts`,
+  the libraries and what a parse did reduced to a result; `conformance_cases.ts`,
+  the matrix of cases and their inputs; `conformance_test_helpers.ts`, the
+  running and the comparison
 - `src/test/schema.differential.test.ts` - the same rule over schemas and
   inputs generated from fixed seeds, each difference explained by a rule of a
   declared one, with this library's invariants on every case, `memo_union`

@@ -568,8 +568,8 @@ result of `parse`, and of `is`, alone and under a `union` of one option.
 
 It compares the verdict and the paths of the issues, and not their text, so
 the name an issue gives `NaN` and a `union`'s `expected` are held by
-`src/test/schema.test.ts`, and this library moving to the other side of a
-recorded disagreement is only a change in the tallies, which the conformance
+`src/test/schema.issues.test.ts` and `src/test/schema.union.test.ts`, and
+this library moving to the other side of a recorded disagreement is only a change in the tallies, which the conformance
 test's `SIDES` fails on.
 
 `gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a

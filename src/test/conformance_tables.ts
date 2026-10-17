@@ -14,7 +14,7 @@
  * @module
  */
 
-import { CONFORMANCE_FLAVORS, type InformationalLibName } from './conformance_test_helpers.ts';
+import { CONFORMANCE_FLAVORS, type InformationalLibName } from './conformance_adapters.ts';
 
 export interface ConformanceDifference {
 	/** What this library does, in a line. */

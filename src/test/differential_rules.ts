@@ -7,12 +7,12 @@
  * @module
  */
 
+import type { ConformanceParsed } from './conformance_adapters.ts';
 import {
 	render_parsed,
 	render_shape,
 	render_value,
-	render_whole,
-	type ConformanceParsed
+	render_whole
 } from './conformance_test_helpers.ts';
 import type { ConformanceDifferencesRow } from './conformance_tables.ts';
 import {

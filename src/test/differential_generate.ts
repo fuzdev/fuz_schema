@@ -10,15 +10,13 @@
 import {
 	CONFORMANCE_FLAVORS,
 	CONFORMANCE_LIBS,
-	ConformanceList,
-	ConformancePoint,
-	render_parsed,
-	render_value,
 	type ConformanceFlavor,
 	type ConformanceLib,
 	type ConformanceLibName,
 	type ConformanceParsed
-} from './conformance_test_helpers.ts';
+} from './conformance_adapters.ts';
+import { ConformanceList, ConformancePoint } from './conformance_cases.ts';
+import { render_parsed, render_value } from './conformance_test_helpers.ts';
 import type { SeededRng } from './seeded_rng.ts';
 
 //
@@ -495,7 +493,7 @@ export type DifferentialInput =
 			frozen: boolean;
 	  };
 
-/** The symbol key an object input is given, `SYMBOL` in `conformance_test_helpers.ts`. */
+/** The symbol key an object input is given, `SYMBOL` in `conformance_cases.ts`. */
 export const DIFFERENTIAL_SYMBOL = Symbol.for('sym');
 
 /** An input of the value `v`. */
@@ -908,7 +906,7 @@ export const source_spec = (spec: DifferentialSpec): string => {
 
 /**
  * An input as the source of a matrix case's `input`, with the names that
- * `conformance_test_helpers.ts` has in scope: `with_hidden`, `SYMBOL`,
+ * `conformance_cases.ts` has in scope: `with_hidden`, `SYMBOL`,
  * `ConformancePoint`, and `ConformanceList`.
  */
 export const source_input = (input: DifferentialInput): string => {

@@ -45,12 +45,10 @@
 import * as s from '#lib/schema.ts';
 import {
 	CONFORMANCE_LIBS,
-	render_parsed,
-	render_value,
-	render_whole,
 	type ConformanceLibName,
 	type ConformanceParsed
-} from './conformance_test_helpers.ts';
+} from './conformance_adapters.ts';
+import { render_parsed, render_value, render_whole } from './conformance_test_helpers.ts';
 import type { ConformanceSidesRow } from './conformance_tables.ts';
 import {
 	build_spec,

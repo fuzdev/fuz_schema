@@ -609,8 +609,8 @@ of `unknown` output, so it is typed by what it reads: a `check` or
 `object({a: check((v) => v.foo)})` doesn't compile, a length action takes `{length: number}`, and a value action
 `number | bigint`. An action goes in a `pipe`, or a `check` or `transform`
 annotates its parameter. `src/test/schema.inference.test.ts` asserts what
-every schema and action infers in each position, and `src/test/schema.test.ts`
-pins the runtime behavior above.
+every schema and action infers in each position, and the
+`src/test/schema.*.test.ts` files pin the runtime behavior above.
 
 ## Nominal types
 

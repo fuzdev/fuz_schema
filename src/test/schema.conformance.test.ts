@@ -8,8 +8,8 @@ import { Type as T } from 'typebox';
 import { Value } from 'typebox/value';
 
 import * as s from '#lib/schema.ts';
+import { ConformancePoint } from './conformance_cases.ts';
 import {
-	ConformancePoint,
 	is_same_result,
 	run_conformance,
 	type ConformanceRow
@@ -25,7 +25,7 @@ import {
 // this library does the same, unless the difference is declared in the
 // tables of `conformance_tables.ts` and in `docs/design.md`. Where the two
 // disagree, which one this library goes with is recorded there. The matrix of
-// cases is in `conformance_test_helpers.ts`.
+// cases is in `conformance_cases.ts`.
 //
 // One difference is in no table: this library returns its input where nothing
 // in it changed, and the others always copy. `is_same_result` allows for it,
