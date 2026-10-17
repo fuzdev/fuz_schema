@@ -16,9 +16,11 @@
  *   comes back as the same object. Callers must not assume a fresh copy, and
  *   a changed subtree still shares its unchanged siblings with the input.
  *   Changed is as `Object.is` tells: a `0` made `-0` is, a `NaN` kept is not.
- * - Issue paths are built on unwind: a container prefixes its key onto the
- *   issues its child added, so valid input never touches a path. Each prefix
- *   is a new array, so a path is replaced as it grows and never changed.
+ * - Issue paths are built on unwind: a container adds its key to the
+ *   issues its child added, so valid input never touches a path. A key is
+ *   pushed, so a path is built innermost first and reversed once as `parse`
+ *   or `parse_or_throw` returns it, and a failing parse takes time in
+ *   proportion to the paths it returns.
  * - Schemas with no options are constants (`string`, not `string()`).
  * - Messages are derived from structured issues by `format_issue`, which is
  *   only bundled when used.
@@ -69,6 +71,8 @@ export interface SchemaContext {
 	/**
 	 * One per failure, except in probe mode where it stays as it was.
 	 * `undefined` until the first, so a parse with no failure allocates none.
+	 * While the parse runs each path is innermost first: a container pushes its
+	 * key, and `parse` and `parse_or_throw` reverse each path as they return it.
 	 */
 	issues: Array<SchemaIssue> | undefined;
 	/**
@@ -427,13 +431,15 @@ export const fail = (
 	return value;
 };
 
-// prefixes `key` onto the path of every issue added since `from`,
-// callers must not be in probe mode. The path is a new array each time:
-// `unshift` is a call the engine doesn't inline, and its first on an empty
-// array grows it to hold many. A path past one key pays for that in bytes,
-// an array a level
+// adds `key` to the path of every issue added since `from`, which is built
+// innermost first and reversed by `parse` and `parse_or_throw` as they return
+// it. Callers must not be in probe mode. A prefix that copied the path, or
+// `unshift`, moves every key already there, which on a deep input with many
+// issues is time in the cube of its size. The first key is an array of one:
+// a push onto an empty array grows it to hold many
 const prefix_path = (issues: Array<SchemaIssue>, from: number, key: PropertyKey): void => {
-	for (let i = from; i < issues.length; i++) issues[i]!.path = [key, ...issues[i]!.path];
+	for (let i = from; i < issues.length; i++)
+		issues[i]!.path.length ? issues[i]!.path.push(key) : (issues[i]!.path = [key]);
 };
 
 // like `fail` for an issue about `key` of `value`, which is read only when an
@@ -461,7 +467,10 @@ const not_object = (value: unknown): boolean =>
 export const parse = <T extends Schema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
 	const output = schema.run(value, ctx) as Infer<T>;
-	return ctx.fails ? { ok: false, issues: ctx.issues! } : { ok: true, value: output };
+	if (!ctx.fails) return { ok: true, value: output };
+	// each path was built innermost first, and a path of one key or none is its own reverse
+	for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
+	return { ok: false, issues: ctx.issues! };
 };
 
 /**
@@ -472,7 +481,10 @@ export const parse = <T extends Schema>(schema: T, value: unknown): SchemaResult
 export const parse_or_throw = <T extends Schema>(schema: T, value: unknown): Infer<T> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
 	const output = schema.run(value, ctx) as Infer<T>;
-	if (ctx.fails) throw new SchemaError(ctx.issues!);
+	if (ctx.fails) {
+		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
+		throw new SchemaError(ctx.issues!);
+	}
 	return output;
 };
 
@@ -880,7 +892,12 @@ const label_issues = (
 ): void => {
 	for (let i = count; i < issues.length; i++) {
 		const issue = issues[i]!;
-		issue.message ??= typeof message === 'string' ? message : message(issue, value);
+		// a function is handed a copy whose path is outermost first, as `parse`
+		// returns it, and which no later key is added to
+		issue.message ??=
+			typeof message === 'string'
+				? message
+				: message({ ...issue, path: issue.path.toReversed() }, value);
 	}
 };
 
@@ -892,8 +909,8 @@ const label_issues = (
  * as an object entry it hands `schema` the object and the key when `schema`
  * takes them, so a key `schema` needs is still needed under a `message`.
  *
- * A function is called with the issue and with the value `schema` was given
- * to validate. Around an action that is the action's input, so the output of
+ * A function is called with a copy of the issue and with the value `schema`
+ * was given to validate. Around an action that is the action's input, so the output of
  * the pipe's steps before it. Around a whole `pipe` it is the pipe's input,
  * whichever step failed. For a child's issue it is still the value `schema`
  * was given, and the issue's `path` is relative to it, so

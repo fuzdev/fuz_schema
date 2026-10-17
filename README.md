@@ -167,6 +167,12 @@ Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it 
 and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
 and an object the input holds twice gets one output object in both places.
 
+A schema runs its children by calling them, so input nested past the engine's stack makes
+`parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a `RangeError`:
+on Node's default stack a plain recursive object schema can throw from about 1400 levels
+before the engine has optimized it, and `JSON.parse` reads far deeper.
+On untrusted JSON that can nest without bound, catch it or bound the depth first.
+
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
 `is` answers yes or no without building issues.

@@ -812,8 +812,10 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'message_labels_only_own',
 		edits: [
 			{
-				find: `		issue.message ??= typeof message === 'string'`,
-				replace: `		if (!issue.path.length) issue.message ??= typeof message === 'string'`
+				find: `		issue.message ??=
+			typeof message === 'string'`,
+				replace: `		if (!issue.path.length) issue.message ??=
+			typeof message === 'string'`
 			}
 		]
 	},
@@ -821,8 +823,10 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'message_outer_wins',
 		edits: [
 			{
-				find: `		issue.message ??= typeof message === 'string'`,
-				replace: `		issue.message = typeof message === 'string'`
+				find: `		issue.message ??=
+			typeof message === 'string'`,
+				replace: `		issue.message =
+			typeof message === 'string'`
 			}
 		]
 	},
@@ -839,8 +843,107 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'message_value_at_path',
 		edits: [
 			{
-				find: `message(issue, value);`,
-				replace: `message(issue, issue.path.reduce((v: any, k) => v?.[k], value));`
+				find: `message({ ...issue, path: issue.path.toReversed() }, value);`,
+				replace: `message({ ...issue, path: issue.path.toReversed() }, issue.path.toReversed().reduce((v: any, k) => v?.[k], value));`
+			}
+		]
+	},
+	{
+		name: 'message_path_innermost_first',
+		edits: [
+			{
+				find: `message({ ...issue, path: issue.path.toReversed() }, value);`,
+				replace: `message(issue, value);`
+			}
+		]
+	},
+	{
+		name: 'message_reverses_path_in_place',
+		edits: [
+			{
+				find: `message({ ...issue, path: issue.path.toReversed() }, value);`,
+				replace: `message({ ...issue, path: issue.path.reverse() }, value);`
+			}
+		]
+	},
+	{
+		name: 'parse_no_path_reverse',
+		edits: [
+			{
+				find: `	// each path was built innermost first, and a path of one key or none is its own reverse
+	for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'parse_reverses_first_path_only',
+		edits: [
+			{
+				find: `	// each path was built innermost first, and a path of one key or none is its own reverse
+	for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();`,
+				replace: `	ctx.issues![0]!.path.reverse();`
+			}
+		]
+	},
+	{
+		name: 'parse_or_throw_no_path_reverse',
+		edits: [
+			{
+				find: `		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
+		throw new SchemaError(ctx.issues!);`,
+				replace: `		throw new SchemaError(ctx.issues!);`
+			}
+		]
+	},
+	{
+		name: 'parse_or_throw_formats_before_reverse',
+		edits: [
+			{
+				find: `		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
+		throw new SchemaError(ctx.issues!);`,
+				replace: `		const error = new SchemaError(ctx.issues!);
+		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
+		throw error;`
+			}
+		]
+	},
+	{
+		name: 'standard_schema_reverses_path_again',
+		file: 'src/lib/standard_schema.ts',
+		edits: [
+			{
+				find: `							path: issue.path`,
+				replace: `							path: issue.path.toReversed()`
+			}
+		]
+	},
+	{
+		name: 'prefix_path_drops_deeper_keys',
+		edits: [
+			{
+				find: `		issues[i]!.path.length ? issues[i]!.path.push(key) : (issues[i]!.path = [key]);`,
+				replace: `		issues[i]!.path = [key];`
+			}
+		]
+	},
+	{
+		name: 'prefix_path_pushes_first_key',
+		edits: [
+			{
+				find: `		issues[i]!.path.length ? issues[i]!.path.push(key) : (issues[i]!.path = [key]);`,
+				replace: `		issues[i]!.path.push(key);`
+			}
+		],
+		survives:
+			'the same keys in the same order: only the capacity of a one-key path differs, which the allocation benchmark and the grade see and no test can'
+	},
+	{
+		name: 'prefix_path_prepends',
+		edits: [
+			{
+				find: `		issues[i]!.path.length ? issues[i]!.path.push(key) : (issues[i]!.path = [key]);`,
+				replace: `		issues[i]!.path.unshift(key);`
 			}
 		]
 	},

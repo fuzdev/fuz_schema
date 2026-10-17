@@ -1353,6 +1353,24 @@ const scale: CaseGroup = (s) => {
 			to_json(to_nested_input(64)),
 			'identity'
 		),
+		// a hundred issues at the bottom, each path prefixed at every level
+		to_case(
+			s,
+			'scale/nested_depth_64_100_bad/invalid',
+			((): schema_lib.AnySchema => {
+				const to_spine = (depth: number): schema_lib.AnySchema =>
+					depth === 0 ? s.array(s.number) : to_object(s)({ next: to_spine(depth - 1) });
+				return to_spine(64);
+			})(),
+			to_json(
+				((): unknown => {
+					let value: unknown = range(100).map(String);
+					for (let i = 0; i < 64; i++) value = { next: value };
+					return value;
+				})()
+			),
+			'issues'
+		),
 		// options tried and missed before the one that matches
 		to_case(
 			s,

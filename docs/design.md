@@ -69,16 +69,23 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 
 - **Failures are counted** in `ctx.fails`. A container knows a child failed
   when the count grew across the call.
-- **Paths are built on unwind.** A container prefixes its key onto the issues
-  its child added. Valid input never touches a path.
-- **A prefix is a new array**, the key and then the path so far, which
-  replaces the issue's `path`. `unshift` on the one array is a call the
-  engine doesn't inline, and its first on an empty array grows it to hold
-  many keys. Given up: an issue allocates an array a level, and the engine
-  gives each one past the first room to grow. So a path of one key takes
-  fewer bytes than the grown array did, and a deeper one more, by about that
-  array again a level. It measured faster at every depth tried. The other
-  ways to build a path are in [declined.md](declined.md#issue-paths).
+- **Paths are built on unwind.** A container adds its key to the issues its
+  child added. Valid input never touches a path.
+- **A key is pushed**, so a path is built innermost first, and `parse` and
+  `parse_or_throw` reverse each once as they return it. The first key is an
+  array of one, as a push onto an empty array grows it to hold many. A prefix
+  that copies the path, or `unshift`, moves every key already there at every
+  level: on a deep input with many issues at the bottom that is time in the
+  cube of the input's size, see [declined.md](declined.md#issue-paths). A
+  `run` written outside the library that reads `ctx.issues` sees paths
+  innermost first, and one that adds a key to them pushes it.
+- **A child is run by a call**, so the input's depth is the engine's stack:
+  `parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a
+  `RangeError` on input nested past it, which for a plain recursive object
+  schema on Node's default stack is from about 1400 levels before the engine
+  has optimized it, and about seven times that after. `JSON.parse` reads input
+  far deeper. A throw accepts nothing, and a consumer that takes untrusted
+  JSON nested without bound catches it or bounds the depth first.
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
 - **`ctx.issues` is `undefined` until the first failure** outside probe mode,
@@ -471,9 +478,10 @@ is only bundled when used. There is no message registry.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
-  parse unwinds it is replaced, not changed, so a `message` function is handed
-  the path below the schema it wraps, and one that keeps that array keeps it
-  without the keys above.
+  parse unwinds it is innermost first and grows, so a `message` function is
+  handed a copy of the issue whose path is the one below the schema it wraps,
+  outermost first, and one that keeps that array keeps it without the keys
+  above.
 - **A `missing_key` issue is the entry's**, where an `unknown_key` is the
   object's: it is reported by the `unknown`, the `literal(undefined)`, or the
   `one_of` that needs the key. It is `{kind: 'missing_key', expected: 'a
@@ -973,15 +981,15 @@ API, or in the names:
   both give two. Verdicts, outputs as values, and issues are the union's,
   which the matrix holds. By design: it is opt-in, for a recursive union
   that is otherwise exponential.
-- A `message` function is handed the issue and the value the wrapped schema
-  was given, with the issue's path relative to that value. Valibot's is
-  handed the value that failed as `issue.input`, with no path yet. Zod's
-  `error` is handed the value that failed as `input`, with the whole path,
-  and is called for its own schema's issues and checks, not a child's. So
-  for a child's issue Valibot hands the child and Zod's is not called, and
-  for a step that fails both hand that step's input, where this library
-  hands the wrapped value, from which `get_issue_value(issue, value)` finds
-  the child's. By design: an issue holds no value.
+- A `message` function is handed a copy of the issue and the value the
+  wrapped schema was given, with the issue's path relative to that value.
+  Valibot's is handed the value that failed as `issue.input`, with no path
+  yet. Zod's `error` is handed the value that failed as `input`, with the
+  whole path, and is called for its own schema's issues and checks, not a
+  child's. So for a child's issue Valibot hands the child and Zod's is not
+  called, and for a step that fails both hand that step's input, where this
+  library hands the wrapped value, from which `get_issue_value(issue, value)`
+  finds the child's. By design: an issue holds no value.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.

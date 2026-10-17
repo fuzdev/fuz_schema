@@ -20,19 +20,19 @@ they were tried: when one is reopened and taken, it goes.
 
 ## Issue paths
 
-### A path built in place by a loop
+### A prefix that copies the path
 
-A prefix that changes the path in place, by a loop of its own, with `[key]`
-for the first key.
+`[key, ...path]` at every level, which keeps the path outermost first while
+the parse runs.
 
-- **Gave**: equal or fastest at every depth, and flat bytes: 104 for a
-  path of one key and about 224 for any deeper one.
-- **Cost**: +31 gzip on the core.
-- **Why**: core bytes, for a return on the failing path alone. The spread
-  `[key, ...path]` was taken at +0, and allocates about a grown array more a
-  level.
-- **Reopens**: failing parses of deep paths that matter to a consumer, at a
-  return rule 4 accepts.
+- **Gave**: no reversal, and 31 gzip fewer on the core than a push.
+- **Cost**: every level copies every path below it, so a deep input with
+  many issues at the bottom takes time in the cube of its size: a spine 800
+  objects deep with 8000 failing items, 27 KB of JSON, took 26 s, against
+  0.2 s with a push. `unshift` moves the keys in place and is cubic too, at
+  3 to 4 s there.
+- **Why**: denial of service on data-shaped input.
+- **Reopens**: nothing that keeps the copy per level.
 
 ### A path as an array of exact size
 
@@ -41,13 +41,13 @@ for the first key.
 - **Gave**: fewer bytes at depth.
 - **Cost**: about 5% slower at one key, and +32 gzip on the core.
 - **Why**: slower at one key, and core bytes.
-- **Reopens**: the same as the loop above, which it would have to beat.
+- **Reopens**: nothing: it copies the path at every level, as the spread above does.
 
 ### `toSpliced` and `concat`
 
 - **Gave**: nothing. Each is a call to a builtin, as slow as the `unshift`
   the spread replaced, or slower.
-- **Reopens**: an engine that inlines them.
+- **Reopens**: nothing: each copies the path at every level, as the spread above does.
 
 ## Object loops
 

@@ -5786,6 +5786,68 @@ describe('parse_or_throw', () => {
 describe('issues', () => {
 	const SECRET = 'hunter2-do-not-log';
 
+	test('a path is outermost first at any depth, from parse and parse_or_throw', () => {
+		const Node: s.AnySchema = s.lazy(() =>
+			s.object({ c: s.optional(Node), xs: s.array(s.string) })
+		);
+		let input: unknown = { xs: [1, 'a', 2] };
+		for (let i = 0; i < 50; i++) input = { c: input, xs: [] };
+		const deep = Array.from({ length: 50 }, () => 'c');
+		const expected = [
+			[...deep, 'xs', 0],
+			[...deep, 'xs', 2]
+		];
+		assert.deepEqual(
+			issues_of(Node, input).map((i) => i.path),
+			expected
+		);
+		try {
+			s.parse_or_throw(Node, input);
+			assert.fail('expected a throw');
+		} catch (error) {
+			assert(error instanceof s.SchemaError);
+			assert.deepEqual(
+				error.issues.map((i) => i.path),
+				expected
+			);
+			// the message is written from the paths as they are returned
+			assert.strictEqual(error.message, error.issues.map(s.format_issue).join('\n'));
+		}
+		// a function under the spine is handed the path below it
+		const seen: Array<Array<PropertyKey>> = [];
+		const Labeled = s.object({
+			c: s.message(Node, (issue) => {
+				seen.push(issue.path);
+				return 'x';
+			})
+		});
+		const labeled = issues_of(Labeled, { c: input });
+		assert.deepEqual(seen, expected);
+		assert.deepEqual(
+			labeled.map((i) => i.path),
+			expected.map((path) => ['c', ...path])
+		);
+	});
+
+	test('a message function is handed a copy of the five fields, which it cannot change', () => {
+		const handed: Array<s.SchemaIssue> = [];
+		const Labeled = s.object({
+			a: s.message(s.object({ b: s.array(s.string) }), (issue) => {
+				handed.push(issue);
+				issue.path.push('x');
+				issue.expected = 'changed';
+				return 'm';
+			})
+		});
+		const issues = issues_of(Labeled, { a: { b: ['ok', 1] } });
+		assert.strictEqual(handed.length, 1);
+		assert.deepEqual(Object.keys(handed[0]!), ['kind', 'expected', 'received', 'path', 'message']);
+		assert.notStrictEqual(handed[0], issues[0]);
+		assert.deepEqual(issues, [
+			{ kind: 'string', expected: 'string', received: 'number', path: ['a', 'b', 1], message: 'm' }
+		]);
+	});
+
 	// every value reachable through own properties, for checking what a result holds
 	const reachable = (root: unknown): Set<unknown> => {
 		const seen: Set<unknown> = new Set();
