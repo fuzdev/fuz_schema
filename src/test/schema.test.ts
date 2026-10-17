@@ -5786,6 +5786,155 @@ describe('parse_or_throw', () => {
 describe('issues', () => {
 	const SECRET = 'hunter2-do-not-log';
 
+	test('reports the first hundred failures, and counts the rest', () => {
+		const result = s.parse(s.object({ a: s.array(s.string), b: s.string }), {
+			a: Array.from({ length: 150 }, (_, i) => i),
+			b: 1
+		});
+		assert(!result.ok);
+		assert.strictEqual(result.issues.length, 100);
+		assert.deepEqual(result.issues[99]!.path, ['a', 99]);
+		// exactly a hundred failures build a hundred issues
+		assert.strictEqual(issues_of(s.array(s.string), Array(100).fill(1)).length, 100);
+		assert.strictEqual(issues_of(s.array(s.string), Array(99).fill(1)).length, 99);
+		// the count goes on past the issues
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+		s.array(s.string).run(Array(150).fill(1), ctx);
+		assert.strictEqual(ctx.fails, 150);
+		assert.strictEqual(ctx.issues!.length, 100);
+		// in probe mode every failure is counted and none is built
+		const probe: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+		for (let i = 0; i < 150; i++) s.fail(probe, 'x', 1);
+		assert.strictEqual(probe.fails, 150);
+		assert.strictEqual(probe.issues, undefined);
+		assert(!s.is(s.array(s.string), Array(200).fill(1)));
+		assert(s.is(s.array(s.string), Array(200).fill('a')));
+		// a Standard Schema's issues are the same hundred
+		const standard = to_standard_schema(s.array(s.string))['~standard'].validate(
+			Array(150).fill(1)
+		);
+		assert('issues' in standard && standard.issues);
+		assert.strictEqual(standard.issues.length, 100);
+	});
+
+	test('a child that crosses the hundredth issue has its key on the issues it built', () => {
+		// each item fails twice at depth 2, so item 49 builds the 99th and the
+		// 100th, item 50 none
+		const Item = s.object({ x: s.object({ p: s.string, q: s.string }) });
+		const input = Array.from({ length: 60 }, () => ({ x: { p: 1, q: 1 } }));
+		const issues = issues_of(s.object({ items: s.array(Item) }), { items: input });
+		assert.strictEqual(issues.length, 100);
+		assert.deepEqual(issues[98]!.path, ['items', 49, 'x', 'p']);
+		assert.deepEqual(issues[99]!.path, ['items', 49, 'x', 'q']);
+		// one item straddles the cap: three issues each, the 34th builds one
+		const Three = s.object({ p: s.string, q: s.string, r: s.string });
+		const straddle = issues_of(s.array(Three), Array(40).fill({ p: 1, q: 1, r: 1 }));
+		assert.strictEqual(straddle.length, 100);
+		assert.deepEqual(straddle[99]!.path, [33, 'p']);
+		assert.deepEqual(straddle[98]!.path, [32, 'r']);
+		// an unknown key past the cap builds nothing, and one before it has its key
+		const unknown = issues_of(s.object({ a: s.array(s.string) }), {
+			a: Array(99).fill(1),
+			b: 1,
+			c: 1
+		});
+		assert.strictEqual(unknown.length, 100);
+		assert.deepEqual(unknown[99]!.path, ['b']);
+	});
+
+	test('a union past the hundredth failure still tells a match from a miss', () => {
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
+		s.array(s.string).run(Array(150).fill(1), ctx);
+		const union = s.union([s.string, s.object({ k: s.string })]);
+		union.run({ k: 'x' }, ctx);
+		assert.strictEqual(ctx.fails, 150);
+		union.run({ k: 1 }, ctx);
+		assert.strictEqual(ctx.fails, 151);
+		assert.strictEqual(ctx.probe, false);
+		assert.strictEqual(ctx.issues!.length, 100);
+	});
+
+	test('past the hundredth issue a message, a union, and parse_or_throw see only the issues built', () => {
+		const seen: Array<Array<PropertyKey>> = [];
+		const Labeled = s.message(s.object({ p: s.string, q: s.string }), (issue) => {
+			seen.push(issue.path);
+			return 'm';
+		});
+		const S = s.object({
+			a: s.array(s.string),
+			b: Labeled,
+			c: s.union([s.string, s.number]),
+			d: s.memo_union([s.array(s.string), s.string])
+		});
+		const input = { a: Array(99).fill(1), b: { p: 1, q: 1 }, c: true, d: [1] };
+		const issues = issues_of(S, input);
+		assert.strictEqual(issues.length, 100);
+		// the message labeled the one of its two issues that was built
+		assert.deepEqual(seen, [['p']]);
+		assert.deepEqual(issues[99], {
+			kind: 'string',
+			expected: 'string',
+			received: 'number',
+			path: ['b', 'p'],
+			message: 'm'
+		});
+		const matched = s.parse(s.object({ a: s.array(s.string), c: s.union([s.string, s.number]) }), {
+			a: Array(120).fill(1),
+			c: 1
+		});
+		assert(!matched.ok);
+		assert.strictEqual(matched.issues.length, 100);
+		const unmatched = s.parse(
+			s.object({ a: s.array(s.string), c: s.union([s.string, s.number]) }),
+			{ a: Array(120).fill(1), c: true }
+		);
+		assert(!unmatched.ok);
+		assert.strictEqual(unmatched.issues.length, 100);
+		try {
+			s.parse_or_throw(S, input);
+			assert.fail('expected a throw');
+		} catch (error) {
+			assert(error instanceof s.SchemaError);
+			assert.strictEqual(error.issues.length, 100);
+			assert.deepEqual(error.issues[99]!.path, ['b', 'p']);
+		}
+	});
+
+	test("a SchemaError's message lists the first ten issues and counts the rest", () => {
+		const message_of = (count: number): string => {
+			try {
+				s.parse_or_throw(s.array(s.string), Array(count).fill(1));
+			} catch (error) {
+				assert(error instanceof s.SchemaError);
+				return error.message;
+			}
+			throw Error('expected a throw');
+		};
+		const lines = (count: number): Array<string> =>
+			Array.from({ length: count }, (_, i) => `${i}: expected string, received number`);
+		assert.deepEqual(message_of(9).split('\n'), lines(9));
+		assert.deepEqual(message_of(10).split('\n'), lines(10));
+		assert.deepEqual(message_of(11).split('\n'), [...lines(10), 'and 1 more']);
+		// the count is of the issues built
+		assert.deepEqual(message_of(150).split('\n'), [...lines(10), 'and 90 more']);
+		// a long key many issues share is in ten lines, not one per issue
+		const key = 'k'.repeat(10_000);
+		try {
+			s.parse_or_throw(s.record(s.array(s.string)), { [key]: Array(100).fill(1) });
+			assert.fail('expected a throw');
+		} catch (error) {
+			assert(error instanceof s.SchemaError);
+			assert.strictEqual(error.issues.length, 100);
+			assert.isBelow(error.message.length, 11 * (key.length + 40));
+			assert.strictEqual(error.message.split('\n').length, 11);
+		}
+		// one issue is its line alone
+		assert.strictEqual(
+			new s.SchemaError(issues_of(s.string, 1)).message,
+			'expected string, received number'
+		);
+	});
+
 	test('a path is outermost first at any depth, from parse and parse_or_throw', () => {
 		const Node: s.AnySchema = s.lazy(() =>
 			s.object({ c: s.optional(Node), xs: s.array(s.string) })

@@ -222,10 +222,13 @@ Things that are easy to break without a test noticing:
   a row for it in the kind table of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
-- **Outside probe mode `ctx.fails === ctx.issues.length`.** `issues` is
-  `undefined` until the first failure, when `fails` is `0`. Containers use the
-  count as an index into `issues`. Report failure only through `fail`, and
-  restore `fails` after probing.
+- **Outside probe mode `ctx.issues.length` is `Math.min(ctx.fails, 100)`.**
+  Past the hundredth failure `fail` counts and builds no issue, a cap that is
+  fixed and silent, and `MAX_ISSUES` in the Rust crate. `issues` is
+  `undefined` until the first failure, when `fails` is `0`. Containers use
+  the count as an index into `issues`, so one taken past the cap reaches no
+  issue. Report failure only through `fail`, and restore `fails` after
+  probing.
 - **In probe mode nothing touches `ctx.issues`**, and containers return at
   their first failed child.
 - **The input is never mutated**, `object` never accepts an input with unknown

@@ -825,7 +825,8 @@ export const check_differential_invariants = (
 	}
 	const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: false };
 	schema.run(value, ctx);
-	if (ctx.fails !== (ctx.issues?.length ?? 0)) {
+	// past the hundredth a failure builds no issue
+	if (Math.min(ctx.fails, 100) !== (ctx.issues?.length ?? 0)) {
 		problems.push(`ctx.fails is not the count of issues: ${ctx.fails}, ${ctx.issues?.length ?? 0}`);
 	}
 	const probe: s.SchemaContext = { issues: undefined, fails: 0, probe: true };

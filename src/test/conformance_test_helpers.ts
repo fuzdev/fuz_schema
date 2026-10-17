@@ -1829,6 +1829,11 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 
 	// arrays
 	{ name: 'array of strings', schema: (l) => l.array(l.string), input: () => ['x', 'y'] },
+	{
+		name: 'array of strings, a hundred and one items wrong',
+		schema: (l) => l.array(l.string),
+		input: () => Array(101).fill(1)
+	},
 	// eslint-disable-next-line no-sparse-arrays
 	{ name: 'array of strings, a hole', schema: (l) => l.array(l.string), input: () => ['x', , 'y'] },
 	{

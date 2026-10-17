@@ -252,6 +252,8 @@ export interface JsonFixtureContract {
 	max_nesting: number;
 	/** The deepest that arrays and objects can be nested in a text the crate reads. */
 	max_depth: number;
+	/** The most issues a parse reports. */
+	max_issues: number;
 	/** The names both sides refuse of an entry, and of the key of a `variant`. */
 	object_prototype_keys: ReadonlyArray<string>;
 	/** The kinds neither side carries across. */
@@ -260,9 +262,21 @@ export interface JsonFixtureContract {
 	divergences: ReadonlyArray<JsonDivergence>;
 }
 
+// the cap `fail` holds a parse's issues to, which the library doesn't export,
+// read from what a parse of an input that fails more often returns
+const read_max_issues = (): number => {
+	const failures = 10_000;
+	const result = s.parse(s.array(s.string), Array(failures).fill(1));
+	if (result.ok || result.issues.length === failures) {
+		throw Error(`a parse of ${failures} failures reported every one, or none`);
+	}
+	return result.issues.length;
+};
+
 export const generate_json_fixture_contract = (): JsonFixtureContract => ({
 	max_nesting: SCHEMA_JSON_MAX_NESTING,
 	max_depth: SCHEMA_JSON_MAX_DEPTH,
+	max_issues: read_max_issues(),
 	object_prototype_keys: SCHEMA_JSON_REFUSED_KEYS,
 	unsupported_kinds: SCHEMA_JSON_UNSUPPORTED_KINDS,
 	divergences: JSON_DIVERGENCES

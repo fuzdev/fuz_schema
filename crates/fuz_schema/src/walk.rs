@@ -8,7 +8,8 @@
 //!
 //! Failures go to a `Report`. `Probe` only wants the verdict, and evaluation
 //! returns at the first failure. `Collect` goes on and keeps each failure as
-//! a `SchemaIssue`, the one the TypeScript library's `parse` reports, in its order.
+//! a `SchemaIssue`, the one the TypeScript library's `parse` reports, in its
+//! order, up to `MAX_ISSUES` of them.
 //! A container that had a failure under it prefixes its key onto the paths of
 //! those issues, as the library does, so a value that matches builds no path.
 //!
@@ -21,7 +22,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::error::JsonError;
-use crate::issue::{PathSegment, Received, SchemaIssue, SchemaIssueKind};
+use crate::issue::{MAX_ISSUES, PathSegment, Received, SchemaIssue, SchemaIssueKind};
 use crate::js;
 use crate::json::{Json, Value};
 use crate::schema::{
@@ -176,7 +177,7 @@ impl Memo {
     }
 }
 
-/// The report that keeps every failure as an issue.
+/// The report that keeps each failure as an issue, the first `MAX_ISSUES`.
 #[derive(Debug)]
 pub struct Collect<'a> {
     schema: &'a Schema,
@@ -211,6 +212,11 @@ impl Report for Collect<'_> {
     const PROBE: bool = false;
 
     fn fail(&mut self, node: NodeId, failure: Failure, received: Received) {
+        // past the cap a failure builds no issue, as in the library. The
+        // count stays at the cap, so a container's prefix from it reaches none
+        if self.issues.len() >= MAX_ISSUES {
+            return;
+        }
         let node = self.schema.at(node);
         let kind = match failure {
             Failure::Schema | Failure::Discriminator => SchemaIssueKind::of(node.kind()),

@@ -1,0 +1,6111 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"pre": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "string"
+							}
+						}
+					}
+				},
+				"items": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "object",
+								"def": {
+									"p": {
+										"kind": "string"
+									},
+									"q": {
+										"kind": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"u": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "number"
+								}
+							]
+						}
+					}
+				},
+				"tail": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "string"
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "{\"pre\":[\"a\"],\"items\":[{\"p\":\"a\",\"q\":\"b\"}],\"u\":1,\"tail\":\"t\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "ninety_nine",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "hundred",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						99
+					],
+					"formatted": "pre.99: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "hundred_and_one",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						99
+					],
+					"formatted": "pre.99: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "item_crosses_the_cap",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\"items\":[{\"p\":1,\"q\":1},{\"p\":1,\"q\":1}],\"u\":true,\"tail\":1,\"z\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"items",
+						0,
+						"p"
+					],
+					"formatted": "items.0.p: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "far_past",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\"items\":[{\"p\":1}],\"u\":true,\"tail\":1,\"z\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						99
+					],
+					"formatted": "pre.99: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "union_past_the_cap_matches",
+			"text": "{\"pre\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\"u\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						0
+					],
+					"formatted": "pre.0: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						1
+					],
+					"formatted": "pre.1: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						2
+					],
+					"formatted": "pre.2: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						3
+					],
+					"formatted": "pre.3: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						4
+					],
+					"formatted": "pre.4: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						5
+					],
+					"formatted": "pre.5: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						6
+					],
+					"formatted": "pre.6: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						7
+					],
+					"formatted": "pre.7: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						8
+					],
+					"formatted": "pre.8: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						9
+					],
+					"formatted": "pre.9: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						10
+					],
+					"formatted": "pre.10: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						11
+					],
+					"formatted": "pre.11: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						12
+					],
+					"formatted": "pre.12: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						13
+					],
+					"formatted": "pre.13: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						14
+					],
+					"formatted": "pre.14: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						15
+					],
+					"formatted": "pre.15: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						16
+					],
+					"formatted": "pre.16: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						17
+					],
+					"formatted": "pre.17: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						18
+					],
+					"formatted": "pre.18: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						19
+					],
+					"formatted": "pre.19: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						20
+					],
+					"formatted": "pre.20: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						21
+					],
+					"formatted": "pre.21: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						22
+					],
+					"formatted": "pre.22: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						23
+					],
+					"formatted": "pre.23: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						24
+					],
+					"formatted": "pre.24: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						25
+					],
+					"formatted": "pre.25: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						26
+					],
+					"formatted": "pre.26: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						27
+					],
+					"formatted": "pre.27: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						28
+					],
+					"formatted": "pre.28: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						29
+					],
+					"formatted": "pre.29: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						30
+					],
+					"formatted": "pre.30: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						31
+					],
+					"formatted": "pre.31: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						32
+					],
+					"formatted": "pre.32: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						33
+					],
+					"formatted": "pre.33: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						34
+					],
+					"formatted": "pre.34: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						35
+					],
+					"formatted": "pre.35: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						36
+					],
+					"formatted": "pre.36: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						37
+					],
+					"formatted": "pre.37: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						38
+					],
+					"formatted": "pre.38: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						39
+					],
+					"formatted": "pre.39: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						40
+					],
+					"formatted": "pre.40: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						41
+					],
+					"formatted": "pre.41: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						42
+					],
+					"formatted": "pre.42: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						43
+					],
+					"formatted": "pre.43: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						44
+					],
+					"formatted": "pre.44: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						45
+					],
+					"formatted": "pre.45: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						46
+					],
+					"formatted": "pre.46: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						47
+					],
+					"formatted": "pre.47: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						48
+					],
+					"formatted": "pre.48: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						49
+					],
+					"formatted": "pre.49: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						50
+					],
+					"formatted": "pre.50: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						51
+					],
+					"formatted": "pre.51: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						52
+					],
+					"formatted": "pre.52: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						53
+					],
+					"formatted": "pre.53: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						54
+					],
+					"formatted": "pre.54: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						55
+					],
+					"formatted": "pre.55: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						56
+					],
+					"formatted": "pre.56: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						57
+					],
+					"formatted": "pre.57: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						58
+					],
+					"formatted": "pre.58: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						59
+					],
+					"formatted": "pre.59: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						60
+					],
+					"formatted": "pre.60: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						61
+					],
+					"formatted": "pre.61: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						62
+					],
+					"formatted": "pre.62: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						63
+					],
+					"formatted": "pre.63: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						64
+					],
+					"formatted": "pre.64: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						65
+					],
+					"formatted": "pre.65: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						66
+					],
+					"formatted": "pre.66: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						67
+					],
+					"formatted": "pre.67: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						68
+					],
+					"formatted": "pre.68: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						69
+					],
+					"formatted": "pre.69: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						70
+					],
+					"formatted": "pre.70: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						71
+					],
+					"formatted": "pre.71: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						72
+					],
+					"formatted": "pre.72: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						73
+					],
+					"formatted": "pre.73: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						74
+					],
+					"formatted": "pre.74: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						75
+					],
+					"formatted": "pre.75: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						76
+					],
+					"formatted": "pre.76: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						77
+					],
+					"formatted": "pre.77: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						78
+					],
+					"formatted": "pre.78: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						79
+					],
+					"formatted": "pre.79: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						80
+					],
+					"formatted": "pre.80: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						81
+					],
+					"formatted": "pre.81: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						82
+					],
+					"formatted": "pre.82: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						83
+					],
+					"formatted": "pre.83: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						84
+					],
+					"formatted": "pre.84: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						85
+					],
+					"formatted": "pre.85: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						86
+					],
+					"formatted": "pre.86: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						87
+					],
+					"formatted": "pre.87: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						88
+					],
+					"formatted": "pre.88: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						89
+					],
+					"formatted": "pre.89: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						90
+					],
+					"formatted": "pre.90: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						91
+					],
+					"formatted": "pre.91: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						92
+					],
+					"formatted": "pre.92: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						93
+					],
+					"formatted": "pre.93: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						94
+					],
+					"formatted": "pre.94: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						95
+					],
+					"formatted": "pre.95: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						96
+					],
+					"formatted": "pre.96: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						97
+					],
+					"formatted": "pre.97: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						98
+					],
+					"formatted": "pre.98: expected string, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"pre",
+						99
+					],
+					"formatted": "pre.99: expected string, received number"
+				}
+			]
+		}
+	]
+}

@@ -77,8 +77,10 @@ export interface SchemaContext {
 	issues: Array<SchemaIssue> | undefined;
 	/**
 	 * How many failures have been reported. A container knows a child failed
-	 * when this grew. Outside probe mode it equals `issues.length`, and is `0`
-	 * while there is no `issues`.
+	 * when this grew. Outside probe mode it equals `issues.length` up to a
+	 * hundred, past which a failure is counted and builds no issue, and is `0`
+	 * while there is no `issues`. A count taken past the hundredth indexes no
+	 * issue, so a `run` that reads `issues` from a count finds the ones built.
 	 */
 	fails: number;
 	/**
@@ -392,12 +394,15 @@ const run_entries = (
 	return output ?? value;
 };
 
+// the most issues a parse builds, see `fail`
+const MAX_ISSUES = 100;
+
 /**
  * Records an issue. Returns `value` so a `run` can fail in expression position.
  *
  * @param value - the value that failed, which the issue names the type of and doesn't hold
  * @param expected - describes what was expected, defaulting to `kind`
- * @mutates ctx - increments `ctx.fails`, and outside probe mode pushes to `ctx.issues`, creating it on the first
+ * @mutates ctx - increments `ctx.fails`, and outside probe mode, for the first hundred failures of a parse, pushes to `ctx.issues`, creating it on the first
  */
 export const fail = (
 	ctx: SchemaContext,
@@ -405,8 +410,11 @@ export const fail = (
 	value: unknown,
 	expected: string = kind
 ): any => {
-	ctx.fails++;
-	if (!ctx.probe) {
+	// past the hundredth a failure is counted and builds no issue: a path is
+	// as long as the failing value is deep, so issues without a bound hold memory in
+	// the product of the input's size and its depth. A container's prefix and
+	// a `message` read `issues` from a count, so past the cap they find none
+	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {
 		const issue: SchemaIssue = {
 			kind,
 			expected,
@@ -462,7 +470,7 @@ const not_object = (value: unknown): boolean =>
 	value === null || typeof value !== 'object' || Array.isArray(value);
 
 /**
- * Validates `value`, returning the output or every issue found.
+ * Validates `value`, returning the output or the issues found, the first hundred.
  */
 export const parse = <T extends Schema>(schema: T, value: unknown): SchemaResult<Infer<T>> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };
@@ -579,15 +587,19 @@ export const get_issue_value = (
 };
 
 /**
- * Thrown by `parse_or_throw`. The message lists every issue, one per line,
- * as `format_issue` writes it. Like its issues, it holds nothing of the input
- * but the keys in their paths.
+ * Thrown by `parse_or_throw`. The message lists the first ten issues, one per
+ * line, as `format_issue` writes it, and then how many more there are, so its
+ * length is bounded by ten of its lines however many issues there are. Like
+ * its issues, it holds nothing of the input but the keys in their paths.
  */
 export class SchemaError extends Error {
 	issues: Array<SchemaIssue>;
 
 	constructor(issues: Array<SchemaIssue>) {
-		super(issues.map(format_issue).join('\n'));
+		super(
+			issues.slice(0, 10).map(format_issue).join('\n') +
+				(issues.length > 10 ? `\nand ${issues.length - 10} more` : '')
+		);
 		this.name = 'SchemaError';
 		this.issues = issues;
 	}

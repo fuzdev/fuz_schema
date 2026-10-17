@@ -32,6 +32,13 @@ export interface ConformanceDifference {
 	rows: Record<string, { both: string; ours: string }>;
 }
 
+// how `render_parsed` writes a refusal at the first `count` items of an array
+const items_wrong = (count: number): string =>
+	'fail at ' +
+	Array.from({ length: count }, (_, i) => `[${i}]`)
+		.sort()
+		.join(', ');
+
 // the table, its row names kept as the type `ConformanceDifferencesRow`
 const differences = [
 	{
@@ -555,6 +562,18 @@ const differences = [
 			'a check after a record whose value fails a check': {
 				both: 'fail at <root>, k',
 				ours: 'fail at k'
+			}
+		}
+	},
+	{
+		reason:
+			'a parse reports its first hundred failures as issues and counts the rest, where both report every one. By design: issues without a bound hold memory in the product of the input size and its depth',
+		status: 'declared',
+		docs: 'A parse reports its first hundred failures as issues',
+		rows: {
+			'array of strings, a hundred and one items wrong': {
+				both: items_wrong(101),
+				ours: items_wrong(100)
 			}
 		}
 	}

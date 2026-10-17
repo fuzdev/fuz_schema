@@ -125,7 +125,7 @@ its own is written as that kind and behaves as the library's in the crate.
   on doubles, and key order.
 - **`matches_json_bytes` validates UTF-8 first**, in full, then reads the text.
 - The walker reports failures to a `Report`. `Probe` wants only the verdict,
-  and `Collect` keeps every failure as an issue.
+  and `Collect` keeps each failure as an issue, up to `MAX_ISSUES`.
 - **Some unions keep their verdicts.** A `union` keeps its verdicts on arrays
   when two or more of its options could take an array and reach a cycle, which
   only a `lazy` closes, and likewise on objects, unless a `literal` entry at
@@ -159,6 +159,10 @@ the same order. A `SchemaIssue` owns what it holds:
 | `received()` | a `Received`: the type of the value, `Undefined` for a missing key. The parser reads no number that isn't finite, so none is the library's `NaN`, `Infinity`, or `-Infinity` |
 | `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
 
+- **At most `MAX_ISSUES` of them, a hundred**, the library's cap: past it a
+  failure is still a failure and builds no issue, so a text that fails more
+  often has its first hundred. `Collect::fail` returns at the cap, and a
+  container's prefix from a count taken there reaches no issue.
 - **The order is the library's**: an object's entries in its order, then for
   an `object` its unknown keys in the input's, and each container's issues
   before what follows it. A `pipe` stops at its first failed step.
@@ -184,8 +188,9 @@ the same order. A `SchemaIssue` owns what it holds:
   `path: expected X, received Y`, or `expected X, received Y` at the root,
   a key that isn't only ASCII word characters quoted as `JSON.stringify`
   quotes it.
-- **There is no streaming form.** Issues need every failure, so nothing is
-  skipped and nothing stops early.
+- **There is no streaming form.** Issues need every failure up to the cap,
+  so nothing is skipped, and the walk goes on past it, which costs time
+  linear in the input.
 - `unknown`, the wrappers, `lazy`, and `pipe` never fail a value, and have no
   `SchemaIssueKind` of their name.
 
@@ -278,8 +283,8 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   lone surrogate, or the depth limit exactly when the value read has one.
   The file is never edited by hand.
 - It also generates `contract.json`, the constants both sides hold: the
-  nesting limit, the parser's depth, the refused key names and kinds, and
-  the flags.
+  nesting limit, the parser's depth, the cap on issues, the refused key
+  names and kinds, and the flags.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
   evaluators against the oracle or the declared divergence, and the issues

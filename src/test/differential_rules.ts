@@ -248,7 +248,9 @@ export const DIFFERENTIAL_RULES: ReadonlyArray<DifferentialRule> = [
 export const DIFFERENTIAL_UNRULED: Partial<Record<ConformanceDifferencesRow, string>> = {
 	'default of an array, the one given':
 		'which value a default is, the one given or a copy, is the same text: the comparison sees no difference, and the generated defaults are primitives',
-	'entry named __proto__, own / *': 'the generator names no entry `__proto__`'
+	'entry named __proto__, own / *': 'the generator names no entry `__proto__`',
+	'array of strings, a hundred and one items wrong':
+		'the generated inputs are small: over eight seeds of a hundred thousand cases none failed more than fourteen times, short of the hundred'
 };
 
 /** Every rule. */

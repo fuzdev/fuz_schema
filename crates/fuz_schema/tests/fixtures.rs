@@ -17,8 +17,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use fuz_schema::{
-    Json, JsonError, JsonErrorKind, MAX_DEPTH, MAX_NESTING, PathSegment, Received, Schema,
-    SchemaBuildErrorKind, SchemaBuilder, SchemaIssue, SchemaIssueKind, SchemaKind, SchemaNode,
+    Json, JsonError, JsonErrorKind, MAX_DEPTH, MAX_ISSUES, MAX_NESTING, PathSegment, Received,
+    Schema, SchemaBuildErrorKind, SchemaBuilder, SchemaIssue, SchemaIssueKind, SchemaKind,
+    SchemaNode,
 };
 use serde::de::IgnoredAny;
 use serde_json::{Value, json};
@@ -500,6 +501,7 @@ fn the_constants_of_both_sides_are_the_same() {
     let number = |key: &str| contract.get(key).and_then(Value::as_u64);
     assert_eq!(number("max_nesting"), u64::try_from(MAX_NESTING).ok());
     assert_eq!(number("max_depth"), u64::try_from(MAX_DEPTH).ok());
+    assert_eq!(number("max_issues"), u64::try_from(MAX_ISSUES).ok());
     // and the parser reads that deep and no deeper
     for (open, leaf, close) in [("[", "", "]"), (r#"{"a":"#, "1", "}")] {
         let nested = |depth: usize| format!("{}{leaf}{}", open.repeat(depth), close.repeat(depth));

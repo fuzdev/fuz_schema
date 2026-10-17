@@ -1,6 +1,7 @@
 {
 	"max_nesting": 16,
 	"max_depth": 127,
+	"max_issues": 100,
 	"object_prototype_keys": [
 		"__defineGetter__",
 		"__defineSetter__",

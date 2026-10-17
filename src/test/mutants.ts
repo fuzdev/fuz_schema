@@ -27,6 +27,105 @@ export interface Mutant {
 
 export const MUTANTS: Array<Mutant> = [
 	{
+		name: 'issue_cap_off',
+		edits: [
+			{
+				find: `const MAX_ISSUES = 100;`,
+				replace: `const MAX_ISSUES = Infinity;`
+			}
+		]
+	},
+	{
+		name: 'issue_cap_one_over',
+		edits: [
+			{
+				find: `	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {`,
+				replace: `	if (ctx.fails++ <= MAX_ISSUES && !ctx.probe) {`
+			}
+		]
+	},
+	{
+		name: 'issue_cap_one_short',
+		edits: [
+			{
+				find: `	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {`,
+				replace: `	if (++ctx.fails < MAX_ISSUES && !ctx.probe) {`
+			}
+		]
+	},
+	{
+		name: 'issue_cap_stops_count',
+		edits: [
+			{
+				find: `	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {`,
+				replace: `	if ((ctx.fails < MAX_ISSUES ? ctx.fails++ : ctx.fails) < MAX_ISSUES && !ctx.probe) {`
+			}
+		]
+	},
+	{
+		name: 'issue_cap_stops_count_in_probe',
+		edits: [
+			{
+				find: `	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {`,
+				replace: `	if ((ctx.probe && ctx.fails >= MAX_ISSUES ? ctx.fails : ctx.fails++) < MAX_ISSUES && !ctx.probe) {`
+			}
+		]
+	},
+	{
+		name: 'issue_cap_builds_in_probe',
+		edits: [
+			{
+				find: `	if (ctx.fails++ < MAX_ISSUES && !ctx.probe) {`,
+				replace: `	if (ctx.fails++ < MAX_ISSUES) {`
+			}
+		]
+	},
+	{
+		name: 'error_message_every_issue',
+		edits: [
+			{
+				find: `			issues.slice(0, 10).map(format_issue).join('\\n') +`,
+				replace: `			issues.map(format_issue).join('\\n') +`
+			}
+		]
+	},
+	{
+		name: 'error_message_eleven_issues',
+		edits: [
+			{
+				find: `			issues.slice(0, 10).map(format_issue).join('\\n') +`,
+				replace: `			issues.slice(0, 11).map(format_issue).join('\\n') +`
+			}
+		]
+	},
+	{
+		name: 'error_message_no_more_line',
+		edits: [
+			{
+				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
+				replace: `				''`
+			}
+		]
+	},
+	{
+		name: 'error_message_more_miscounted',
+		edits: [
+			{
+				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
+				replace: `				(issues.length > 10 ? \`\\nand \${issues.length - 9} more\` : '')`
+			}
+		]
+	},
+	{
+		name: 'error_message_more_at_ten',
+		edits: [
+			{
+				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
+				replace: `				(issues.length >= 10 ? \`\\nand \${issues.length - 10} more\` : '')`
+			}
+		]
+	},
+	{
 		name: 'object_accepts_unknown',
 		edits: [
 			{

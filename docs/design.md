@@ -91,9 +91,12 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 - **`ctx.issues` is `undefined` until the first failure** outside probe mode,
   so a parse that finds nothing allocates no array for them. The first issue
   is written as the array's one element, where a push onto an empty array
-  would grow it to hold many. From then on
-  `ctx.fails === ctx.issues.length` outside probe mode, and containers use
-  the count as an index into `issues`.
+  would grow it to hold many. From then on, outside probe mode,
+  `ctx.issues.length` is `ctx.fails` up to the hundredth failure, past which
+  `fail` counts and builds nothing, and containers use the count as an index
+  into `issues`: one taken past the hundredth is past every issue, so a
+  prefix or a `message` from it reaches none. A `run` written outside the
+  library that reads `ctx.issues[count]` finds an issue only below the cap.
 - **An entry's `run` gets three more arguments**: the object schemas call
   `run(value, ctx, parent, key, 1)`, with the object being read, the entry's
   key, and `1`, which says the schema is the entry itself. All three are
@@ -475,6 +478,20 @@ is only bundled when used. There is no message registry.
   before the wrappers by `def.schema`, which an `object` can have as an
   entry. The text is built on the union's first failure and kept, by code
   only `union` reaches.
+- **A parse reports at most a hundred issues.** Past them a failure is
+  counted, so the verdict is the same, and builds no issue. The cap is fixed,
+  with nothing on the result to say it was reached, so a result of a hundred
+  issues may be of an input that failed more often. A path is as
+  long as the failing value is deep, so without the cap a deep input with many
+  failures at the bottom holds memory in the product of the two: 206 KB of
+  JSON a thousand deep held 1075 MB, and holds 1.1 MB under it. The Rust
+  crate's `validate_json` keeps the same hundred.
+- **A `SchemaError`'s message is its first ten issues**, a line each, and a
+  line `and N more` when there are more. A long key many issues share is
+  then in ten lines, not in one for every issue: a 100 KB key over a
+  thousand failing items made a message of 100 MB with every issue a line,
+  10 MB at a hundred issues, and 1 MB in ten. Its issues, the hundred a
+  parse reports at most, are on `error.issues`.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
@@ -788,6 +805,10 @@ issues. These it holds:
   array, or a record one of whose entries or items fails only a check is not
   run, where both run it and report it too, at the container's path. By
   design: a step runs only on a value every step before it accepted.
+- A parse reports its first hundred failures as issues and counts the rest,
+  where both report every one. By design: an issue's path is as long as the
+  failing value is deep, so issues without a bound hold memory in the product of the
+  input's size and its depth, see [Issues](#issues).
 
 Where the two agree only because two of their disagreements below cancel,
 this library, on one side of each, differs from both. These follow from the

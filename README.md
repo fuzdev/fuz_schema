@@ -174,7 +174,7 @@ before the engine has optimized it, and `JSON.parse` reads far deeper.
 On untrusted JSON that can nest without bound, catch it or bound the depth first.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
-`parse_or_throw` returns the value or throws a `SchemaError` listing every issue.
+`parse_or_throw` returns the value or throws a `SchemaError` listing the first ten issues and how many more issues there are.
 `is` answers yes or no without building issues.
 
 ```ts
@@ -207,6 +207,7 @@ the name ships as a string at the call site and is otherwise unused.
 
 ### Issues
 
+A failing parse reports its first hundred issues, and builds no issue for the rest.
 An issue is `{kind, expected, received, path, message}`:
 
 - `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`

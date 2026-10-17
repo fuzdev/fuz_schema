@@ -7,6 +7,13 @@ use crate::js::quote;
 use crate::json::Value;
 use crate::schema::SchemaKind;
 
+/// The most issues one evaluation reports, the TypeScript library's cap.
+///
+/// Past it a failure is still a failure, and builds no issue. A path is as
+/// long as the failing value is deep, so issues without a bound hold memory in the
+/// product of the input's size and its depth.
+pub const MAX_ISSUES: usize = 100;
+
 /// A validation failure, as the TypeScript library's `SchemaIssue` has it.
 ///
 /// It owns what it holds, and holds nothing of the input but the keys in its

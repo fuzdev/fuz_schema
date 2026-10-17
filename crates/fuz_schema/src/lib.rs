@@ -75,7 +75,7 @@ mod walk;
 
 pub use builder::SchemaBuilder;
 pub use error::{JsonError, JsonErrorKind, SchemaBuildError, SchemaBuildErrorKind};
-pub use issue::{PathSegment, Received, SchemaIssue, SchemaIssueKind};
+pub use issue::{MAX_ISSUES, PathSegment, Received, SchemaIssue, SchemaIssueKind};
 pub use json::{Json, JsonObject, MAX_DEPTH};
 pub use schema::{
     MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaKind, SchemaLiteral, SchemaNode, VariantDef,
@@ -171,7 +171,8 @@ impl Schema {
     /// `JSON.parse` of the same text, in the same order: each one's kind,
     /// `expected` text, received type, and path. A message a TypeScript
     /// schema sets is not carried, because the interchange form holds none.
-    /// The issues are empty exactly when `matches_json_exact` is `true`.
+    /// The issues are empty exactly when `matches_json_exact` is `true`, and
+    /// are the first `MAX_ISSUES` of a text that fails more often, as there.
     ///
     /// # Errors
     ///
