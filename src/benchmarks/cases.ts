@@ -530,6 +530,8 @@ const real_docinfo: CaseGroup = (s) => {
 		// the same as it is once read, with nothing left to fill in
 		to_case(s, 'real/docinfo_module_full/valid', ModuleJson, to_json(parsed.value), 'identity'),
 		to_case(s, 'real/docinfo_types/valid', s.array(TypeJson), types, 'identity'),
+		// the same trees through `is`, where every `lazy` is probed
+		to_probe_case(s, 'scale/docinfo_types_is/valid', s.array(TypeJson), types, true),
 		to_case(s, 'real/docinfo_module_bad/invalid', ModuleJson, broken, 'issues'),
 		// the whole library: the module case again at a size too large to stay in the
 		// nearest cache, so it is a case at scale and not one speed is judged on

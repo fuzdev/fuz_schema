@@ -170,7 +170,15 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   finds the option in constant time, so the children are walked once.
   Otherwise each option puts the entries that rule it out cheaply first, as
   a `literal`, and a probed option fails before it walks. Where neither
-  fits, `memo_union`, below.
+  fits, `memo_union`, below. A cycle closes through a `lazy` unless a schema
+  of one's own closes it or an array a `union` or `pipe` was made with is
+  changed afterwards, and a union in a cycle closed either way takes the
+  same time. A `parse` or `is` of a `lazy` whose `pipe` runs two containers
+  over the same subtree, as
+  `lazy(() => pipe(object({c: array(L)}), loose_object({c: array(L)})))`, is
+  exponential in depth with no union at all, as in Valibot and Zod: `variant`
+  can't hold the `pipe`, and a `memo_union` of the `pipe` alone makes it
+  linear.
 - **`memo_union` is a `union` that keeps what it gave while probing.** Its
   `kind` and `def` are `union`'s, so every reader takes it as one, and its
   `run` wraps the union's, one closure of two parameters or of four as the

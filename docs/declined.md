@@ -294,6 +294,43 @@ its input, and starts only when an object comes back.
   whose memo is kept by the union and not by the `lazy`. In the core, as
   here, it stays declined.
 
+### That memo in place of `memo_union`
+
+The same memo, kept for one parse by each probed object or array, made the
+plain recursive `union` linear on hostile input so `memo_union` could go.
+Four forms were built and graded with `--class security --runs 5` on a quiet
+machine:
+
+- **Ungated**, a memo on every probe: linear on every union shape, but
+  `real/package_json/valid` 1.35x in the matrix with 5.6 times the bytes
+  allocated, and 1.40x alone with 6.0, `is` on docinfo's recursive types 1.56x and from
+  48 B to 87 KB per parse, +147 B retained per further `lazy`, and the
+  `type_json` scenario +82 gzip.
+- **Past a depth**, a memo past 8 nested `lazy` runs: bounded only to m^K for
+  a union of m options, so 12 options over ten nodes ran 469M options in 30 s,
+  and a `check` calling `is` mid-parse wiped the memo, 4.2M runs at depth 20.
+- **Past a budget**, a memo once a parse has probed 16384 `lazy` runs, counted
+  per context in a `WeakMap` kept past 64 runs, the memo saved and restored
+  around a context switch: linear on every shape found (12 options at depth
+  40, 197k runs), allocation and retained heap as without it, but
+  `real/docinfo_types/valid` 1.11x, `real/package_json/valid` 1.10x in the
+  matrix and 1.14x alone, `each/lazy/valid` 2.18x, and the `type_json`
+  scenario at 0.79 of Valibot's gzip (+181).
+- **That budget with no bookkeeping outside probe mode**, and the `try` only
+  on the frame that switches context: the realistic summaries inside their
+  A/A (−0.4% in the matrix, −0.5% alone), but `real/package_json/valid` 1.07x
+  in every regime, `is` on docinfo's types 1.08x, `each/lazy/valid` 1.08x,
+  +30 B retained per further `lazy`, the `type_json` scenario at 0.82 of
+  Valibot's gzip (+238), and `lazy` alone +265. What is left is about 15 to
+  20 ns on each outermost probed `lazy`, the frame that must switch context,
+  which changes what the engine inlines beneath it: neither the `try` nor the
+  `WeakMap`.
+- **Why**: every form slowed a realistic valid case past its floor, against
+  [rule 6](grading.md#rules), so the ways out stay opt-in: `memo_union`, and
+  `variant`.
+- **Reopens**: an engine or a design that removes the cost on each outermost
+  entry, or a consumer with recursive hostile input.
+
 ### The `literal` entries first when probing
 
 An object that, probed, checks its `literal` entries before the rest, so a
