@@ -11,6 +11,7 @@ npm run grade -- --apart each/                  # which cases also run a version
 npm run grade -- --slice 2                      # longer timing slices
 npm run grade -- --no-process                   # skip retained heap and cold start
 npm run grade -- --class correctness            # price the bytes as a fix of correctness
+npm run grade -- --class security               # price the bytes as a fix of security
 ```
 
 `grade` compares a version of `schema.ts`, the working tree's unless
@@ -58,7 +59,7 @@ When a change targets a path no case isolates, add the case first.
 | `--no-apart`                 | off                            | no case runs apart                                                                                                             |
 | `--slice <ms>`               | 1                              | milliseconds one timing slice of one instance lasts                                                                            |
 | `--samples <n>`              | 15                             | the cold-start rounds kept                                                                                                     |
-| `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, or `correctness` for a fix of correctness or conformance              |
+| `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, `correctness`, or `security`, [below](#bytes)                         |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
 | `--no-process`               | off                            | skip retained heap and cold start, and with them the verdict of rule 9                                                         |
 
@@ -244,7 +245,8 @@ now and then be graded against an older ref (`--against <ref>`).
    or conformance may add up to about 50 gzipped bytes to any one opt-in
    figure, and past that the user rules. A change for speed pays for opt-in
    bytes by rule 3. Whatever the change, every scenario stays at or under 0.75
-   of Valibot's gzipped size for the same scenario: the backstop.
+   of Valibot's gzipped size for the same scenario: the backstop. A fix of
+   security past it goes to the user, [below](#bytes).
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
@@ -262,16 +264,16 @@ more in total, or starts slower. The rest is judgment.
   When it is not, and the valid path does not read slower past its A/A, they
   pass when the invalid speed is that return, at the same price and past its
   own A/A. A speedup inside its A/A has not been shown.
-- **Rules 4 and 5**, for correctness, read the bytes alone, [below](#bytes).
-  A figure over its price reads `ASK`: the user rules on it, and it is not
-  a failure.
+- **Rules 4 and 5**, for correctness and security, read the bytes alone,
+  [below](#bytes). A figure over its price reads `ASK`: the user rules on it,
+  and it is not a failure.
 - **Rule 6** fails when the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in `matrix` or
   `alone`, or when a valid case, realistic or not, is confirmed slower in any
   regime, `apart` among them. The summary of the cases timed apart is printed
   and no rule reads it: they are a few chosen cases, read one at a time.
 - **Rule 9** reads every figure of retained heap per further schema, under
-  either class, and one over the allowance reads `ASK`.
+  any class, and one over the allowance reads `ASK`.
 - **Below three runs** rule 6, and rule 4 for speed when bytes were added,
   are not judged: their lines say so in place of a pass or a fail, and the figures
   are still printed. What is of bytes or retained heap alone is judged at any run count.
@@ -284,10 +286,23 @@ A pass doesn't mean nothing regressed. Read the lists.
 
 ### Bytes
 
-A change is of one class, given with `--class`: `speed`, the default, or
-`correctness`, a fix of correctness or conformance and not of speed. The class
-sets only what its bytes cost: a `FAIL` of any other rule stays a failure
-under either, and a correctness change is not failed for bringing no speed.
+A change is of one class, given with `--class`: `speed`, the default,
+`correctness`, a fix of correctness or conformance and not of speed, or
+`security`. The class sets only what its bytes cost: a `FAIL` of any other
+rule stays a failure under any, and a correctness change is not failed for
+bringing no speed.
+
+`security` is the class of a fix of correctness that is sensitive to
+security:
+
+- **over-acceptance**, an input that should fail and doesn't
+- **denial of service on data-shaped input**, the values `JSON.parse` can
+  produce, as time or memory far past the input's size
+- **a leak of input into issues**, which name the type of what failed and
+  hold none of its values, only the keys of their `path`
+
+Such a fix goes ahead of other work. Its bytes are priced as correctness,
+and the backstop reads `ASK` for it in place of `FAIL`: the user rules.
 
 Each figure is of one class too:
 
@@ -317,6 +332,7 @@ own; where they disagree, this is how its verdict is read.
 | ------------- | -------------------------------------- | --------------------------------------------- |
 | `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3 |
 | `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`    |
+| `security`    | as `correctness`                       | as `correctness`                              |
 
 Core is read exactly, to the byte. An opt-in figure moves by a byte or a few
 with no change to what it measures, as a byte changed elsewhere in a bundle
@@ -324,8 +340,9 @@ moves how the rest compresses, so a rise of 3 or less is not read as growth,
 and the price is read 3 past its figure. An export one version lacks is read as
 0 there.
 
-The backstop is read on every scenario under either class, against
-Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it. The
+The backstop is read on every scenario under every class, against
+Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it,
+an `ASK` under `security`. The
 scenarios together, `all`, are no bundle a consumer ships, and are reported
 beside Valibot's without a verdict.
 
@@ -348,7 +365,7 @@ paid once, whatever an app does. What each schema holds is paid as often as
 an app defines one, for as long as it keeps them, and is the figure a change
 to a schema's construction moves.
 
-| figure                   | any change, of either class                  |
+| figure                   | any change, of any class                     |
 | ------------------------ | -------------------------------------------- |
 | retained heap per schema | up to +16 B on any one figure, past it `ASK` |
 | total with one schema    | reported, listed where it grew past 1 KB     |

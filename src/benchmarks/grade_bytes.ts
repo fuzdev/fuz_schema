@@ -10,11 +10,15 @@
  * `last in` and its `alone`. `last in` is what an export costs beside the
  * rest, so it can't see bytes added to a helper two exports share, which
  * stays for the other when one is removed. `alone` is what a consumer of the
- * one export pays over `parse`, and sees them. A change is of the speed class, by default, or of the
- * correctness class, a fix of correctness or conformance. Speed pays for core
+ * one export pays over `parse`, and sees them. A change is of the speed class, by default, of the
+ * correctness class, a fix of correctness or conformance, or of the security
+ * class, a fix of over-acceptance, of denial of service on data-shaped input,
+ * or of input leaking into issues. Speed pays for core
  * bytes with a return (rule 4) and for opt-in bytes by judgment (rule 3), so
  * here it only has its opt-in growth listed. Correctness has a price for each:
- * past it the user rules, which is not a failure.
+ * past it the user rules, which is not a failure. Security is priced as
+ * correctness, and past the backstop the user rules too, where any other
+ * class fails.
  *
  * @module
  */
@@ -23,9 +27,13 @@
 export const CORE_SCENARIO = 'strict_nested';
 
 /** The kind of change a grade is of, by `--class`. */
-export type ChangeClass = 'speed' | 'correctness';
+export type ChangeClass = 'speed' | 'correctness' | 'security';
 
-export const CHANGE_CLASSES: ReadonlyArray<ChangeClass> = ['speed', 'correctness'];
+export const CHANGE_CLASSES: ReadonlyArray<ChangeClass> = ['speed', 'correctness', 'security'];
+
+/** Whether a class pays the correctness price for its bytes, as every class but speed does. */
+export const is_priced_as_correctness = (change_class: ChangeClass): boolean =>
+	change_class !== 'speed';
 
 /**
  * What a correctness change may add without a return, in gzipped bytes: to
@@ -136,6 +144,30 @@ export const to_vs_valibot = (row: BackstopRow): number => row.gzip / row.valibo
 export const judge_backstop = (rows: ReadonlyArray<BackstopRow>): Array<BackstopRow> =>
 	rows.filter((row) => to_vs_valibot(row) > BACKSTOP_VS_VALIBOT);
 
+/**
+ * The verdict line of the backstop: a scenario over it fails, and under the
+ * security class the user rules on it instead.
+ *
+ * @param rows - every scenario's bundle beside Valibot's, at least one
+ * @param change_class - the class of the change
+ */
+export const format_backstop_line = (
+	rows: ReadonlyArray<BackstopRow>,
+	change_class: ChangeClass
+): string => {
+	const over = judge_backstop(rows);
+	const most = rows.reduce((a, b) => (to_vs_valibot(b) > to_vs_valibot(a) ? b : a));
+	const named = over.map((r) => `${r.name} ${to_vs_valibot(r).toFixed(2)}x`).join(', ');
+	return (
+		`backstop, every scenario at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ` +
+		(!over.length
+			? `pass, the most ${most.name} ${to_vs_valibot(most).toFixed(2)}x`
+			: change_class === 'security'
+				? `ASK, ${named}, the user rules on a fix of security`
+				: `FAIL, ${named}`)
+	);
+};
+
 /** A figure as a signed delta, with `+` on growth and none. */
 export const format_size_delta = (delta: number): string => `${delta >= 0 ? '+' : ''}${delta}`;
 
@@ -179,7 +211,7 @@ export const format_opt_in_line = (
 		? `grew past ±${SIZE_JITTER}: ${format_size_figures(opt_in.grew)}`
 		: `none grew past ±${SIZE_JITTER}`;
 	const library = `; the library ${format_size_delta(library_delta)}, reported and not priced`;
-	return change_class === 'correctness'
+	return is_priced_as_correctness(change_class)
 		? `opt-in bytes, which may be up to +${CORRECTNESS_PRICE.opt_in}, read past ±${SIZE_JITTER}, ` +
 				'on any one figure, last in or alone: ' +
 				(opt_in.verdict === 'ask'

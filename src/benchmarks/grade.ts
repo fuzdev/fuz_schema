@@ -82,11 +82,13 @@ import {
 	CORE_SCENARIO,
 	CORRECTNESS_PRICE,
 	SIZE_JITTER,
+	format_backstop_line,
 	format_opt_in_line,
 	format_size_delta,
 	format_size_figures,
 	judge_backstop,
 	judge_core_correctness,
+	is_priced_as_correctness,
 	judge_opt_in,
 	to_size_delta,
 	to_vs_valibot,
@@ -181,8 +183,10 @@ const Args = s.object({
 	),
 	class: meta(s.with_default(s.one_of(CHANGE_CLASSES), 'speed'), {
 		description:
-			'what the change is for, which sets the price of its bytes: speed, or correctness ' +
-			'for a fix of correctness or conformance'
+			'what the change is for, which sets the price of its bytes: speed, correctness ' +
+			'for a fix of correctness or conformance, or security for a fix of over-acceptance, ' +
+			'denial of service on data-shaped input, or input leaking into issues, priced as ' +
+			'correctness with the backstop for the user to rule on'
 	}),
 	bundle: meta(s.with_default(s.boolean, true), { description: 'also measure bundle sizes' }),
 	'no-bundle': meta(s.with_default(s.boolean, false), { description: 'opt out of bundle' }),
@@ -1042,9 +1046,9 @@ if (args.bundle) {
 
 	const format_size = (size: number): string => (Number.isNaN(size) ? '-' : String(size));
 	const format_class = (f: SizeFigure): string => (f.core ? 'core' : 'opt-in');
-	// under the correctness class, a figure over its price
+	// under the correctness price, a figure over it
 	const over_price = new Set(
-		args.class === 'correctness'
+		is_priced_as_correctness(args.class)
 			? [...judge_core_correctness(size_figures), ...judge_opt_in(size_figures, 'correctness').over]
 			: []
 	);
@@ -1085,7 +1089,7 @@ if (args.bundle) {
 	);
 	console.log(
 		`* over ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's, the backstop` +
-			(args.class === 'correctness' ? ', ! over the price of a correctness change' : '')
+			(is_priced_as_correctness(args.class) ? ', ! over the price of a correctness change' : '')
 	);
 	// the figures a reader needs: core, any that moved past the jitter, and any one side lacks,
 	// each export's figures together
@@ -1352,11 +1356,13 @@ for (const { regime, whole, paths } of valid_by_regime) {
 }
 if (args.bundle) {
 	console.log(
-		args.class === 'correctness'
-			? 'bytes, priced as a fix of correctness or conformance (--class correctness):'
-			: 'bytes, priced as a change for speed (--class correctness for a fix of correctness or conformance):'
+		args.class === 'security'
+			? 'bytes, priced as a fix of security (--class security), as one of correctness with the backstop for the user:'
+			: args.class === 'correctness'
+				? 'bytes, priced as a fix of correctness or conformance (--class correctness):'
+				: 'bytes, priced as a change for speed (--class correctness or --class security for a fix):'
 	);
-	if (args.class === 'correctness') {
+	if (is_priced_as_correctness(args.class)) {
 		const over = judge_core_correctness(size_figures);
 		console.log(
 			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
@@ -1410,14 +1416,7 @@ if (args.bundle) {
 	console.log(
 		'  ' + format_opt_in_line(judge_opt_in(size_figures, args.class), args.class, library_delta)
 	);
-	const over_backstop = judge_backstop(backstop_rows);
-	const most = backstop_rows.reduce((a, b) => (to_vs_valibot(b) > to_vs_valibot(a) ? b : a));
-	console.log(
-		`  backstop, every scenario at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ` +
-			(over_backstop.length
-				? `FAIL, ${over_backstop.map((r) => `${r.name} ${to_vs_valibot(r).toFixed(2)}x`).join(', ')}`
-				: `pass, the most ${most.name} ${to_vs_valibot(most).toFixed(2)}x`)
-	);
+	console.log('  ' + format_backstop_line(backstop_rows, args.class));
 	console.log(
 		`  all scenarios together, reported: ${all_sizes.new} gzip, ` +
 			`${(all_sizes.new / all_sizes.valibot).toFixed(2)}x valibot's ${all_sizes.valibot}`

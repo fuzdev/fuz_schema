@@ -326,7 +326,10 @@ library, every export, last in and alone, and not only the scenarios:
 regenerate it with the change, and read the diff. `grade` prints the same
 figures of both versions, core and opt-in, and prices them by the change's
 class: `--class correctness` for a fix of correctness or conformance, whose
-bytes need no speedup, and speed by default, see `docs/grading.md`.
+bytes need no speedup, `--class security` for a fix of over-acceptance, of
+denial of service on data-shaped input, or of input leaking into issues,
+which goes ahead of other work and leaves the backstop to the user, and
+speed by default, see `docs/grading.md`.
 
 - **Measure before stating.** What the engine allocates, inlines, or folds is
   measured before it is said, in a comment, a doc, or a proposal.

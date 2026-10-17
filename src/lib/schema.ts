@@ -1453,6 +1453,13 @@ const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
  * run again runs twice in the parse, and a `transform` in it that the first
  * run reached runs twice too, once more for each enclosing union that tries
  * it again.
+ *
+ * A recursive union whose options walk a node's children before an entry
+ * tells them apart takes time exponential in the input's depth, as each
+ * option walks them again at every level: with two such options the time
+ * doubles with each level. On untrusted input of that shape use `variant`,
+ * which dispatches on a `literal` discriminator, put each option's `literal`
+ * entries first, or use `memo_union`.
  */
 // @__NO_SIDE_EFFECTS__
 export const union = <const T extends ReadonlyArray<Schema>>(
@@ -1543,7 +1550,8 @@ export const union = <const T extends ReadonlyArray<Schema>>(
  * `lazy` without a `literal` entry telling them apart first, as in
  * `lazy(() => memo_union([object({args: array(Node), op: literal('a')}), ...]))`.
  * `variant` is the cheaper way out when the options have a `literal`
- * discriminator, and so is putting each option's `literal` entries first.
+ * discriminator, and so is putting first in each option the `literal`
+ * entries that tell the options apart.
  * The memo is in the union that tries the options again, so on a chain of
  * such unions each link is a `memo_union`, and where an option reads into
  * another recursive union, as `M` in

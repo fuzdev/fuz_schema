@@ -686,6 +686,80 @@ describe('arrays are not objects', () => {
 	});
 });
 
+// a revoked `Proxy` throws on `Array.isArray`, which `fail` names `received` with and the
+// containers check first: it is never accepted, only thrown on, see docs/declined.md
+describe('a revoked Proxy', () => {
+	const revoked = (target: object): object => {
+		const { proxy, revoke } = Proxy.revocable(target, {});
+		revoke();
+		return proxy;
+	};
+	const targets: Array<[string, object]> = [
+		['object', {}],
+		['array', []],
+		['function', () => {}]
+	];
+	const primitives: Array<s.AnySchema> = [
+		s.string,
+		s.number,
+		s.literal('a'),
+		s.one_of(['a', 1]),
+		s.nullable(s.string),
+		s.union([s.string, s.number]),
+		s.pipe(s.string, s.min_length(1))
+	];
+	const containers: Array<s.AnySchema> = [
+		s.object({ a: s.string }),
+		s.array(s.string),
+		s.record(s.string)
+	];
+	const assert_throws = (f: () => unknown, label: string): void => {
+		let thrown: unknown;
+		try {
+			f();
+		} catch (error) {
+			thrown = error;
+		}
+		assert(thrown instanceof TypeError, label);
+	};
+
+	test('a primitive is false to is, and parse throws a TypeError', () => {
+		for (const [name, target] of targets) {
+			for (const schema of primitives) {
+				const label = `${schema.kind} of a revoked ${name}`;
+				assert.strictEqual(s.is(schema, revoked(target)), false, label);
+				assert_throws(() => s.parse(schema, revoked(target)), label);
+			}
+		}
+	});
+
+	test('a container throws a TypeError in is and parse', () => {
+		for (const [name, target] of targets) {
+			for (const schema of containers) {
+				const label = `${schema.kind} of a revoked ${name}`;
+				assert_throws(() => s.parse(schema, revoked(target)), label);
+				// a function is told from an object by `typeof` first, and only `array` checks it
+				// with `Array.isArray`
+				if (name === 'function' && schema.kind !== 'array') {
+					assert.strictEqual(s.is(schema, revoked(target)), false, label);
+				} else {
+					assert_throws(() => s.is(schema, revoked(target)), label);
+				}
+			}
+		}
+	});
+
+	test('unknown accepts it', () => {
+		for (const [name, target] of targets) {
+			const proxy = revoked(target);
+			assert(s.is(s.unknown, proxy), name);
+			const result = s.parse(s.unknown, proxy);
+			assert(result.ok, name);
+			assert.strictEqual(result.value, proxy, name);
+		}
+	});
+});
+
 describe('copy on write', () => {
 	const Address = s.object({ city: s.string, zip: s.optional(s.string) });
 	const User = s.object({

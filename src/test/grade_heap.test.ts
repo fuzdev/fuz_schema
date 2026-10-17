@@ -83,7 +83,7 @@ describe('grade_heap', () => {
 		assert.strictEqual(
 			format_heap_line(judge_heap(figures), ['type_json']),
 			`retained heap per further schema, which may grow by up to +${HEAP_ALLOWANCE} B, read past ` +
-				`±${HEAP_JITTER}, on any one figure, scenario or export, under either class: ` +
+				`±${HEAP_JITTER}, on any one figure, scenario or export, under any class: ` +
 				'ASK, scenarios pipe +40; exports alone one_of +250 over it, the user rules; ' +
 				`grew past ±${HEAP_JITTER}: scenarios pipe +40; exports alone one_of +250, union +6; ` +
 				'totals retaining more: type_json, reported and not priced'
@@ -91,7 +91,7 @@ describe('grade_heap', () => {
 		assert.strictEqual(
 			format_heap_line(judge_heap([to_figure('string', 5, 1)]), []),
 			`retained heap per further schema, which may grow by up to +${HEAP_ALLOWANCE} B, read past ` +
-				`±${HEAP_JITTER}, on any one figure, scenario or export, under either class: ` +
+				`±${HEAP_JITTER}, on any one figure, scenario or export, under any class: ` +
 				`pass, none grew past ±${HEAP_JITTER}; totals retaining more: none, reported and not priced`
 		);
 	});

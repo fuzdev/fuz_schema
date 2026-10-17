@@ -9,7 +9,7 @@
  * A total, the library's memory with one schema, is paid once, and is
  * reported and not priced.
  *
- * Any change, of either class, may grow any one figure by
+ * Any change, of any class, may grow any one figure by
  * `HEAP_ALLOWANCE`, and past it the user rules. Speed is not a class that
  * buys memory: a change for speed that holds more per schema says so.
  *
@@ -73,7 +73,7 @@ export interface HeapVerdict {
 }
 
 /**
- * Reads the figures of a change, of either class: one over the allowance goes
+ * Reads the figures of a change, of any class: one over the allowance goes
  * to the user.
  */
 export const judge_heap = (figures: ReadonlyArray<HeapFigure>): HeapVerdict => {
@@ -123,7 +123,7 @@ export const format_heap_line = (
 		: `none grew past ±${HEAP_JITTER}`;
 	return (
 		`retained heap per further schema, which may grow by up to +${HEAP_ALLOWANCE} B, read past ` +
-		`±${HEAP_JITTER}, on any one figure, scenario or export, under either class: ` +
+		`±${HEAP_JITTER}, on any one figure, scenario or export, under any class: ` +
 		(verdict.verdict === 'ask'
 			? `ASK, ${format_heap_figures(verdict.over)} over it, the user rules; ${grew}`
 			: `pass, ${grew}`) +

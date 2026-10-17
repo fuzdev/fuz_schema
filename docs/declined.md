@@ -558,3 +558,29 @@ Every schema a Standard Schema natively, in place of the
   schema is guarded. See
   [design.md](design.md#behavior-that-differs-from-valibot-and-zod).
 - **Reopens**: nothing known.
+
+## Values that throw when read
+
+### A guard for a revoked `Proxy` in `fail`
+
+`fail` names the type it received with `Array.isArray`, which throws a
+`TypeError` on a revoked `Proxy`. The guard takes `typeof` first and keeps
+it when `Array.isArray` throws, so a primitive's `parse` returns its issue.
+
+- **Gave**: `parse` returns issues for a revoked `Proxy` on the primitives,
+  and on the object schemas for a revoked function. `is` already gives
+  `false` on the primitives, and only a schema that takes anything, as
+  `unknown` does, accepts one.
+- **Cost**: core +14 gzip, the library +25, and `fail` alone +12. The `union`
+  scenario went from 940 to 955, past its backstop of 952. Guarding the
+  containers too, whose own `Array.isArray` throws in `is` and in `parse`,
+  costs +29 to +45 more, and a trap or a getter that throws still throws.
+- **Why**: it fails closed and loud: a throw is never an input accepted. A
+  revoked `Proxy` can't come from parsed data, only from code in the
+  process. Zod's primitives throw the same `TypeError` from their issues on
+  a revoked object or array, except `literal` and `enum`, its containers
+  throw from the parse, and Valibot throws on every schema but `unknown` and
+  `any`. And it would fix the primitives, and the containers not at all for
+  a revoked object or array.
+- **Reopens**: a form that costs the core nothing, or a value of that kind
+  that data-shaped input can produce.

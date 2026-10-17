@@ -3,9 +3,11 @@ import { describe, test, assert } from 'vitest';
 import {
 	CORRECTNESS_PRICE,
 	SIZE_JITTER,
+	format_backstop_line,
 	format_opt_in_line,
 	format_size_figures,
 	judge_backstop,
+	is_priced_as_correctness,
 	judge_core_correctness,
 	judge_opt_in,
 	to_size_delta,
@@ -142,6 +144,47 @@ describe('grade_bytes', () => {
 				{ name: 'over', gzip: 76, valibot: 100 }
 			]).map((r) => r.name),
 			['over']
+		);
+	});
+
+	test('the backstop fails past it, and under security the user rules', () => {
+		const rows = [
+			{ name: 'union', gzip: 955, valibot: 1270 },
+			{ name: 'pipe', gzip: 1078, valibot: 1582 }
+		];
+		assert.strictEqual(
+			format_backstop_line(rows, 'speed'),
+			"backstop, every scenario at most 0.75x valibot's: FAIL, union 0.75x"
+		);
+		assert.strictEqual(
+			format_backstop_line(rows, 'correctness'),
+			format_backstop_line(rows, 'speed')
+		);
+		assert.strictEqual(
+			format_backstop_line(rows, 'security'),
+			"backstop, every scenario at most 0.75x valibot's: ASK, union 0.75x, the user rules on a fix of security"
+		);
+		const under = [{ ...rows[0]!, gzip: 940 }, rows[1]!];
+		for (const change_class of ['speed', 'correctness', 'security'] as const) {
+			assert.strictEqual(
+				format_backstop_line(under, change_class),
+				"backstop, every scenario at most 0.75x valibot's: pass, the most union 0.74x"
+			);
+		}
+	});
+
+	test('a security change is priced as one of correctness', () => {
+		assert.ok(is_priced_as_correctness('security'));
+		assert.ok(is_priced_as_correctness('correctness'));
+		assert.ok(!is_priced_as_correctness('speed'));
+		const figures = [
+			to_figure('pipe', 100, CORRECTNESS_PRICE.opt_in + SIZE_JITTER + 1, { kind: 'alone' }),
+			to_figure('union', 100, 12)
+		];
+		assert.deepEqual(judge_opt_in(figures, 'security'), judge_opt_in(figures, 'correctness'));
+		assert.strictEqual(
+			format_opt_in_line(judge_opt_in(figures, 'security'), 'security', 7),
+			format_opt_in_line(judge_opt_in(figures, 'correctness'), 'correctness', 7)
 		);
 	});
 

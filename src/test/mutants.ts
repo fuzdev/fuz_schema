@@ -297,6 +297,18 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		// the guard declined in docs/declined.md: the tests pin the throw it would remove
+		name: 'fail_names_revoked_proxy',
+		edits: [
+			{
+				find: `					: Array.isArray(value)
+						? 'array'`,
+				replace: `					: (() => { try { return Array.isArray(value); } catch { return false; } })()
+						? 'array'`
+			}
+		]
+	},
+	{
 		name: 'pipe_continues_after_fail',
 		edits: [
 			{

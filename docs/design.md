@@ -149,6 +149,9 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   input.** An option that walks a node's children before the entry that rules
   it out fails only after the walk, and the next option walks them again, at
   every level: `lazy(() => union([object({args: array(Node), op: literal('a')}), ...]))`.
+  With two such options the time doubles with each level, so an input of
+  under 500 bytes of JSON took over a second, and on untrusted input of that
+  shape one of the ways out below is needed.
   Valibot and Zod's mini form do the same, and Zod's classic form is linear
   on it through the memo its containers turn on by default, as the Rust
   crate is through the verdicts such a union keeps, see

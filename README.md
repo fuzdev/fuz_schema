@@ -78,6 +78,9 @@ This is deliberate, for speed, and it's the main thing to know before using it.
 - Validation is not a snapshot. A value that can change between reads
   (a getter, a proxy, an object someone else holds) can pass and then differ.
   Parsed JSON can't do this; objects from untrusted in-process code can.
+  A revoked `Proxy` makes `parse` throw a `TypeError` rather than return issues,
+  and `is` too on a schema of objects or arrays,
+  see [`docs/declined.md`](docs/declined.md#a-guard-for-a-revoked-proxy-in-fail).
 - A class instance that matches comes back as that instance, not a plain object.
 
 What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
@@ -157,8 +160,9 @@ With the key there, as `undefined` too, every step runs,
 and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schema that is the entry.
 
 A recursive `union` whose options walk a node's children before an entry tells them apart
-takes time exponential in the input's depth, as each option walks them again.
-`variant`, or each option's `literal` entries first, is the way out where there is one.
+takes time exponential in the input's depth, as each option walks them again:
+with two such options the time doubles with each level, and under 500 bytes of JSON took over a second.
+On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
 Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
 and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
 and an object the input holds twice gets one output object in both places.
@@ -495,6 +499,7 @@ and checks the result against the rules a change is accepted by:
 - bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
 - a fix of correctness or conformance has a price instead: 4 gzipped bytes every user pays, 50 on any one export or scenario
 - every scenario stays under 0.75 of Valibot's gzipped size for the same scenario
+- a fix of security (an input that should fail and doesn't, denial of service on data-shaped input, input leaking into issues) comes first, at the correctness price, and past that 0.75 the user rules
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP
 - what each further schema holds may grow by 16 bytes, of a scenario or of one export alone
