@@ -261,8 +261,25 @@ export type InferInput<T extends Schema> = NonNullable<T['~types']>['input'];
 
 /**
  * A schema that refines or transforms an already-typed value, for use in `pipe`.
+ *
+ * Every action the library makes is typed as one. Its `~accepts` is checked
+ * as a parameter is, so a `pipe` refuses an action whose input is narrower than
+ * the output of the step before it: `pipe(nullable(number), min_value(0))` is
+ * a type error, as `null` would reach `min_value`. A step typed as a plain
+ * `Schema` is checked by its input alone, and so is an action under `lazy` or
+ * `union`, or at the start of a `pipe` that is itself a step: those don't give
+ * an action back, so `pipe(nullable(string), union([regex(/n/)]))` compiles
+ * and matches `null`, which `regex` reads as `'null'`.
  */
-export type SchemaAction<TInput, TOutput = TInput> = Schema<TOutput, TInput>;
+export interface SchemaAction<
+	TInput,
+	TOutput = TInput,
+	TKind extends string = string,
+	TDef = unknown
+> extends Schema<TOutput, TInput, TKind, TDef> {
+	/** Type-only, never set at runtime: what the action takes, read as a parameter. */
+	readonly '~accepts'?: (input: TInput) => void;
+}
 
 export type SchemaEntries = Record<string, Schema>;
 
@@ -851,7 +868,20 @@ const label_issues = (
  * @param message - the text, or a function that builds it from the issue and the value
  */
 // @__NO_SIDE_EFFECTS__
-export const message = <T extends Schema>(
+export const message: {
+	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
+	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
+	// second takes it, unless the message is of type `any`, which fails that pass for both, or the
+	// schema's type is an object literal's, of which that pass doesn't require the optional key
+	<TInput, TOutput, TKind extends string, TDef>(
+		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		message: string | ((issue: SchemaIssue, value: unknown) => string)
+	): SchemaAction<TInput, TOutput, TKind, TDef>;
+	<T extends Schema>(
+		schema: T,
+		message: string | ((issue: SchemaIssue, value: unknown) => string)
+	): T;
+} = <T extends Schema>(
 	schema: T,
 	message: string | ((issue: SchemaIssue, value: unknown) => string)
 ): T =>
@@ -962,11 +992,20 @@ export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, nu
  * @param name - the flavor's name, which exists only in the types and is not stored
  */
 // @__NO_SIDE_EFFECTS__
-export const flavor: <T extends Schema, const TName extends string>(
-	schema: T,
-	name: TName
-) => Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
-	schema;
+export const flavor: {
+	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
+	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
+	// second takes it, unless the schema's type is an object literal's, of which that pass doesn't
+	// require the optional key. A `name` of type `any` makes `TName` `any` and still passes it
+	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
+		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		name: TName
+	): SchemaAction<TInput, Flavored<TOutput, TName>, TKind, TDef>;
+	<T extends Schema, const TName extends string>(
+		schema: T,
+		name: TName
+	): Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
+} = (schema: AnySchema) => schema;
 
 /**
  * Brands the output type of `schema` with `name`, see `Branded`.
@@ -977,11 +1016,20 @@ export const flavor: <T extends Schema, const TName extends string>(
  * @param name - the brand's name, which exists only in the types and is not stored
  */
 // @__NO_SIDE_EFFECTS__
-export const brand: <T extends Schema, const TName extends string>(
-	schema: T,
-	name: TName
-) => Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> = (schema: AnySchema) =>
-	schema;
+export const brand: {
+	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
+	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
+	// second takes it, unless the schema's type is an object literal's, of which that pass doesn't
+	// require the optional key. A `name` of type `any` makes `TName` `any` and still passes it
+	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
+		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		name: TName
+	): SchemaAction<TInput, Branded<TOutput, TName>, TKind, TDef>;
+	<T extends Schema, const TName extends string>(
+		schema: T,
+		name: TName
+	): Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
+} = (schema: AnySchema) => schema;
 
 //
 // Containers
@@ -1610,7 +1658,7 @@ type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
-): Schema<Uninferred<T>, T, 'min_length', number> => {
+): SchemaAction<T, Uninferred<T>, 'min_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_length',
@@ -1625,7 +1673,7 @@ export const min_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
-): Schema<Uninferred<T>, T, 'max_length', number> => {
+): SchemaAction<T, Uninferred<T>, 'max_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_length',
@@ -1640,7 +1688,7 @@ export const max_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const min_value = <T extends number | bigint>(
 	min: T extends bigint ? bigint : number
-): Schema<Uninferred<T>, T, 'min_value', number | bigint> => {
+): SchemaAction<T, Uninferred<T>, 'min_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_value',
@@ -1653,7 +1701,7 @@ export const min_value = <T extends number | bigint>(
 // @__NO_SIDE_EFFECTS__
 export const max_value = <T extends number | bigint>(
 	max: T extends bigint ? bigint : number
-): Schema<Uninferred<T>, T, 'max_value', number | bigint> => {
+): SchemaAction<T, Uninferred<T>, 'max_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_value',
@@ -1668,7 +1716,7 @@ export const max_value = <T extends number | bigint>(
  * and the infinities too. An integer past the safe range passes, as it is an
  * integer: `safe_integer` is the stricter test.
  */
-export const integer: Schema<number, number, 'integer', undefined> = {
+export const integer: SchemaAction<number, number, 'integer', undefined> = {
 	kind: 'integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isInteger(value) ? value : fail(ctx, 'integer', value))
@@ -1679,7 +1727,7 @@ export const integer: Schema<number, number, 'integer', undefined> = {
  * `Number.MIN_SAFE_INTEGER` to `Number.MAX_SAFE_INTEGER`, the range in which
  * every integer is a double of its own.
  */
-export const safe_integer: Schema<number, number, 'safe_integer', undefined> = {
+export const safe_integer: SchemaAction<number, number, 'safe_integer', undefined> = {
 	kind: 'safe_integer',
 	def: undefined,
 	run: (value, ctx) => (Number.isSafeInteger(value) ? value : fail(ctx, 'safe_integer', value))
@@ -1692,7 +1740,7 @@ export const safe_integer: Schema<number, number, 'safe_integer', undefined> = {
 export const regex = (
 	pattern: RegExp,
 	expected: string = String(pattern)
-): Schema<string, string, 'regex', RegExp> => ({
+): SchemaAction<string, string, 'regex', RegExp> => ({
 	kind: 'regex',
 	def: pattern,
 	run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
@@ -1705,7 +1753,7 @@ export const regex = (
 export const check = <T>(
 	fn: (value: T) => boolean,
 	expected: string = 'check'
-): Schema<T, T, 'check', (value: T) => boolean> => ({
+): SchemaAction<T, T, 'check', (value: T) => boolean> => ({
 	kind: 'check',
 	def: fn,
 	run: (value, ctx) => (fn(value) ? value : fail(ctx, 'check', value, expected))
@@ -1717,7 +1765,7 @@ export const check = <T>(
 // @__NO_SIDE_EFFECTS__
 export const transform = <T, O>(
 	fn: (value: T) => O
-): Schema<O, T, 'transform', (value: T) => O> => ({
+): SchemaAction<T, O, 'transform', (value: T) => O> => ({
 	kind: 'transform',
 	def: fn,
 	run: (value) => fn(value)

@@ -478,6 +478,25 @@ through the input, and refuses instead of guessing:
   container in a `pipe` that applied a default or dropped a key, the issue
   is about the new value and the walk returns the input's.
 
+## Actions in a pipe
+
+Every action is typed as a `SchemaAction`, which adds a type-only `~accepts`:
+a function of the action's input, compared as a parameter is. A `pipe` step
+checks it against the output of the step before, so an action that takes
+less than it is given is refused: `pipe(nullable(number), min_value(0))` and
+`pipe(optional(string), min_length(1))` don't compile, where `null` would
+pass the first and `undefined` throw in the second. The pipe goes inside,
+`nullable(pipe(number, min_value(0)))`. With the input type, compared the
+other way, an annotated `check` or `transform` takes exactly the type it is
+given. `message` and `meta` give an action back for an action, so one inside
+a `pipe` is still typed from the step before it, and so do `brand` and
+`flavor`. A step typed as a plain `Schema` is checked by its input alone, and
+so is an action under `lazy` or `union`, or at the start of a `pipe` used as
+a step, as those don't give an action back:
+`pipe(nullable(string), union([regex(/n/)]))` compiles, and matches `null`,
+which `regex` reads as `'null'`. The key is never set, so an action keeps the
+one shape.
+
 ## Actions outside a pipe
 
 An action's `run` assumes the type a `pipe` gives it, from the schema before

@@ -29,7 +29,7 @@
  * @module
  */
 
-import type { AnySchema } from './schema.ts';
+import type { AnySchema, SchemaAction } from './schema.ts';
 
 /**
  * What can be attached to a schema. Every key is optional.
@@ -74,7 +74,17 @@ const registry: Registry = /* @__PURE__ */ (() =>
  * @param meta - copied one level deep, so changing its keys afterwards changes nothing
  */
 // @__NO_SIDE_EFFECTS__
-export const meta = <T extends AnySchema>(schema: T, meta: SchemaMeta): T => {
+export const meta: {
+	// an action first, so one built inside a `pipe` is typed from the step before it. A schema
+	// typed without `~accepts` fails the first in TypeScript's subtype pass over overloads, so the
+	// second takes it, unless `meta` is of type `any`, which fails that pass for both, or the
+	// schema's type is an object literal's, of which that pass doesn't require the optional key
+	<TInput, TOutput, TKind extends string, TDef>(
+		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		meta: SchemaMeta
+	): SchemaAction<TInput, TOutput, TKind, TDef>;
+	<T extends AnySchema>(schema: T, meta: SchemaMeta): T;
+} = <T extends AnySchema>(schema: T, meta: SchemaMeta): T => {
 	const copy = { kind: schema.kind, def: schema.def, run: schema.run } as AnySchema as T;
 	registry.set(copy, { ...registry.get(schema), ...meta });
 	return copy;

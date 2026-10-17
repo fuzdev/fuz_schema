@@ -117,13 +117,16 @@ describe('primitives', () => {
 					['number'],
 					action.kind
 				);
-				// alone, or after a schema that takes any value, each fails it itself
+				// alone, or after a schema that takes any value, each fails it itself:
+				// the types refuse an action after `unknown`, so it is cast to a schema
 				assert.deepEqual(
 					issues_of(action, value).map((i) => i.kind),
 					[action.kind]
 				);
 				assert.deepEqual(
-					issues_of(s.pipe(s.unknown, action), value).map((i) => i.kind),
+					issues_of(s.pipe(s.unknown, action as s.Schema<number, unknown>), value).map(
+						(i) => i.kind
+					),
 					[action.kind]
 				);
 			}

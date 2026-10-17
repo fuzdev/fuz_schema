@@ -567,9 +567,11 @@ describe('to_schema_json refuses', () => {
 			() => ({ kind: 'pipe', def: [], run: s.unknown.run }) satisfies s.SchemaNode<'pipe'>,
 			'cannot serialize `pipe` at /schema: it has no schema'
 		);
+		// the types refuse `min_length` after these, so it is cast to a schema
+		const step = s.min_length(1) as s.Schema<{ length: number }, unknown>;
 		for (const head of [s.unknown, s.boolean, s.nullable(s.string), s.record(s.string)]) {
 			refuses(
-				() => s.pipe(head, s.min_length(1)),
+				() => s.pipe(head, step),
 				'cannot serialize `pipe` at /schema/def/0: a pipe must start with a schema that fixes the type of its value'
 			);
 		}

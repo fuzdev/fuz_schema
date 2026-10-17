@@ -1081,6 +1081,87 @@ describe('inference by position', () => {
 		s.object({ a: s.pipe(s.string, s.min_value(1)) });
 	});
 
+	test('a pipe refuses an action whose input is narrower than the step before it', () => {
+		// @ts-expect-error `null` would reach `min_value`
+		s.pipe(s.nullable(s.number), s.min_value(0));
+		// @ts-expect-error `undefined` would reach `min_length`, which reads its `length`
+		s.pipe(s.optional(s.string), s.min_length(1));
+		// @ts-expect-error any value would reach `min_value`
+		s.pipe(s.unknown, s.min_value(0));
+		// @ts-expect-error any value would reach `min_length`
+		s.pipe(s.unknown, s.min_length(1));
+		s.pipe(
+			s.nullable(s.number),
+			// @ts-expect-error nor does an annotated `check` take a value it doesn't say it takes
+			s.check((n: number) => n > 0)
+		);
+		// @ts-expect-error nor a later step
+		s.pipe(s.number, s.transform(String), s.integer);
+		// @ts-expect-error through a `message` too
+		s.pipe(s.nullable(s.number), s.message(s.min_value(0), 'm'));
+		// @ts-expect-error and a `meta`
+		s.pipe(s.nullable(s.number), meta(s.min_value(0), {}));
+		// the pipe goes inside the `nullable` or the `optional` instead
+		const _Nullable = s.nullable(s.pipe(s.number, s.min_value(0)));
+		expectTypeOf<s.Infer<typeof _Nullable>>().toEqualTypeOf<number | null>();
+		const _Optional = s.optional(s.pipe(s.string, s.min_length(1)));
+		expectTypeOf<s.Infer<typeof _Optional>>().toEqualTypeOf<string | undefined>();
+		// and an action is still typed from the step before it through `message` and `meta`
+		const _Message = s.pipe(s.string, s.message(s.min_length(1), 'm'));
+		expectTypeOf<s.Infer<typeof _Message>>().toEqualTypeOf<string>();
+		const _Meta = s.pipe(s.string, meta(s.min_length(1), { description: 'd' }));
+		expectTypeOf<s.Infer<typeof _Meta>>().toEqualTypeOf<string>();
+		const _Both = s.pipe(
+			s.number,
+			meta(
+				s.message(
+					s.check((v) => v > 0),
+					'm'
+				),
+				{}
+			),
+			s.max_value(9)
+		);
+		expectTypeOf<s.Infer<typeof _Both>>().toEqualTypeOf<number>();
+		// a schema stays a schema through `message`, so it is checked by its input alone
+		expectTypeOf(s.message(s.string, 'm')).toEqualTypeOf<typeof s.string>();
+		s.pipe(s.nullable(s.string), s.message(s.string, 'm'));
+		// @ts-expect-error `brand` keeps what an action takes, so `null` would reach `regex`
+		s.pipe(s.nullable(s.string), s.brand(s.regex(/n/), 'R'));
+		// @ts-expect-error and so does `flavor`
+		s.pipe(s.nullable(s.string), s.flavor(s.min_length(1), 'F'));
+		s.pipe(
+			s.nullable(s.string),
+			// @ts-expect-error an annotated `check` too
+			s.brand(
+				s.check((v: string) => v.length > 0),
+				'C'
+			)
+		);
+		// and the action is still typed from the step before it, with the output branded
+		const _Brand = s.pipe(s.string, s.brand(s.regex(/x/), 'R'));
+		expectTypeOf<s.Infer<typeof _Brand>>().toEqualTypeOf<s.Branded<string, 'R'>>();
+		const _Flavor = s.pipe(s.string, s.flavor(s.min_length(1), 'F'), s.max_length(9));
+		expectTypeOf<s.Infer<typeof _Flavor>>().toEqualTypeOf<s.Flavored<string, 'F'>>();
+		const _Check = s.pipe(
+			s.number,
+			s.brand(
+				s.check((v) => v > 0),
+				'P'
+			)
+		);
+		expectTypeOf<s.Infer<typeof _Check>>().toEqualTypeOf<s.Branded<number, 'P'>>();
+		// a schema stays a schema through `brand` and `flavor`, checked by its input alone
+		expectTypeOf(s.brand(s.string, 'B')).toEqualTypeOf<
+			s.Schema<s.Branded<string, 'B'>, string, 'string', undefined>
+		>();
+		expectTypeOf(s.flavor(s.string, 'F')).toEqualTypeOf<
+			s.Schema<s.Flavored<string, 'F'>, string, 'string', undefined>
+		>();
+		s.pipe(s.nullable(s.string), s.brand(s.string, 'B'));
+		s.pipe(s.nullable(s.string), s.flavor(s.string, 'F'));
+	});
+
 	test('optional', () => {
 		const _leaves = {
 			string: s.optional(s.string),

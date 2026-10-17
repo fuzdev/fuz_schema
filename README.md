@@ -56,7 +56,7 @@ and the Standard Schema adapter are all like this, and all bundle to nothing unu
 ## What's different from Valibot
 
 - **One shape.** Every schema and action is the same `{kind, def, run}` object.
-  There's no separate action type, `pipe` is a loop,
+  There's no separate action object, `pipe` is a loop,
   and every schema shares one hidden class in V8.
 - **Constants where there are no options.** `s.string`, not `s.string()`.
 - **Output is copy-on-write.** A valid value that needs no defaults, transforms,
