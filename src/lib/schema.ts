@@ -1842,22 +1842,27 @@ export const pipe: SchemaPipeFactory = (
 // Actions
 //
 
-// Resolves to `T`, in a form nothing is inferred through. An action's `T` is the
-// type it is given, which comes from its input in a `pipe` and never from what
-// the schema around that `pipe` expects, which is any schema and would make it
-// `any`. For the same reason the bound of a value action is typed by whether
-// it is a number or a bigint and its `def` apart from `T`: either of them
-// typed `T` would have the bound's literal type inferred as the value's. A
-// `pipe` writes its output in it too: inferred from what the schema around it
-// expects, the output would be `any`, and so would the value an unannotated
-// `check` or `transform` at its end is given. The `extends T` bound keeps the
-// result assignable to `T` while `T` is still generic, and the tuple keeps it
-// from distributing over a generic `T`, which would have the `check` at the
-// end of a pipe of a generic schema typed from the pipe's declared type and
-// not as the schema's output. So a function that pipes its own generic action
-// or schema can return the pipe as its declared type, and inference is blocked
-// all the same.
-type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
+/**
+ * Resolves to `T`, in a form nothing is inferred through. An action's `T` is the
+ * type it is given, which comes from its input in a `pipe` and never from what
+ * the schema around that `pipe` expects, which is any schema and would make it
+ * `any`. For the same reason the bound of a value action is typed by whether
+ * it is a number or a bigint and its `def` apart from `T`: either of them
+ * typed `T` would have the bound's literal type inferred as the value's. A
+ * `pipe` writes its output in it too: inferred from what the schema around it
+ * expects, the output would be `any`, and so would the value an unannotated
+ * `check` or `transform` at its end is given. The `extends T` bound keeps the
+ * result assignable to `T` while `T` is still generic, and the tuple keeps it
+ * from distributing over a generic `T`, which would have the `check` at the
+ * end of a pipe of a generic schema typed from the pipe's declared type and
+ * not as the schema's output. So a function that pipes its own generic action
+ * or schema can return the pipe as its declared type, and inference is blocked
+ * all the same.
+ *
+ * Exported so a declaration emitted for such a function can name it: inlined,
+ * the bound would refer to a type parameter the emitted file doesn't declare.
+ */
+export type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
