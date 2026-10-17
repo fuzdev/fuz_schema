@@ -106,6 +106,18 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 	{ name: 'array', create: (s) => s.array(s.string), valid: ['a'], invalid: ['a', 1] },
 	{ name: 'union', create: (s) => s.union([s.string, s.number]), valid: 1, invalid: true },
 	{
+		name: 'memo_union',
+		create: (s: SchemaLib): schema_lib.AnySchema => {
+			// a recursive one, so its memo is read: the second option is handed what the first walked
+			const node: schema_lib.AnySchema = s.lazy(() =>
+				s.memo_union(['a', 'b'].map((op) => s.object({ args: s.array(node), op: s.literal(op) })))
+			);
+			return node;
+		},
+		valid: { args: [{ args: [], op: 'b' }], op: 'b' },
+		invalid: { args: [{ args: [], op: 'c' }], op: 'b' }
+	},
+	{
 		name: 'variant',
 		create: (s) =>
 			s.variant('k', [

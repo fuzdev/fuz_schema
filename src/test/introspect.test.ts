@@ -314,6 +314,17 @@ describe('format_schema_type', () => {
 		});
 	}
 
+	test('a memo_union reads as the union it is', () => {
+		const memo = s.memo_union([s.string, s.array(s.string)]);
+		assert.strictEqual(format_schema_type(memo), 'string | Array<string>');
+		assert.strictEqual(unwrap_schema(memo), memo);
+		// not looked into, as a union isn't
+		const [field] = get_schema_fields(
+			s.object({ a: s.memo_union([s.string, s.with_default(s.number, 1)]) })
+		);
+		assert.ok(!field!.has_default);
+	});
+
 	test('the rest of an object_with_rest, inside a lazy', () => {
 		const Tree: s.AnySchema = s.object_with_rest(
 			{ v: s.number },

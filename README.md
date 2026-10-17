@@ -123,7 +123,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of` |
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
-| containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `variant` |
+| containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
@@ -155,6 +155,13 @@ and leaves the key out, as in Valibot:
 and a `transform` there writes no key. `s.with_default` is what fills a missing key in.
 With the key there, as `undefined` too, every step runs,
 and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schema that is the entry.
+
+A recursive `union` whose options walk a node's children before an entry tells them apart
+takes time exponential in the input's depth, as each option walks them again.
+`variant`, or each option's `literal` entries first, is the way out where there is one.
+Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
+and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
+and an object the input holds twice gets one output object in both places.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing every issue.

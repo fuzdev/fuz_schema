@@ -833,6 +833,74 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'memo_union_in_reporting',
+		edits: [
+			{
+				find: `		if (!ctx.probe || value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);`,
+				replace: `		if (value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_cached_failure_uncounted',
+		edits: [
+			{
+				find: `			// what \`fail\` does in probe mode
+			ctx.fails++;`,
+				replace: `			// what \`fail\` does in probe mode`
+			}
+		]
+	},
+	{
+		name: 'memo_union_failure_kept_as_output',
+		edits: [
+			{
+				find: `memo.set(value, ctx.fails > count ? memos : output);`,
+				replace: `memo.set(value, output);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_failure_not_kept',
+		edits: [
+			{
+				find: `			memo.set(value, ctx.fails > count ? memos : output);`,
+				replace: `			if (ctx.fails === count) memo.set(value, output);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_shared_across_parses',
+		edits: [
+			{
+				find: `		let memo = memos.get(ctx);
+		if (!memo) memos.set(ctx, (memo = new WeakMap()));`,
+				replace: `		let memo = memos.get(memos as any);
+		if (!memo) memos.set(memos as any, (memo = new WeakMap()));`
+			}
+		]
+	},
+	{
+		name: 'memo_union_one_closure',
+		edits: [
+			{
+				find: `		run: run.length > 2 ? memo_run : (value, ctx) => memo_run(value, ctx)`,
+				replace: `		run: memo_run`
+			}
+		]
+	},
+	{
+		name: 'memo_union_undefined_output_run_again',
+		edits: [
+			{
+				find: `		if (output === undefined && !memo.has(value)) {`,
+				replace: `		if (output === undefined) {`
+			}
+		]
+	},
+	{
 		name: 'recognizer_row_renamed',
 		file: 'src/test/differential_recognizers.ts',
 		edits: [{ find: `		row: 'record, array',`, replace: `		row: 'record, an array',` }]

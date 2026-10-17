@@ -152,13 +152,35 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   Valibot and Zod's mini form do the same, and Zod's classic form is linear
   on it through the memo its containers turn on by default, as the Rust
   crate is through the verdicts such a union keeps, see
-  [rust.md](rust.md#two-evaluators). There are two
+  [rust.md](rust.md#two-evaluators). There are three
   ways out. `variant`, when the options have a `literal` discriminator,
   finds the option in constant time, so the children are walked once.
   Otherwise each option puts the entries that rule it out cheaply first, as
-  a `literal`, and a probed option fails before it walks. A memo inside
-  `lazy` and the other forms are in
-  [declined.md](declined.md#a-recursive-union).
+  a `literal`, and a probed option fails before it walks. Where neither
+  fits, `memo_union`, below.
+- **`memo_union` is a `union` that keeps what it gave while probing.** Its
+  `kind` and `def` are `union`'s, so every reader takes it as one, and its
+  `run` wraps the union's, one closure of two parameters or of four as the
+  union's is. Probed with an object or an array, it looks the value up in a
+  `WeakMap` of the parse, which a `WeakMap` it holds keeps by the context and
+  drops with it, and gives back the output, or for a failure counts one in
+  `fails` and returns, as `fail` does in probe mode. A value it hasn't seen
+  is run, and kept. Unprobed, in a `parse` with no `union` above it, it runs
+  as the union does, and its options are probed. So
+  nothing is written to the schema or the context, and no parse reaches
+  another's memo: a parse inside a `check` has a context of its own. The
+  object and the key it is handed matter only to a missing key, which is
+  `undefined` and never kept, so the verdict on an object is the object's
+  alone, which a getter, a `Proxy`, or a `check` with state can break. What
+  comes back from the memo differs, see
+  [below](#behavior-that-differs-from-valibot-and-zod): a `transform` under it
+  is not run again for an object it is probed with again, and an object the input
+  holds twice gets one output object in both places. Issues are the union's,
+  and a cyclic input still runs out of stack. The memo is in the union asked
+  again, so on a chain of such unions each link is one, and so is a union
+  another option reads into, as the `M` of the form in
+  [rust.md](rust.md#issues). It is an export of its own, as the memo inside
+  `lazy` cost every `lazy`, see [declined.md](declined.md#a-recursive-union).
 
 ## Copy-on-write output
 
@@ -921,6 +943,13 @@ API, or in the names:
   What it does with an input is in the matrix, and is what both do but for
   an array.
   By design: the option is found in constant time.
+- `memo_union` gives back what it kept for an object it is probed with
+  again, so a `transform` under it runs fewer times than under Valibot's
+  `union`, or Zod's, which differ from each other in that count, and an
+  object the input holds twice gets one output object in both places, where
+  both give two. Verdicts, outputs as values, and issues are the union's,
+  which the matrix holds. By design: it is opt-in, for a recursive union
+  that is otherwise exponential.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.

@@ -266,7 +266,8 @@ In place of reading the length of `arguments` on each call.
 
 A `union` whose options walk a node's children before an entry rules them
 out takes time exponential in the input's depth, see
-[design.md](design.md#running). These were built to make it linear.
+[design.md](design.md#running). These were built to make it linear in the
+core, and declined. `memo_union`, an export of its own, is the opt-in form.
 
 ### A memo of probes inside `lazy`
 
@@ -289,7 +290,9 @@ its input, and starts only when an object comes back.
   doesn't need it, where `variant` or the cheap entries first in each option
   are the way out of the curve.
 - **Reopens**: a form whose bytes land only on schemas that recurse through
-  a union.
+  a union. That is `memo_union`, whose bytes land only where it is used, and
+  whose memo is kept by the union and not by the `lazy`. In the core, as
+  here, it stays declined.
 
 ### The `literal` entries first when probing
 

@@ -1497,6 +1497,94 @@ export const union = <const T extends ReadonlyArray<Schema>>(
 };
 
 /**
+ * A `union` that keeps, for one parse, what it gave for each object or array
+ * it is probed with, and gives that back when it is probed with the same one
+ * again. A recursive `union` whose options walk a node's children before an
+ * entry rules them out takes time exponential in the input's depth, as each
+ * option walks them again at every level; this one walks them once, so the
+ * time is linear. Its `kind` and `def` are `union`'s, and so are its verdicts
+ * and its issues: every reader of a schema, `to_schema_json` included, takes
+ * it as a `union`.
+ *
+ * Use it where two options could take the same object or array and reach a
+ * `lazy` without a `literal` entry telling them apart first, as in
+ * `lazy(() => memo_union([object({args: array(Node), op: literal('a')}), ...]))`.
+ * `variant` is the cheaper way out when the options have a `literal`
+ * discriminator, and so is putting each option's `literal` entries first.
+ * The memo is in the union that tries the options again, so on a chain of
+ * such unions each link is a `memo_union`, and where an option reads into
+ * another recursive union, as `M` in
+ * `L = lazy(() => memo_union([object({x: array(L), t: literal('a')}), loose_object({x: array(M)})]))`,
+ * that union is one too. The memo is by the object: a step before it that
+ * returns a new object, as a `transform` that copies does, leaves it nothing
+ * to find, so such a step goes inside an option.
+ *
+ * It keeps only what it gives while probing, which is how a `union` runs its
+ * options and how `is` runs: a union that is itself not probed runs as
+ * `union` does, and what its options hold is probed. What it keeps assumes
+ * the answer on an object depends on the object alone, which a getter, a
+ * `Proxy`, or a `check` with state can break. Where a value comes back from
+ * the memo:
+ *
+ * - a `transform`, a `check`, or a `with_default_fn`'s `make` beneath the
+ *   union is not run again for an object the union is probed with again, by
+ *   another option or where the input holds it twice, where under `union` it
+ *   runs each time
+ * - an input that holds the same object twice gets the same output object in
+ *   both places
+ * - a cyclic input still recurses until the stack runs out, as with `union`
+ *
+ * The memo is a `WeakMap` for each parse, from each object or array probed to
+ * what came back, held in a `WeakMap` by the parse's context and dropped with
+ * it, so nothing of one parse reaches another. Each probe of an object or an
+ * array looks it up, which costs a union that walks nothing again, and a parse
+ * that probes one allocates the map.
+ */
+// @__NO_SIDE_EFFECTS__
+export const memo_union = <const T extends ReadonlyArray<Schema>>(
+	options: T
+): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
+	const { run } = union(options);
+	// a memo for each parse, by its context, so none outlives it. The map of
+	// memos is the mark of a failure, which no output can be
+	const memos = new WeakMap<SchemaContext, WeakMap<object, unknown>>();
+	const memo_run = (
+		value: unknown,
+		ctx: SchemaContext,
+		parent?: Record<PropertyKey, unknown>,
+		key?: PropertyKey
+	): any => {
+		// an object's verdict doesn't depend on the object and the key it was
+		// read from: they matter only to a missing key, which is `undefined`
+		if (!ctx.probe || value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);
+		}
+		let memo = memos.get(ctx);
+		if (!memo) memos.set(ctx, (memo = new WeakMap()));
+		let output = memo.get(value);
+		if (output === memos) {
+			// what `fail` does in probe mode
+			ctx.fails++;
+			return value;
+		}
+		// an output of `undefined` is kept too
+		if (output === undefined && !memo.has(value)) {
+			const count = ctx.fails;
+			output = run(value, ctx, parent, key);
+			memo.set(value, ctx.fails > count ? memos : output);
+		}
+		return output;
+	};
+	return {
+		kind: 'union',
+		def: options,
+		// two closures as the union has, so what holds this one passes the
+		// object and the key on exactly where it would to the union
+		run: run.length > 2 ? memo_run : (value, ctx) => memo_run(value, ctx)
+	};
+};
+
+/**
  * Matches the object schema in `options` whose `key` literal equals the value's,
  * a discriminated union with constant-time dispatch.
  *

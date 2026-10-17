@@ -286,6 +286,20 @@ describe('to_schema_json', () => {
 		});
 	});
 
+	test('writes a memo_union as the union it is', () => {
+		const Node: s.AnySchema = s.lazy(() =>
+			s.memo_union([s.object({ args: s.array(Node), op: s.literal('a') }), s.string])
+		);
+		const Plain: s.AnySchema = s.lazy(() =>
+			s.union([s.object({ args: s.array(Plain), op: s.literal('a') }), s.string])
+		);
+		assert.deepEqual(to_schema_json(Node), to_schema_json(Plain));
+		assert.deepEqual(node(s.memo_union([s.string, s.number])), {
+			kind: 'union',
+			def: [STRING, NUMBER]
+		});
+	});
+
 	test('writes plain JSON', () => {
 		const schema = s.object({
 			a: s.optional(s.pipe(s.string, s.max_length(3))),

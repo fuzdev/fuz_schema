@@ -55,6 +55,7 @@ interface Expected {
 	record: [Record<string, number>, Record<string, number>];
 	array: [Array<string>, Array<string>];
 	union: [string | number, string | number];
+	memo_union: [string | number, string | number];
 	variant: [{ k: 'a' }, { k: 'a' }];
 	pipe: [string, string];
 	pipe_check: [string, string];
@@ -272,6 +273,7 @@ describe('inference by position', () => {
 			record: s.record(s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
+			memo_union: s.memo_union([s.string, s.number]),
 			variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 			pipe: s.pipe(s.string, s.min_length(1)),
 			pipe_check: s.pipe(
@@ -326,6 +328,7 @@ describe('inference by position', () => {
 			record: s.record(s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
+			memo_union: s.memo_union([s.string, s.number]),
 			variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 			pipe: s.pipe(s.string, s.min_length(1)),
 			pipe_check: s.pipe(
@@ -383,6 +386,7 @@ describe('inference by position', () => {
 			record: s.record(s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
+			memo_union: s.memo_union([s.string, s.number]),
 			variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 			pipe: s.pipe(s.string, s.min_length(1)),
 			pipe_check: s.pipe(
@@ -437,6 +441,7 @@ describe('inference by position', () => {
 			record: s.record(s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
+			memo_union: s.memo_union([s.string, s.number]),
 			variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 			pipe: s.pipe(s.string, s.min_length(1)),
 			pipe_check: s.pipe(
@@ -492,6 +497,7 @@ describe('inference by position', () => {
 				record: s.record(s.number),
 				array: s.array(s.string),
 				union: s.union([s.string, s.number]),
+				memo_union: s.memo_union([s.string, s.number]),
 				variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 				pipe: s.pipe(s.string, s.min_length(1)),
 				pipe_check: s.pipe(
@@ -554,6 +560,7 @@ describe('inference by position', () => {
 			record: s.object_with_rest({}, s.record(s.number)),
 			array: s.object_with_rest({}, s.array(s.string)),
 			union: s.object_with_rest({}, s.union([s.string, s.number])),
+			memo_union: s.object_with_rest({}, s.memo_union([s.string, s.number])),
 			variant: s.object_with_rest({}, s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.object_with_rest({}, s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.object_with_rest(
@@ -629,6 +636,7 @@ describe('inference by position', () => {
 			record: s.union([s.record(s.number)]),
 			array: s.union([s.array(s.string)]),
 			union: s.union([s.union([s.string, s.number])]),
+			memo_union: s.union([s.memo_union([s.string, s.number])]),
 			variant: s.union([s.variant('k', [s.object({ k: s.literal('a') })])]),
 			pipe: s.union([s.pipe(s.string, s.min_length(1))]),
 			pipe_check: s.union([
@@ -689,6 +697,7 @@ describe('inference by position', () => {
 			record: s.union([s.record(s.number)]),
 			array: s.union([s.array(s.string)]),
 			union: s.union([s.union([s.string, s.number])]),
+			memo_union: s.union([s.memo_union([s.string, s.number])]),
 			variant: s.union([s.variant('k', [s.object({ k: s.literal('a') })])]),
 			pipe: s.union([s.pipe(s.string, s.min_length(1))]),
 			pipe_check: s.union([
@@ -751,6 +760,7 @@ describe('inference by position', () => {
 				record: s.record(s.number),
 				array: s.array(s.string),
 				union: s.union([s.string, s.number]),
+				memo_union: s.memo_union([s.string, s.number]),
 				variant: s.variant('k', [s.object({ k: s.literal('a') })]),
 				pipe: s.pipe(s.string, s.min_length(1)),
 				pipe_check: s.pipe(
@@ -872,6 +882,10 @@ describe('inference by position', () => {
 			),
 			union: s.pipe(
 				s.union([s.string, s.number]),
+				s.check((v) => v !== undefined)
+			),
+			memo_union: s.pipe(
+				s.memo_union([s.string, s.number]),
 				s.check((v) => v !== undefined)
 			),
 			variant: s.pipe(
@@ -1186,6 +1200,7 @@ describe('inference by position', () => {
 			record: s.optional(s.record(s.number)),
 			array: s.optional(s.array(s.string)),
 			union: s.optional(s.union([s.string, s.number])),
+			memo_union: s.optional(s.memo_union([s.string, s.number])),
 			variant: s.optional(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.optional(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.optional(
@@ -1246,6 +1261,7 @@ describe('inference by position', () => {
 			record: s.nullable(s.record(s.number)),
 			array: s.nullable(s.array(s.string)),
 			union: s.nullable(s.union([s.string, s.number])),
+			memo_union: s.nullable(s.memo_union([s.string, s.number])),
 			variant: s.nullable(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.nullable(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.nullable(
@@ -1312,6 +1328,7 @@ describe('inference by position', () => {
 			record: s.with_default(s.record(s.number), nothing),
 			array: s.with_default(s.array(s.string), nothing),
 			union: s.with_default(s.union([s.string, s.number]), nothing),
+			memo_union: s.with_default(s.memo_union([s.string, s.number]), nothing),
 			variant: s.with_default(s.variant('k', [s.object({ k: s.literal('a') })]), nothing),
 			pipe: s.with_default(s.pipe(s.string, s.min_length(1)), nothing),
 			pipe_check: s.with_default(
@@ -1396,6 +1413,7 @@ describe('inference by position', () => {
 			record: s.with_default_fn(s.record(s.number), () => nothing),
 			array: s.with_default_fn(s.array(s.string), () => nothing),
 			union: s.with_default_fn(s.union([s.string, s.number]), () => nothing),
+			memo_union: s.with_default_fn(s.memo_union([s.string, s.number]), () => nothing),
 			variant: s.with_default_fn(s.variant('k', [s.object({ k: s.literal('a') })]), () => nothing),
 			pipe: s.with_default_fn(s.pipe(s.string, s.min_length(1)), () => nothing),
 			pipe_check: s.with_default_fn(
@@ -1471,6 +1489,7 @@ describe('inference by position', () => {
 			record: s.optional(s.record(s.number)),
 			array: s.optional(s.array(s.string)),
 			union: s.optional(s.union([s.string, s.number])),
+			memo_union: s.optional(s.memo_union([s.string, s.number])),
 			variant: s.optional(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.optional(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.optional(
@@ -1537,6 +1556,7 @@ describe('inference by position', () => {
 			record: s.with_default(s.record(s.number), nothing),
 			array: s.with_default(s.array(s.string), nothing),
 			union: s.with_default(s.union([s.string, s.number]), nothing),
+			memo_union: s.with_default(s.memo_union([s.string, s.number]), nothing),
 			variant: s.with_default(s.variant('k', [s.object({ k: s.literal('a') })]), nothing),
 			pipe: s.with_default(s.pipe(s.string, s.min_length(1)), nothing),
 			pipe_check: s.with_default(
@@ -1612,6 +1632,7 @@ describe('inference by position', () => {
 			record: s.array(s.record(s.number)),
 			array: s.array(s.array(s.string)),
 			union: s.array(s.union([s.string, s.number])),
+			memo_union: s.array(s.memo_union([s.string, s.number])),
 			variant: s.array(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.array(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.array(
@@ -1672,6 +1693,7 @@ describe('inference by position', () => {
 			record: s.array(s.record(s.number)),
 			array: s.array(s.array(s.string)),
 			union: s.array(s.union([s.string, s.number])),
+			memo_union: s.array(s.memo_union([s.string, s.number])),
 			variant: s.array(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.array(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.array(
@@ -1732,6 +1754,7 @@ describe('inference by position', () => {
 			record: s.record(s.record(s.number)),
 			array: s.record(s.array(s.string)),
 			union: s.record(s.union([s.string, s.number])),
+			memo_union: s.record(s.memo_union([s.string, s.number])),
 			variant: s.record(s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.record(s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.record(
@@ -1792,6 +1815,7 @@ describe('inference by position', () => {
 			record: s.lazy(() => s.record(s.number)),
 			array: s.lazy(() => s.array(s.string)),
 			union: s.lazy(() => s.union([s.string, s.number])),
+			memo_union: s.lazy(() => s.memo_union([s.string, s.number])),
 			variant: s.lazy(() => s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.lazy(() => s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.lazy(() =>
@@ -1852,6 +1876,7 @@ describe('inference by position', () => {
 			record: s.lazy(() => s.record(s.number)),
 			array: s.lazy(() => s.array(s.string)),
 			union: s.lazy(() => s.union([s.string, s.number])),
+			memo_union: s.lazy(() => s.memo_union([s.string, s.number])),
 			variant: s.lazy(() => s.variant('k', [s.object({ k: s.literal('a') })])),
 			pipe: s.lazy(() => s.pipe(s.string, s.min_length(1))),
 			pipe_check: s.lazy(() =>
@@ -1918,6 +1943,7 @@ describe('inference by position', () => {
 			record: s.message(s.record(s.number), 'm'),
 			array: s.message(s.array(s.string), 'm'),
 			union: s.message(s.union([s.string, s.number]), 'm'),
+			memo_union: s.message(s.memo_union([s.string, s.number]), 'm'),
 			variant: s.message(s.variant('k', [s.object({ k: s.literal('a') })]), 'm'),
 			pipe: s.message(s.pipe(s.string, s.min_length(1)), 'm'),
 			pipe_check: s.message(
@@ -1999,6 +2025,7 @@ describe('inference by position', () => {
 			record: s.message(s.record(s.number), 'm'),
 			array: s.message(s.array(s.string), 'm'),
 			union: s.message(s.union([s.string, s.number]), 'm'),
+			memo_union: s.message(s.memo_union([s.string, s.number]), 'm'),
 			variant: s.message(s.variant('k', [s.object({ k: s.literal('a') })]), 'm'),
 			pipe: s.message(s.pipe(s.string, s.min_length(1)), 'm'),
 			pipe_check: s.message(

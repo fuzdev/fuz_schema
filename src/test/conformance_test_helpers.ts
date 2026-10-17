@@ -66,6 +66,8 @@ export interface ConformanceLib {
 	with_default_fn: (schema: any, make: () => any) => any;
 	lazy: (get: () => any) => any;
 	union: (options: Array<any>) => any;
+	/** A `union` that keeps what it gives each object or array it is probed with: the others' `union`. */
+	memo_union: (options: Array<any>) => any;
 	/** The object in `options` whose `key` is a literal of the input's value there. */
 	variant: (key: string, options: Array<any>) => any;
 	/** `schema`, then a check of its output. */
@@ -119,6 +121,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		with_default_fn: (schema, make) => schema.default(make),
 		lazy: (get) => z.lazy(get),
 		union: (options) => z.union(options),
+		memo_union: (options) => z.union(options),
 		variant: (key, options) => z.discriminatedUnion(key, options as any),
 		refine: (schema, fn) => schema.refine(fn),
 		map: (schema, fn) => schema.transform(fn),
@@ -166,6 +169,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		with_default_fn: (schema, make) => v.optional(schema, make),
 		lazy: (get) => v.lazy(get),
 		union: (options) => v.union(options),
+		memo_union: (options) => v.union(options),
 		variant: (key, options) => v.variant(key, options),
 		refine: (schema, fn) => v.pipe(schema, v.check(fn)),
 		map: (schema, fn) => v.pipe(schema, v.transform(fn)),
@@ -219,6 +223,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		with_default_fn: (schema, make) => s.with_default_fn(schema, make),
 		lazy: (get) => s.lazy(get),
 		union: (options) => s.union(options),
+		memo_union: (options) => s.memo_union(options),
 		variant: (key, options) => s.variant(key, options),
 		refine: (schema, fn) => s.pipe(schema, s.check(fn)),
 		map: (schema, fn) => s.pipe(schema, s.transform(fn)),
@@ -472,6 +477,13 @@ const VARIANT_UNDEFINED = (l: ConformanceLib): any =>
 	l.variant('t', [l.strict({ t: l.undef, x: l.string }), l.strict({ t: l.literal('b') })]);
 
 // an entry schema as the one key `a`, with the key missing and with it `undefined`
+// a chain of `depth` nodes of `op` above `leaf`, each with one child
+const expr_input = (depth: number, op: string, leaf: unknown): unknown => {
+	let node = leaf;
+	for (let i = 0; i < depth; i++) node = { args: [node], op };
+	return node;
+};
+
 const missing_and_undefined = (
 	name: string,
 	entry: (l: ConformanceLib) => any
@@ -750,6 +762,16 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	),
 	...missing_and_undefined('union[unknown, optional(string)] entry', (l) =>
 		l.union([l.unknown, l.optional(l.string)])
+	),
+	// the same as a `memo_union`, which passes the object and the key on as the union does
+	...missing_and_undefined('memo_union[number, unknown] entry', (l) =>
+		l.memo_union([l.number, l.unknown])
+	),
+	...missing_and_undefined('memo_union[unknown, default] entry', (l) =>
+		l.memo_union([l.unknown, l.with_default(l.string, 'D')])
+	),
+	...missing_and_undefined('memo_union[unknown then a transform to "U", default] entry', (l) =>
+		l.memo_union([l.map(l.unknown, (x) => x ?? 'U'), l.with_default(l.string, 'D')])
 	),
 	...missing_and_undefined('union[number, unknown then a check] entry', (l) =>
 		l.union([l.number, l.refine(l.unknown, () => true)])
@@ -1058,6 +1080,34 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 			}),
 		input: () => ({ constructor: 'x' })
 	},
+	// a recursive `memo_union`, whose options walk the children before the `op`
+	// that tells them apart, and an input that holds one object twice
+	...[
+		['deep', () => expr_input(8, 'b', { args: [], op: 'b' })],
+		['deep, a leaf that fails', () => expr_input(8, 'b', { args: [], op: 'c' })],
+		['deep, a leaf of a number', () => expr_input(8, 'b', { n: 1 })],
+		['deep, a child that is no object', () => expr_input(8, 'b', 1)],
+		[
+			'an object twice',
+			() => {
+				const leaf = { n: 1 };
+				return { args: [leaf, { args: [leaf], op: 'a' }, leaf], op: 'b' };
+			}
+		]
+	].map(([name, input]): ConformanceCase => ({
+		name: `memo_union of expressions, ${name as string}`,
+		schema: (l) => {
+			const Node: any = l.lazy(() =>
+				l.memo_union([
+					l.strict({ args: l.array(Node), op: l.literal('a') }),
+					l.strict({ args: l.array(Node), op: l.literal('b') }),
+					l.map(l.strict({ n: l.number }), (o) => ({ ...o, copied: true }))
+				])
+			);
+			return Node;
+		},
+		input: input as () => unknown
+	})),
 	// a check in an object that is an option of a union
 	{
 		name: 'union[object of unknown then a transform to null, object of a bare check], key missing',

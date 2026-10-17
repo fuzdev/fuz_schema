@@ -45,13 +45,18 @@ const tree: s.Schema<ShapeTree> = s.object({
 	next: s.optional(s.lazy(() => tree))
 });
 
+// a recursive `memo_union` whose second option is handed what the first walked
+const expr: s.AnySchema = s.lazy(() =>
+	s.memo_union(['a', 'b'].map((op) => s.object({ args: s.array(expr), op: s.literal(op) })))
+);
+
 /**
  * Samples by the export that makes them. Its keys are every kind of
  * `SchemaDefs`, which the types hold it to, and the exports with no kind of
  * their own. Each is a function so that a lazy starts unused.
  */
 export const SHAPE_SAMPLES: Record<
-	s.SchemaKind | 'message' | 'flavor' | 'brand',
+	s.SchemaKind | 'message' | 'flavor' | 'brand' | 'memo_union',
 	() => Array<ShapeSample>
 > = {
 	string: () => [{ schema: s.string, valid: ['a'], invalid: [1] }],
@@ -167,6 +172,20 @@ export const SHAPE_SAMPLES: Record<
 			schema: s.union([s.object({ a: s.string }), s.array(s.string)]),
 			valid: [{ a: 'a' }, ['a']],
 			invalid: [{ a: 1 }, [1]]
+		}
+	],
+	// of kind `union`: one probed with the same object by two options, and one
+	// whose options take the object and the key
+	memo_union: () => [
+		{
+			schema: expr,
+			valid: [{ args: [{ args: [], op: 'b' }], op: 'b' }],
+			invalid: [{ args: [{ args: [], op: 'c' }], op: 'b' }, 1]
+		},
+		{
+			schema: s.memo_union([s.number, s.optional(s.string)]),
+			valid: [1, 'a', undefined],
+			invalid: [true]
 		}
 	],
 	variant: () => [
@@ -286,7 +305,7 @@ const AROUND: Array<[string, (schema: s.AnySchema) => s.AnySchema, (value: unkno
 	['meta', (schema) => meta(schema, { description: 'd' }), (a) => a]
 ];
 
-const KINDLESS: ReadonlyArray<string> = ['message', 'flavor', 'brand'];
+const KINDLESS: ReadonlyArray<string> = ['message', 'flavor', 'brand', 'memo_union'];
 
 const format_input = (value: unknown): string => {
 	try {

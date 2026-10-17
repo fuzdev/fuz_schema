@@ -747,6 +747,18 @@ const sides = {
 		zod: 'ok {a: "U"}',
 		valibot: 'fail at a'
 	},
+	// and the same of a `memo_union`
+	'memo_union[unknown, default] entry, key missing / *': {
+		side: 'neither',
+		zod: 'ok {a: undefined}',
+		valibot: 'fail at a',
+		ours: 'ok {}'
+	},
+	'memo_union[unknown then a transform to "U", default] entry, key missing / *': {
+		side: 'zod',
+		zod: 'ok {a: "U"}',
+		valibot: 'fail at a'
+	},
 	// before an option that leaves the key `undefined` none is tried again, and
 	// the key stays out, as in zod
 	'union[unknown then a transform to "U", optional(string)] entry, key missing / *': {
