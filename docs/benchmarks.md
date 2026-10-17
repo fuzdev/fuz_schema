@@ -627,13 +627,14 @@ of its own, as `vite.config.ts` reads the git HEAD, and a test timeout of
 60 s, as the tests that take seconds alone are slower beside the other
 copies. Each copy's vitest gets an even share of the cores. It runs the tests
 of the unmutated copy first and stops if they fail, then for each mutant
-applies its edits, runs `vitest run --bail=1` without `sizes.test.ts`, and
+applies its edits, runs `vitest run` without `sizes.test.ts`, and
 restores the file. Each mutant is:
 
 - **killed**: a test failed, and the test files reported failed before the
-  kill are printed, usually the first. The tests' process group is killed at
-  the first test file it reports failed, as a break can leave another test
-  looping.
+  kill are printed, usually the first. The tests' process group is killed by
+  this script at the first test file it reports failed, as a break can leave
+  another test looping: not by vitest's `--bail`, which can exit before it
+  reports the failure.
 - **hung**: the tests outlived the timeout with none failed, and their whole
   process group was killed. Counted as killed: a break that makes a test loop
   forever is found, if slowly.

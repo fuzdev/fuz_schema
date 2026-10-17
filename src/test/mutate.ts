@@ -337,7 +337,6 @@ const vitest_workers = Math.max(1, Math.floor(availableParallelism() / worker_co
 const VITEST_ARGS = [
 	join(ROOT, 'node_modules/vitest/vitest.mjs'),
 	'run',
-	'--bail=1',
 	`--maxWorkers=${vitest_workers}`,
 	'--exclude',
 	'src/test/sizes.test.ts'
