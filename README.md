@@ -25,7 +25,7 @@ else result.issues; // [{kind, expected, received, path, message}]
 
 **It's an experiment, and "use Valibot" is a valid outcome.**
 The question is whether the gap is worth owning a validation library for.
-So far, on this repo's benchmarks, it is about 0.7x Valibot's size gzipped with every scenario bundled together
+So far, on this repo's benchmarks, it is about 0.8x Valibot's size gzipped with every scenario bundled together
 and less on each alone,
 faster on every scenario measured, and allocates nothing for a valid value it returns as it came
 beyond a fixed cost per parse.
@@ -458,8 +458,8 @@ npm run benchmark:survey      # many small shapes against Valibot and Zod, by wh
 
 What they've shown so far, read with the caveats below:
 
-- **Size:** about 0.7x Valibot gzipped with the scenarios bundled together, and far below the rest.
-  The gap is about 0.8 kB with every scenario together and nearly 0.5 kB on a lone string schema,
+- **Size:** about 0.8x Valibot gzipped with the scenarios bundled together, and far below the rest.
+  The gap is about 0.6 kB with every scenario together and about 0.4 kB on a lone string schema,
   so most of it is fixed cost, which is small in absolute terms.
 - **Warm speed:** faster than Valibot on every scenario,
   by about 2x on a flat object, 3x on a list of records, and more on recursive and union-heavy ones,
