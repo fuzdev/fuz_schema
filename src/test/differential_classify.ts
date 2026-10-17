@@ -17,7 +17,10 @@
  *
  * Every case is also run through this library's invariants: the input is not
  * mutated, every issue is the five fields, `is` agrees with `parse`, a second
- * parse gives the same result, and the context's count is kept.
+ * parse gives the same result, and the context's count is kept. A schema with
+ * a `union` is built again with every `union` a `memo_union`, which must give
+ * the same: the result of `parse`, and `is`, alone and under a `union` of one
+ * option, which probes it.
  *
  * A rule is a rewrite of the input that takes away what triggers a declared
  * difference, or a relaxation of the comparison that allows for what it
@@ -61,6 +64,7 @@ import {
 	show_input,
 	show_spec,
 	source_case,
+	spec_has_kind,
 	value_in,
 	type DifferentialEntries,
 	type DifferentialInput,
@@ -756,6 +760,28 @@ const result_text = (result: s.SchemaResult<unknown>): string =>
 				typeof v === 'symbol' || typeof v === 'bigint' ? String(v) : v
 			);
 
+// this library with every `union` a `memo_union`
+const MEMO_LIB = {
+	...CONFORMANCE_LIBS.fuz_schema,
+	union: CONFORMANCE_LIBS.fuz_schema.memo_union
+};
+
+// what `schema` gives `value`: the result of `parse`, and `is`, alone and
+// under a `union` of one option, which probes it
+const memo_texts = (schema: s.Schema, value: unknown): Array<string> =>
+	[
+		() => result_text(s.parse(schema, value)),
+		() => String(s.is(schema, value)),
+		() => result_text(s.parse(s.union([schema]), value)),
+		() => String(s.is(s.union([schema]), value))
+	].map((run) => {
+		try {
+			return run();
+		} catch (error) {
+			return 'threw ' + differential_error_line(error);
+		}
+	});
+
 /**
  * This library's invariants on one case, as the problems found: each a name,
  * a colon, and what was seen.
@@ -809,6 +835,21 @@ export const check_differential_invariants = (
 	if (!probe.fails !== first.ok)
 		problems.push(`probe verdict differs from parse: parse ok ${first.ok}`);
 	if (render_whole(value) !== before) problems.push('input mutated by run: ' + before);
+	if (spec_has_kind(spec, 'union')) {
+		let memo: s.Schema;
+		try {
+			memo = build_spec(spec, MEMO_LIB);
+		} catch (error) {
+			return [...problems, 'memo_union build threw: ' + differential_error_line(error)];
+		}
+		const ours = memo_texts(schema, value);
+		const memo_ours = memo_texts(memo, value);
+		for (const [i, name] of ['parse', 'is', 'parse in a union', 'is in a union'].entries()) {
+			if (memo_ours[i] !== ours[i]) {
+				problems.push(`memo_union differs in ${name}: ${ours[i]} where it gives ${memo_ours[i]}`);
+			}
+		}
+	}
 	return problems;
 };
 

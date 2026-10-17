@@ -1564,7 +1564,9 @@ export const union = <const T extends ReadonlyArray<Schema>>(
  * options and how `is` runs: a union that is itself not probed runs as
  * `union` does, and what its options hold is probed. What it keeps assumes
  * the answer on an object depends on the object alone, which a getter, a
- * `Proxy`, or a `check` with state can break. Where a value comes back from
+ * `Proxy`, or a `check` with state can break. Where one does, `is` and
+ * `parse` can differ, as only probing reads the memo: `is` probes everything,
+ * and `parse` probes only what a union holds. Where a value comes back from
  * the memo:
  *
  * - a `transform`, a `check`, or a `with_default_fn`'s `make` beneath the
@@ -1577,9 +1579,11 @@ export const union = <const T extends ReadonlyArray<Schema>>(
  *
  * The memo is a `WeakMap` for each parse, from each object or array probed to
  * what came back, held in a `WeakMap` by the parse's context and dropped with
- * it, so nothing of one parse reaches another. Each probe of an object or an
- * array looks it up, which costs a union that walks nothing again, and a parse
- * that probes one allocates the map.
+ * it, so nothing of one parse reaches another. A context is one parse: a
+ * `SchemaContext` run again keeps its memo, which answers for an object it
+ * kept, changed since or not. Each probe of an object or an array looks it
+ * up, which costs a union that walks nothing again, and a parse that probes
+ * one allocates the map.
  */
 // @__NO_SIDE_EFFECTS__
 export const memo_union = <const T extends ReadonlyArray<Schema>>(

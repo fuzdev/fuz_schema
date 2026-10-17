@@ -856,6 +856,47 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'memo_union_read_outside_probe',
+		edits: [
+			{
+				find: `		if (!ctx.probe || value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);
+		}
+		let memo = memos.get(ctx);
+		if (!memo) memos.set(ctx, (memo = new WeakMap()));
+		let output = memo.get(value);`,
+				replace: `		if (value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);
+		}
+		let memo = memos.get(ctx);
+		if (!memo) memos.set(ctx, (memo = new WeakMap()));
+		let output = memo.get(value);
+		if (!ctx.probe && output === undefined) return run(value, ctx, parent, key);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_keep_outside_probe',
+		edits: [
+			{
+				find: `		if (!ctx.probe || value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);
+		}`,
+				replace: `		if (value === null || typeof value !== 'object') {
+			return run(value, ctx, parent, key);
+		}
+		if (!ctx.probe) {
+			let kept = memos.get(ctx);
+			if (!kept) memos.set(ctx, (kept = new WeakMap()));
+			const before = ctx.fails;
+			const out = run(value, ctx, parent, key);
+			kept.set(value, ctx.fails > before ? memos : out);
+			return out;
+		}`
+			}
+		]
+	},
+	{
 		name: 'memo_union_cached_failure_uncounted',
 		edits: [
 			{

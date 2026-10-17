@@ -171,10 +171,13 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   is run, and kept. Unprobed, in a `parse` with no `union` above it, it runs
   as the union does, and its options are probed. So
   nothing is written to the schema or the context, and no parse reaches
-  another's memo: a parse inside a `check` has a context of its own. The
+  another's memo: a parse inside a `check` has a context of its own. A
+  context is one parse: a context run again keeps its memo. The
   object and the key it is handed matter only to a missing key, which is
   `undefined` and never kept, so the verdict on an object is the object's
-  alone, which a getter, a `Proxy`, or a `check` with state can break. What
+  alone, which a getter, a `Proxy`, or a `check` with state can break. Where
+  one does, `is` and `parse` can differ, as only probing reads the memo:
+  `is` probes everything, and `parse` only what a union holds. What
   comes back from the memo differs, see
   [below](#behavior-that-differs-from-valibot-and-zod): a `transform` under it
   is not run again for an object it is probed with again, and an object the input
@@ -970,6 +973,15 @@ API, or in the names:
   both give two. Verdicts, outputs as values, and issues are the union's,
   which the matrix holds. By design: it is opt-in, for a recursive union
   that is otherwise exponential.
+- A `message` function is handed the issue and the value the wrapped schema
+  was given, with the issue's path relative to that value. Valibot's is
+  handed the value that failed as `issue.input`, with no path yet. Zod's
+  `error` is handed the value that failed as `input`, with the whole path,
+  and is called for its own schema's issues and checks, not a child's. So
+  for a child's issue Valibot hands the child and Zod's is not called, and
+  for a step that fails both hand that step's input, where this library
+  hands the wrapped value, from which `get_issue_value(issue, value)` finds
+  the child's. By design: an issue holds no value.
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.

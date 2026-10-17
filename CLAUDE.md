@@ -99,11 +99,13 @@ dev server.
   `conformance_test_helpers.ts`
 - `src/test/schema.differential.test.ts` - the same rule over schemas and
   inputs generated from fixed seeds, each difference explained by a rule of a
-  declared one, with this library's invariants on every case, and a pinned
-  case for each entry of `SPLIT_RECOGNIZERS`. Its modules, each importing
-  only those before it: `differential_generate.ts`, the generated schemas and
-  inputs and the run of a library on them; `differential_rules.ts`, the rules
-  and the rewrites and comparison they are made of;
+  declared one, with this library's invariants on every case, `memo_union`
+  held to `union` on recursive schemas over inputs that reuse nodes, and a
+  pinned case for each entry of `SPLIT_RECOGNIZERS`. Its modules, each
+  importing only those before it: `differential_generate.ts`, the generated
+  schemas and inputs and the run of a library on them;
+  `differential_rules.ts`, the rules and the rewrites and comparison they are
+  made of;
   `differential_recognizers.ts`, `SPLIT_RECOGNIZERS` and `split_side`;
   `differential_classify.ts`, the classifying, invariants, minimizer, and
   report. `differential.ts` is `npm run differential`, a deeper run of any

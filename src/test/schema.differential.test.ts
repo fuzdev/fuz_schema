@@ -1,7 +1,15 @@
 import { describe, test, assert } from 'vitest';
 
+import * as s from '#lib/schema.ts';
 import { DIFFERENCES, SIDES, type ConformanceSidesRow } from './conformance_tables.ts';
-import { render_parsed, type ConformanceParsed } from './conformance_test_helpers.ts';
+import {
+	CONFORMANCE_FLAVORS,
+	CONFORMANCE_LIBS,
+	render_parsed,
+	render_value,
+	type ConformanceFlavor,
+	type ConformanceParsed
+} from './conformance_test_helpers.ts';
 import {
 	classify_differential_case,
 	format_differential_report,
@@ -11,7 +19,12 @@ import {
 import {
 	DIFFERENTIAL_KINDS,
 	DIFFERENTIAL_SYMBOL,
+	build_spec,
+	differential_error_line,
+	gen_input,
 	gen_root_spec,
+	gen_spec,
+	materialize_input,
 	run_differential_case,
 	show_input,
 	show_spec,
@@ -25,7 +38,7 @@ import {
 	DIFFERENTIAL_UNRULED,
 	type DifferentialRuleName
 } from './differential_rules.ts';
-import { create_seeded_rng } from './seeded_rng.ts';
+import { create_seeded_rng, type SeededRng } from './seeded_rng.ts';
 
 // The differential at a fixed depth: the same seeds and counts on every run
 // and in CI, so what passes here passes there. A deeper run, of any seed, is
@@ -596,4 +609,169 @@ describe('the differential pins', () => {
 			[]
 		);
 	});
+});
+
+// `memo_union` against `union` on a family of its own, apart from the
+// generator, whose schemas never hold one union twice and whose inputs never
+// hold one object twice, so the memo never answers there:
+// `N = lazy(() => U(options))`, each option an object whose recursive entry
+// `x` comes before the `literal` tag `t` that tells the options apart, so a
+// probed option walks the children before it fails, over inputs that are
+// trees reusing nodes. `union` is exponential in the depth, which is capped.
+const MEMO_SEEDS = [1, 2, 3];
+const MEMO_COUNT = 1000;
+const MEMO_DEPTH = 5;
+const MEMO_TAGS = ['a', 'b', 'c', 1];
+
+type MemoSlot = 'array' | 'self' | 'optional' | 'nullable' | 'record';
+const MEMO_SLOTS: Array<MemoSlot> = ['array', 'array', 'self', 'optional', 'nullable', 'record'];
+
+// an option: a schema of the generator, a leaf, or an object with the slot
+// `x`, an entry `d` of the generator now and then, and the tag
+type MemoOption =
+	| { t: 'leaf'; spec: DifferentialSpec }
+	| {
+			t: 'node';
+			flavor: ConformanceFlavor;
+			slot: MemoSlot;
+			d: DifferentialSpec | null;
+			tag: string | number;
+	  };
+
+const gen_memo_options = (rng: SeededRng): Array<MemoOption> =>
+	Array.from({ length: 2 + rng.int(2) }, (): MemoOption =>
+		rng.chance(0.2)
+			? { t: 'leaf', spec: gen_spec(rng, 1) }
+			: {
+					t: 'node',
+					flavor: rng.pick(CONFORMANCE_FLAVORS),
+					slot: rng.pick(MEMO_SLOTS),
+					d: rng.chance(0.4) ? gen_spec(rng, 1) : null,
+					tag: rng.pick(MEMO_TAGS)
+				}
+	);
+
+// the schema, with each option's runs counted into `runs`
+const build_memo_family = (
+	options: Array<MemoOption>,
+	union: (options: Array<s.AnySchema>) => s.AnySchema,
+	runs: { count: number }
+): s.AnySchema => {
+	const l = CONFORMANCE_LIBS.fuz_schema;
+	const N: s.AnySchema = s.lazy(() => inner);
+	const slots: Record<MemoSlot, s.AnySchema> = {
+		array: s.array(N),
+		self: N,
+		optional: s.optional(N),
+		nullable: s.nullable(N),
+		record: s.record(N)
+	};
+	// with the `length` of the option's `run`, so the union chooses the closure it would
+	const counted = (o: s.AnySchema): s.AnySchema => ({
+		kind: o.kind,
+		def: o.def,
+		run:
+			o.run.length > 2
+				? (value: unknown, ctx: s.SchemaContext, parent: any, key: any) => (
+						runs.count++,
+						o.run(value, ctx, parent, key)
+					)
+				: (value: unknown, ctx: s.SchemaContext) => (runs.count++, o.run(value, ctx))
+	});
+	const inner = union(
+		options.map((o) =>
+			counted(
+				o.t === 'leaf'
+					? build_spec(o.spec, l)
+					: l[o.flavor]({
+							x: slots[o.slot],
+							...(o.d ? { d: build_spec(o.d, l) } : {}),
+							t: s.literal(o.tag)
+						})
+			)
+		)
+	);
+	return N;
+};
+
+// a tree of nodes, each now and then one made before, so the input is a DAG,
+// and a tag now and then another option's, so an option fails after its walk
+const gen_memo_input = (
+	rng: SeededRng,
+	options: Array<MemoOption>,
+	depth: number,
+	made: Array<unknown>
+): unknown => {
+	if (made.length && rng.chance(0.3)) return rng.pick(made);
+	const o = rng.pick(options);
+	if (o.t === 'leaf' || depth <= 0) {
+		const leaves = options.flatMap((p) => (p.t === 'leaf' ? [p.spec] : []));
+		const spec = o.t === 'leaf' ? o.spec : rng.pick([...leaves, { t: 'number' } as const]);
+		return materialize_input(gen_input(rng, spec));
+	}
+	const child = (): unknown => gen_memo_input(rng, options, depth - 1, made);
+	const x =
+		o.slot === 'array'
+			? Array.from({ length: rng.int(3) }, child)
+			: o.slot === 'record'
+				? Object.fromEntries(Array.from({ length: rng.int(3) }, (_, i) => ['k' + i, child()]))
+				: rng.chance(0.15)
+					? rng.pick([undefined, null])
+					: child();
+	const node: Record<string, unknown> = { x };
+	if (o.d && rng.chance(0.8)) node.d = materialize_input(gen_input(rng, o.d));
+	node.t = rng.chance(0.8) ? o.tag : rng.pick(MEMO_TAGS);
+	made.push(node);
+	return node;
+};
+
+const memo_result_text = (result: s.SchemaResult<unknown>): string =>
+	result.ok
+		? 'ok ' + render_value(result.value)
+		: 'fail ' +
+			JSON.stringify(result.issues, (_, x) =>
+				typeof x === 'symbol' || typeof x === 'bigint' ? String(x) : x
+			);
+
+// the result of `parse`, and `is`, alone and under a `union` of one option,
+// which probes it, of `parse` on the input twice, which probes neither, and
+// of `parse` on the input twice where only the first is probed
+const memo_family_texts = (schema: s.AnySchema, input: unknown): Array<string> =>
+	[
+		() => memo_result_text(s.parse(schema, input)),
+		() => String(s.is(schema, input)),
+		() => memo_result_text(s.parse(s.union([schema]), input)),
+		() => String(s.is(s.union([schema]), input)),
+		() => memo_result_text(s.parse(s.array(schema), [input, input])),
+		() =>
+			memo_result_text(
+				s.parse(s.object({ a: s.union([schema]), b: schema }), { a: input, b: input })
+			)
+	].map((run) => {
+		try {
+			return run();
+		} catch (error) {
+			return 'threw ' + differential_error_line(error);
+		}
+	});
+
+describe('memo_union on recursive unions over inputs that reuse nodes', () => {
+	for (const seed of MEMO_SEEDS) {
+		test(`seed ${seed}: gives what union gives, and answers from the memo`, () => {
+			const rng = create_seeded_rng(seed);
+			const union_runs = { count: 0 };
+			const memo_runs = { count: 0 };
+			for (let n = 0; n < MEMO_COUNT; n++) {
+				const options = gen_memo_options(rng);
+				const input = gen_memo_input(rng, options, MEMO_DEPTH, []);
+				assert.deepEqual(
+					memo_family_texts(build_memo_family(options, s.memo_union, memo_runs), input),
+					memo_family_texts(build_memo_family(options, s.union, union_runs), input),
+					`case ${n}`
+				);
+			}
+			// the memo answered, where a union runs its options each time
+			assert.isBelow(memo_runs.count, union_runs.count);
+		});
+	}
 });

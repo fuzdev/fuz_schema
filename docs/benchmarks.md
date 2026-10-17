@@ -562,7 +562,9 @@ and is classified by the tables of `src/test/conformance_tables.ts`:
 
 Every case also runs through this library's invariants: the input is not
 mutated, every issue is the five fields, `is` agrees with `parse`, a second
-parse gives the same, and the context's count is kept.
+parse gives the same, and the context's count is kept. A case with a `union`
+is run again with every `union` a `memo_union`, which must give the same
+result of `parse`, and of `is`, alone and under a `union` of one option.
 
 It compares the verdict and the paths of the issues, and not their text, so
 the name an issue gives `NaN` and a `union`'s `expected` are held by
@@ -599,6 +601,10 @@ Not generated, as no counterpart in Zod and Valibot exists or as they have no
 run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
 `brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Each
 declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
+A generated schema holds no union twice and an input no object twice, so the
+memo of a `memo_union` never answers there. The test holds it to `union` on
+a family of its own, from fixed seeds: a recursive union whose options walk
+their children before a `literal` tag, over inputs that reuse nodes.
 
 ## Mutants
 

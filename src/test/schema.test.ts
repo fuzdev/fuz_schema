@@ -4824,6 +4824,149 @@ describe('array, union, variant', () => {
 			}
 		});
 
+		// an object whose `x` is `1` and then `'a'` on every read after the first
+		const changing = (reads: { count: number }): { x: unknown } => ({
+			get x() {
+				return reads.count++ ? 'a' : 1;
+			}
+		});
+
+		test('reads an object once for every probe of one parse', () => {
+			for (const [name, U] of UNIONS) {
+				const M = U([s.object({ x: s.number })]);
+				// two options of an outer union probe `M` with the same object
+				const schema = s.union([
+					s.object({ a: M, z: s.literal(1) }),
+					s.object({ a: M, z: s.literal(2) })
+				]);
+				const reads = { count: 0 };
+				const result = s.parse(schema, { a: changing(reads), z: 2 });
+				// the second option is handed what the first read
+				assert.strictEqual(result.ok, name === 'memo_union', name);
+				assert.strictEqual(reads.count, name === 'memo_union' ? 1 : 2, name);
+			}
+		});
+
+		test('a getter held twice can make is and parse differ', () => {
+			for (const [name, U] of UNIONS) {
+				const M = U([s.object({ x: s.number })]);
+				const input = (): Array<unknown> => {
+					const o = changing({ count: 0 });
+					return [o, o];
+				};
+				// `parse` probes neither item, so each reads the getter
+				assert(!s.parse(s.array(M), input()).ok, name);
+				// `is` probes both, and the second is read back from the memo
+				assert.strictEqual(s.is(s.array(M), input()), name === 'memo_union', name);
+			}
+		});
+
+		test('a Proxy whose keys change is enumerated once', () => {
+			for (const [name, U] of UNIONS) {
+				const M = U([s.object({ x: s.number })]);
+				const schema = s.union([
+					s.object({ a: M, z: s.literal(1) }),
+					s.object({ a: M, z: s.literal(2) })
+				]);
+				let enumerations = 0;
+				// an unknown key `y` appears after the first enumeration
+				const a = new Proxy(
+					{ x: 1, y: 1 },
+					{
+						ownKeys: () => (enumerations++ ? ['x', 'y'] : ['x']),
+						getOwnPropertyDescriptor: (target, key) => Reflect.getOwnPropertyDescriptor(target, key)
+					}
+				);
+				assert.strictEqual(s.is(schema, { a, z: 2 }), name === 'memo_union', name);
+				assert.strictEqual(enumerations, name === 'memo_union' ? 1 : 2, name);
+			}
+		});
+
+		test('a revoked Proxy throws as under union', () => {
+			const errors = UNIONS.map(([, U]) => {
+				const M = U([s.object({ x: s.number })]);
+				const { proxy, revoke } = Proxy.revocable({ x: 1 }, {});
+				revoke();
+				return [
+					() => s.is(s.array(M), [proxy, proxy]),
+					() =>
+						s.parse(s.union([s.object({ a: M, z: s.literal(1) }), s.object({ a: M })]), {
+							a: proxy
+						})
+				].map((run) => {
+					try {
+						run();
+					} catch (error) {
+						return String(error);
+					}
+					return 'no throw';
+				});
+			});
+			assert.deepEqual(errors[1], errors[0]);
+			assert(errors[0]!.every((e) => e.startsWith('TypeError')));
+		});
+
+		test('a stable object held twice gets what union gives', () => {
+			const results = UNIONS.map(([name, U]) => {
+				const M = U([s.strip_object({ x: s.number }), s.array(s.number)]);
+				// probed under an outer union, so the second key reads the memo
+				const schema = s.union([s.object({ a: M, b: M })]);
+				const copied = { x: 1, q: 1 };
+				const output = s.parse_or_throw(schema, { a: copied, b: copied });
+				// one output object in both places, where union copies twice
+				assert.strictEqual(output.a === output.b, name === 'memo_union', name);
+				const failing = { x: 'x' };
+				const list = [1];
+				return [
+					output,
+					s.parse(schema, { a: failing, b: failing }),
+					s.is(schema, { a: failing, b: failing }),
+					s.is(schema, { a: list, b: list })
+				];
+			});
+			assert.deepEqual(results[1], results[0]);
+			assert.deepEqual(results[0]!.slice(2), [false, true]);
+		});
+
+		test('a context run again keeps its memo', () => {
+			// a context is one parse: run again, the memo answers for an object it
+			// kept, changed or not
+			for (const [name, U] of UNIONS) {
+				const M = U([s.object({ x: s.number })]);
+				const value: { x: unknown } = { x: 1 };
+				const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+				M.run(value, ctx);
+				assert.strictEqual(ctx.fails, 0, name);
+				value.x = 'a';
+				M.run(value, ctx);
+				assert.strictEqual(ctx.fails, name === 'memo_union' ? 0 : 1, name);
+				// a fresh context reads it again
+				assert(!s.is(M, value), name);
+			}
+		});
+
+		test('keeps and reads only while probing', () => {
+			const results = UNIONS.map(([, U]) => {
+				const M = U([s.strip_object({ x: s.number })]);
+				// copied by the strip, so each run gives an object of its own
+				const kept = { x: 1, q: 1 };
+				const failing = { x: 'x' };
+				// `a` is probed, under a union, and `b` is not, in either order
+				const probed_first = s.object({ a: s.union([M]), b: M });
+				const probed_last = s.object({ a: M, b: s.union([M]) });
+				const first = s.parse_or_throw(probed_first, { a: kept, b: kept });
+				const last = s.parse_or_throw(probed_last, { a: kept, b: kept });
+				return [
+					first.a === first.b,
+					last.a === last.b,
+					s.parse(probed_first, { a: failing, b: failing }),
+					s.parse(probed_last, { a: failing, b: failing })
+				];
+			});
+			assert.deepEqual(results[1], results[0]);
+			assert.deepEqual(results[0]!.slice(0, 2), [false, false]);
+		});
+
 		test('a parse inside a check has a memo of its own', () => {
 			const verdicts = UNIONS.map(([, U]) => {
 				// a check that runs `is` of the union on each child
