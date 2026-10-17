@@ -4831,19 +4831,51 @@ describe('array, union, variant', () => {
 			}
 		});
 
-		test('reads an object once for every probe of one parse', () => {
+		// what two options of an outer union probe `M` with the same object `a`
+		// through: `M` is an entry before `z`, so the first option reads `z`, and
+		// fails on a `z` of `2`, only after its probe of `M` is done
+		const probed_twice = (M: s.AnySchema): s.AnySchema =>
+			s.union([s.object({ a: M, z: s.literal(1) }), s.object({ a: M, z: s.literal(2) })]);
+
+		test('reads nothing of an object it is probed with again in one parse', () => {
 			for (const [name, U] of UNIONS) {
-				const M = U([s.object({ x: s.number })]);
-				// two options of an outer union probe `M` with the same object
-				const schema = s.union([
-					s.object({ a: M, z: s.literal(1) }),
-					s.object({ a: M, z: s.literal(2) })
-				]);
-				const reads = { count: 0 };
-				const result = s.parse(schema, { a: changing(reads), z: 2 });
-				// the second option is handed what the first read
-				assert.strictEqual(result.ok, name === 'memo_union', name);
-				assert.strictEqual(reads.count, name === 'memo_union' ? 1 : 2, name);
+				const schema = probed_twice(U([s.object({ x: s.number })]));
+				// the reads of `a` by every probe of `M`, however many one probe makes
+				const reads_of = (z: number): number => {
+					let reads = 0;
+					const a = {
+						get x() {
+							reads++;
+							return 1;
+						}
+					};
+					assert(s.parse(schema, { a, z }).ok, name);
+					return reads;
+				};
+				// a `z` of `1` is one probe of `M`, of `2` two, the second of them a memo hit
+				const once = reads_of(1);
+				assert(once > 0, name);
+				assert.strictEqual(reads_of(2), once * (name === 'memo_union' ? 1 : 2), name);
+			}
+		});
+
+		test('a second probe is handed what the first read', () => {
+			for (const [name, U] of UNIONS) {
+				const schema = probed_twice(U([s.object({ x: s.number })]));
+				// `x` is `1` until `z` is read, which ends the first probe of `M`
+				let probed = false;
+				const input = {
+					a: {
+						get x() {
+							return probed ? 'a' : 1;
+						}
+					},
+					get z() {
+						probed = true;
+						return 2;
+					}
+				};
+				assert.strictEqual(s.parse(schema, input).ok, name === 'memo_union', name);
 			}
 		});
 
@@ -4861,24 +4893,45 @@ describe('array, union, variant', () => {
 			}
 		});
 
-		test('a Proxy whose keys change is enumerated once', () => {
+		test('a Proxy it is probed with again in one parse is enumerated by the first probe alone', () => {
 			for (const [name, U] of UNIONS) {
-				const M = U([s.object({ x: s.number })]);
-				const schema = s.union([
-					s.object({ a: M, z: s.literal(1) }),
-					s.object({ a: M, z: s.literal(2) })
-				]);
-				let enumerations = 0;
-				// an unknown key `y` appears after the first enumeration
+				const schema = probed_twice(U([s.object({ x: s.number })]));
+				const enumerations_of = (z: number): number => {
+					let enumerations = 0;
+					const a = new Proxy(
+						{ x: 1 },
+						{
+							ownKeys: (target) => {
+								enumerations++;
+								return Reflect.ownKeys(target);
+							},
+							getOwnPropertyDescriptor: (target, key) =>
+								Reflect.getOwnPropertyDescriptor(target, key)
+						}
+					);
+					assert(s.is(schema, { a, z }), name);
+					return enumerations;
+				};
+				const once = enumerations_of(1);
+				assert(once > 0, name);
+				assert.strictEqual(enumerations_of(2), once * (name === 'memo_union' ? 1 : 2), name);
+				// an unknown key `y` appears once `z` is read, after the first probe of `M`
+				let probed = false;
 				const a = new Proxy(
 					{ x: 1, y: 1 },
 					{
-						ownKeys: () => (enumerations++ ? ['x', 'y'] : ['x']),
+						ownKeys: () => (probed ? ['x', 'y'] : ['x']),
 						getOwnPropertyDescriptor: (target, key) => Reflect.getOwnPropertyDescriptor(target, key)
 					}
 				);
-				assert.strictEqual(s.is(schema, { a, z: 2 }), name === 'memo_union', name);
-				assert.strictEqual(enumerations, name === 'memo_union' ? 1 : 2, name);
+				const input = {
+					a,
+					get z() {
+						probed = true;
+						return 2;
+					}
+				};
+				assert.strictEqual(s.is(schema, input), name === 'memo_union', name);
 			}
 		});
 
