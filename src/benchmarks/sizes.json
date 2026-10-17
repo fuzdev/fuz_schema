@@ -22,7 +22,7 @@
 		"type_json": 0.7027
 	},
 	"parse": 132,
-	"library": 3188,
+	"library": 3181,
 	"exports": {
 		"SchemaError": {
 			"last_in": 6,
@@ -33,15 +33,15 @@
 			"alone": 345
 		},
 		"bigint": {
-			"last_in": 22,
+			"last_in": 21,
 			"alone": 171
 		},
 		"boolean": {
-			"last_in": 22,
+			"last_in": 21,
 			"alone": 173
 		},
 		"brand": {
-			"last_in": 9,
+			"last_in": 11,
 			"alone": 41
 		},
 		"check": {
@@ -53,15 +53,15 @@
 			"alone": 140
 		},
 		"flavor": {
-			"last_in": 10,
+			"last_in": 12,
 			"alone": 41
 		},
 		"format_issue": {
-			"last_in": 8,
+			"last_in": 7,
 			"alone": 116
 		},
 		"get_issue_value": {
-			"last_in": 65,
+			"last_in": 64,
 			"alone": 149
 		},
 		"integer": {
@@ -69,15 +69,15 @@
 			"alone": 180
 		},
 		"is": {
-			"last_in": 19,
+			"last_in": 18,
 			"alone": 20
 		},
 		"is_schema": {
-			"last_in": 44,
+			"last_in": 43,
 			"alone": 67
 		},
 		"lazy": {
-			"last_in": 55,
+			"last_in": 53,
 			"alone": 107
 		},
 		"literal": {
@@ -97,8 +97,8 @@
 			"alone": 221
 		},
 		"message": {
-			"last_in": 107,
-			"alone": 211
+			"last_in": 100,
+			"alone": 202
 		},
 		"min_length": {
 			"last_in": 20,
@@ -109,7 +109,7 @@
 			"alone": 219
 		},
 		"nullable": {
-			"last_in": 32,
+			"last_in": 31,
 			"alone": 118
 		},
 		"number": {
@@ -121,7 +121,7 @@
 			"alone": 538
 		},
 		"object_with_rest": {
-			"last_in": 203,
+			"last_in": 202,
 			"alone": 646
 		},
 		"one_of": {
@@ -165,7 +165,7 @@
 			"alone": 68
 		},
 		"union": {
-			"last_in": 273,
+			"last_in": 271,
 			"alone": 562
 		},
 		"unknown": {
@@ -177,7 +177,7 @@
 			"alone": 440
 		},
 		"with_default": {
-			"last_in": 18,
+			"last_in": 17,
 			"alone": 92
 		},
 		"with_default_fn": {
@@ -188,7 +188,7 @@
 	"modules": {
 		"meta.ts": 103,
 		"standard_schema.ts": 96,
-		"schema_json.ts": 2244,
+		"schema_json.ts": 2248,
 		"introspect.ts": 726
 	}
 }

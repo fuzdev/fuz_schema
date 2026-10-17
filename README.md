@@ -230,9 +230,14 @@ if (!result.ok) {
 }
 ```
 
+A `message` labels every issue of the schema it wraps that has no message yet, its children's included,
+and the innermost `message` wins: `s.message(s.object({a: s.message(s.string, 'a')}), 'o')`
+labels an issue at `a` with `'a'` and any other with `'o'`.
 A `message` function's `value` is what the schema it wraps was given.
 Around an action that is the action's input, so the output of the pipe's steps before it.
-Around a whole `pipe` it is the pipe's input, whichever step failed.
+Around a whole `pipe` it is the pipe's input, whichever step failed,
+and for a child's issue it is still that input, with the issue's `path` relative to it,
+so `s.get_issue_value(issue, value)` finds the child's.
 
 `get_issue_value(issue, input)` follows `issue.path` through `input`
 and returns `{ok: true, value}` or `{ok: false}`. It refuses where it would have to guess:

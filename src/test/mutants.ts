@@ -797,6 +797,42 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'message_labels_only_own',
+		edits: [
+			{
+				find: `		issue.message ??= typeof message === 'string'`,
+				replace: `		if (!issue.path.length) issue.message ??= typeof message === 'string'`
+			}
+		]
+	},
+	{
+		name: 'message_outer_wins',
+		edits: [
+			{
+				find: `		issue.message ??= typeof message === 'string'`,
+				replace: `		issue.message = typeof message === 'string'`
+			}
+		]
+	},
+	{
+		name: 'message_labels_earlier',
+		edits: [
+			{
+				find: `	for (let i = count; i < issues.length; i++) {`,
+				replace: `	for (let i = 0; i < issues.length; i++) {`
+			}
+		]
+	},
+	{
+		name: 'message_value_at_path',
+		edits: [
+			{
+				find: `message(issue, value);`,
+				replace: `message(issue, issue.path.reduce((v: any, k) => v?.[k], value));`
+			}
+		]
+	},
+	{
 		name: 'recognizer_row_renamed',
 		file: 'src/test/differential_recognizers.ts',
 		edits: [{ find: `		row: 'record, array',`, replace: `		row: 'record, an array',` }]

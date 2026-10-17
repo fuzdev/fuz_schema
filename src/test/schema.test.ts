@@ -2727,9 +2727,23 @@ describe('missing keys', () => {
 		]);
 	});
 
-	test('a message around the object does not label the issue', () => {
-		// it labels only what has no path
-		assert.deepEqual(issues_of(s.message(s.object({ a: s.unknown }), 'object'), {}), [MISSING_KEY]);
+	test('a message around the object labels the issue, at any depth', () => {
+		for (const factory of factories) {
+			const O = factory({ a: s.unknown });
+			assert.deepEqual(issues_of(s.message(O, 'object'), {}), [
+				{ ...MISSING_KEY, message: 'object' }
+			]);
+			assert.deepEqual(issues_of(s.message(factory({ o: O }), 'outer'), { o: {} }), [
+				{ ...MISSING_KEY, path: ['o', 'a'], message: 'outer' }
+			]);
+			assert.deepEqual(issues_of(s.message(s.array(s.record(O)), 'outer'), [{ k: {} }]), [
+				{ ...MISSING_KEY, path: [0, 'k', 'a'], message: 'outer' }
+			]);
+			// the entry's own message is the innermost
+			assert.deepEqual(issues_of(s.message(factory({ a: s.message(s.unknown, 'a') }), 'o'), {}), [
+				{ ...MISSING_KEY, message: 'a' }
+			]);
+		}
 	});
 
 	test('unknown under a message needs its key, and the message labels the issue', () => {
@@ -4492,20 +4506,27 @@ describe('pipe and actions', () => {
 });
 
 describe('message', () => {
-	test('labels the issues of the schema it wraps, not its children', () => {
+	test('labels every issue of the schema it wraps that has no message, at any path', () => {
 		const O = s.message(
 			s.strip_object({ a: s.message(s.string, 'a must be text'), b: s.number }),
 			'not an object'
 		);
 		assert.deepEqual(
 			issues_of(O, { a: 1, b: 'x' }).map((i) => i.message),
-			['a must be text', undefined]
+			['a must be text', 'not an object']
 		);
 		assert.deepEqual(
 			issues_of(O, null).map((i) => i.message),
 			['not an object']
 		);
 		assert.strictEqual(s.format_issue(issues_of(O, { a: 1, b: 2 })[0]!), 'a: a must be text');
+		// only the issues of its own run: an earlier sibling's stay unlabeled
+		assert.deepEqual(
+			issues_of(s.object({ a: s.string, b: s.message(s.string, 'm') }), { a: 1, b: 1 }).map(
+				(i) => i.message
+			),
+			[undefined, 'm']
+		);
 	});
 
 	test('wraps actions, takes a function, and the innermost wins', () => {
@@ -4550,10 +4571,22 @@ describe('message', () => {
 		issues_of(O, {});
 		assert.strictEqual(seen[0], value);
 		assert.deepEqual(seen.splice(0), [value, undefined]);
-		// around an object: the object, for its own issue and not its entries'
+		// around an object: the object, for its own issue and for its entries'
 		issues_of(s.message(O, note), null);
-		issues_of(s.message(s.object({ a: s.string }), note), { a: 1 });
-		assert.deepEqual(seen.splice(0), [null]);
+		const input = { a: 1 };
+		assert.strictEqual(
+			issues_of(s.message(s.object({ a: s.string }), note), input)[0]!.message,
+			'string of number'
+		);
+		assert.deepEqual(seen.splice(0), [null, input]);
+		// the path is relative to that value, so the child's value can be found from it
+		const Found = s.message(s.object({ a: s.object({ b: s.string }) }), (issue, v) => {
+			const found = s.get_issue_value(issue, v);
+			return found.ok ? `got ${String(found.value)} at ${issue.path.join('.')}` : 'none';
+		});
+		const found_issue = issues_of(s.object({ o: Found }), { o: { a: { b: 1 } } })[0]!;
+		assert.strictEqual(found_issue.message, 'got 1 at a.b');
+		assert.deepEqual(found_issue.path, ['o', 'a', 'b']);
 		// never for a value that matches, or when only whether it matches is asked
 		assert(s.is(Piped, 'ab'));
 		assert(!s.is(Piped, 1));
@@ -4579,6 +4612,95 @@ describe('message', () => {
 			s.object({ kind: s.literal('b') })
 		]);
 		assert(s.is(V, { kind: 'a' }));
+	});
+
+	test('labels the issues of every kind of child, and leaves a labeled one alone', () => {
+		const labeled = (schema: s.AnySchema, value: unknown): Array<[Array<PropertyKey>, unknown]> =>
+			issues_of(s.message(schema, 'm'), value).map((i) => [i.path, i.message]);
+		const V = s.variant('t', [
+			s.object({ t: s.literal('a'), x: s.string }),
+			s.object({ t: s.literal('b') })
+		]);
+		const A = s.object({ a: s.string });
+		const cases: Array<
+			[name: string, schema: s.AnySchema, value: unknown, path: Array<PropertyKey>]
+		> = [
+			['object unknown_key', A, { a: '', b: 1 }, ['b']],
+			['object entry', A, { a: 1 }, ['a']],
+			['strip_object entry', s.strip_object({ a: A }), { a: { a: 1 } }, ['a', 'a']],
+			['loose_object entry', s.loose_object({ a: s.string }), { a: 1 }, ['a']],
+			[
+				'object_with_rest rest',
+				s.object_with_rest({ a: s.string }, s.number),
+				{ a: '', b: '' },
+				['b']
+			],
+			['record value', s.record(s.number), { k: '' }, ['k']],
+			['array item', s.array(s.number), [0, ''], [1]],
+			['variant discriminator', V, { t: 'z' }, ['t']],
+			['variant missing discriminator', V, {}, ['t']],
+			['variant option entry', V, { t: 'a', x: 1 }, ['x']],
+			['variant option unknown_key', V, { t: 'b', q: 1 }, ['q']],
+			[
+				'pipe',
+				s.pipe(
+					A,
+					s.check(() => true)
+				),
+				{ a: 1 },
+				['a']
+			],
+			['lazy', s.lazy(() => A), { a: 1 }, ['a']],
+			['nullable', s.nullable(A), { a: 1 }, ['a']],
+			['optional', s.optional(A), { a: 1 }, ['a']],
+			['with_default', s.with_default(A, { a: '' }), { a: 1 }, ['a']],
+			// a failed union is one issue, its own: its options are only probed
+			['union', s.union([s.string, A]), { a: 1 }, []]
+		];
+		for (const [name, schema, value, path] of cases) {
+			assert.deepEqual(labeled(schema, value), [[path, 'm']], name);
+		}
+		// the innermost wins, around the child and around the whole
+		assert.deepEqual(
+			labeled(s.object({ a: s.message(s.string, 'inner'), b: s.number }), { a: 1, b: '' }),
+			[
+				[['a'], 'inner'],
+				[['b'], 'm']
+			]
+		);
+		assert.deepEqual(
+			issues_of(s.message(s.message(A, 'inner'), 'outer'), { a: 1, b: 1 }).map((i) => i.message),
+			['inner', 'inner']
+		);
+		// an outer function is not called for an issue an inner message labeled
+		let calls = 0;
+		const Counted = s.message(s.object({ a: s.message(s.string, 'inner'), b: s.number }), () => {
+			calls++;
+			return 'outer';
+		});
+		assert.deepEqual(
+			issues_of(Counted, { a: 1, b: '' }).map((i) => i.message),
+			['inner', 'outer']
+		);
+		assert.strictEqual(calls, 1);
+	});
+
+	test('labels nothing when only whether a value matches is asked', () => {
+		const seen: Array<unknown> = [];
+		const O = s.message(s.object({ a: s.array(s.string) }), (issue, value) => {
+			seen.push(value);
+			return issue.kind;
+		});
+		assert(!s.is(O, { a: [1] }));
+		assert(!s.is(O, { a: [], b: 1 }));
+		assert(!s.is(s.union([O, s.number]), { a: [1] }));
+		assert.deepEqual(seen, []);
+		// the issues a parse gives are its own, labeled once
+		assert.deepEqual(
+			issues_of(O, { a: [1] }).map((i) => [i.path, i.message]),
+			[[['a', 0], 'string']]
+		);
+		assert.strictEqual(seen.length, 1);
 	});
 
 	test('a function is handed the input of a wrapper, a union, and a schema that fails twice', () => {

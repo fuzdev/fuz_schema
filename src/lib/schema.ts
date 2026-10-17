@@ -836,7 +836,8 @@ export const lazy = <T extends Schema>(
 	};
 };
 
-// sets `message` on the issues from `count` on that a schema reported itself
+// sets `message` on every issue from `count` on that has none, at any path:
+// an inner `message` has already labeled its own, so the innermost wins
 const label_issues = (
 	issues: Array<SchemaIssue>,
 	count: number,
@@ -845,25 +846,26 @@ const label_issues = (
 ): void => {
 	for (let i = count; i < issues.length; i++) {
 		const issue = issues[i]!;
-		// a child's issues already have their path prefixed
-		if (!issue.path.length) {
-			issue.message ??= typeof message === 'string' ? message : message(issue, value);
-		}
+		issue.message ??= typeof message === 'string' ? message : message(issue, value);
 	}
 };
 
 /**
- * Sets custom text on the issues `schema` itself reports, leaving those of
- * its children alone. Works on actions too, and the innermost `message` wins.
- * The result is otherwise indistinguishable from `schema`: as an object entry
- * it hands `schema` the object and the key when `schema` takes them, so a
- * key `schema` needs is still needed under a `message`.
+ * Sets custom text on every issue `schema` reports that has no message yet,
+ * at any path: its own, and its children's. Works on actions too, and the
+ * innermost `message` wins. Nothing is labeled when only whether a value
+ * matches is asked. The result is otherwise indistinguishable from `schema`:
+ * as an object entry it hands `schema` the object and the key when `schema`
+ * takes them, so a key `schema` needs is still needed under a `message`.
  *
  * A function is called with the issue and with the value `schema` was given
  * to validate. Around an action that is the action's input, so the output of
  * the pipe's steps before it. Around a whole `pipe` it is the pipe's input,
- * whichever step failed. The issue doesn't hold the value, so text built from
- * it puts input into an issue that otherwise has none.
+ * whichever step failed. For a child's issue it is still the value `schema`
+ * was given, and the issue's `path` is relative to it, so
+ * `get_issue_value(issue, value)` finds the child's. The issue doesn't hold
+ * the value, so text built from it puts input into an issue that otherwise
+ * has none.
  *
  * @param message - the text, or a function that builds it from the issue and the value
  */

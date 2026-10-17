@@ -443,16 +443,16 @@ is only bundled when used. There is no message registry.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
-  parse unwinds it is replaced, not changed, so a `message` function that
-  keeps the `path` it was handed keeps an empty array.
+  parse unwinds it is replaced, not changed, so a `message` function is handed
+  the path below the schema it wraps, and one that keeps that array keeps it
+  without the keys above.
 - **A `missing_key` issue is the entry's**, where an `unknown_key` is the
   object's: it is reported by the `unknown`, the `literal(undefined)`, or the
   `one_of` that needs the key. It is `{kind: 'missing_key', expected: 'a
   required key', received: 'undefined'}` with the key as its last path
-  element, at the entry's place in the order. So a `message` around that
-  schema, or around a `nullable`, a `lazy`, or a `pipe` that reaches it,
-  labels it, and one around the object doesn't, as it labels only what has no
-  path. A `union` reports its own issue in its place.
+  element, at the entry's place in the order. A `message` around that
+  schema labels it, and so does one around anything that holds it, the
+  object included. A `union` reports its own issue in its place.
 - **`format_issue` quotes a key that isn't only word characters**, as JSON.
   A key with a `.` can't read as two keys, and one with a newline can't add
   a line to a `SchemaError`'s message, which is one issue per line.
@@ -460,11 +460,19 @@ is only bundled when used. There is no message registry.
 - **`to_standard_schema` writes the same text without the path**, which is
   its own field there, and so doesn't reach the path formatting.
 
-`message(schema, text)` wraps a schema and labels the issues that schema
-itself reports. It copies `kind` and `def`, so it's invisible to introspection.
+`message(schema, text)` wraps a schema and labels every issue it reports
+that has no message yet, at any path: an object's `unknown_key`, a
+`variant`'s discriminator, and every child's issues, as Valibot's
+`v.message` does. The innermost `message` wins, as it labels first and an
+outer one leaves a labeled issue alone. A failed `union` is one issue, its
+own, as its options are only probed, and in probe mode nothing is labeled.
+It copies `kind` and `def`, so it's invisible to introspection.
 A function given as the text is called with the issue and the value the
 wrapped schema's `run` was given: around an action, the output of the steps
-before it, and around a whole `pipe`, the pipe's input.
+before it, around a whole `pipe`, the pipe's input, and for a child's issue,
+still the wrapped schema's input, not the child's. The issue's path is then
+relative to that value, so `get_issue_value(issue, value)` finds the child's,
+in code only a caller who wants it bundles.
 
 `get_issue_value(issue, input)` recovers the value by following `issue.path`
 through the input, and refuses instead of guessing:
