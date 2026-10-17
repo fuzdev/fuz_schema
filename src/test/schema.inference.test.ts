@@ -1206,9 +1206,36 @@ describe('inference by position', () => {
 			s.transform((v: string) => v.toUpperCase())
 		);
 		expectTypeOf<s.Infer<typeof _Transform>>().toEqualTypeOf<string>();
-		// and nor is a refinement under `message`, which gives an action back
+		// a refinement under `message` or `meta` is a refinement still
 		const _Message = s.pipe(s.one_of([1, 2]), s.message(s.integer, 'm'));
-		expectTypeOf<s.Infer<typeof _Message>>().toEqualTypeOf<number>();
+		expectTypeOf<s.Infer<typeof _Message>>().toEqualTypeOf<1 | 2>();
+		const _Meta = s.pipe(s.one_of([1, 2]), meta(s.integer, {}));
+		expectTypeOf<s.Infer<typeof _Meta>>().toEqualTypeOf<1 | 2>();
+		const _Both = s.pipe(
+			s.literal('abc'),
+			meta(
+				s.message(
+					s.check((v) => v.length > 0),
+					'm'
+				),
+				{}
+			),
+			s.message(s.regex(/a/), 'm')
+		);
+		expectTypeOf<s.Infer<typeof _Both>>().toEqualTypeOf<'abc'>();
+		expectTypeOf(s.message(s.integer, 'm')).toEqualTypeOf<typeof s.integer>();
+		// and a `transform` under them is not
+		const _MessageTransform = s.pipe(
+			s.literal('abc'),
+			s.message(
+				s.transform((v) => v.length),
+				'm'
+			)
+		);
+		expectTypeOf<s.Infer<typeof _MessageTransform>>().toEqualTypeOf<number>();
+		// a `brand` or a `flavor` of one gives an action back, its output branded
+		const _BrandInteger = s.pipe(s.one_of([1, 2]), s.brand(s.integer, 'B'));
+		expectTypeOf<s.Infer<typeof _BrandInteger>>().toEqualTypeOf<s.Branded<number, 'B'>>();
 		// a `check` annotated wider still takes a value narrower than it says
 		const _Wider = s.pipe(
 			s.literal('abc'),

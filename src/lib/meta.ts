@@ -29,7 +29,7 @@
  * @module
  */
 
-import type { AnySchema, SchemaAction } from './schema.ts';
+import type { AnySchema, SchemaAction, SchemaRefinement } from './schema.ts';
 
 /**
  * What can be attached to a schema. Every key is optional.
@@ -75,9 +75,15 @@ const registry: Registry = /* @__PURE__ */ (() =>
  */
 // @__NO_SIDE_EFFECTS__
 export const meta: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
-	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
-	// an object literal written in the call without a `~types`, which the first takes as an action
+	// a refinement first, so a pipe keeps the type of the step before it, then an action, so one
+	// built inside a `pipe` is typed from the step before it. An action that isn't a refinement
+	// fails the first, as its `~refines` is a `boolean`, and any other schema the first two, as
+	// its `~types` has no `action`, so the last takes it, unless it is an object literal written
+	// in the call without a `~types`, which the first takes as a refinement
+	<TInput, TOutput, TKind extends string, TDef>(
+		schema: SchemaRefinement<TInput, TOutput, TKind, TDef>,
+		meta: SchemaMeta
+	): SchemaRefinement<TInput, TOutput, TKind, TDef>;
 	<TInput, TOutput, TKind extends string, TDef>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		meta: SchemaMeta

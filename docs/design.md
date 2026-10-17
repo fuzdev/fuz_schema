@@ -578,7 +578,10 @@ there. `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` is
 a constant typed `number`, and a brand or a literal before `regex` is kept. A
 step that may be a refinement or not, as `flag ? integer : transform(...)`, is
 typed by its own output, and a `transform` is not assignable to a
-`SchemaRefinement`. The fold is of the pipe's output only: each step is given
+`SchemaRefinement`. `message` and `meta` give a refinement back for one, so
+`pipe(one_of([1, 2]), message(integer, 'm'))` outputs `1 | 2` too, where
+`brand` and `flavor` give an action back, typed by its branded or flavored
+output. The fold is of the pipe's output only: each step is given
 the declared output of the step before it, so a `check` after that `integer`
 is given a `number`. The keys are never set, so an action keeps the one
 shape.

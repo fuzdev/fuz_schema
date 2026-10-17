@@ -286,8 +286,10 @@ Things that are easy to break without a test noticing:
   type of the step before it. No schema carries any of these keys at runtime.
   A wrapper that gives back the schema it holds (`message`, `meta`, `brand`,
   `flavor`) needs an overload for an action first, or an action under it is
-  not typed from the step before it. Only an action whose `run` returns the
-  value it is given is a `SchemaRefinement`.
+  not typed from the step before it, and one that keeps the output (`message`,
+  `meta`) an overload for a refinement before that, or a refinement under it
+  is not one. Only an action whose `run` returns the value it is given is a
+  `SchemaRefinement`.
 - **Nothing writes to a schema after it is made**, a `lazy` included: it
   keeps the schema it got in a closure. One write to a `run` makes the field
   mutable for every schema, which slows parses the engine had folded and

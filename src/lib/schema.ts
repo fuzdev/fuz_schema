@@ -306,8 +306,9 @@ export interface SchemaAction<
  * types the step's output as the output of the step before it:
  * `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` alone is a
  * `number`. Every action the library makes but `transform` is typed as one.
- * `message`, `meta`, `brand`, and `flavor` give a `SchemaAction` back for one,
- * so a pipe types a step under them by its own output.
+ * `message` and `meta` give one back for one. `brand` and `flavor` give a
+ * `SchemaAction` back, so a pipe types a step under them by its own output,
+ * branded or flavored.
  */
 export interface SchemaRefinement<
 	TInput,
@@ -934,9 +935,15 @@ const label_issues = (
  */
 // @__NO_SIDE_EFFECTS__
 export const message: {
-	// an action first, so one built inside a `pipe` is typed from the step before it. Any other
-	// schema fails the first, as its `~types` has no `action`, so the second takes it, unless it is
-	// an object literal written in the call without a `~types`, which the first takes as an action
+	// a refinement first, so a pipe keeps the type of the step before it, then an action, so one
+	// built inside a `pipe` is typed from the step before it. An action that isn't a refinement
+	// fails the first, as its `~refines` is a `boolean`, and any other schema the first two, as
+	// its `~types` has no `action`, so the last takes it, unless it is an object literal written
+	// in the call without a `~types`, which the first takes as a refinement
+	<TInput, TOutput, TKind extends string, TDef>(
+		schema: SchemaRefinement<TInput, TOutput, TKind, TDef>,
+		message: string | ((issue: SchemaIssue, value: unknown) => string)
+	): SchemaRefinement<TInput, TOutput, TKind, TDef>;
 	<TInput, TOutput, TKind extends string, TDef>(
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		message: string | ((issue: SchemaIssue, value: unknown) => string)
