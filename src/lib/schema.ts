@@ -837,7 +837,9 @@ export const lazy = <T extends Schema>(
 };
 
 // sets `message` on every issue from `count` on that has none, at any path:
-// an inner `message` has already labeled its own, so the innermost wins
+// an inner `message` has already labeled its own, so the innermost wins. In
+// probe mode `fails` runs ahead of `issues` and only a `union` lowers it, back
+// to what it was when the union began, so from `count` on there is nothing to label
 const label_issues = (
 	issues: Array<SchemaIssue>,
 	count: number,
@@ -904,13 +906,13 @@ export const message: {
 				? (value, ctx, parent, key, entry) => {
 						const count = ctx.fails;
 						const output = schema.run(value, ctx, parent, key, entry);
-						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						if (ctx.issues) label_issues(ctx.issues, count, message, value);
 						return output;
 					}
 				: (value, ctx) => {
 						const count = ctx.fails;
 						const output = schema.run(value, ctx);
-						if (ctx.issues && !ctx.probe) label_issues(ctx.issues, count, message, value);
+						if (ctx.issues) label_issues(ctx.issues, count, message, value);
 						return output;
 					}
 	}) as AnySchema as T;
