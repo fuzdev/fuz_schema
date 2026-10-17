@@ -154,7 +154,7 @@ describe('grade_bytes', () => {
 		];
 		assert.strictEqual(
 			format_backstop_line(rows, 'speed'),
-			"backstop, every scenario at most 0.75x valibot's: FAIL, union 0.75x"
+			"backstop, every scenario at most 0.75x valibot's: FAIL, union 0.752x"
 		);
 		assert.strictEqual(
 			format_backstop_line(rows, 'correctness'),
@@ -162,13 +162,13 @@ describe('grade_bytes', () => {
 		);
 		assert.strictEqual(
 			format_backstop_line(rows, 'security'),
-			"backstop, every scenario at most 0.75x valibot's: ASK, union 0.75x, the user rules on a fix of security"
+			"backstop, every scenario at most 0.75x valibot's: ASK, union 0.752x, the user rules on a fix of security"
 		);
 		const under = [{ ...rows[0]!, gzip: 940 }, rows[1]!];
 		for (const change_class of ['speed', 'correctness', 'security'] as const) {
 			assert.strictEqual(
 				format_backstop_line(under, change_class),
-				"backstop, every scenario at most 0.75x valibot's: pass, the most union 0.74x"
+				"backstop, every scenario at most 0.75x valibot's: pass, the most union 0.740x"
 			);
 		}
 	});

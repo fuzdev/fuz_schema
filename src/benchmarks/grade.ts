@@ -1056,7 +1056,7 @@ if (args.bundle) {
 		(Number.isNaN(f.base) ? '-' : format_size_delta(to_size_delta(f))) +
 		(over_price.has(f) ? '!' : ' ');
 	const format_vs_valibot = (ratio: number, over: boolean): string =>
-		`${ratio.toFixed(2)}x${over ? '*' : ' '}`;
+		`${ratio.toFixed(3)}x${over ? '*' : ' '}`;
 
 	console.log(
 		'\nbundle size: minified + gzip bytes. Core is what every consumer pays, opt-in what one pays who uses it\n'

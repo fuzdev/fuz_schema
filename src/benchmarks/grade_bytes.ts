@@ -157,11 +157,11 @@ export const format_backstop_line = (
 ): string => {
 	const over = judge_backstop(rows);
 	const most = rows.reduce((a, b) => (to_vs_valibot(b) > to_vs_valibot(a) ? b : a));
-	const named = over.map((r) => `${r.name} ${to_vs_valibot(r).toFixed(2)}x`).join(', ');
+	const named = over.map((r) => `${r.name} ${to_vs_valibot(r).toFixed(3)}x`).join(', ');
 	return (
 		`backstop, every scenario at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ` +
 		(!over.length
-			? `pass, the most ${most.name} ${to_vs_valibot(most).toFixed(2)}x`
+			? `pass, the most ${most.name} ${to_vs_valibot(most).toFixed(3)}x`
 			: change_class === 'security'
 				? `ASK, ${named}, the user rules on a fix of security`
 				: `FAIL, ${named}`)
