@@ -688,11 +688,26 @@ export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
 // schema as `def.schema`
 
 /**
- * The `def` of `optional` and `nullable`. An interface, so it has no index
- * signature and is not mistaken for the entries of an object schema.
+ * The `def` of `optional` and `nullable`, and the part of it every wrapper
+ * has. An interface, so it has no index signature and is not mistaken for the
+ * entries of an object schema.
  */
 export interface SchemaWrapperDef<T extends Schema> {
-	schema: T;
+	readonly schema: T;
+}
+
+/**
+ * The `def` of `with_default`. An interface, as `SchemaWrapperDef` is, so it
+ * is not mistaken for the entries of an object schema when `value` is a schema
+ * or of type `any`.
+ */
+export interface SchemaDefaultDef<T extends Schema> extends SchemaWrapperDef<T> {
+	readonly value: Infer<T>;
+}
+
+/** The `def` of `with_default_fn`, an interface for the same reason as `SchemaDefaultDef`. */
+export interface SchemaDefaultFnDef<T extends Schema> extends SchemaWrapperDef<T> {
+	readonly make: () => Infer<T>;
 }
 
 /**
@@ -743,7 +758,7 @@ export const nullable = <T extends Schema>(
 export const with_default = <T extends Schema>(
 	schema: T,
 	value: Infer<T>
-): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', { schema: T; value: Infer<T> }> => ({
+): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>> => ({
 	kind: 'with_default',
 	def: { schema, value },
 	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))
@@ -768,12 +783,7 @@ export const with_default = <T extends Schema>(
 export const with_default_fn = <T extends Schema>(
 	schema: T,
 	make: () => Infer<T>
-): Schema<
-	Infer<T>,
-	InferInput<T> | undefined,
-	'with_default_fn',
-	{ schema: T; make: () => Infer<T> }
-> => ({
+): Schema<Infer<T>, InferInput<T> | undefined, 'with_default_fn', SchemaDefaultFnDef<T>> => ({
 	kind: 'with_default_fn',
 	def: { schema, make },
 	run: (v, ctx) => (v === undefined ? make() : (schema.run(v, ctx) as Infer<T>))
@@ -1090,6 +1100,16 @@ export const loose_object = <T extends SchemaEntries>(
 };
 
 /**
+ * The `def` of `object_with_rest`. An interface, as `SchemaWrapperDef` is, so
+ * it is not mistaken for the entries of an object schema when `entries` is of
+ * type `any`.
+ */
+export interface SchemaObjectWithRestDef<T extends SchemaEntries, R extends Schema> {
+	readonly entries: T;
+	readonly rest: R;
+}
+
+/**
  * Matches an object with `entries`, and every other own enumerable string key
  * of it with `rest`: `object_with_rest({_: array(string)}, number)`
  * matches `{_: [], a: 1}` and refuses `{_: [], a: 'x'}`, at the key `a`.
@@ -1122,7 +1142,7 @@ export const object_with_rest = <T extends SchemaEntries, R extends Schema>(
 	SchemaObjectOutput<T> & Record<string, Infer<R>>,
 	SchemaObjectInput<T> & Record<string, InferInput<R>>,
 	'object_with_rest',
-	{ entries: T; rest: R }
+	SchemaObjectWithRestDef<T, R>
 > => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
@@ -1443,7 +1463,12 @@ export const variant = <
 >(
 	key: TKey,
 	options: T
-): Schema<Infer<T[number]>, InferInput<T[number]>, 'variant', { key: TKey; options: T }> => {
+): Schema<
+	Infer<T[number]>,
+	InferInput<T[number]>,
+	'variant',
+	{ readonly key: TKey; readonly options: T }
+> => {
 	const by_value: Map<unknown, AnySchema> = new Map();
 	for (const option of options) by_value.set(option.def[key]!.def, option);
 	let expected: string | undefined;

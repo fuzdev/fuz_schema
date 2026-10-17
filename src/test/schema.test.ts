@@ -6293,12 +6293,15 @@ describe('types', () => {
 
 	test('a schema is typed with the def its kind holds', () => {
 		const _Optional = s.optional(s.string);
-		expectTypeOf(_Optional.def).toEqualTypeOf<{ schema: typeof s.string }>();
+		expectTypeOf(_Optional.def).toEqualTypeOf<{ readonly schema: typeof s.string }>();
 		expectTypeOf(_Optional.def.schema.kind).toEqualTypeOf<'string'>();
 		const _Nullable = s.nullable(s.array(s.number));
 		expectTypeOf(_Nullable.def.schema.def.kind).toEqualTypeOf<'number'>();
 		const _Default = s.with_default(s.number, 1);
-		expectTypeOf(_Default.def).toEqualTypeOf<{ schema: typeof s.number; value: number }>();
+		expectTypeOf(_Default.def).toEqualTypeOf<{
+			readonly schema: typeof s.number;
+			readonly value: number;
+		}>();
 		const _OneOf = s.one_of(['a', 'b']);
 		expectTypeOf(_OneOf.kind).toEqualTypeOf<'one_of'>();
 		expectTypeOf(_OneOf.def).toEqualTypeOf<readonly ['a', 'b']>();
@@ -6328,12 +6331,26 @@ describe('types', () => {
 		narrow(s.string, s.string, s.string);
 	});
 
-	test('variant does not take a wrapper for an option', () => {
+	test('variant does not take a wrapper or an object_with_rest for an option', () => {
 		const Circle = s.object({ kind: s.literal('circle') });
 		// @ts-expect-error a wrapper's def is not an object schema's entries
 		assert.throws(() => s.variant('kind', [s.optional(Circle)]));
 		// @ts-expect-error nor is it when the key is the one a wrapper has
 		s.variant('schema', [s.nullable(s.literal('a'))]);
+		// nor a default's, when its value is of type `any` or is a schema
+		const Any = s.unknown as s.Schema<any>;
+		// @ts-expect-error a value of type `any` is not a schema's entries
+		assert.throws(() => s.variant('kind', [s.with_default(Any, 1)]), TypeError);
+		const OfSchema = s.unknown as s.Schema<s.Schema<'x', 'x', 'literal', 'x'>>;
+		// @ts-expect-error a value that is a schema is not one either
+		s.variant('value', [s.with_default(OfSchema, s.literal('x'))]);
+		// @ts-expect-error nor is the wrapped schema, under its key
+		s.variant('schema', [s.with_default(OfSchema, s.literal('x'))]);
+		// @ts-expect-error nor a `make` that returns `any`
+		assert.throws(() => s.variant('kind', [s.with_default_fn(Any, () => 1)]), TypeError);
+		// nor an `object_with_rest`'s, when its entries are of type `any`
+		// @ts-expect-error its `rest` is not an entry
+		s.variant('rest', [s.object_with_rest({} as any, s.literal('a'))]);
 	});
 
 	test('the object, key, and entry of run are optional, and a key is optional only by its kind', () => {
