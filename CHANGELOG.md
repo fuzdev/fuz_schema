@@ -1,5 +1,63 @@
 # @fuzdev/fuz_schema
 
+## 0.5.0
+
+### Minor Changes
+
+- **breaking** fix: a failing parse reports at most a hundred issues, so deep input can't exhaust memory ([d276d50](https://github.com/fuzdev/fuz_schema/commit/d276d50))
+
+  - `parse` and a Standard Schema's `validate` return the first hundred issues of an input that fails more often, with nothing to say more were found, and `parse_or_throw`'s `SchemaError` carries the same hundred
+  - a deep input with many failing values at the bottom held memory in the product of its size and its depth: a 206 KB JSON text held over a gigabyte
+  - a `SchemaError`'s message lists the first ten issues and then `and N more`, where it listed every one: `error.issues` has every issue the parse reported
+  - a custom schema's `run` that reads `ctx.issues` from a count finds an issue only below the hundredth: past it `fail` counts the failure and builds none
+
+- **breaking** feat: `message` labels every issue of the schema it wraps, its children's included ([b263ab4](https://github.com/fuzdev/fuz_schema/commit/b263ab4))
+
+  - an outer `message` now sets its text on every issue beneath it, at any path, that has no message yet, and on an object's `unknown_key` and a `variant`'s discriminator issue, as Valibot's `v.message` does
+  - a `missing_key` of an entry is labeled by a `message` around the object too
+  - the innermost `message` still wins: to keep a different text on a child, wrap that child in its own `message`
+  - a `message` function is called for a child's issue too, with the value the wrapped schema was given and the issue's `path` relative to it, so `get_issue_value(issue, value)` finds the child's
+
+- **breaking** fix: a failing `parse` of deep input with many issues no longer takes cubic time ([fb11b0c](https://github.com/fuzdev/fuz_schema/commit/fb11b0c))
+
+  - a deeply nested input with many failing values at the bottom took time in the cube of its size, which a small JSON text could use to stall a parse: it now takes time in proportion to the paths it returns
+  - a custom schema's `run` that reads `ctx.issues` sees each path innermost first, and one that reports a child's issues under a key pushes the key onto their paths, where before it prefixed it
+  - a `message` function is handed a copy of the issue: changing its argument no longer changes the issue
+
+- **breaking** fix: a `pipe` refuses an action whose input is narrower than the step before it ([ba43c41](https://github.com/fuzdev/fuz_schema/commit/ba43c41))
+
+  - `pipe(nullable(number), min_value(0))`, `pipe(optional(string), min_length(1))`, and `pipe(unknown, min_value(0))` no longer compile: put the pipe inside, `nullable(pipe(number, min_value(0)))`, or start it with a schema of the type the action takes
+  - an annotated `check` or `transform` in a `pipe` is refused when its parameter is narrower than what it is given, as `check((n: number) => ...)` after `nullable(number)`
+  - `SchemaAction` is an interface that extends `Schema`, takes the kind and the `def` as its third and fourth type parameters, and every action is typed as one: a schema that isn't an action is no longer assignable to it, as `const a: SchemaAction<string> = string`
+  - `message`, `meta`, `brand`, and `flavor` given an action return a `SchemaAction`, so `pipe(nullable(string), brand(regex(/n/), 'R'))` no longer compiles either
+  - an action under `lazy` or `union`, or at the start of a `pipe` used as a step, is still checked by its input alone, as a schema is
+
+### Patch Changes
+
+- fix: `variant` refuses a `with_default` or `object_with_rest` option that its types let through ([6f83d7a](https://github.com/fuzdev/fuz_schema/commit/6f83d7a))
+
+  - a `with_default` whose value is a schema or of type `any`, a `with_default_fn` whose `make` returns `any`, and an `object_with_rest` whose entries are of type `any` no longer compile as an option
+  - the `def` of `with_default` is typed `SchemaDefaultDef`, of `with_default_fn` `SchemaDefaultFnDef`, and of `object_with_rest` `SchemaObjectWithRestDef`, three new interfaces
+  - the `def` types the wrappers, `object_with_rest`, and `variant` give are `readonly`, as `SchemaDefs` has them
+
+- feat: add `memo_union`, a `union` linear in depth where recursive options walk the same children ([2e35c64](https://github.com/fuzdev/fuz_schema/commit/2e35c64))
+
+  - `memo_union(options)` gives what `union(options)` gives, verdicts, outputs, and issues, and is of kind `union`, so `to_schema_json` and the readers take it as one
+  - it keeps, for one parse, what it gave each object or array it was probed with: use it where two options could take the same object and reach a `lazy` before a `literal` tells them apart, and on each union of a chain of them
+  - a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times, and an object the input holds twice gets one output object in both places
+  - the answer on an object is kept as the object's alone, which a getter, a `Proxy`, or a `check` with state can break
+
+- feat: a `pipe` takes an action that accepts more than it is given, and a refinement keeps the type ([134fc09](https://github.com/fuzdev/fuz_schema/commit/134fc09))
+
+  - `pipe(string, check((v: unknown) => ...))` compiles: an action as a step is checked by what it takes, as a parameter is, and any other step by its input, as before
+  - `regex` and `check` are typed from the step before them, as `min_length` is: `pipe(literal('abc'), regex(/a/))` outputs `'abc'`, and a brand before them is kept
+  - every action but `transform` is a `SchemaRefinement`, and a `pipe` outputs the type of the step before one: `pipe(one_of([1, 2]), integer)` outputs `1 | 2`; a `transform` is not assignable to a `SchemaRefinement`, and `message` and `meta` keep one: `pipe(one_of([1, 2]), message(integer, 'm'))` outputs `1 | 2` too
+  - `check` takes a second type parameter, `check<V extends T, T = V>`, the first what it is given and the second what `fn` takes
+
+- fix: a generic helper that pipes into an action emits a declaration that compiles ([52d9155](https://github.com/fuzdev/fuz_schema/commit/52d9155))
+
+  - `<T extends Schema<string>>(x: T) => pipe(x, min_length(1))` emitted a `.d.ts` naming an undeclared `T_1`; it now names the exported `Uninferred`
+
 ## 0.4.0
 
 ### Minor Changes
