@@ -776,7 +776,7 @@ impl<'a> Checker<'a> {
         Ok(self.order)
     }
 
-    fn kind(&self, id: NodeId) -> SchemaKind {
+    const fn kind(&self, id: NodeId) -> SchemaKind {
         self.nodes[id.index()].kind()
     }
 
