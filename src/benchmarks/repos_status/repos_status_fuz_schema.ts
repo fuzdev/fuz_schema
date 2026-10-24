@@ -72,7 +72,7 @@ export type ReposStatusSchemas = Record<
 >;
 
 export const create_repos_status = (s: SchemaLib): ReposStatusSchemas => {
-	const REPOS_STATUS_FORMAT_VERSION = 19;
+	const REPOS_STATUS_FORMAT_VERSION = 20;
 	const Count = s.pipe(s.number, s.safe_integer, s.min_value(0));
 	const UnixSeconds = s.pipe(s.number, s.safe_integer, s.min_value(0));
 
@@ -143,7 +143,9 @@ export const create_repos_status = (s: SchemaLib): ReposStatusSchemas => {
 		'unprobed_worktree',
 		'several_checkouts',
 		'busy',
-		'busy_unknown'
+		'busy_unknown',
+		'lfs_objects',
+		'lfs_unscanned'
 	]);
 
 	const ReposRefreshHold = s.one_of(['pinned', 'entry', 'origin_not_https']);

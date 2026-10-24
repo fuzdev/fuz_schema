@@ -1,11 +1,14 @@
 /**
- * fuz_repos's mirror of what its `repos status --json` prints, as it writes it
+ * fuz_repos's mirror of what its `repos status --json` prints, as it wrote it
  * for zod: a report of every registered repo's state, or an error. A snapshot,
  * taken from https://github.com/fuzdev/fuz_repos at 07436b1bc167
- * (`src/lib/repos_status.ts`), 0BSD licensed, copyright fuz.dev. What is left
- * out is what doesn't validate: its comments, its type exports, and the
- * `.meta()` descriptions. What it accepts is what the zod installed here
- * accepts, which need not be the consumer's.
+ * (`src/lib/repos_status.ts`), 0BSD licensed, copyright fuz.dev, and brought
+ * to the format of 1d0fe469c0bb, where the data is from: its format version
+ * and its Git LFS branch holds. fuz_repos has since moved these schemas to
+ * this library, so this is the last zod it wrote, carried forward by hand.
+ * What is left out is what doesn't validate: its comments, its type exports,
+ * and the `.meta()` descriptions. What it accepts is what the zod installed
+ * here accepts, which need not be the consumer's.
  *
  * `repos_status_fuz_schema.ts` is the same schemas in this library, and
  * `src/test/harvest.test.ts` holds the two to the same answers.
@@ -15,7 +18,7 @@
 
 import { z } from 'zod';
 
-export const REPOS_STATUS_FORMAT_VERSION = 19;
+export const REPOS_STATUS_FORMAT_VERSION = 20;
 const Count = z.number().int().nonnegative();
 const UnixSeconds = z.number().int().nonnegative();
 
@@ -86,7 +89,9 @@ export const ReposBranchHold = z.enum([
 	'unprobed_worktree',
 	'several_checkouts',
 	'busy',
-	'busy_unknown'
+	'busy_unknown',
+	'lfs_objects',
+	'lfs_unscanned'
 ]);
 
 export const ReposRefreshHold = z.enum(['pinned', 'entry', 'origin_not_https']);

@@ -59,7 +59,7 @@ snapshot is not kept in step with it.
 | Set | From | What it is |
 |---|---|---|
 | `docinfo/` | [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo), in Valibot | analysis output: strict objects with many defaults, variants, a recursive type; its fixtures and its output for a whole library |
-| `repos_status/` | [fuz_repos](https://github.com/fuzdev/fuz_repos), in Zod | a status report: strict objects and discriminated unions nested several deep, under a plain union; its test goldens |
+| `repos_status/` | [fuz_repos](https://github.com/fuzdev/fuz_repos), in Zod (its last Zod schemas, carried forward) | a status report: strict objects and discriminated unions nested several deep, under a plain union; its test goldens |
 | `package_json/` | [fuz_util](https://github.com/fuzdev/fuz_util), in Zod | a `package.json`: a loose object, records, unions with no discriminator; manifests of this ecosystem's repos and of published packages |
 | `bench_results/` | [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench), in Zod | a results document, its structure without its refinements: records keyed by id, numbers each with its checks; a test fixture and a published run |
 
