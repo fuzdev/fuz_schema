@@ -275,7 +275,7 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
 - A group is a directory with an authored `fixture.ts`: a TypeScript schema
   and named JSON texts. They are texts and not values, because how a value
   is written is part of what's tested.
-- `gro src/test/fixtures/json/update` generates each group's `expected.json`:
+- `gro task src/test/fixtures/json/update.task.ts` generates each group's `expected.json`:
   the schema in the interchange form, and for each text whether `JSON.parse`
   reads it, whether `is` accepts it, the issues `parse` reports with the
   text `format_issue` writes of each, and any declared divergence. It

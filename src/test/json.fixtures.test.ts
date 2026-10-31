@@ -37,7 +37,7 @@ describe('json fixtures', () => {
 			assert.strictEqual(
 				await read_json_fixture_expected(name),
 				format_json_fixture(generated.get(name)!),
-				`${name}/expected.json is stale, run \`gro src/test/fixtures/json/update\``
+				`${name}/expected.json is stale, run \`gro task src/test/fixtures/json/update.task.ts\``
 			);
 		}
 	});
@@ -46,7 +46,7 @@ describe('json fixtures', () => {
 		assert.strictEqual(
 			await read_json_fixture_contract(),
 			format_json_fixture(generate_json_fixture_contract()),
-			'contract.json is stale, run `gro src/test/fixtures/json/update`'
+			'contract.json is stale, run `gro task src/test/fixtures/json/update.task.ts`'
 		);
 	});
 

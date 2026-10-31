@@ -34,8 +34,8 @@ npm run grade                 # grade the working tree against HEAD, see docs/gr
 npm run differential          # generated schemas and inputs against zod and valibot, memory-capped where systemd-run can
 npm run mutate                # break the library on purpose and check the tests fail, see docs/benchmarks.md
 npm run fixtures:deep         # generated JSON fixtures, many seeds, through the Rust fixture tests, see docs/rust.md
-gro src/test/fixtures/json/update # regenerate the JSON fixtures' expected.json
-gro src/benchmarks/update_sizes   # regenerate src/benchmarks/sizes.json
+gro task src/test/fixtures/json/update.task.ts # regenerate the JSON fixtures' expected.json
+gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes.json
 ```
 
 `npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`,

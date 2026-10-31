@@ -264,7 +264,7 @@ each scenario's ratio to Valibot's bundle of it, which the backstop of
 `last in` and `alone` side by side, and what each module beside `schema.ts`
 adds. `grade` measures the same figures of both versions, except the modules,
 and prices them by class.
-`gro src/benchmarks/update_sizes` regenerates it and `src/test/sizes.test.ts`
+`gro task src/benchmarks/update_sizes.task.ts` regenerates it and `src/test/sizes.test.ts`
 fails when it is stale, so the diff of a change shows its bytes wherever they
 fell. An upgrade of Rolldown, of Valibot, or of Node's zlib can make it stale
 too.

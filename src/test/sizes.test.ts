@@ -9,7 +9,7 @@ describe('sizes', () => {
 		assert.strictEqual(
 			await read_sizes(),
 			format_sizes(await measure_sizes()),
-			'src/benchmarks/sizes.json is stale, run `gro src/benchmarks/update_sizes`'
+			'src/benchmarks/sizes.json is stale, run `gro task src/benchmarks/update_sizes.task.ts`'
 		);
 	});
 

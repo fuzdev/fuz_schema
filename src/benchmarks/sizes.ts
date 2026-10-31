@@ -3,7 +3,7 @@
  * it holds, and how it is measured, read, and written. A change's diff of the
  * file is what the change costs in bytes, across the library.
  *
- * `gro src/benchmarks/update_sizes` regenerates the file, and
+ * `gro task src/benchmarks/update_sizes.task.ts` regenerates the file, and
  * `src/test/sizes.test.ts` fails when it is stale.
  *
  * @module

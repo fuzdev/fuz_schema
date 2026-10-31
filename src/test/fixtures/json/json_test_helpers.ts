@@ -4,7 +4,7 @@
  * Rust crate's tests read.
  *
  * A group is a directory with a `fixture.ts`, which exports a `fixture`, and
- * the `expected.json` generated from it by `gro src/test/fixtures/json/update`.
+ * the `expected.json` generated from it by `gro task src/test/fixtures/json/update.task.ts`.
  * The generated file is never edited by hand. Beside the groups is a generated
  * `contract.json`, the constants the two sides must have the same.
  *
