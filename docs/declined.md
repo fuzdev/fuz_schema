@@ -405,6 +405,39 @@ made.
   kind pay.
 - **Reopens**: nothing known.
 
+### One body for `union`'s two closures
+
+To bring the `union` scenario back under the backstop: the `run` that
+doesn't take the object and the key calls the one that does, which calls
+each option with them only when it has them, so a `run` of two parameters is
+still handed two. With it a local function for whether an option takes the
+key, and the retry over `options.slice(0, i)`.
+
+- **Gave**: the `union` scenario 973 → 949 gzip, 0.766 → 0.747 of
+  Valibot's, under the backstop of 952. `type_json` −27, the library −29,
+  core +0.
+- **Cost**: a call into the shared body on every parse of a union that
+  doesn't take the key, and a test of `parent` per option in the one that
+  does. Graded `--runs 5`, the matrix figures from a full grade on a quiet
+  machine and the alone and apart ones from a grade of the union cases: five
+  union valid cases slower
+  in the matrix, `each/union_3_primitives_first/valid` 1.086x and
+  `each/union_nested_inner_miss/valid` 1.072x, the others about 1.03x; the
+  union cases' valid time 1.080x alone and 1.107x apart, the `each` group's
+  1.190x apart. Retained heap +64 B per further `union`, past
+  [rule 9](grading.md#rules)'s allowance of 16.
+- **Why**: time on every union parse, and heap on every union, for bytes
+  only a bundle with `union` pays. Without the shared body the least found
+  was 953, still over, and only with two changes in behavior: naming an option `object` by
+  `kind.includes('object')`, which changes the `expected` text of a `record`
+  or `variant` option, and trying every earlier option again, not only those
+  that take the key. Nor can the two closures be written to minify to the
+  same names: locals are named by slot after the parameters, and default
+  parameters break the forwarding of `lazy` and `message`. The scenario
+  stays over the backstop, on a pin in the grader.
+- **Reopens**: a form that keeps the two closures and finds the bytes
+  elsewhere.
+
 ### A `pipe` that looks for the key wherever it has the object
 
 The closure that passes the object and the key on looking for the key too,
