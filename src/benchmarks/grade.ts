@@ -64,7 +64,6 @@ import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
-import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
 import { meta, parse_args, s } from './args.ts';
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
@@ -96,6 +95,20 @@ import {
 	type BackstopRow,
 	type SizeFigure
 } from './grade_bytes.ts';
+import {
+	CASE_FLOOR_LEAST,
+	CASE_FLOOR_SPREADS,
+	RUNS_TO_CONFIRM,
+	is_confirmable,
+	is_outside,
+	to_case_time,
+	to_reading,
+	to_runs_needed,
+	to_summary,
+	type CaseTime,
+	type Reading,
+	type Summary
+} from './grade_stats.ts';
 import { BASELINE_LIB } from './libs.ts';
 import { ENTRY_FORMS, start_child, type EntryVariant } from './child.ts';
 import {
@@ -249,26 +262,6 @@ const APART_CASES: ReadonlyArray<string> = [
 	'object/6_keys/valid',
 	'real/docinfo_types/valid'
 ];
-// A case's floor, in the logarithm of a time ratio: this many times what two
-// instances of one version differ by on it, and never under the least. A
-// spread read from a few instances can be near nothing, and a floor of nothing
-// would flag anything.
-const CASE_FLOOR_SPREADS = 2;
-const CASE_FLOOR_LEAST = Math.log(1.01);
-// The fewest runs a difference can be confirmed or a rule on time judged from,
-// and how many of the runs a case must show a difference in: every one below
-// `RUNS_ALL_BELOW` runs, and this share of them, rounded up, from there. A
-// share of so few runs would ask less of four than of three.
-const RUNS_TO_CONFIRM = 3;
-const RUNS_ALL_BELOW = 5;
-const RUNS_SHARE = 0.75;
-// A summary's A/A is this, over the root of the runs, times the standard
-// deviation of one version's instances over the summary's cases. The figure
-// it stands beside is a median over runs of a difference of medians over
-// instances, which moves by about a third of this, so the A/A is near three
-// of its standard errors: two copies of one file read past it on about one
-// line in a hundred, at three runs.
-const SUMMARY_BAND_DEVIATIONS = 3.3;
 // what a case must allocate more by to be listed: a word or more, and on a
 // large case the share two readings of one parse can differ by
 const ALLOC_FLOOR = { bytes: 8, share: 0.002 };
@@ -477,19 +470,6 @@ const names = cases.map((c) => c.name);
 const started = performance.now();
 const to_elapsed = (since: number): string => format_seconds((performance.now() - since) / 1000);
 
-/** One case in one process, or in the processes of a run: the logarithm of each instance's nanoseconds per call, by version. */
-interface Reading {
-	base: Array<number>;
-	new: Array<number>;
-}
-
-const to_reading = (c: GradeChildCase, reading: Reading = { base: [], new: [] }): Reading => {
-	for (const arm of c.arms) {
-		reading[arm.startsWith('base') ? 'base' : 'new'].push(Math.log(stats_median(c.ns![arm]!)));
-	}
-	return reading;
-};
-
 /**
  * Times the cases of the `apart` regime for one run: each in
  * `APART_PROCESSES` processes of each version, a process of one and then of
@@ -553,145 +533,9 @@ console.log(`bytes: ${to_elapsed(bytes_since)}`);
 // Reading the processes
 //
 
-const mean = (values: Array<number>): number =>
-	values.reduce((sum, v) => sum + v, 0) / values.length;
-
-// what the instances of one version are from their median, the median itself left out
-const to_deviations = (values: Array<number>): Array<number> => {
-	const sorted = values.toSorted((a, b) => a - b);
-	const middle = stats_median(sorted);
-	return sorted
-		.filter((_, i) => sorted.length % 2 === 0 || i !== sorted.length >> 1)
-		.map((v) => Math.abs(v - middle));
-};
-
-const confirmable = args.runs >= RUNS_TO_CONFIRM;
-const runs_needed = args.runs < RUNS_ALL_BELOW ? args.runs : Math.ceil(args.runs * RUNS_SHARE);
+const confirmable = is_confirmable(args.runs);
+const runs_needed = to_runs_needed(args.runs);
 const NOT_JUDGED = `not judged, fewer than ${RUNS_TO_CONFIRM} runs`;
-
-/** A case's time in one regime, over the runs. */
-interface CaseTime {
-	readings: Array<Reading>;
-	base_ns: number;
-	new_ns: number;
-	/** The logarithm of new over base: the median over the runs of each run's. */
-	ratio: number;
-	/** The logarithm a run's ratio must be past for the run to show a difference. */
-	floor: number;
-	/** How many runs showed the new version slower, and faster. */
-	slower_runs: number;
-	faster_runs: number;
-	/** Confirmed: shown in `runs_needed` of the runs, where there are enough runs to confirm from. */
-	flag: 'slower' | 'faster' | undefined;
-	/** Shown in one run fewer than confirms it, or, with too few runs to confirm from, in every one. */
-	candidate: boolean;
-}
-
-/**
- * Reads a case's runs together.
- *
- * A run shows the case slower when every instance of the new version took
- * longer than every instance of the baseline, and the medians of the two
- * differ by more than the case's floor. Faster is the same the other way. The
- * floor is `CASE_FLOOR_SPREADS` times what an instance is from the median of
- * its own version, at its median over both versions and every run, and never
- * under `CASE_FLOOR_LEAST`.
- */
-const to_case_time = (readings: Array<Reading>): CaseTime => {
-	const new_ns = Math.exp(stats_median(readings.map((r) => stats_median(r.new))));
-	if (!readings.every((r) => r.base.length)) {
-		return {
-			readings,
-			base_ns: NaN,
-			new_ns,
-			ratio: NaN,
-			floor: NaN,
-			slower_runs: 0,
-			faster_runs: 0,
-			flag: undefined,
-			candidate: false
-		};
-	}
-	const deviations = readings.flatMap((r) => [...to_deviations(r.base), ...to_deviations(r.new)]);
-	const floor = Math.max(
-		CASE_FLOOR_LEAST,
-		CASE_FLOOR_SPREADS * (deviations.length ? stats_median(deviations) : 0)
-	);
-	const deltas = readings.map((r) => stats_median(r.new) - stats_median(r.base));
-	const slower_runs = readings.filter(
-		(r, i) => deltas[i]! > floor && Math.min(...r.new) > Math.max(...r.base)
-	).length;
-	const faster_runs = readings.filter(
-		(r, i) => deltas[i]! < -floor && Math.max(...r.new) < Math.min(...r.base)
-	).length;
-	const ratio = stats_median(deltas);
-	const shown =
-		slower_runs >= runs_needed ? 'slower' : faster_runs >= runs_needed ? 'faster' : undefined;
-	const flag = confirmable ? shown : undefined;
-	return {
-		readings,
-		base_ns: Math.exp(stats_median(readings.map((r) => stats_median(r.base)))),
-		new_ns,
-		ratio,
-		floor,
-		slower_runs,
-		faster_runs,
-		flag,
-		candidate: confirmable
-			? !flag && Math.max(slower_runs, faster_runs) === runs_needed - 1
-			: Math.max(slower_runs, faster_runs) === args.runs
-	};
-};
-
-/** A mean over cases of their time ratios, beside what the instances of one version differ by on the same cases. */
-interface Summary {
-	cases: number;
-	/** The logarithm of new over base, a mean over the cases: the median of the runs'. */
-	ratio: number;
-	/** Each run's. */
-	runs: Array<number>;
-	/** The A/A of the same cases in the same processes, as a logarithm. */
-	band: number;
-}
-
-const to_variance = (values: Array<number>): number => {
-	const middle = mean(values);
-	return values.reduce((sum, v) => sum + (v - middle) ** 2, 0) / (values.length - 1);
-};
-
-/**
- * Reads a set of cases together.
- *
- * A run's figure is the mean over the cases of the logarithm of the new
- * version's median instance over the baseline's, and the summary's is the
- * median of the runs'. Its A/A is taken from the same cases in the same
- * processes: each instance's mean over the cases, the variance of those among
- * the instances of one version, pooled over the versions and the runs, and
- * `SUMMARY_BAND_DEVIATIONS` of its root over the root of the runs.
- */
-const to_summary = (times: Array<CaseTime>): Summary => {
-	const compared = times.filter((t) => !Number.isNaN(t.ratio));
-	if (!compared.length) return { cases: 0, ratio: NaN, runs: [], band: NaN };
-	const runs: Array<number> = [];
-	const variances: Array<number> = [];
-	for (let run = 0; run < args.runs; run++) {
-		const readings = compared.map((t) => t.readings[run]!);
-		runs.push(mean(readings.map((r) => stats_median(r.new) - stats_median(r.base))));
-		for (const version of ['base', 'new'] as const) {
-			variances.push(
-				to_variance(readings[0]![version].map((_, i) => mean(readings.map((r) => r[version][i]!))))
-			);
-		}
-	}
-	return {
-		cases: compared.length,
-		ratio: stats_median(runs),
-		runs,
-		band: (SUMMARY_BAND_DEVIATIONS * Math.sqrt(mean(variances))) / Math.sqrt(args.runs)
-	};
-};
-
-const is_outside = (s: Summary): boolean => Math.abs(s.ratio) > s.band;
 
 /** A case's bytes in one regime. */
 interface CaseBytes {

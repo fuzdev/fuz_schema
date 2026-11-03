@@ -226,7 +226,9 @@ if (job.regime === 'matrix') {
 }
 
 // Runs a case's arms in turns, through the loops they are timed in, and
-// returns the batch to time them at.
+// returns the batch to time them at. Not `timing.ts`'s `warm`, which warms one
+// function through the loops of the instance it is in: the arms here take
+// turns, each through its own loops, and share one batch.
 const warm = (of_case: Array<Arm>, name: string): number => {
 	const until = performance.now() + GRADE_WARM_MS[job.regime];
 	let batch = 1;

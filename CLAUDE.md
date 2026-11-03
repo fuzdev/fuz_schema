@@ -147,6 +147,9 @@ dev server.
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
 - `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
   of bytes and of retained heap, over figures made up for them
+- `src/test/grade_stats.test.ts` - the grader's statistics over made-up
+  samples: floors, marks, and the A/A, and how often two copies read past it
+  under independent noise
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
   - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
     module per library
@@ -170,6 +173,8 @@ dev server.
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
   - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
     class of a change, and the backstop against Valibot
+  - `grade_stats.ts` - how the grader reads its timings: a case's runs
+    against its floor, and a set of cases as one figure against its A/A
   - `grade_heap.ts` - how the grader prices retained heap: the figure per
     further schema, of each scenario and each export alone, and its allowance
   - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
