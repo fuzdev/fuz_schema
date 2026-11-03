@@ -351,6 +351,10 @@ factories and pulls them into every bundle that uses it, see
 nothing, and its result is an ordinary object schema: one hidden class, the
 same parse, introspection, and `to_schema_json`.
 
+- **An unused schema made by a spread stays in the bundle.** The bundler
+  can't tell that reading `def` has no side effect, so
+  `object({...A.def, b})` keeps `object` and its loop even when nothing uses
+  it. A schema made without a spread is dropped when unused.
 - **A later key wins in the earlier one's position**, as in Zod's `extend`.
 - **Rest destructuring for omit, naming the entries for pick.** Both build a
   fast-mode object. A `delete` leaves the entries in dictionary mode, where
