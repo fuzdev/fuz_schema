@@ -339,6 +339,39 @@ a loop of its own over the input's keys, as `loose_object` has one:
 - **The loop is its own**, so validating other keys costs a bundle without
   `object_with_rest` nothing.
 
+### Composing
+
+Extend, merge, omit, pick, partial, and a change of strictness are a spread
+of `def` into a factory, see the README. A schema is three fields, so there
+are no methods to chain, and the helpers that were built each lost to the
+spread: one that returns an `object` tightens a loose object to strict
+without saying so, and one that keeps the kind dispatches to all four
+factories and pulls them into every bundle that uses it, see
+[declined.md](declined.md#object-operations). The spread costs the library
+nothing, and its result is an ordinary object schema: one hidden class, the
+same parse, introspection, and `to_schema_json`.
+
+- **A later key wins in the earlier one's position**, as in Zod's `extend`.
+- **Rest destructuring for omit, naming the entries for pick.** Both build a
+  fast-mode object. A `delete` leaves the entries in dictionary mode, where
+  the unknown-key lookup of `object` reads them, and assigning keys one by
+  one would set the prototype for a `__proto__` key.
+- **Partial leaves an `optional`, `with_default`, or `with_default_fn` entry
+  as it is.** `optional` around a default returns `undefined` before the
+  default runs, which is Valibot's `partial`; Zod's keeps the default.
+- **`object_with_rest` spreads `def.entries`** and restates `rest`.
+- **A refined base is a `pipe`**, whose `def` is its steps, so the spread is
+  a type error. The bare object is extended, then piped. Zod throws on
+  `pick`, `omit`, `partial`, `merge`, and an overriding `extend` of a refined
+  object, and Valibot refuses by
+  type.
+- **A `message`, `brand`, or `meta` on the base is not carried over**, as
+  Zod's `extend` drops `.meta()`.
+- **A generic spread types as `T & U`**, so a key both have collapses, to
+  `undefined` or `never` in the output, unless the two are the same schema
+  type. A generic function that overrides a key
+  types its entries as `Omit<T, keyof U> & U`.
+
 ### Missing keys
 
 A key the input lacks reads as `undefined`, and its entry decides. The loops

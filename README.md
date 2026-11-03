@@ -205,6 +205,43 @@ and a branded value comes from parsing or a cast.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
 
+### Composing object schemas
+
+An object schema's `def` is its entries, so a new one is a spread of it into a factory.
+There are no `extend`, `pick`, `omit`, or `partial` helpers, and the spread costs nothing in the library.
+
+```ts
+const User = s.object({id: s.string, name: s.string, password: s.string});
+
+// extend, and override: a later key wins, in the earlier key's position
+const Admin = s.object({...User.def, role: s.literal('admin')});
+const Named = s.object({...User.def, name: s.optional(s.string)});
+
+// omit and pick
+const {password: _, ...public_entries} = User.def;
+const PublicUser = s.object(public_entries);
+const UserId = s.object({id: User.def.id});
+
+// another strictness, and a merge
+const LooseUser = s.loose_object(User.def);
+const Merged = s.object({...User.def, ...Other.def});
+
+// partial: wrap each entry in `optional`, but leave one with a default as it is,
+// as `optional` around a default leaves the key out and the default never runs
+const Patch = s.object({name: s.optional(Settings.def.name), theme: Settings.def.theme});
+
+// `object_with_rest`'s def is `{entries, rest}`
+const More = s.object_with_rest({...Counts.def.entries, label: s.string}, Counts.def.rest);
+
+// a refined base is a `pipe`, whose def isn't entries (a type error):
+// extend the bare object, then pipe
+const Range = s.pipe(s.object({...Bounds.def, step: s.number}), s.check(in_order));
+```
+
+A `message`, `brand`, or `meta` on the base is not carried over.
+A generic function that overrides a key types its entries as `Omit<T, keyof U> & U`,
+since a spread of generic entries types as `T & U` and an overridden key's type collapses.
+
 ### Issues
 
 A failing parse reports its first hundred issues, and builds no issue for the rest.
@@ -429,7 +466,8 @@ The text of `message` and the names of `flavor` and `brand` are not in a schema'
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
 - [ ] nested issues for a failed `union`
-- [ ] `tuple`, `partial`, `pick`, `omit`, `intersect`
+- [ ] `tuple`, `intersect`
+- [x] extend, merge, pick, omit, and partial, as a spread of `def`, see [Composing object schemas](#composing-object-schemas)
 - [ ] abort-early as a caller option
 - [x] a published package
 - [ ] the Rust side: the schema model, whether a JSON text matches, its issues, and a wasm build to measure are built, output is not

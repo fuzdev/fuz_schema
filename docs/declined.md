@@ -207,6 +207,44 @@ up to 12x on a probe that fails. The eager form's realistic valid path was 26%
 slower in the matrix and 36% alone. The current loop itself, on an input with
 nothing to drop, moved from 111 to 121 ns.
 
+## Object operations
+
+### Helpers for extend, pick, omit, and partial
+
+Three sets of helpers, in place of spreading `def` into a factory, see
+[design.md](design.md#composing). Plain ones, `extend`, `pick`, `omit`, and
+`partial` over an object schema, returning an `object`. Kind-preserving
+ones, the same returning a schema of the source's kind. And entries-level
+ones, `pick_entries`, `omit_entries`, and `partial_entries`, returning
+entries for the caller's factory, with extend and merge left a spread. Over
+a base of three entries, 741 gzip:
+
+| gzip over the base | spread | plain | kind-preserving | entries-level |
+|---|---|---|---|---|
+| extend | +14 | +27 | +560 | +14 |
+| omit | +17 | +44 | +573 | +46 |
+| pick | +10 | +39 | +569 | +40 |
+| partial | +53 | +75 | +602 | +76 |
+| the library whole | +0 | +129 | +169 | +105 |
+
+- **Gave**: one call in place of a spread or a destructuring. The plain and
+  kind-preserving `extend` type an overridden key right in a generic
+  function, where a spread needs its entries typed as `Omit<T, keyof U> & U`.
+- **Cost**: bytes on every use, in the table, and in the library. The plain
+  helpers silently tighten a loose object to strict, and took more type
+  instantiations per extend than the spread, a sixth to a third more, by how it was counted. The
+  kind-preserving ones pull in all four object factories wherever one is
+  used. As built, `omit` used `delete` and `partial` wrapped a default in
+  `optional`, which drops it; forms without either weren't measured. The
+  spread's `partial` keeps the defaults. A helper a bundle doesn't use costs
+  it nothing, and each result is an ordinary object schema, as the spread's
+  is.
+- **Why**: the spread does each operation for nothing in the library and
+  fewer bytes per use and keeps the strictness explicit, and the consumers
+  known extend bare objects with concrete overrides.
+- **Reopens**: a consumer that needs one, as `partial` over many wide
+  schemas, or generic extenders throughout. Each is added on demand.
+
 ## `variant`
 
 ### The discriminator run once

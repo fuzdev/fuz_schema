@@ -2216,3 +2216,117 @@ describe('inference by position', () => {
 		expectTypeOf<Pairs<(typeof _O)['def']>>().toEqualTypeOf<Expected>();
 	});
 });
+
+// object operations as spreads of `def`, which the library has no helper for
+describe('composing object schemas', () => {
+	const Base = s.object({ id: s.string, count: s.number, secret: s.string });
+
+	test('extend, override, merge, omit, and pick', () => {
+		const _Extended = s.object({ ...Base.def, label: s.optional(s.string) });
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<{
+			id: string;
+			count: number;
+			secret: string;
+			label?: string | undefined;
+		}>();
+		const _Overridden = s.object({ ...Base.def, count: s.string });
+		expectTypeOf<s.Infer<typeof _Overridden>>().toEqualTypeOf<{
+			id: string;
+			count: string;
+			secret: string;
+		}>();
+		const _Merged = s.object({ ...Base.def, ...s.object({ count: s.boolean }).def });
+		expectTypeOf<s.Infer<typeof _Merged>>().toEqualTypeOf<{
+			id: string;
+			count: boolean;
+			secret: string;
+		}>();
+		const { secret: _, ...rest } = Base.def;
+		const _Omitted = s.object(rest);
+		expectTypeOf<s.Infer<typeof _Omitted>>().toEqualTypeOf<{ id: string; count: number }>();
+		const _Picked = s.object({ id: Base.def.id });
+		expectTypeOf<s.Infer<typeof _Picked>>().toEqualTypeOf<{ id: string }>();
+	});
+
+	test('strictness, partial by hand, and object_with_rest', () => {
+		const _Loose = s.loose_object(Base.def);
+		expectTypeOf<s.Infer<typeof _Loose>>().toEqualTypeOf<
+			{ id: string; count: number; secret: string } & Record<string, unknown>
+		>();
+		const Settings = s.object({ name: s.string, theme: s.with_default(s.string, 'dark') });
+		const _Patch = s.object({ name: s.optional(Settings.def.name), theme: Settings.def.theme });
+		// the default fills the key in, so the output still has it
+		expectTypeOf<s.Infer<typeof _Patch>>().toEqualTypeOf<{
+			name?: string | undefined;
+			theme: string;
+		}>();
+		expectTypeOf<s.InferInput<typeof _Patch>>().toEqualTypeOf<{
+			name?: string | undefined;
+			theme?: string | undefined;
+		}>();
+		const Counts = s.object_with_rest({ id: s.string }, s.number);
+		const _Extended = s.object_with_rest(
+			{ ...Counts.def.entries, label: s.string },
+			Counts.def.rest
+		);
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<
+			{ id: string; label: string } & Record<string, number>
+		>();
+		// @ts-expect-error its def is `{entries, rest}`, not entries
+		s.object({ ...Counts.def, label: s.string });
+	});
+
+	test('a refined base has a pipe for its def, and is extended bare', () => {
+		const Refined = s.pipe(
+			Base,
+			s.check((v) => v.id !== '')
+		);
+		// @ts-expect-error a pipe's def is not entries
+		s.object({ ...Refined.def, label: s.string }); // eslint-disable-line @typescript-eslint/no-misused-spread
+		const _Extended = s.pipe(
+			s.object({ ...Base.def, label: s.string }),
+			s.check((v) => v.id !== v.label)
+		);
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<{
+			id: string;
+			count: number;
+			secret: string;
+			label: string;
+		}>();
+	});
+
+	test('a brand on the base is not carried over', () => {
+		const Branded = s.brand(Base, 'B');
+		const _Extended = s.object({ ...Branded.def, label: s.string });
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<{
+			id: string;
+			count: number;
+			secret: string;
+			label: string;
+		}>();
+	});
+
+	test('a generic extender types its entries as `Omit<T, keyof U> & U`', () => {
+		// a generic spread types as `T & U`, so a key both have collapses
+		const _with_count_spread = <T extends s.SchemaEntries>(base: s.Schema<any, any, 'object', T>) =>
+			s.object({ ...base.def, count: s.boolean });
+		expectTypeOf<s.Infer<ReturnType<typeof _with_count_spread<typeof Base.def>>>>().toEqualTypeOf<{
+			id: string;
+			count?: undefined;
+			secret: string;
+		}>();
+		const extend = <T extends s.SchemaEntries, U extends s.SchemaEntries>(
+			base: s.Schema<any, any, 'object', T>,
+			entries: U
+		) => {
+			const merged: Omit<T, keyof U> & U = { ...base.def, ...entries };
+			return s.object(merged);
+		};
+		const _Extended = extend(Base, { count: s.boolean });
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<{
+			id: string;
+			count: boolean;
+			secret: string;
+		}>();
+	});
+});

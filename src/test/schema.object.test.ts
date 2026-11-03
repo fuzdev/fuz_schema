@@ -1572,3 +1572,119 @@ describe('object_with_rest', () => {
 		expectTypeOf(Defaulted.def.rest).toEqualTypeOf(s.number);
 	});
 });
+
+// object operations are a spread of `def` into a factory, with no helper of the library's
+describe('composing object schemas', () => {
+	const Base = s.object({ id: s.string, count: s.number, secret: s.string });
+
+	test('extend adds a key after the base keys', () => {
+		const Extended = s.object({ ...Base.def, label: s.string });
+		assert.deepEqual(Object.keys(Extended.def), ['id', 'count', 'secret', 'label']);
+		assert(s.is(Extended, { id: 'a', count: 1, secret: 's', label: 'l' }));
+		assert(!s.is(Extended, { id: 'a', count: 1, secret: 's' }));
+		assert.strictEqual(Extended.def.id, Base.def.id);
+	});
+
+	test('a later key wins and keeps the position of the earlier one', () => {
+		const Overridden = s.object({ ...Base.def, count: s.string });
+		assert.deepEqual(Object.keys(Overridden.def), ['id', 'count', 'secret']);
+		assert(s.is(Overridden, { id: 'a', count: 'one', secret: 's' }));
+		assert(!s.is(Overridden, { id: 'a', count: 1, secret: 's' }));
+		// a copy has the schema's keys in the schema's order, so the override's position shows
+		const Stripped = s.strip_object({ ...Base.def, count: s.string });
+		const output = s.parse_or_throw(Stripped, { secret: 's', count: 'one', id: 'a', extra: 1 });
+		assert.deepEqual(Object.keys(output), ['id', 'count', 'secret']);
+	});
+
+	test('merge spreads two defs, and the second wins', () => {
+		const Other = s.object({ count: s.boolean, flag: s.boolean });
+		const Merged = s.object({ ...Base.def, ...Other.def });
+		assert.deepEqual(Object.keys(Merged.def), ['id', 'count', 'secret', 'flag']);
+		assert(s.is(Merged, { id: 'a', count: true, secret: 's', flag: false }));
+	});
+
+	test('omit by rest destructuring, pick by naming the entries', () => {
+		const { secret: _, ...rest } = Base.def;
+		const Omitted = s.object(rest);
+		assert.deepEqual(Object.keys(Omitted.def), ['id', 'count']);
+		assert(s.is(Omitted, { id: 'a', count: 1 }));
+		assert.deepEqual(issues_of(Omitted, { id: 'a', count: 1, secret: 's' }), [
+			{
+				kind: 'unknown_key',
+				expected: 'no unknown keys',
+				received: 'string',
+				path: ['secret'],
+				message: undefined
+			}
+		]);
+		const Picked = s.object({ id: Base.def.id });
+		assert(s.is(Picked, { id: 'a' }));
+		assert(!s.is(Picked, { id: 'a', count: 1 }));
+	});
+
+	test('the strictness changes by passing the def to another factory', () => {
+		const input = { id: 'a', count: 1, secret: 's', extra: 1 };
+		assert(!s.is(Base, input));
+		const Loose = s.loose_object(Base.def);
+		assert.strictEqual(s.parse_or_throw(Loose, input), input);
+		const Stripped = s.strip_object(Base.def);
+		assert.deepEqual(s.parse_or_throw(Stripped, input), { id: 'a', count: 1, secret: 's' });
+		// and back: the def of a loose object makes a strict one
+		assert(!s.is(s.object(Loose.def), input));
+	});
+
+	test('partial by hand leaves an entry with a default as it is, so the default applies', () => {
+		const Settings = s.object({
+			name: s.string,
+			size: s.optional(s.number),
+			theme: s.with_default(s.string, 'dark')
+		});
+		const Patch = s.object({
+			name: s.optional(Settings.def.name),
+			size: Settings.def.size,
+			theme: Settings.def.theme
+		});
+		assert.deepEqual(s.parse_or_throw(Patch, {}), { theme: 'dark' });
+		assert.deepEqual(s.parse_or_throw(Patch, { name: 'n' }), { name: 'n', theme: 'dark' });
+		// wrapped in `optional`, a default never runs: the missing key stays out
+		const Dropped = s.object({ theme: s.optional(Settings.def.theme) });
+		assert.deepEqual(s.parse_or_throw(Dropped, {}), {});
+	});
+
+	test('object_with_rest spreads its entries and restates rest', () => {
+		const Counts = s.object_with_rest({ id: s.string }, s.number);
+		const Extended = s.object_with_rest(
+			{ ...Counts.def.entries, label: s.string },
+			Counts.def.rest
+		);
+		assert(s.is(Extended, { id: 'a', label: 'l', other: 1 }));
+		assert(!s.is(Extended, { id: 'a', label: 'l', other: 'x' }));
+	});
+
+	test('a refined base is extended bare, then piped', () => {
+		const Pair = s.object({ a: s.string, b: s.string });
+		const same = (v: { a: string; b: string }) => v.a === v.b;
+		const Refined = s.pipe(Pair, s.check(same));
+		// its def is the pipe, an array, whose spread gives the keys `0` and `1`
+		// @ts-expect-error a pipe's def is not entries
+		assert.deepEqual(Object.keys(s.object({ ...Refined.def }).def), ['0', '1']); // eslint-disable-line @typescript-eslint/no-misused-spread
+		const Extended = s.pipe(s.object({ ...Pair.def, c: s.number }), s.check(same));
+		assert(s.is(Extended, { a: 'x', b: 'x', c: 1 }));
+		assert(!s.is(Extended, { a: 'x', b: 'y', c: 1 }));
+	});
+
+	test('a message on the base is not carried over', () => {
+		const Messaged = s.message(Base, 'bad');
+		assert.strictEqual(issues_of(Messaged, null)[0]!.message, 'bad');
+		const Extended = s.object({ ...Messaged.def, label: s.string });
+		assert.strictEqual(issues_of(Extended, null)[0]!.message, undefined);
+	});
+
+	test('the result is an ordinary object schema', () => {
+		const { secret: _, ...rest } = Base.def;
+		for (const schema of [s.object({ ...Base.def, label: s.string }), s.object(rest)]) {
+			assert.deepEqual(Object.keys(schema), ['kind', 'def', 'run']);
+			assert.strictEqual(schema.kind, 'object');
+		}
+	});
+});

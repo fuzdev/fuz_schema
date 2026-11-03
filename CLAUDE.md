@@ -72,8 +72,8 @@ dev server.
   behavior and type inference: `schema.test.ts` holds the primitives, the
   wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
 - `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
-  are not objects, copy on write, object keys, `loose_object`'s copy, and
-  `object_with_rest`
+  are not objects, copy on write, object keys, `loose_object`'s copy,
+  `object_with_rest`, and composing them by spreading `def`
 - `src/test/schema.missing_keys.test.ts` - what a missing key does in every
   schema and flavor
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
@@ -83,7 +83,8 @@ dev server.
 - `src/test/schema_test_helpers.ts` - `issues_of`, which the `schema.*`
   test files above share
 - `src/test/schema.inference.test.ts` - what every schema and action infers
-  in each position that has lost a type before
+  in each position that has lost a type before, and what an object schema
+  composed by spreading `def` infers
 - `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
   generic helpers over the library compile where they are read
 - `src/test/schema.shape.test.ts` - every schema the library makes has one
