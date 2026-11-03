@@ -60,7 +60,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { availableParallelism } from 'node:os';
+import { availableParallelism, loadavg } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
@@ -445,11 +445,42 @@ const estimate_apart =
 const estimate_timing =
 	args.runs * (ESTIMATE.matrix_run + alone_cases.length * ESTIMATE.alone_case) + estimate_apart;
 
+/** What the machine was doing, where it can be read: a timing taken under load reads wider. */
+interface MachineState {
+	node: string;
+	/** The load average over 1, 5, and 15 minutes. */
+	load: Array<number>;
+	/** Each CPU's clock in MHz, from `/proc/cpuinfo`, where there is one. */
+	cpu_mhz?: Array<number>;
+}
+
+const read_machine_state = (): MachineState => {
+	const state: MachineState = { node: process.version, load: loadavg() };
+	try {
+		const mhz = [
+			...readFileSync('/proc/cpuinfo', 'utf8').matchAll(/^cpu MHz\s*:\s*([\d.]+)/gm)
+		].map((m) => Number(m[1]));
+		if (mhz.length) state.cpu_mhz = mhz;
+	} catch {
+		// no `/proc` here, and the clock goes unrecorded
+	}
+	return state;
+};
+
+const format_machine_state = (state: MachineState): string =>
+	`node ${state.node}, load ${state.load.map((l) => l.toFixed(2)).join(' ')}` +
+	(state.cpu_mhz
+		? `, cpu ${Math.round(Math.min(...state.cpu_mhz))} to ${Math.round(Math.max(...state.cpu_mhz))} MHz, ` +
+			`mean ${Math.round(state.cpu_mhz.reduce((sum, m) => sum + m, 0) / state.cpu_mhz.length)}`
+		: '');
+
+const machine_start = read_machine_state();
 console.log(
 	`grading ${new_label} against ${baseline_label}: ${cases.length} cases, ` +
 		`${alone_cases.length} of them also alone, ${apart_cases.length} apart, ` +
 		`${args.runs} ${args.runs === 1 ? 'run' : 'runs'}, ${INSTANCES} instances a version`
 );
+console.log(`the machine at the start: ${format_machine_state(machine_start)}`);
 if (identical) {
 	console.log(
 		'the two versions are the same file byte for byte: every difference below is noise, ' +
@@ -616,6 +647,17 @@ const disagreed = [...new Set(matrix_runs.flatMap((run) => run.disagreed))];
 // Report
 //
 
+// The report is printed once it is whole, its verdict first and its tables after,
+// and written whole as JSON beside the versions.
+const report_tables: Array<string> = [];
+const report_verdict: Array<string> = [];
+const print_table = (text: string): void => {
+	report_tables.push(text);
+};
+const print_verdict = (text: string): void => {
+	report_verdict.push(text);
+};
+
 const format_number = (n: number): string =>
 	Number.isNaN(n) ? '-' : n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
 
@@ -663,14 +705,14 @@ const marks_note =
 			`  than the floor, in ${args.runs === 1 ? 'the one run' : `every one of the ${args.runs} runs`}`) +
 	'\na time outside its floor is not by itself a finding: the mark is';
 
-console.log(
+print_table(
 	`\ncases, in the matrix: a process runs them all, so each is timed in code that has seen every schema.\n` +
 		`ns is per parse, the median of ${INSTANCES} instances and of the runs. time is new over base. floor is\n` +
 		`what a run's time must be past to show a difference: ${CASE_FLOOR_SPREADS} times what an instance is from the median of its own version, and at least ` +
 		`${format_band(CASE_FLOOR_LEAST)}.\nB is heap bytes per parse, ~ where two instances of the baseline differ. ` +
 		`out is whether the output\nis the input itself.\n${marks_note}\n`
 );
-console.log(
+print_table(
 	format_table([
 		['case', 'path', 'base ns', 'new ns', 'time', 'floor', 'base B', 'new B', 'alloc', 'out'],
 		...graded.map((g) => [
@@ -684,15 +726,15 @@ console.log(
 		])
 	])
 );
-console.log('† realistic case, the ones the acceptance rules judge speed on');
+print_table('† realistic case, the ones the acceptance rules judge speed on');
 
 const graded_alone = graded.filter((g) => g.alone);
 if (graded_alone.length) {
-	console.log(
+	print_table(
 		'\ncases, alone: a process runs one case and nothing else, so the engine specializes the library\n' +
 			'to that schema. The columns are as above, with the matrix time beside for comparison.\n'
 	);
-	console.log(
+	print_table(
 		format_table([
 			['case', 'path', 'matrix', 'base ns', 'new ns', 'time', 'floor', 'base B', 'new B', 'alloc'],
 			...graded_alone.map((g) => [
@@ -708,7 +750,7 @@ if (graded_alone.length) {
 
 const graded_apart = graded.filter((g) => g.apart);
 if (graded_apart.length) {
-	console.log(
+	print_table(
 		'\ncases, apart: a process holds one version. It uses every kind of schema once, in an instance of\n' +
 			'the library beside the one it times, and then runs one case and nothing else. What using a version\n' +
 			`does to the state a process shares is then in its own processes alone. Each version has ${APART_PROCESSES}\n` +
@@ -716,7 +758,7 @@ if (graded_apart.length) {
 			'from what the processes of one version differ by, and a mark is of every process of the new version\n' +
 			'against every one of the baseline. The matrix and alone times are beside for comparison.\n'
 	);
-	console.log(
+	print_table(
 		format_table([
 			['case', 'path', 'matrix', 'alone', 'base ns', 'new ns', 'time', 'floor'],
 			...graded_apart.map((g) => [
@@ -731,12 +773,12 @@ if (graded_apart.length) {
 }
 
 if (uncompared.length) {
-	console.log(
+	print_table(
 		'\ncases not compared: the baseline has none of them, as a case of an export it lacks, or gives\n' +
 			'another verdict. Each is measured for the new version alone, after every case both have, and\n' +
 			"is in no summary, A/A, rule, or list below. ns and B are the new version's, matrix and alone.\n"
 	);
-	console.log(
+	print_table(
 		format_table([
 			['case', 'path', 'why', 'new ns', 'alone ns', 'new B', 'alone B', 'out'],
 			...uncompared.map((g) => [
@@ -763,16 +805,31 @@ const SUMMARY_RULE_REGIMES: ReadonlyArray<Regime> = ['matrix', 'alone'];
 const to_bytes_of = (g: Graded, regime: Regime): CaseBytes | undefined =>
 	regime === 'matrix' ? g.bytes : regime === 'alone' ? g.alone_bytes : undefined;
 
-const format_alloc_sum = (gs: Array<Graded>, regime: Regime): string => {
+// the ratio of summed bytes, `NaN` where no case has both
+const to_alloc_sum = (gs: Array<Graded>, regime: Regime): number => {
 	const compared = gs
 		.map((g) => to_bytes_of(g, regime))
 		.filter((b): b is CaseBytes => b !== undefined && !Number.isNaN(b.base));
 	const sum = (key: 'base' | 'new'): number => compared.reduce((total, b) => total + b[key], 0);
-	return compared.length ? format_ratio(to_bytes_ratio(sum('new'), sum('base'))) : '-';
+	return compared.length ? to_bytes_ratio(sum('new'), sum('base')) : NaN;
 };
 
 const summarize = (gs: Array<Graded>, regime: Regime): Summary =>
 	to_summary(gs.map((g) => g[regime]!));
+
+/** A row of a summary table, for the JSON report: a group's, or a path's. */
+interface SummaryReport {
+	regime: Regime;
+	table: 'group' | 'path';
+	label: string;
+	cases: number;
+	/** A group's valid cases, and its invalid; a path has one, as `valid`. */
+	valid: Summary;
+	invalid?: Summary;
+	/** The ratio of summed bytes. */
+	alloc: number;
+}
+const summaries_report: Array<SummaryReport> = [];
 
 for (const regime of REGIMES) {
 	const of_regime = graded.filter((g) => g[regime] && !Number.isNaN(g[regime].ratio));
@@ -786,6 +843,16 @@ for (const regime of REGIMES) {
 			gs.filter((g) => !g.c.valid),
 			regime
 		);
+		const alloc = to_alloc_sum(gs, regime);
+		summaries_report.push({
+			regime,
+			table: 'group',
+			label,
+			cases: gs.length,
+			valid,
+			invalid,
+			alloc
+		});
 		return [
 			label,
 			String(gs.length),
@@ -793,7 +860,7 @@ for (const regime of REGIMES) {
 			format_band(valid.band),
 			format_time(invalid.ratio, ''),
 			format_band(invalid.band),
-			format_alloc_sum(gs, regime)
+			format_ratio(alloc)
 		];
 	};
 	// a path's cases are of one validity, but for `probe`, so its row has one time
@@ -802,16 +869,25 @@ for (const regime of REGIMES) {
 			.filter((of_path) => of_path.length)
 			.map((of_path) => {
 				const summary = summarize(of_path, regime);
+				const alloc = to_alloc_sum(of_path, regime);
+				summaries_report.push({
+					regime,
+					table: 'path',
+					label: label + of_path[0]!.c.path,
+					cases: of_path.length,
+					valid: summary,
+					alloc
+				});
 				return [
 					label + of_path[0]!.c.path,
 					String(of_path.length),
 					format_time(summary.ratio, ''),
 					format_band(summary.band),
-					format_alloc_sum(of_path, regime)
+					format_ratio(alloc)
 				];
 			});
 	const realistic = of_regime.filter((g) => g.c.realistic);
-	console.log(
+	print_table(
 		`\nsummary, ${regime}: time is the geometric mean of the cases' ratios, and the A/A beside it is from what\n` +
 			(regime === 'apart'
 				? 'the processes of one version differ by over the same cases, in the same runs: a time inside\n' +
@@ -819,7 +895,7 @@ for (const regime of REGIMES) {
 				: 'the instances of one version differ by over the same cases, in the same processes: a time inside\n' +
 					'it is no difference. alloc is the ratio of summed bytes.\n')
 	);
-	console.log(
+	print_table(
 		format_table([
 			['group', 'cases', 'valid time', 'A/A', 'invalid time', 'A/A', 'alloc'],
 			...[...new Set(of_regime.map((g) => g.c.group))].map((group) =>
@@ -832,8 +908,8 @@ for (const regime of REGIMES) {
 			to_group_row('all', of_regime)
 		])
 	);
-	console.log(`\nby path, ${regime}: what the parse does\n`);
-	console.log(
+	print_table(`\nby path, ${regime}: what the parse does\n`);
+	print_table(
 		format_table([
 			['path', 'cases', 'time', 'A/A', 'alloc'],
 			...to_path_rows('realistic † ', realistic),
@@ -852,6 +928,12 @@ let library_delta = 0;
 // every figure rules 4 and 5 read, and each scenario beside valibot's
 let size_figures: Array<SizeFigure> = [];
 let backstop_rows: Array<BackstopRow> = [];
+// a scenario the baseline lacks, beside other libraries' bundles of it, for the JSON report
+let new_scenario_report: Array<{
+	name: string;
+	gzip: number;
+	libs: Array<{ lib: string; gzip: number }>;
+}> = [];
 let all_sizes = { new: NaN, valibot: NaN };
 // a scenario the baseline's module lacks, as a feature adds, beside other libraries' bundles of it
 const NEW_SCENARIO_LIBS = [BASELINE_LIB, 'zod_mini'];
@@ -911,6 +993,7 @@ if (args.bundle) {
 			)
 		}))
 	);
+	new_scenario_report = new_scenario_rows;
 	const [base_exports, new_exports] = export_sizes;
 	library_delta = new_exports.library - base_exports.library;
 	const to_by_name = (sizes: ExportSizes): Map<string, ExportSize> =>
@@ -966,10 +1049,10 @@ if (args.bundle) {
 	const to_backstop_mark = (row: BackstopRow): string =>
 		backstop.over.includes(row) ? '*' : backstop.pinned.includes(row) ? 'p' : ' ';
 
-	console.log(
+	print_table(
 		'\nbundle size: minified + gzip bytes. Core is what every consumer pays, opt-in what one pays who uses it\n'
 	);
-	console.log(
+	print_table(
 		format_table([
 			['scenario', 'class', 'base', 'new', 'delta', 'valibot', 'vs valibot'],
 			...scenario_figures.map((f, i) => [
@@ -992,7 +1075,7 @@ if (args.bundle) {
 			]
 		])
 	);
-	console.log(
+	print_table(
 		`* over ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's, the backstop` +
 			(backstop.pinned.length ? ', p over it and within its pin' : '') +
 			(args.class === 'feature'
@@ -1014,12 +1097,12 @@ if (args.bundle) {
 	);
 	const format_figure_kind = (f: SizeFigure): string =>
 		f.kind === 'alone' || f.core ? 'alone' : 'last in';
-	console.log(
+	print_table(
 		`\nexports: \`parse\` alone, and each other's last in, what it costs a consumer who has the rest, and alone,\n` +
 			`what it costs over \`parse\` a consumer who has only it, with the library whole. An opt-in figure that\n` +
 			`moved by ${SIZE_JITTER} or less is gzip and not the change, and is not listed\n`
 	);
-	console.log(
+	print_table(
 		format_table([
 			['export', 'figure', 'class', 'base', 'new', 'delta'],
 			...listed.map((f) => [
@@ -1040,17 +1123,17 @@ if (args.bundle) {
 			]
 		])
 	);
-	console.log(
+	print_table(
 		`${export_names.length + 1 - listed_names.size} other exports within ±${SIZE_JITTER}, last in and alone`
 	);
 	if (unshared_scenarios.length) {
-		console.log(
+		print_table(
 			`\nthe baseline's scenario module has no ${unshared_scenarios.join(', ')}: ` +
 				`${unshared_scenarios.length === 1 ? 'it is' : 'they are'} measured for the new version alone. ` +
 				'`all` is of the scenarios\n' +
 				'both have, and its ratio of every scenario. Beside other libraries:\n'
 		);
-		console.log(
+		print_table(
 			format_table([
 				['new scenario', 'new', ...NEW_SCENARIO_LIBS.flatMap((lib) => [lib, 'vs'])],
 				...new_scenario_rows.map((r) => [
@@ -1069,8 +1152,12 @@ if (args.bundle) {
 //
 
 const heap_figures: Array<HeapFigure> = [];
+// each scenario's total with one schema, for the JSON report
+const heap_totals: Array<{ name: string; base: number; new: number; delta: number }> = [];
 const heap_totals_grew: Array<string> = [];
 const coldstart_slower: Array<string> = [];
+// each stage's row of the table, for the JSON report
+const coldstart_report: Array<Record<string, number | string | boolean>> = [];
 let coldstart_ratio = NaN;
 
 if (args.process) {
@@ -1102,6 +1189,12 @@ if (args.process) {
 		};
 		heap_figures.push(figure);
 		const total_delta = current.total_bytes - base.total_bytes;
+		heap_totals.push({
+			name: scenario.name,
+			base: base.total_bytes,
+			new: current.total_bytes,
+			delta: total_delta
+		});
 		heap_rows.push([
 			scenario.name,
 			format_kb(base.total_bytes),
@@ -1114,12 +1207,12 @@ if (args.process) {
 		// a total repeats to about the size of a collection's jitter
 		if (total_delta > HEAP_SETTLED_BELOW_BYTES) heap_totals_grew.push(scenario.name);
 	}
-	console.log(
+	print_table(
 		'\nretained heap: after building one schema and parsing once, over a bare process, reported,\n' +
 			'and what each further schema holds, machine code and the trusted spaces beside it\n' +
 			'(bytecode, deoptimization data) left out, priced\n'
 	);
-	console.log(
+	print_table(
 		format_table([
 			['scenario', 'base KB', 'new KB', 'delta B', 'base B/schema', 'new B/schema', 'delta B'],
 			...heap_rows
@@ -1143,12 +1236,12 @@ if (args.process) {
 	const listed = export_figures.filter(
 		(f) => !is_heap_compared(f) || Math.abs(to_heap_delta(f)) > HEAP_JITTER
 	);
-	console.log(
+	print_table(
 		'\nretained heap per further schema of each export alone, a schema of its entry in the program,\n' +
 			`each action in a \`pipe\`, priced. A figure that moved by ${HEAP_JITTER} or less is not listed\n`
 	);
 	if (listed.length) {
-		console.log(
+		print_table(
 			format_table([
 				['export', 'base B/schema', 'new B/schema', 'delta B'],
 				...listed.map((f) => [
@@ -1160,7 +1253,7 @@ if (args.process) {
 			])
 		);
 	}
-	console.log(
+	print_table(
 		`${export_figures.length - listed.length} ${listed.length ? 'other ' : ''}exports within ±${HEAP_JITTER}` +
 			(heap_figures.some(is_over_heap_allowance)
 				? `, ! over the allowance of ${HEAP_ALLOWANCE}`
@@ -1199,6 +1292,15 @@ if (args.process) {
 				const name = `${scenario}/${form}/${stage}`;
 				if (stage === 'first_parse') ratios.push(ratio);
 				if (slower) coldstart_slower.push(name);
+				coldstart_report.push({
+					name,
+					base_ms: base.work_ms,
+					new_ms: current.work_ms,
+					ratio,
+					slower,
+					band_ms: Math.max(base.work_band_ms, current.work_band_ms),
+					peak_kb_delta: current.added_rss_kb - base.added_rss_kb
+				});
 				coldstart_rows.push([
 					name,
 					base.work_ms.toFixed(2),
@@ -1211,11 +1313,11 @@ if (args.process) {
 		}
 	}
 	coldstart_ratio = geometric_mean(ratios);
-	console.log(
+	print_table(
 		`\ncold start: median ms of work inside a fresh process, ${args.samples} samples, each stage including\n` +
 			'the ones before it; band is the wider p10 to p90 spread of the two; peak is KB of resident memory\n'
 	);
-	console.log(
+	print_table(
 		format_table([
 			['scenario/form/stage', 'base ms', 'new ms', 'time', 'band', 'peak KB'],
 			...coldstart_rows
@@ -1261,21 +1363,21 @@ const valid_by_regime = SUMMARY_RULE_REGIMES.map((regime) => {
 	};
 }).filter((v) => v.whole.cases);
 
-console.log(
+print_verdict(
 	`\nagainst the acceptance rules: time is of ${args.runs} ${args.runs === 1 ? 'run' : 'runs'} together, and every figure of it is beside its A/A\n`
 );
 if (!valid_by_regime.length) {
-	console.log('realistic valid-path speed: no realistic valid cases in this run');
+	print_verdict('realistic valid-path speed: no realistic valid cases in this run');
 }
 for (const { regime, whole, paths } of valid_by_regime) {
-	console.log(
+	print_verdict(
 		`realistic valid-path speed, ${regime}: ${format_speed(whole)}: ${format_standing(whole)}\n` +
 			`  by run: ${whole.runs.map((r) => format_percent(1 - Math.exp(r))).join(', ')}\n` +
 			`  by path: ${paths.map((p) => `${p.path} ${format_speed(p.summary)}`).join(', ')}`
 	);
 }
 if (args.bundle) {
-	console.log(
+	print_verdict(
 		args.class === 'feature'
 			? 'bytes, priced as a feature (--class feature): core at +0, the figures the baseline has as a fix of correctness:'
 			: args.class === 'security'
@@ -1286,14 +1388,14 @@ if (args.bundle) {
 	);
 	if (args.class === 'feature') {
 		const grew = judge_core_feature(size_figures);
-		console.log(
+		print_verdict(
 			`  core bytes (${CORE_SCENARIO} and parse): ${format_size_delta(core_delta)} gzip, ` +
 				'which a feature may not add to: ' +
 				(grew.length ? `FAIL, ${format_size_figures(grew)}` : 'pass')
 		);
 	} else if (is_priced_as_correctness(args.class)) {
 		const over = judge_core_correctness(size_figures);
-		console.log(
+		print_verdict(
 			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
 				`which may be up to +${CORRECTNESS_PRICE.core} with no return: ` +
 				(over.length ? `ASK, ${format_size_figures(over)} over it, the user rules` : 'pass')
@@ -1336,17 +1438,17 @@ if (args.bundle) {
 					? `, and invalid ${to_shortfall(matrix_invalid)}`
 					: ', and there are no realistic invalid cases in this run');
 		}
-		console.log(
+		print_verdict(
 			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
 				`which needs ${format_percent(required)} realistic speed in the matrix, on the valid path ` +
 				`or with it not slower on the invalid: ${verdict}`
 		);
 	}
-	console.log(
+	print_verdict(
 		'  ' + format_opt_in_line(judge_opt_in(size_figures, args.class), args.class, library_delta)
 	);
-	console.log('  ' + format_backstop_line(backstop_rows, args.class));
-	console.log(
+	print_verdict('  ' + format_backstop_line(backstop_rows, args.class));
+	print_verdict(
 		`  all scenarios together, reported: ${all_sizes.new} gzip, ` +
 			`${(all_sizes.new / all_sizes.valibot).toFixed(2)}x valibot's ${all_sizes.valibot}`
 	);
@@ -1371,16 +1473,16 @@ const slowed = [
 			: [];
 	})
 ];
-console.log(
+print_verdict(
 	'the valid path is not slowed: ' +
 		(!confirmable ? NOT_JUDGED : slowed.length ? `FAIL: ${slowed.join(', ')}` : 'pass')
 );
 
 for (const regime of REGIMES) {
 	if (!graded.some((g) => g[regime])) continue;
-	console.log(`cases slower, ${regime}: ${format_names(to_flagged(regime, 'slower'))}`);
-	console.log(`cases faster, ${regime}: ${format_names(to_flagged(regime, 'faster'))}`);
-	console.log(
+	print_verdict(`cases slower, ${regime}: ${format_names(to_flagged(regime, 'slower'))}`);
+	print_verdict(`cases faster, ${regime}: ${format_names(to_flagged(regime, 'faster'))}`);
+	print_verdict(
 		`cases marked ?, ${regime}: ` + format_names(graded.filter((g) => g[regime]?.candidate))
 	);
 }
@@ -1390,30 +1492,88 @@ const to_more_alloc = (regime: Regime): Array<Graded> =>
 		return bytes?.settled && is_past_alloc_floor(bytes.new, bytes.base);
 	});
 const unsettled = graded.filter((g) => !g.bytes.settled || g.alone_bytes?.settled === false);
-console.log(`cases allocating more, matrix: ${format_names(to_more_alloc('matrix'))}`);
+print_verdict(`cases allocating more, matrix: ${format_names(to_more_alloc('matrix'))}`);
 if (graded_alone.length) {
-	console.log(`cases allocating more, alone: ${format_names(to_more_alloc('alone'))}`);
+	print_verdict(`cases allocating more, alone: ${format_names(to_more_alloc('alone'))}`);
 }
-console.log(
+print_verdict(
 	`cases whose bytes two instances of the baseline differ on: ${format_names(unsettled)}`
 );
-console.log(
+print_verdict(
 	`cases whose output identity changed: ${format_names(graded.filter((g) => g.base_same !== undefined && g.base_same !== g.same))}`
 );
 if (disagreed.length) {
-	console.log(`cases the baseline gives another verdict on, not compared: ${disagreed.join(', ')}`);
+	print_verdict(
+		`cases the baseline gives another verdict on, not compared: ${disagreed.join(', ')}`
+	);
 }
 if (apart_program_ran < PROGRAM.length) {
-	console.log(
+	print_verdict(
 		`the program, apart: the baseline ran ${apart_program_ran} of its ${PROGRAM.length} entries, ` +
 			'the rest throwing or giving another answer in it, where the new version ran them all'
 	);
 }
 if (args.process) {
-	console.log(
+	print_verdict(
 		`cold start, first parse: ${format_ratio(coldstart_ratio)} the baseline's; ` +
 			`stages slower past their own spread: ${coldstart_slower.length ? coldstart_slower.join(', ') : 'none'}`
 	);
-	console.log(format_heap_line(judge_heap(heap_figures), heap_totals_grew));
+	print_verdict(format_heap_line(judge_heap(heap_figures), heap_totals_grew));
 }
+const machine_end = read_machine_state();
+print_verdict(`the machine at the end: ${format_machine_state(machine_end)}`);
+console.log(report_verdict.join('\n'));
+console.log(report_tables.join('\n'));
+const REPORT_PATH = join(WORK_DIR, 'report.json');
+writeFileSync(
+	REPORT_PATH,
+	JSON.stringify(
+		{
+			note:
+				"a case's ratio and floor, and a summary's ratio and band, are natural logarithms of new " +
+				'over base: the printed time is exp(ratio), and a floor or an A/A ±(exp(floor) - 1). ' +
+				'Every other figure is as printed, unrounded',
+			graded: new_label,
+			against: baseline_label,
+			identical,
+			args,
+			machine: { start: machine_start, end: machine_end },
+			instances: INSTANCES,
+			cases: graded_all.map((g) => ({
+				name: g.c.name,
+				group: g.c.group,
+				path: g.c.path,
+				valid: g.c.valid,
+				realistic: g.c.realistic,
+				compared: g.compared,
+				matrix: g.matrix,
+				alone: g.alone,
+				apart: g.apart,
+				bytes: g.bytes,
+				alone_bytes: g.alone_bytes,
+				same: g.same,
+				base_same: g.base_same
+			})),
+			disagreed,
+			summaries: summaries_report,
+			apart_program_ran: { ran: apart_program_ran, of: PROGRAM.length },
+			core_delta,
+			library_delta,
+			size_figures,
+			backstop_rows,
+			new_scenario_rows: new_scenario_report,
+			all_sizes,
+			heap_figures,
+			heap_totals,
+			heap_totals_grew,
+			coldstart: coldstart_report,
+			verdict: report_verdict,
+			tables: report_tables,
+			elapsed_s: (performance.now() - started) / 1000
+		},
+		(_, value: unknown) => (typeof value === 'number' && !Number.isFinite(value) ? null : value),
+		'\t'
+	) + '\n'
+);
+console.log(`\nthe whole report, as JSON: ${REPORT_PATH}`);
 console.log(`\n${to_elapsed(started)}`);

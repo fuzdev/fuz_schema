@@ -17,8 +17,14 @@ npm run grade -- --class feature                # price the bytes as a new expor
 
 `grade` compares a version of `schema.ts`, the working tree's unless
 `--new-file` names one, with a baseline, from git or from a file. It prints
-what it expects to take before it starts. Per
-[case](benchmarks.md#scenarios-and-cases) it reports:
+what it expects to take before it starts, with the machine's state: Node's
+version, the load average, and each CPU's clock where `/proc/cpuinfo` gives
+it. A timing taken under load reads a wider A/A. When it is done it prints
+the verdict first, the rule lines and the lists of cases slower, faster,
+and marked, with the machine's state at the end, and the tables after, and
+writes the whole report, every case's readings with it, to
+`.gro/grade/report.json`. Per [case](benchmarks.md#scenarios-and-cases)
+the tables report:
 
 - time per parse, the graded version over the baseline, beside its floor
 - heap bytes allocated per parse
@@ -26,7 +32,7 @@ what it expects to take before it starts. Per
 
 each summarized by group and by path (what the parse does: return the input,
 return a copy, build issues, or probe), then bundle size, retained heap per
-scenario and per export, and cold start, and a verdict against the rules.
+scenario and per export, and cold start.
 
 A case the baseline lacks, as one of a new export, or gives another verdict
 on is measured for the graded version alone and reported in a table of its
