@@ -49,6 +49,18 @@ the parse runs.
   the spread replaced, or slower.
 - **Reopens**: nothing: each copies the path at every level, as the spread above does.
 
+### Every path reversed, whatever its length
+
+`parse` and `parse_or_throw` reverse each issue's path without asking its
+length first, since a path of one key or none is its own reverse.
+
+- **Gave**: 5 gzip on the core and on every scenario, 13 on `parse` alone.
+- **Cost**: a call to `reverse` for every issue: in a quiet grade nine
+  invalid cases slower in the matrix, up to 1.13x on `each/string/invalid`,
+  and the `fixed` group's invalid cases 1.14x alone.
+- **Why**: slower on the invalid path for a few bytes.
+- **Reopens**: nothing: the length check is cheaper than the call it skips.
+
 ## Object loops
 
 ### A shared helper for the key copy
