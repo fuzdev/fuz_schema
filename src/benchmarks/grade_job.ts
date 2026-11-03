@@ -64,9 +64,9 @@ export interface GradeChildCase {
 
 export interface GradeChildOutput {
 	/**
-	 * The cases measured, in the order asked. A process that holds only another
-	 * version than the graded one leaves out a case that version lacks or
-	 * disagrees on.
+	 * The cases measured: in the order asked those every arm has and agrees on,
+	 * and then the rest. A process that holds only another version than the
+	 * graded one leaves out a case that version lacks or disagrees on.
 	 */
 	cases: Array<GradeChildCase>;
 	/** Cases an arm of another version than the graded one disagrees on, which is left out of those. */

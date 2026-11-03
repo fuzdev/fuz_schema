@@ -12,7 +12,11 @@
  *
  * **Three regimes.** In `matrix` every case of every arm is run before any is
  * measured, so each is measured in code that has seen every schema, whichever
- * cases are measured. In `alone` the process builds and runs one case, so the
+ * cases are measured.
+ * A case some arm lacks or disagrees on, as one of an export the baseline
+ * lacks, is not in that run, and is measured after every other: the arms that
+ * have it would otherwise have seen a schema the rest have not, before the
+ * cases they share are timed. In `alone` the process builds and runs one case, so the
  * engine can specialize all the way down. In `apart` the arms are of one
  * version, and one of them is there to use the library: the process builds one
  * case as `alone` does, runs the program of `program.ts`, which uses every
@@ -173,10 +177,11 @@ if (subject_job.graded && found.length !== names.size) {
 // The arms of each case: the graded one, and each other that has it and agrees.
 // Every arm's case is called the same way here, the graded one's no more than
 // the rest: an arm that runs a case once more than the others before they are
-// timed can settle in other code on it.
+// timed can settle in other code on it. So a case only some arms have is
+// checked when it is measured, after every case all of them have.
 const disagreed: Array<string> = [];
 const case_arms: Map<string, Array<Arm>> = new Map();
-for (const [index, c] of [...subject.cases.values()].entries()) {
+const to_case_arms = (c: Case, index: number): Array<Arm> => {
 	const of_case: Array<Arm> = [];
 	for (const arm of to_rotated(arms, index)) {
 		const own = arm.cases.get(c.name);
@@ -192,17 +197,23 @@ for (const [index, c] of [...subject.cases.values()].entries()) {
 		if (ok) of_case.push(arm);
 		else if (!disagreed.includes(c.name)) disagreed.push(c.name);
 	}
-	case_arms.set(
-		c.name,
-		arms.filter((arm) => of_case.includes(arm))
-	);
+	const found_arms = arms.filter((arm) => of_case.includes(arm));
+	case_arms.set(c.name, found_arms);
+	return found_arms;
+};
+const subject_cases = [...subject.cases.values()];
+const is_built_by_all = (c: Case): boolean => arms.every((arm) => arm.cases.has(c.name));
+for (const [index, c] of subject_cases.entries()) {
+	if (is_built_by_all(c)) to_case_arms(c, index);
 }
+// the cases every arm has and agrees on, which alone are run before any is measured
+const is_shared = (c: Case): boolean => case_arms.get(c.name)?.length === arms.length;
 
 const to_batch = (ms_per_call: number): number =>
 	Math.max(1, Math.min(GRADE_BATCH_MAX, Math.round(GRADE_BATCH_MS / ms_per_call)));
 
 if (job.regime === 'matrix') {
-	for (const [index, c] of [...subject.cases.values()].entries()) {
+	for (const [index, c] of subject_cases.filter(is_shared).entries()) {
 		// which arm runs a case first moves on by a case, so no arm is first to every one
 		for (const arm of to_rotated(case_arms.get(c.name)!, index)) {
 			const { run } = arm.cases.get(c.name)!;
@@ -242,11 +253,18 @@ const to_orders = (count: number): Array<Array<number>> => {
 const output: GradeChildOutput = { cases: [], disagreed, sink: 0 };
 if (program_ran.length) output.program_ran = Math.min(...program_ran);
 
-// a case no arm agrees on is one the process holds only another version's arms for
-const measured = found.filter((c) => case_arms.get(c.name)!.length);
+// the shared cases first, and then the rest, each checked as it comes
+const measured = [...found.filter(is_shared), ...found.filter((c) => !is_shared(c))];
 
 for (const [index, c] of measured.entries()) {
-	const of_case = case_arms.get(c.name)!;
+	const of_case =
+		case_arms.get(c.name) ??
+		to_case_arms(
+			c,
+			subject_cases.findIndex((sc) => sc.name === c.name)
+		);
+	// a case no arm agrees on is one the process holds only another version's arms for
+	if (!of_case.length) continue;
 	const runs = of_case.map((arm) => arm.cases.get(c.name)!.run);
 	const orders = to_orders(of_case.length);
 	const rounds = job.regime === 'apart' ? GRADE_APART_ROUNDS : orders.length;

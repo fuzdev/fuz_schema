@@ -107,7 +107,26 @@ export interface Case {
 	ok: () => boolean;
 }
 
-type CaseGroup = (s: SchemaLib) => Array<Case>;
+/**
+ * A case built on its own, when its group is built and apart from the rest of
+ * it: one a version can't build is dropped alone, where a case built with its
+ * group drops the whole group. A case of an export the baseline may lack is
+ * one, its schema made inside `build`, or it goes in a group of its own.
+ */
+export interface CaseBuild {
+	/** The name of the case `build` returns. */
+	name: string;
+	build: () => Case;
+}
+
+/** A case, or a case built on its own. */
+export type CaseEntry = Case | CaseBuild;
+
+/** Builds a group of cases against a version of the library. */
+export type CaseGroup = (s: SchemaLib) => Array<CaseEntry>;
+
+/** Whether an entry of a group is built on its own. */
+const is_case_build = (entry: CaseEntry): entry is CaseBuild => 'build' in entry;
 
 const to_group = (name: string): string => name.slice(0, name.indexOf('/'));
 
@@ -1406,29 +1425,53 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	scale
 ];
 
-// a group that throws while it builds, as the error a strict build fails with
-const to_group_error = (group: CaseGroup, cause: unknown): Error =>
-	new Error(
-		`the \`${group.name}\` group of cases did not build: ` +
-			(cause instanceof Error ? cause.message : String(cause)),
-		{ cause }
-	);
+// a group or a case that throws while it builds, as the error a strict build fails with
+const to_build_error = (what: string, cause: unknown): Error =>
+	new Error(`${what} did not build: ` + (cause instanceof Error ? cause.message : String(cause)), {
+		cause
+	});
+
+// a group's entries, or none when it throws and the build is not strict
+const to_entries_of = (s: SchemaLib, group: CaseGroup, strict: boolean): Array<CaseEntry> => {
+	try {
+		return group(s);
+	} catch (error) {
+		if (strict) throw to_build_error(`the \`${group.name}\` group of cases`, error);
+		return [];
+	}
+};
+
+// an entry as its case, or none when it is built on its own, throws, and the build is not strict
+const to_built = (entry: CaseEntry, strict: boolean): Case | undefined => {
+	if (!is_case_build(entry)) return entry;
+	let built: Case;
+	try {
+		built = entry.build();
+	} catch (error) {
+		if (strict) throw to_build_error(`the case \`${entry.name}\``, error);
+		return undefined;
+	}
+	if (built.name !== entry.name) {
+		throw new Error(`the case built as \`${entry.name}\` is named \`${built.name}\``);
+	}
+	return built;
+};
 
 /**
  * Builds every case the given library version supports.
  *
- * @param strict - whether a group that throws while it builds fails the whole, where otherwise the version loses that group's cases. For a version that is to have every case, as the one a grade is of.
- * @throws Error when `strict` and a group throws, naming the group
+ * @param strict - whether a group or a case built on its own that throws while it builds fails the whole, where otherwise the version loses that group's cases, or that one case. For a version that is to have every case, as the one a grade is of.
+ * @param groups - the groups to build, every one by default
+ * @throws Error when `strict` and a group or a case throws, naming it
  */
-export const create_cases = (s: SchemaLib, strict = false): Array<Case> =>
-	CASE_GROUPS.flatMap((group) => {
-		try {
-			return group(s);
-		} catch (error) {
-			if (strict) throw to_group_error(group, error);
-			return [];
-		}
-	});
+export const create_cases = (
+	s: SchemaLib,
+	strict = false,
+	groups: ReadonlyArray<CaseGroup> = CASE_GROUPS
+): Array<Case> =>
+	groups.flatMap((group) =>
+		to_entries_of(s, group, strict).flatMap((entry) => to_built(entry, strict) ?? [])
+	);
 
 /**
  * Builds the one named case, a group at a time, stopping at the group that has
@@ -1436,21 +1479,14 @@ export const create_cases = (s: SchemaLib, strict = false): Array<Case> =>
  * parses a document while it builds is tried last, so that no other group's
  * case has a parse ahead of its own.
  *
- * @param strict - whether a group that throws while it builds fails the whole, as in `create_cases`
- * @returns the case, or `undefined` when the given library version has none of that name
- * @throws Error when `strict` and a group built on the way throws, naming the group
+ * @param strict - whether a group that throws while it builds fails the whole, as in `create_cases`, and the case itself when it is built on its own
+ * @returns the case, or `undefined` when the given library version has none of that name or can't build it
+ * @throws Error when `strict` and a group built on the way throws, or the case, naming it
  */
 export const create_case = (s: SchemaLib, name: string, strict = false): Case | undefined => {
 	for (const group of [...CASE_GROUPS.filter((g) => g !== real_docinfo), real_docinfo]) {
-		let cases: Array<Case>;
-		try {
-			cases = group(s);
-		} catch (error) {
-			if (strict) throw to_group_error(group, error);
-			continue;
-		}
-		const found = cases.find((c) => c.name === name);
-		if (found) return found;
+		const found = to_entries_of(s, group, strict).find((entry) => entry.name === name);
+		if (found) return to_built(found, strict);
 	}
 	return undefined;
 };

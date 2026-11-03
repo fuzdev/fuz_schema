@@ -423,8 +423,13 @@ is measured and how a difference is decided. What the code has to hold to:
   holds it to the kinds there are. A kind it left out could change what a
   process shares on first use and never be seen apart.
 - **The graded version builds every group of cases**, and a group of its that
-  throws fails the grade, by name. A baseline with an older API loses the
-  groups it can't build, and is compared on the rest.
+  throws fails the grade, by name, as does a case it builds on its own. A
+  baseline with an older API loses the groups and the cases it can't build,
+  and is compared on the rest.
+- **What only some instances have runs after the rest.** The matrix runs a
+  case first only where every instance has it and agrees on it, and measures
+  such cases before any other, so a case only the new version has is no
+  schema its call sites saw before a shared case was timed.
 - **Warm by time with a floor of calls**, never by a count alone, and force no
   collection.
 
@@ -677,5 +682,15 @@ test that kills it. One it decides not to test gets a `survives` saying why.
   shape of its own: every case there moves what speed is judged on. A path
   case goes in at the size its group already uses, and a schema whose cost
   is near a parse's fixed cost goes in `each`.
+- A new export's cases: in a group of their own, or each as a `CaseBuild`
+  (`{name, build}`) that makes its schema inside `build`. A group is built
+  under one `try`, so a case written into it that the baseline can't build
+  drops the whole group from the baseline, and its other cases compare on
+  nothing. `grade` measures a case the baseline lacks for the new version
+  alone, after every case both have, and leaves it out of the matrix's run
+  of every case first, so the new version's call sites see no schema the
+  baseline's don't; it is reported in a table of its own, and no summary,
+  A/A, or rule reads it. Grade the export with `--class feature`, and give
+  it a scenario, which compares it with the other libraries.
 - Never add harness imports or work to a generated process module. The bare
   baseline is that module with no library.

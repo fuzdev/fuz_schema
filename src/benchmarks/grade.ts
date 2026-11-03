@@ -720,6 +720,12 @@ const to_case_bytes = (c: GradeChildCase | undefined): CaseBytes => {
 
 interface Graded {
 	c: Case;
+	/**
+	 * Whether the baseline was timed on the case in the matrix, in every run.
+	 * One it lacks or gives another verdict on is reported on its own, and is
+	 * in no summary, A/A, or rule.
+	 */
+	compared: boolean;
 	matrix: CaseTime;
 	alone: CaseTime | undefined;
 	apart: CaseTime | undefined;
@@ -729,14 +735,22 @@ interface Graded {
 	base_same: boolean | undefined;
 }
 
-const graded: Array<Graded> = cases.map((c, i) => {
-	const first = matrix_runs[0]!.cases[i]!;
-	if (first.name !== c.name) throw new Error(`expected ${c.name} and was given ${first.name}`);
+// a process measures the cases every arm has before the rest, so not in the order asked
+const to_case_of = (output: GradeChildOutput, name: string): GradeChildCase => {
+	const found = output.cases.find((c) => c.name === name);
+	if (!found) throw new Error(`expected ${name} in the output of a process`);
+	return found;
+};
+
+const graded_all: Array<Graded> = cases.map((c) => {
+	const of_runs = matrix_runs.map((run) => to_case_of(run, c.name));
+	const first = of_runs[0]!;
 	const alone_index = alone_cases.indexOf(c);
 	const apart_index = apart_cases.indexOf(c);
 	return {
 		c,
-		matrix: to_case_time(matrix_runs.map((run) => to_reading(run.cases[i]!))),
+		compared: of_runs.every((r) => r.arms.some((arm) => arm.startsWith('base'))),
+		matrix: to_case_time(of_runs.map((r) => to_reading(r))),
 		alone:
 			alone_index === -1
 				? undefined
@@ -749,6 +763,10 @@ const graded: Array<Graded> = cases.map((c, i) => {
 		base_same: first.same.base0
 	};
 });
+// what the summaries, their A/A, the rules, and the lists read
+const graded = graded_all.filter((g) => g.compared);
+const uncompared = graded_all.filter((g) => !g.compared);
+const disagreed = [...new Set(matrix_runs.flatMap((run) => run.disagreed))];
 
 //
 // Report
@@ -863,6 +881,29 @@ if (graded_apart.length) {
 				format_time(g.matrix.ratio, to_mark(g.matrix)),
 				g.alone ? format_time(g.alone.ratio, to_mark(g.alone)) : '-',
 				...to_time_cells(g.apart!)
+			])
+		])
+	);
+}
+
+if (uncompared.length) {
+	console.log(
+		'\ncases not compared: the baseline has none of them, as a case of an export it lacks, or gives\n' +
+			'another verdict. Each is measured for the new version alone, after every case both have, and\n' +
+			"is in no summary, A/A, rule, or list below. ns and B are the new version's, matrix and alone.\n"
+	);
+	console.log(
+		format_table([
+			['case', 'path', 'why', 'new ns', 'alone ns', 'new B', 'alone B', 'out'],
+			...uncompared.map((g) => [
+				g.c.name + (g.c.realistic ? ' †' : ''),
+				g.c.path,
+				disagreed.includes(g.c.name) ? 'verdict' : 'new',
+				format_number(g.matrix.new_ns),
+				g.alone ? format_number(g.alone.new_ns) : '-',
+				format_number(g.bytes.new),
+				g.alone_bytes ? format_number(g.alone_bytes.new) : '-',
+				format_same(g.same)
 			])
 		])
 	);
@@ -1515,7 +1556,6 @@ console.log(
 console.log(
 	`cases whose output identity changed: ${format_names(graded.filter((g) => g.base_same !== undefined && g.base_same !== g.same))}`
 );
-const disagreed = [...new Set(matrix_runs.flatMap((run) => run.disagreed))];
 if (disagreed.length) {
 	console.log(`cases the baseline gives another verdict on, not compared: ${disagreed.join(', ')}`);
 }

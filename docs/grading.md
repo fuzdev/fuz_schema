@@ -28,6 +28,12 @@ each summarized by group and by path (what the parse does: return the input,
 return a copy, build issues, or probe), then bundle size, retained heap per
 scenario and per export, and cold start, and a verdict against the rules.
 
+A case the baseline lacks, as one of a new export, or gives another verdict
+on is measured for the graded version alone and reported in a table of its
+own, `cases not compared`. No summary, A/A, rule, or list reads it, and the
+matrix measures it after every case both versions have:
+[benchmarks.md](benchmarks.md#extending) says how to add one.
+
 Bytes are the figures of [`sizes.json`](benchmarks.md#the-whole-library), of
 both versions: a table of the scenarios, each beside Valibot's bundle of the
 same scenario and `all` for the scenarios together, and a table of the

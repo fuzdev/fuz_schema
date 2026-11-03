@@ -1,14 +1,56 @@
 import { test, assert, describe } from 'vitest';
 
 import * as s from '#lib/schema.ts';
-import { CASE_GROUPS, CASE_PATHS, create_cases } from '../benchmarks/cases.ts';
+import {
+	CASE_GROUPS,
+	CASE_PATHS,
+	create_cases,
+	type Case,
+	type CaseGroup
+} from '../benchmarks/cases.ts';
 
 describe('the case matrix', () => {
-	const cases = create_cases(s);
+	// strict, so a group or a case built on its own that throws fails here
+	const cases = create_cases(s, true);
 
 	test('every group builds', () => {
 		// called directly, since `create_cases` drops a group that throws unless it is strict
 		for (const group of CASE_GROUPS) assert(group(s).length > 0);
+	});
+
+	test('a case built on its own that throws drops only itself', () => {
+		const to_fake = (name: string): Case => ({
+			name,
+			group: 'fake',
+			realistic: false,
+			path: 'identity',
+			valid: true,
+			input: 1,
+			run: () => 1,
+			ok: () => true
+		});
+		const fake: CaseGroup = () => [
+			to_fake('fake/kept/valid'),
+			{
+				name: 'fake/lacking/valid',
+				build: () => {
+					throw new Error('an export this version lacks');
+				}
+			},
+			{ name: 'fake/built/valid', build: () => to_fake('fake/built/valid') }
+		];
+		assert.deepEqual(
+			create_cases(s, false, [fake]).map((c) => c.name),
+			['fake/kept/valid', 'fake/built/valid']
+		);
+		let thrown: unknown;
+		try {
+			create_cases(s, true, [fake]);
+		} catch (error) {
+			thrown = error;
+		}
+		assert(thrown instanceof Error);
+		assert.include(thrown.message, '`fake/lacking/valid`');
 	});
 
 	test('names are unique and are group/shape/outcome', () => {
