@@ -80,7 +80,7 @@ dev server.
 - `src/test/schema.pipe.test.ts` - `pipe` and actions, and `message`
 - `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
   issues, `format_issue`, and `get_issue_value`
-- `src/test/schema_test_helpers.ts` - `issues_of`, which the six `schema`
+- `src/test/schema_test_helpers.ts` - `issues_of`, which the `schema.*`
   test files above share
 - `src/test/schema.inference.test.ts` - what every schema and action infers
   in each position that has lost a type before
@@ -430,6 +430,10 @@ whether a JSON text matches a schema, and the issues of one that doesn't.
 - `issue.rs` - `SchemaIssue`, what it holds, and its `Display`, the text
   of `format_issue`
 - `stream.rs` - the streaming evaluator behind `matches_json`
+- `bits.rs` - `Bits`, the fixed-size set of which entries of an object have
+  been seen and which must be
+- `differential.rs` - the streaming evaluator against the tree one over a
+  hand-written table (tests)
 - `error.rs` - `JsonError` and `SchemaBuildError`
 - `tests/fixtures.rs` - both evaluators and the issues against
   `src/test/fixtures/json/`, and the groups of `FUZ_SCHEMA_FIXTURES_DIR`
