@@ -88,6 +88,7 @@ import {
 	format_size_figures,
 	judge_backstop,
 	judge_core_correctness,
+	judge_core_feature,
 	is_priced_as_correctness,
 	judge_opt_in,
 	to_size_delta,
@@ -186,7 +187,8 @@ const Args = s.object({
 			'what the change is for, which sets the price of its bytes: speed, correctness ' +
 			'for a fix of correctness or conformance, or security for a fix of over-acceptance, ' +
 			'denial of service on data-shaped input, or input leaking into issues, priced as ' +
-			'correctness with the backstop for the user to rule on'
+			'correctness with the backstop for the user to rule on, or feature for a new export, ' +
+			'with core at +0, what the baseline has priced as correctness, and the new figures reported'
 	}),
 	bundle: meta(s.with_default(s.boolean, true), { description: 'also measure bundle sizes' }),
 	'no-bundle': meta(s.with_default(s.boolean, false), { description: 'opt out of bundle' }),
@@ -966,6 +968,8 @@ let library_delta = 0;
 let size_figures: Array<SizeFigure> = [];
 let backstop_rows: Array<BackstopRow> = [];
 let all_sizes = { new: NaN, valibot: NaN };
+// a scenario the baseline's module lacks, as a feature adds, beside other libraries' bundles of it
+const NEW_SCENARIO_LIBS = [BASELINE_LIB, 'zod_mini'];
 
 if (args.bundle) {
 	const since = performance.now();
@@ -1008,7 +1012,20 @@ if (args.bundle) {
 	const [base_all, new_shared, new_every, valibot_all] = all_row;
 	all_sizes = { new: new_every ?? new_shared, valibot: valibot_all };
 	backstop_rows = scenario_rows.map((r) => ({ name: r.name, gzip: r.new, valibot: r.valibot }));
-	const over_backstop = judge_backstop(backstop_rows);
+	const backstop = judge_backstop(backstop_rows);
+	// a feature's scenario is the comparison of its export against other libraries
+	const new_scenario_rows = await Promise.all(
+		unshared_scenarios.map(async (name) => ({
+			name,
+			gzip: scenario_rows.find((r) => r.name === name)!.new,
+			libs: await Promise.all(
+				NEW_SCENARIO_LIBS.map(async (lib) => ({
+					lib,
+					gzip: (await measure_bundle_size(lib, [name])).gzip
+				}))
+			)
+		}))
+	);
 	const [base_exports, new_exports] = export_sizes;
 	library_delta = new_exports.library - base_exports.library;
 	const to_by_name = (sizes: ExportSizes): Map<string, ExportSize> =>
@@ -1046,17 +1063,23 @@ if (args.bundle) {
 
 	const format_size = (size: number): string => (Number.isNaN(size) ? '-' : String(size));
 	const format_class = (f: SizeFigure): string => (f.core ? 'core' : 'opt-in');
-	// under the correctness price, a figure over it
+	// under the correctness price, a figure over it, and under feature, core that grew
 	const over_price = new Set(
 		is_priced_as_correctness(args.class)
-			? [...judge_core_correctness(size_figures), ...judge_opt_in(size_figures, 'correctness').over]
+			? [
+					...(args.class === 'feature'
+						? judge_core_feature(size_figures)
+						: judge_core_correctness(size_figures)),
+					...judge_opt_in(size_figures, args.class).over
+				]
 			: []
 	);
 	const format_figure_delta = (f: SizeFigure): string =>
 		(Number.isNaN(f.base) ? '-' : format_size_delta(to_size_delta(f))) +
 		(over_price.has(f) ? '!' : ' ');
-	const format_vs_valibot = (ratio: number, over: boolean): string =>
-		`${ratio.toFixed(3)}x${over ? '*' : ' '}`;
+	const format_vs_valibot = (ratio: number, mark: string): string => `${ratio.toFixed(3)}x${mark}`;
+	const to_backstop_mark = (row: BackstopRow): string =>
+		backstop.over.includes(row) ? '*' : backstop.pinned.includes(row) ? 'p' : ' ';
 
 	console.log(
 		'\nbundle size: minified + gzip bytes. Core is what every consumer pays, opt-in what one pays who uses it\n'
@@ -1071,10 +1094,7 @@ if (args.bundle) {
 				format_size(f.new),
 				format_figure_delta(f),
 				String(backstop_rows[i]!.valibot),
-				format_vs_valibot(
-					to_vs_valibot(backstop_rows[i]!),
-					over_backstop.includes(backstop_rows[i]!)
-				)
+				format_vs_valibot(to_vs_valibot(backstop_rows[i]!), to_backstop_mark(backstop_rows[i]!))
 			]),
 			[
 				'all',
@@ -1083,13 +1103,18 @@ if (args.bundle) {
 				String(new_shared),
 				format_size_delta(new_shared - base_all) + ' ',
 				String(valibot_all),
-				format_vs_valibot(all_sizes.new / valibot_all, false)
+				format_vs_valibot(all_sizes.new / valibot_all, ' ')
 			]
 		])
 	);
 	console.log(
 		`* over ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's, the backstop` +
-			(is_priced_as_correctness(args.class) ? ', ! over the price of a correctness change' : '')
+			(backstop.pinned.length ? ', p over it and within its pin' : '') +
+			(args.class === 'feature'
+				? ', ! over the price of a feature'
+				: is_priced_as_correctness(args.class)
+					? ', ! over the price of a correctness change'
+					: '')
 	);
 	// the figures a reader needs: core, any that moved past the jitter, and any one side lacks,
 	// each export's figures together
@@ -1138,7 +1163,17 @@ if (args.bundle) {
 			`\nthe baseline's scenario module has no ${unshared_scenarios.join(', ')}: ` +
 				`${unshared_scenarios.length === 1 ? 'it is' : 'they are'} measured for the new version alone. ` +
 				'`all` is of the scenarios\n' +
-				'both have, and its ratio of every scenario.'
+				'both have, and its ratio of every scenario. Beside other libraries:\n'
+		);
+		console.log(
+			format_table([
+				['new scenario', 'new', ...NEW_SCENARIO_LIBS.flatMap((lib) => [lib, 'vs'])],
+				...new_scenario_rows.map((r) => [
+					r.name,
+					String(r.gzip),
+					...r.libs.flatMap((l) => [String(l.gzip), `${(r.gzip / l.gzip).toFixed(3)}x`])
+				])
+			])
 		);
 	}
 	console.log(`\nbundles: ${to_elapsed(since)}`);
@@ -1356,13 +1391,22 @@ for (const { regime, whole, paths } of valid_by_regime) {
 }
 if (args.bundle) {
 	console.log(
-		args.class === 'security'
-			? 'bytes, priced as a fix of security (--class security), as one of correctness with the backstop for the user:'
-			: args.class === 'correctness'
-				? 'bytes, priced as a fix of correctness or conformance (--class correctness):'
-				: 'bytes, priced as a change for speed (--class correctness or --class security for a fix):'
+		args.class === 'feature'
+			? 'bytes, priced as a feature (--class feature): core at +0, the figures the baseline has as a fix of correctness:'
+			: args.class === 'security'
+				? 'bytes, priced as a fix of security (--class security), as one of correctness with the backstop for the user:'
+				: args.class === 'correctness'
+					? 'bytes, priced as a fix of correctness or conformance (--class correctness):'
+					: 'bytes, priced as a change for speed (--class correctness or --class security for a fix, --class feature for a new export):'
 	);
-	if (is_priced_as_correctness(args.class)) {
+	if (args.class === 'feature') {
+		const grew = judge_core_feature(size_figures);
+		console.log(
+			`  core bytes (${CORE_SCENARIO} and parse): ${format_size_delta(core_delta)} gzip, ` +
+				'which a feature may not add to: ' +
+				(grew.length ? `FAIL, ${format_size_figures(grew)}` : 'pass')
+		);
+	} else if (is_priced_as_correctness(args.class)) {
 		const over = judge_core_correctness(size_figures);
 		console.log(
 			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +

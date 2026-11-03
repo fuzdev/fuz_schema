@@ -12,6 +12,7 @@ npm run grade -- --slice 2                      # longer timing slices
 npm run grade -- --no-process                   # skip retained heap and cold start
 npm run grade -- --class correctness            # price the bytes as a fix of correctness
 npm run grade -- --class security               # price the bytes as a fix of security
+npm run grade -- --class feature                # price the bytes as a new export
 ```
 
 `grade` compares a version of `schema.ts`, the working tree's unless
@@ -59,7 +60,7 @@ When a change targets a path no case isolates, add the case first.
 | `--no-apart`                 | off                            | no case runs apart                                                                                                             |
 | `--slice <ms>`               | 1                              | milliseconds one timing slice of one instance lasts                                                                            |
 | `--samples <n>`              | 15                             | the cold-start rounds kept                                                                                                     |
-| `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, `correctness`, or `security`, [below](#bytes)                         |
+| `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, `correctness`, `security`, or `feature`, [below](#bytes)              |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
 | `--no-process`               | off                            | skip retained heap and cold start, and with them the verdict of rule 9                                                         |
 
@@ -245,8 +246,9 @@ now and then be graded against an older ref (`--against <ref>`).
    or conformance may add up to about 50 gzipped bytes to any one opt-in
    figure, and past that the user rules. A change for speed pays for opt-in
    bytes by rule 3. Whatever the change, every scenario stays at or under 0.75
-   of Valibot's gzipped size for the same scenario: the backstop. A fix of
-   security past it goes to the user, [below](#bytes).
+   of Valibot's gzipped size for the same scenario, or at the size it is
+   pinned at by a ruling: the backstop. A fix of security past it goes to the
+   user, [below](#bytes).
 6. **The valid path is never slowed to speed up the invalid one.**
 7. **Allocation breaks ties** when time is within noise.
 8. **Generated code is opt-in**, because `new Function` breaks under a strict CSP.
@@ -264,9 +266,9 @@ more in total, or starts slower. The rest is judgment.
   When it is not, and the valid path does not read slower past its A/A, they
   pass when the invalid speed is that return, at the same price and past its
   own A/A. A speedup inside its A/A has not been shown.
-- **Rules 4 and 5**, for correctness and security, read the bytes alone,
-  [below](#bytes). A figure over its price reads `ASK`: the user rules on it,
-  and it is not a failure.
+- **Rules 4 and 5**, for correctness, security, and feature, read the bytes
+  alone, [below](#bytes). A figure over its price reads `ASK`: the user rules
+  on it, and it is not a failure.
 - **Rule 6** fails when the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in `matrix` or
   `alone`, or when a valid case, realistic or not, is confirmed slower in any
@@ -287,10 +289,10 @@ A pass doesn't mean nothing regressed. Read the lists.
 ### Bytes
 
 A change is of one class, given with `--class`: `speed`, the default,
-`correctness`, a fix of correctness or conformance and not of speed, or
-`security`. The class sets only what its bytes cost: a `FAIL` of any other
-rule stays a failure under any, and a correctness change is not failed for
-bringing no speed.
+`correctness`, a fix of correctness or conformance and not of speed,
+`security`, or `feature`, a new export. The class sets only what its bytes
+cost: a `FAIL` of any other rule stays a failure under any, and a
+correctness change or a feature is not failed for bringing no speed.
 
 `security` is the class of a fix of correctness that is sensitive to
 security:
@@ -303,6 +305,15 @@ security:
 
 Such a fix goes ahead of other work. Its bytes are priced as correctness,
 and the backstop reads `ASK` for it in place of `FAIL`: the user rules.
+
+`feature` is the class of a new export. A new export's figures are all
+growth, a return it can't give under `speed` and past the price under
+`correctness`, so they are reported and not priced: its `last in` and
+`alone` in the export table, and the bundle of a scenario it adds, which
+the baseline's scenario module lacks, beside Valibot's and Zod Mini's
+bundles of the same scenario. What the export costs against other
+libraries is read there. Core may not grow by a byte, and every figure the
+baseline has is priced as correctness.
 
 Each figure is of one class too:
 
@@ -328,11 +339,12 @@ what a consumer of that one kind ships, where `last in` prices adding the
 export to a bundle that has every other. The grader prices each figure on its
 own; where they disagree, this is how its verdict is read.
 
-| change        | core                                   | opt-in                                        |
-| ------------- | -------------------------------------- | --------------------------------------------- |
-| `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3 |
-| `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`    |
-| `security`    | as `correctness`                       | as `correctness`                              |
+| change        | core                                   | opt-in                                                       |
+| ------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3                |
+| `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`                   |
+| `security`    | as `correctness`                       | as `correctness`                                             |
+| `feature`     | +0, past it `FAIL`                     | as `correctness` on what the baseline has, the rest reported |
 
 Core is read exactly, to the byte. An opt-in figure moves by a byte or a few
 with no change to what it measures, as a byte changed elsewhere in a bundle
@@ -345,6 +357,17 @@ Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it,
 an `ASK` under `security`. The
 scenarios together, `all`, are no bundle a consumer ships, and are reported
 beside Valibot's without a verdict.
+
+A scenario the user has ruled may stand over the backstop is pinned, in
+`BACKSTOP_PINS` of `src/benchmarks/grade_bytes.ts`, at its gzipped size
+then and with the reason. A pinned scenario over the backstop fails only
+when it grows past its pin, and the verdict line names it with its pin, as
+the bundle table marks it `p`. A pin whose scenario is back at or under the
+backstop, or that names no scenario, fails as stale under every class, as a
+declared difference of the conformance tables that is gone does: remove it.
+A pin above its scenario's size fails as stale too: lower it to the size, so
+a pin never leaves room for its scenario to grow back unseen.
+`src/test/grade_bytes.test.ts` holds each pin to `sizes.json`, at its size.
 
 ### Retained heap
 
