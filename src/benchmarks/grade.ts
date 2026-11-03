@@ -86,6 +86,7 @@ import {
 	format_size_delta,
 	format_size_figures,
 	judge_backstop,
+	to_backstop_rows,
 	judge_core_correctness,
 	judge_core_feature,
 	is_priced_as_correctness,
@@ -933,14 +934,24 @@ let library_delta = 0;
 let size_figures: Array<SizeFigure> = [];
 let backstop_rows: Array<BackstopRow> = [];
 // a scenario the baseline lacks, beside other libraries' bundles of it, for the JSON report
-let new_scenario_report: Array<{
-	name: string;
-	gzip: number;
-	libs: Array<{ lib: string; gzip: number }>;
-}> = [];
+let new_scenario_report: Array<ScenarioLibsRow> = [];
+// a scenario of many schemas, which the backstop doesn't read, beside other libraries' bundles of it
+let many_schema_rows: Array<ScenarioLibsRow> = [];
 let all_sizes = { new: NaN, valibot: NaN };
 // a scenario the baseline's module lacks, as a feature adds, beside other libraries' bundles of it
 const NEW_SCENARIO_LIBS = [BASELINE_LIB, 'zod_mini'];
+const MANY_SCHEMA_SCENARIOS = SCENARIOS.filter((s) => s.many_schemas).map((s) => s.name);
+
+/** A scenario's bundle in the graded version beside other libraries' bundles of it. */
+interface ScenarioLibsRow {
+	name: string;
+	gzip: number;
+	libs: Array<{ lib: string; gzip: number }>;
+}
+
+const format_scenario_libs = (r: ScenarioLibsRow): string =>
+	`${r.name} ${r.gzip} gzip, ` +
+	r.libs.map((l) => `${(r.gzip / l.gzip).toFixed(3)}x ${l.lib}'s ${l.gzip}`).join(', ');
 
 if (args.bundle) {
 	const since = performance.now();
@@ -982,21 +993,21 @@ if (args.bundle) {
 	]);
 	const [base_all, new_shared, new_every, valibot_all] = all_row;
 	all_sizes = { new: new_every ?? new_shared, valibot: valibot_all };
-	backstop_rows = scenario_rows.map((r) => ({ name: r.name, gzip: r.new, valibot: r.valibot }));
+	backstop_rows = to_backstop_rows(scenario_rows, MANY_SCHEMA_SCENARIOS);
 	const backstop = judge_backstop(backstop_rows);
+	const to_scenario_libs_row = async (name: string): Promise<ScenarioLibsRow> => ({
+		name,
+		gzip: scenario_rows.find((r) => r.name === name)!.new,
+		libs: await Promise.all(
+			NEW_SCENARIO_LIBS.map(async (lib) => ({
+				lib,
+				gzip: (await measure_bundle_size(lib, [name])).gzip
+			}))
+		)
+	});
 	// a feature's scenario is the comparison of its export against other libraries
-	const new_scenario_rows = await Promise.all(
-		unshared_scenarios.map(async (name) => ({
-			name,
-			gzip: scenario_rows.find((r) => r.name === name)!.new,
-			libs: await Promise.all(
-				NEW_SCENARIO_LIBS.map(async (lib) => ({
-					lib,
-					gzip: (await measure_bundle_size(lib, [name])).gzip
-				}))
-			)
-		}))
-	);
+	const new_scenario_rows = await Promise.all(unshared_scenarios.map(to_scenario_libs_row));
+	many_schema_rows = await Promise.all(MANY_SCHEMA_SCENARIOS.map(to_scenario_libs_row));
 	new_scenario_report = new_scenario_rows;
 	const [base_exports, new_exports] = export_sizes;
 	library_delta = new_exports.library - base_exports.library;
@@ -1052,6 +1063,12 @@ if (args.bundle) {
 	const format_vs_valibot = (ratio: number, mark: string): string => `${ratio.toFixed(3)}x${mark}`;
 	const to_backstop_mark = (row: BackstopRow): string =>
 		backstop.over.includes(row) ? '*' : backstop.pinned.includes(row) ? 'p' : ' ';
+	const to_scenario_mark = (f: SizeFigure, valibot: number): string => {
+		const row = backstop_rows.find((r) => r.name === f.name);
+		return row
+			? format_vs_valibot(to_vs_valibot(row), to_backstop_mark(row))
+			: format_vs_valibot(f.new / valibot, 'r');
+	};
 
 	print_table(
 		'\nbundle size: minified + gzip bytes. Core is what every consumer pays, opt-in what one pays who uses it\n'
@@ -1065,8 +1082,8 @@ if (args.bundle) {
 				format_size(f.base),
 				format_size(f.new),
 				format_figure_delta(f),
-				String(backstop_rows[i]!.valibot),
-				format_vs_valibot(to_vs_valibot(backstop_rows[i]!), to_backstop_mark(backstop_rows[i]!))
+				String(scenario_rows[i]!.valibot),
+				to_scenario_mark(f, scenario_rows[i]!.valibot)
 			]),
 			[
 				'all',
@@ -1082,6 +1099,7 @@ if (args.bundle) {
 	print_table(
 		`* over ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's, the backstop` +
 			(backstop.pinned.length ? ', p over it and within its pin' : '') +
+			(many_schema_rows.length ? ', r many schemas, which it does not read' : '') +
 			(args.class === 'feature'
 				? ', ! over the price of a feature'
 				: is_priced_as_correctness(args.class)
@@ -1452,6 +1470,9 @@ if (args.bundle) {
 		'  ' + format_opt_in_line(judge_opt_in(size_figures, args.class), args.class, library_delta)
 	);
 	print_verdict('  ' + format_backstop_line(backstop_rows, args.class));
+	for (const r of many_schema_rows) {
+		print_verdict(`  many schemas, reported and not priced: ${format_scenario_libs(r)}`);
+	}
 	print_verdict(
 		`  all scenarios together, reported: ${all_sizes.new} gzip, ` +
 			`${(all_sizes.new / all_sizes.valibot).toFixed(2)}x valibot's ${all_sizes.valibot}`
@@ -1569,6 +1590,7 @@ writeFileSync(
 			size_figures,
 			backstop_rows,
 			new_scenario_rows: new_scenario_report,
+			many_schema_rows,
 			all_sizes,
 			heap_figures,
 			heap_totals,

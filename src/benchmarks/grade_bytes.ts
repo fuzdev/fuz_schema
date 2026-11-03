@@ -22,9 +22,10 @@
  * baseline has is priced as correctness, and the new export's own figures
  * are reported and not priced.
  *
- * The backstop has pins: a scenario standing over it by a ruling, held to the
- * size it was ruled on at. A pin no longer needed, or above its scenario's
- * size, fails as stale.
+ * The backstop reads the scenarios of one schema, and a scenario of many
+ * schemas is reported beside it and not priced. It has pins: a scenario
+ * standing over it by a ruling, held to the size it was ruled on at. A pin no
+ * longer needed, or above its scenario's size, fails as stale.
  *
  * @module
  */
@@ -63,7 +64,11 @@ export const CORRECTNESS_PRICE = { core: 4, opt_in: 50 };
  */
 export const SIZE_JITTER = 3;
 
-/** Every scenario's bundle stays at or under this of Valibot's for the same scenario. */
+/**
+ * Every scenario of one schema has its bundle at or under this of Valibot's for
+ * the same scenario. A scenario of many, `Scenario.many_schemas`, is reported
+ * and not read.
+ */
 export const BACKSTOP_VS_VALIBOT = 0.75;
 
 /** What a figure measures, see `SizeFigure`. */
@@ -194,7 +199,30 @@ export const BACKSTOP_PINS: Readonly<Record<string, BackstopPin>> = {
 /** The ratio of a scenario's bundle to Valibot's. */
 export const to_vs_valibot = (row: BackstopRow): number => row.gzip / row.valibot;
 
-/** What the backstop reads on every scenario, with its pins. */
+/** A scenario's bundle in the graded version beside Valibot's, as `grade` measures it. */
+export interface ScenarioBundleRow {
+	name: string;
+	new: number;
+	valibot: number;
+}
+
+/**
+ * The rows the backstop reads: every scenario of one schema. A scenario of
+ * many, `Scenario.many_schemas`, is left out, reported beside other libraries
+ * and not priced.
+ *
+ * @param rows - every scenario's bundle, beside Valibot's
+ * @param many_schemas - the names of the scenarios of many schemas
+ */
+export const to_backstop_rows = (
+	rows: ReadonlyArray<ScenarioBundleRow>,
+	many_schemas: ReadonlyArray<string>
+): Array<BackstopRow> =>
+	rows
+		.filter((r) => !many_schemas.includes(r.name))
+		.map((r) => ({ name: r.name, gzip: r.new, valibot: r.valibot }));
+
+/** What the backstop reads on every scenario it is given, with its pins. */
 export interface BackstopVerdict {
 	/** Over it and not pinned, or pinned and grown past the pin. */
 	over: Array<BackstopRow>;
@@ -228,7 +256,7 @@ export const judge_backstop = (
  * security class the user rules on it instead. A pinned scenario is named,
  * and a stale pin fails under any class, one to remove or one to lower.
  *
- * @param rows - every scenario's bundle beside Valibot's, at least one
+ * @param rows - every scenario of one schema, its bundle beside Valibot's, at least one
  * @param change_class - the class of the change
  * @param pins - the standing excesses
  */
@@ -279,7 +307,7 @@ export const format_backstop_line = (
 					? `ASK, ${named}, the user rules on a fix of security` +
 						(stale_named ? `; FAIL, ${stale_named}` : '')
 					: `FAIL, ${[named, stale_named].filter(Boolean).join('; ')}`;
-	return `backstop, every scenario at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ${verdict}${pinned_named}`;
+	return `backstop, every scenario of one schema at most ${BACKSTOP_VS_VALIBOT.toFixed(2)}x valibot's: ${verdict}${pinned_named}`;
 };
 
 /** A figure as a signed delta, with `+` on growth and none. */

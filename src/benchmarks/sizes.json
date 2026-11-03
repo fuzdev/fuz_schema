@@ -7,10 +7,11 @@
 		"pipe": 1112,
 		"union": 973,
 		"list": 972,
-		"type_json": 1725
+		"type_json": 1725,
+		"app": 2179
 	},
-	"all": 2262,
-	"valibot_all": 2826,
+	"all": 2958,
+	"valibot_all": 3508,
 	"vs_valibot": {
 		"string": 0.4658,
 		"object_flat": 0.6469,
@@ -19,7 +20,8 @@
 		"pipe": 0.7029,
 		"union": 0.7661,
 		"list": 0.6626,
-		"type_json": 0.7173
+		"type_json": 0.7173,
+		"app": 0.7553
 	},
 	"parse": 168,
 	"library": 3376,

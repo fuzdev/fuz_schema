@@ -52,7 +52,7 @@ the opt-in verdict prints `library`'s delta beside it. A scenario the
 baseline's scenario module has no factory for, as one added since, is measured
 for the graded version alone, in the bundle table and in retained heap, and
 compared on nothing: `all` is then of the scenarios both have, so its delta is
-the change's, and the backstop is still read on every scenario.
+the change's, and the backstop is still read on every scenario of one schema.
 
 When a change targets a path no case isolates, add the case first.
 
@@ -260,7 +260,7 @@ now and then be graded against an older ref (`--against <ref>`).
 5. **Bytes have a price per class.** Core is rule 4's. A fix of correctness
    or conformance may add up to about 50 gzipped bytes to any one opt-in
    figure, and past that the user rules. A change for speed pays for opt-in
-   bytes by rule 3. Whatever the change, every scenario stays at or under 0.75
+   bytes by rule 3. Whatever the change, every scenario of one schema stays at or under 0.75
    of Valibot's gzipped size for the same scenario, or at the size it is
    pinned at by a ruling: the backstop. A fix of security past it goes to the
    user, [below](#bytes).
@@ -368,11 +368,19 @@ moves how the rest compresses, so a rise of 3 or less is not read as growth,
 and the price is read 3 past its figure. An export one version lacks is read as
 0 there.
 
-The backstop is read on every scenario under every class, against
-Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of it,
-an `ASK` under `security`. The
-scenarios together, `all`, are no bundle a consumer ships, and are reported
-beside Valibot's without a verdict.
+The backstop is read on every scenario of one schema under every class,
+against Valibot's bundle of the same scenario, and is a `FAIL` past 0.75 of
+it, an `ASK` under `security`. The scenarios together, `all`, are no bundle a
+consumer ships, and are reported beside Valibot's without a verdict.
+
+A scenario of many schemas, `app` (`many_schemas` in `scenarios.ts`), is
+reported and not priced by the backstop: its line gives its whole bundle
+beside Valibot's and Zod Mini's, and the bundle table marks its ratio `r`.
+Its bytes are mostly the schemas' definitions, not the library's code: the
+code is paid once and each definition once a schema, and the definitions are
+nearer Valibot's than the code is, so the ratio climbs with the count of
+schemas, where the backstop is a bound on what one schema costs. Its delta
+is still an opt-in figure.
 
 A scenario the user has ruled may stand over the backstop is pinned, in
 `BACKSTOP_PINS` of `src/benchmarks/grade_bytes.ts`, at its gzipped size

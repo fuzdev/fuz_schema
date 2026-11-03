@@ -14,6 +14,7 @@ import {
 	judge_core_correctness,
 	judge_core_feature,
 	judge_opt_in,
+	to_backstop_rows,
 	to_size_delta,
 	type SizeFigure
 } from '../benchmarks/grade_bytes.ts';
@@ -140,6 +141,21 @@ describe('grade_bytes', () => {
 		);
 	});
 
+	test('the backstop leaves out a scenario of many schemas', () => {
+		const rows = to_backstop_rows(
+			[
+				{ name: 'one', new: 80, valibot: 100 },
+				{ name: 'many', new: 90, valibot: 100 }
+			],
+			['many']
+		);
+		assert.deepEqual(rows, [{ name: 'one', gzip: 80, valibot: 100 }]);
+		assert.deepEqual(
+			judge_backstop(rows, {}).over.map((r) => r.name),
+			['one']
+		);
+	});
+
 	test('the backstop is read on each scenario', () => {
 		const verdict = judge_backstop(
 			[
@@ -172,7 +188,7 @@ describe('grade_bytes', () => {
 		);
 		assert.strictEqual(
 			format_backstop_line(rows, 'speed', pins),
-			"backstop, every scenario at most 0.75x valibot's: pass, the most unpinned pipe 0.681x; " +
+			"backstop, every scenario of one schema at most 0.75x valibot's: pass, the most unpinned pipe 0.681x; " +
 				'pinned: union 0.766x at 973, its pin 973'
 		);
 		const grown = [{ ...rows[0]!, gzip: 974 }, rows[1]!];
@@ -182,7 +198,7 @@ describe('grade_bytes', () => {
 		);
 		assert.strictEqual(
 			format_backstop_line(grown, 'speed', pins),
-			"backstop, every scenario at most 0.75x valibot's: FAIL, union 0.767x at 974, past its pin 973"
+			"backstop, every scenario of one schema at most 0.75x valibot's: FAIL, union 0.767x at 974, past its pin 973"
 		);
 		assert.ok(format_backstop_line(grown, 'security', pins).includes(': ASK, union 0.767x'));
 		// a pin names one scenario and covers no other
@@ -209,7 +225,7 @@ describe('grade_bytes', () => {
 		for (const change_class of ['speed', 'correctness', 'security', 'feature'] as const) {
 			assert.strictEqual(
 				format_backstop_line(rows, change_class, pins),
-				"backstop, every scenario at most 0.75x valibot's: FAIL, stale pins union, gone, " +
+				"backstop, every scenario of one schema at most 0.75x valibot's: FAIL, stale pins union, gone, " +
 					'at or under the backstop or no scenario: remove from `BACKSTOP_PINS`'
 			);
 		}
@@ -236,7 +252,7 @@ describe('grade_bytes', () => {
 		for (const change_class of ['speed', 'correctness', 'security', 'feature'] as const) {
 			assert.strictEqual(
 				format_backstop_line(rows, change_class, pins),
-				"backstop, every scenario at most 0.75x valibot's: FAIL, stale pin union at 960, " +
+				"backstop, every scenario of one schema at most 0.75x valibot's: FAIL, stale pin union at 960, " +
 					'under its pin 973: lower to the size in `BACKSTOP_PINS`; ' +
 					'pinned: union 0.756x at 960, its pin 973'
 			);
@@ -262,7 +278,7 @@ describe('grade_bytes', () => {
 		];
 		assert.strictEqual(
 			format_backstop_line(rows, 'speed', {}),
-			"backstop, every scenario at most 0.75x valibot's: FAIL, union 0.752x"
+			"backstop, every scenario of one schema at most 0.75x valibot's: FAIL, union 0.752x"
 		);
 		for (const change_class of ['correctness', 'feature'] as const) {
 			assert.strictEqual(
@@ -272,13 +288,13 @@ describe('grade_bytes', () => {
 		}
 		assert.strictEqual(
 			format_backstop_line(rows, 'security', {}),
-			"backstop, every scenario at most 0.75x valibot's: ASK, union 0.752x, the user rules on a fix of security"
+			"backstop, every scenario of one schema at most 0.75x valibot's: ASK, union 0.752x, the user rules on a fix of security"
 		);
 		const under = [{ ...rows[0]!, gzip: 940 }, rows[1]!];
 		for (const change_class of ['speed', 'correctness', 'security', 'feature'] as const) {
 			assert.strictEqual(
 				format_backstop_line(under, change_class, {}),
-				"backstop, every scenario at most 0.75x valibot's: pass, the most union 0.740x"
+				"backstop, every scenario of one schema at most 0.75x valibot's: pass, the most union 0.740x"
 			);
 		}
 	});

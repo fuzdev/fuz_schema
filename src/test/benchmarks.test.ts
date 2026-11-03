@@ -2,7 +2,7 @@ import { describe, test, assert, vi } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 
-import { SCENARIOS } from '../benchmarks/scenarios.ts';
+import { APP_KEYS, SCENARIOS, to_app_payload } from '../benchmarks/scenarios.ts';
 import { LIBS } from '../benchmarks/libs.ts';
 import * as fuz_schema_scenarios from '../benchmarks/libs/fuz_schema.ts';
 
@@ -31,6 +31,19 @@ describe('benchmark scenario parity', () => {
 					assert.strictEqual(run(scenario.valid), true, 'valid input');
 					assert.strictEqual(run(scenario.invalid), false, 'invalid input');
 				});
+			}
+		});
+	}
+});
+
+// the app's schemas are equivalent one by one: each library refuses a payload
+// broken under any one key, and only by that key's schema
+describe('the app scenario, schema by schema', () => {
+	for (const lib of LIBS) {
+		test(lib.name, () => {
+			const run = lib.scenarios.scenario_app();
+			for (const key of APP_KEYS) {
+				assert.strictEqual(run(to_app_payload([key])), false, key);
 			}
 		});
 	}

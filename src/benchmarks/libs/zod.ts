@@ -105,3 +105,96 @@ export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	});
 	return to_runner(TypeJson);
 };
+
+// every schema parses its own key, whatever the others gave
+const to_app_runner =
+	(app: Record<string, z.ZodType>): ScenarioRunner =>
+	(value: any) => {
+		let ok = true;
+		for (const key in app) ok = app[key]!.safeParse(value[key]).success && ok;
+		return ok;
+	};
+
+export const scenario_app: ScenarioModule['scenario_app'] = () => {
+	const id = z.int().min(1);
+	const count = z.int().min(0);
+	const money = z.number().min(0);
+	return to_app_runner({
+		user: z.strictObject({
+			id,
+			name: z.string().min(1).max(100),
+			email: z.string().regex(/^[^@\s]+@[^@\s]+$/),
+			role: z.enum(['member', 'admin', 'owner']),
+			created_at: z.string(),
+			avatar_url: z.optional(z.string())
+		}),
+		post: z.strictObject({
+			id,
+			author_id: id,
+			title: z.string().min(1).max(200),
+			body: z.string(),
+			tags: z.array(z.string()),
+			published: z.boolean(),
+			published_at: z.nullable(z.string())
+		}),
+		comment: z.strictObject({
+			id,
+			post_id: id,
+			author_id: id,
+			body: z.string().min(1),
+			reply_to: z.optional(id)
+		}),
+		page: z.strictObject({
+			page: id,
+			per_page: z.int().min(1).max(100),
+			total: count,
+			next_cursor: z.nullable(z.string())
+		}),
+		error: z.strictObject({
+			error: z.strictObject({
+				code: z.string(),
+				message: z.string(),
+				details: z.optional(
+					z.array(z.strictObject({ path: z.array(z.string()), message: z.string() }))
+				)
+			})
+		}),
+		settings: z.strictObject({
+			theme: z.enum(['light', 'dark', 'system']),
+			language: z.string(),
+			notifications: z.strictObject({
+				email: z.boolean(),
+				push: z.boolean(),
+				digest: z.enum(['daily', 'weekly', 'never'])
+			}),
+			timezone: z.optional(z.string())
+		}),
+		address: z.strictObject({
+			street: z.string(),
+			city: z.string(),
+			region: z.optional(z.string()),
+			postal_code: z.string(),
+			country: z.string().min(2).max(2)
+		}),
+		product: z.strictObject({
+			id: z.string(),
+			name: z.string(),
+			price: money,
+			currency: z.enum(['usd', 'eur', 'gbp']),
+			stock: count,
+			categories: z.array(z.string())
+		}),
+		order: z.strictObject({
+			id: z.string(),
+			user_id: id,
+			items: z.array(z.strictObject({ product_id: z.string(), quantity: id, unit_price: money })),
+			status: z.enum(['pending', 'paid', 'shipped', 'cancelled']),
+			total: money
+		}),
+		event: z.discriminatedUnion('type', [
+			z.strictObject({ type: z.literal('login'), at: z.number(), ip: z.string() }),
+			z.strictObject({ type: z.literal('logout'), at: z.number() }),
+			z.strictObject({ type: z.literal('purchase'), at: z.number(), order_id: z.string() })
+		])
+	});
+};

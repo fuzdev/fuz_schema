@@ -104,3 +104,94 @@ export const scenario_type_json: ScenarioModule['scenario_type_json'] = () => {
 	});
 	return to_runner(TypeJson);
 };
+
+// every schema parses its own key, whatever the others gave
+const to_app_runner =
+	(app: Record<string, s.AnySchema>): ScenarioRunner =>
+	(value: any) => {
+		let ok = true;
+		for (const key in app) ok = s.parse(app[key]!, value[key]).ok && ok;
+		return ok;
+	};
+
+export const scenario_app: ScenarioModule['scenario_app'] = () => {
+	const id = s.pipe(s.number, s.integer, s.min_value(1));
+	const count = s.pipe(s.number, s.integer, s.min_value(0));
+	const money = s.pipe(s.number, s.min_value(0));
+	return to_app_runner({
+		user: s.object({
+			id,
+			name: s.pipe(s.string, s.min_length(1), s.max_length(100)),
+			email: s.pipe(s.string, s.regex(/^[^@\s]+@[^@\s]+$/)),
+			role: s.one_of(['member', 'admin', 'owner']),
+			created_at: s.string,
+			avatar_url: s.optional(s.string)
+		}),
+		post: s.object({
+			id,
+			author_id: id,
+			title: s.pipe(s.string, s.min_length(1), s.max_length(200)),
+			body: s.string,
+			tags: s.array(s.string),
+			published: s.boolean,
+			published_at: s.nullable(s.string)
+		}),
+		comment: s.object({
+			id,
+			post_id: id,
+			author_id: id,
+			body: s.pipe(s.string, s.min_length(1)),
+			reply_to: s.optional(id)
+		}),
+		page: s.object({
+			page: id,
+			per_page: s.pipe(s.number, s.integer, s.min_value(1), s.max_value(100)),
+			total: count,
+			next_cursor: s.nullable(s.string)
+		}),
+		error: s.object({
+			error: s.object({
+				code: s.string,
+				message: s.string,
+				details: s.optional(s.array(s.object({ path: s.array(s.string), message: s.string })))
+			})
+		}),
+		settings: s.object({
+			theme: s.one_of(['light', 'dark', 'system']),
+			language: s.string,
+			notifications: s.object({
+				email: s.boolean,
+				push: s.boolean,
+				digest: s.one_of(['daily', 'weekly', 'never'])
+			}),
+			timezone: s.optional(s.string)
+		}),
+		address: s.object({
+			street: s.string,
+			city: s.string,
+			region: s.optional(s.string),
+			postal_code: s.string,
+			country: s.pipe(s.string, s.min_length(2), s.max_length(2))
+		}),
+		product: s.object({
+			id: s.string,
+			name: s.string,
+			price: money,
+			currency: s.one_of(['usd', 'eur', 'gbp']),
+			stock: count,
+			categories: s.array(s.string)
+		}),
+		order: s.object({
+			id: s.string,
+			user_id: id,
+			items: s.array(s.object({ product_id: s.string, quantity: id, unit_price: money })),
+			status: s.one_of(['pending', 'paid', 'shipped', 'cancelled']),
+			total: money
+		}),
+		event: s.variant('type', [
+			s.object({ type: s.literal('login'), at: s.number, ip: s.string }),
+			s.object({ type: s.literal('logout'), at: s.number }),
+			s.object({ type: s.literal('purchase'), at: s.number, order_id: s.string })
+		])
+	});
+};

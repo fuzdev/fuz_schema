@@ -29,7 +29,15 @@ Zod Mini, TypeBox, and ArkType.
   schema of `object_flat`, which drops what it doesn't name, given keys it
   doesn't name: its factory is that scenario's under a second name, so its
   bundle is the same bytes and it adds a call to a bundle of every scenario
-  and no definition. A test holds every library to the same answer on each.
+  and no definition. `app` is the distinct schemas an app defines, a user,
+  a post, a page envelope, an error envelope, settings, an order, an event
+  variant among them, each parsing its own key of one payload: every other
+  scenario is one schema, and in this one the schemas' definitions, not the
+  library's code, are most of the bytes. The grader's backstop reads
+  only the scenarios of one schema, and reports `app` beside Valibot and Zod
+  Mini, not priced, see [grading.md](grading.md#bytes). A test holds every library to
+  the same answer on each, and on `app` to refusing a payload broken under
+  any one of its keys.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
   - `real` is what a consumer has. Some are written for the purpose: an

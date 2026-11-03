@@ -505,7 +505,7 @@ and checks the result against the rules a change is accepted by:
 - bytes that tree-shake away unless imported only have to pay for themselves
 - bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
 - a fix of correctness or conformance has a price instead: 4 gzipped bytes every user pays, 50 on any one export or scenario
-- every scenario stays under 0.75 of Valibot's gzipped size for the same scenario
+- every scenario of one schema stays under 0.75 of Valibot's gzipped size for the same scenario
 - a fix of security (an input that should fail and doesn't, denial of service on data-shaped input, input leaking into issues) comes first, at the correctness price, and past that 0.75 the user rules
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP

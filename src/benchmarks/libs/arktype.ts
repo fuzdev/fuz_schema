@@ -104,3 +104,115 @@ export const scenario_type_json: ScenarioModule['scenario_type_json'] = () =>
 			}
 		}).export().type_json as unknown as Type
 	);
+
+// every schema parses its own key, whatever the others gave
+const to_app_runner =
+	(app: Record<string, Type>): ScenarioRunner =>
+	(value: any) => {
+		let ok = true;
+		for (const key in app) ok = !(app[key]!(value[key]) instanceof type.errors) && ok;
+		return ok;
+	};
+
+export const scenario_app: ScenarioModule['scenario_app'] = () => {
+	const app = scope({
+		id: 'number.integer >= 1',
+		count: 'number.integer >= 0',
+		money: 'number >= 0',
+		user: {
+			'+': 'reject',
+			id: 'id',
+			name: '1 <= string <= 100',
+			email: /^[^@\s]+@[^@\s]+$/,
+			role: "'member' | 'admin' | 'owner'",
+			created_at: 'string',
+			'avatar_url?': 'string'
+		},
+		post: {
+			'+': 'reject',
+			id: 'id',
+			author_id: 'id',
+			title: '1 <= string <= 200',
+			body: 'string',
+			tags: 'string[]',
+			published: 'boolean',
+			published_at: 'string | null'
+		},
+		comment: {
+			'+': 'reject',
+			id: 'id',
+			post_id: 'id',
+			author_id: 'id',
+			body: 'string >= 1',
+			'reply_to?': 'id'
+		},
+		page: {
+			'+': 'reject',
+			page: 'id',
+			per_page: '1 <= number.integer <= 100',
+			total: 'count',
+			next_cursor: 'string | null'
+		},
+		detail: { '+': 'reject', path: 'string[]', message: 'string' },
+		error: {
+			'+': 'reject',
+			error: { '+': 'reject', code: 'string', message: 'string', 'details?': 'detail[]' }
+		},
+		settings: {
+			'+': 'reject',
+			theme: "'light' | 'dark' | 'system'",
+			language: 'string',
+			notifications: {
+				'+': 'reject',
+				email: 'boolean',
+				push: 'boolean',
+				digest: "'daily' | 'weekly' | 'never'"
+			},
+			'timezone?': 'string'
+		},
+		address: {
+			'+': 'reject',
+			street: 'string',
+			city: 'string',
+			'region?': 'string',
+			postal_code: 'string',
+			country: 'string == 2'
+		},
+		product: {
+			'+': 'reject',
+			id: 'string',
+			name: 'string',
+			price: 'money',
+			currency: "'usd' | 'eur' | 'gbp'",
+			stock: 'count',
+			categories: 'string[]'
+		},
+		item: { '+': 'reject', product_id: 'string', quantity: 'id', unit_price: 'money' },
+		order: {
+			'+': 'reject',
+			id: 'string',
+			user_id: 'id',
+			items: 'item[]',
+			status: "'pending' | 'paid' | 'shipped' | 'cancelled'",
+			total: 'money'
+		},
+		login: { '+': 'reject', type: "'login'", at: 'number', ip: 'string' },
+		logout: { '+': 'reject', type: "'logout'", at: 'number' },
+		purchase: { '+': 'reject', type: "'purchase'", at: 'number', order_id: 'string' },
+		event: 'login | logout | purchase'
+	}).export() as unknown as Record<string, Type>;
+	// the aliases the others are built of are no schema of the app
+	const { user, post, comment, page, error, settings, address, product, order, event } = app;
+	return to_app_runner({
+		user: user!,
+		post: post!,
+		comment: comment!,
+		page: page!,
+		error: error!,
+		settings: settings!,
+		address: address!,
+		product: product!,
+		order: order!,
+		event: event!
+	});
+};
