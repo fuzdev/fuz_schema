@@ -1009,9 +1009,9 @@ describe('types', () => {
 		}>();
 
 		// stacked
-		expectTypeOf<s.Flavored<s.Flavored<string | null, 'A'>, 'B'>>().toEqualTypeOf<
-			s.Flavored<s.Flavored<string, 'A'>, 'B'> | null
-		>();
+		expectTypeOf<
+			s.Flavored<s.Flavored<string | null, 'A'>, 'B'>
+		>().toEqualTypeOf<s.Flavored<s.Flavored<string, 'A'>, 'B'> | null>();
 		const _stacked = s.brand(s.flavor(s.nullable(s.string), 'A'), 'B');
 		expectTypeOf<s.Infer<typeof _stacked>>().toEqualTypeOf<
 			(string & s.Flavor<'A'> & s.Brand<'B'>) | null
