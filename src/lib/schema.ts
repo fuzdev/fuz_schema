@@ -673,6 +673,35 @@ export const unknown: Schema<unknown, unknown, 'unknown', undefined> = {
 			: value
 };
 
+// what an option adds to a union's `expected`, named as `received` names a
+// value: any object schema `object`, a `literal` or a `one_of` each value as
+// `format_literals` writes it, a union its options', at any depth, a `pipe`
+// what its first schema adds, a wrapper what its schema adds, and a `nullable`
+// `null` after that, and any other schema its kind. The object schemas come
+// before the wrappers, as an `object`'s `def` can have an entry named
+// `schema`. A `lazy` is its kind, so a recursive union is never followed back
+// to itself. A part alone is returned bare, which `flatMap` and `flat` keep
+// as it is. The values are written here and not by a call of
+// `format_literals`, and the parts are joined in `union`, which measured fewer
+// bytes in a union's bundle
+const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
+	kind === 'strip_object' ||
+	kind === 'object' ||
+	kind === 'loose_object' ||
+	kind === 'variant' ||
+	kind === 'object_with_rest' ||
+	kind === 'record'
+		? 'object'
+		: kind === 'literal' || kind === 'one_of'
+			? [def].flat().map((v) => (typeof v === 'string' ? JSON.stringify(v) : String(v)))
+			: kind === 'union'
+				? (def as Array<AnySchema>).flatMap(describe_option)
+				: kind === 'pipe'
+					? describe_option((def as Array<AnySchema>)[0]!)
+					: def?.schema?.run
+						? [describe_option(def.schema), kind === 'nullable' ? 'null' : []].flat()
+						: kind;
+
 // describes literals for an issue's `expected`, quoting strings
 const format_literals = (values: Iterable<unknown>): string =>
 	Array.from(values, (v) => (typeof v === 'string' ? JSON.stringify(v) : String(v))).join(' | ');
@@ -1427,35 +1456,6 @@ export const array = <T extends Schema>(
 		return output ?? value;
 	}
 });
-
-// what an option adds to a union's `expected`, named as `received` names a
-// value: any object schema `object`, a `literal` or a `one_of` each value as
-// `format_literals` writes it, a union its options', at any depth, a `pipe`
-// what its first schema adds, a wrapper what its schema adds, and a `nullable`
-// `null` after that, and any other schema its kind. The object schemas come
-// before the wrappers, as an `object`'s `def` can have an entry named
-// `schema`. A `lazy` is its kind, so a recursive union is never followed back
-// to itself. A part alone is returned bare, which `flatMap` and `flat` keep
-// as it is. The values are written here and not by a call of
-// `format_literals`, and the parts are joined in `union`, which measured fewer
-// bytes in a union's bundle
-const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
-	kind === 'object' ||
-	kind === 'loose_object' ||
-	kind === 'strip_object' ||
-	kind === 'object_with_rest' ||
-	kind === 'record' ||
-	kind === 'variant'
-		? 'object'
-		: kind === 'literal' || kind === 'one_of'
-			? [def].flat().map((v) => (typeof v === 'string' ? JSON.stringify(v) : String(v)))
-			: kind === 'union'
-				? (def as Array<AnySchema>).flatMap(describe_option)
-				: kind === 'pipe'
-					? describe_option((def as Array<AnySchema>)[0]!)
-					: def?.schema?.run
-						? [describe_option(def.schema), kind === 'nullable' ? 'null' : []].flat()
-						: kind;
 
 /**
  * Matches the first of `options` that accepts the value.

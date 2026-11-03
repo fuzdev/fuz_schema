@@ -191,7 +191,7 @@ export interface BackstopPin {
  */
 export const BACKSTOP_PINS: Readonly<Record<string, BackstopPin>> = {
 	union: {
-		gzip: 973,
+		gzip: 963,
 		reason: 'the cap on issues, a fix of denial of service ruled on as one of security'
 	}
 };
