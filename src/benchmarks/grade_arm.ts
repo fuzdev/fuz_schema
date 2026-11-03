@@ -13,22 +13,63 @@
  * the program a process of the `apart` regime runs first, and nothing of the
  * harness.
  *
+ * The `create` cases are built with a second instance of the arm's library,
+ * which only they call. The engine pretenures by allocation site, from how
+ * many objects of a site survive a collection: the factories that build the
+ * case matrix, whose schemas live as long as the process, are pretenured or
+ * not by where the collections fall in each arm's build, and a creation
+ * through them read far slower in some arms of one file than in others.
+ *
  * @module
  */
 
-import { CASE_GROUPS, create_case, create_cases, type Case, type SchemaLib } from './cases.ts';
+import {
+	CASE_GROUPS,
+	CREATE_GROUP,
+	create_case,
+	create_cases,
+	type Case,
+	type SchemaLib
+} from './cases.ts';
 import { run_program } from './program.ts';
 
 /** Tells one arm's instance of the case matrix from another's. */
 export const instance: unknown = CASE_GROUPS;
 
-/** Builds every case the arm's library supports, for the matrix. With `strict`, a group that throws fails it. */
-export const build_cases = (lib: SchemaLib, strict: boolean): Array<Case> =>
-	create_cases(lib, strict);
+const PARSE_GROUPS = CASE_GROUPS.filter((group) => group !== CREATE_GROUP);
 
-/** Builds one case and as little else as it can, for a process that runs that case alone. With `strict`, a group that throws on the way fails it. */
-export const build_case = (lib: SchemaLib, name: string, strict: boolean): Case | undefined =>
-	create_case(lib, name, strict);
+/**
+ * Builds every case the arm's library supports, for the matrix. With `strict`,
+ * a group that throws fails it.
+ *
+ * @param lib - the arm's library, which every case through `parse` is built and run with
+ * @param create_lib - another instance of the same, which only the `create` cases call
+ */
+export const build_cases = (
+	lib: SchemaLib,
+	create_lib: SchemaLib,
+	strict: boolean
+): Array<Case> => [
+	...create_cases(lib, strict, PARSE_GROUPS),
+	...create_cases(create_lib, strict, [CREATE_GROUP])
+];
+
+/**
+ * Builds one case and as little else as it can, for a process that runs that
+ * case alone. With `strict`, a group that throws on the way fails it.
+ *
+ * @param lib - the arm's library, for a case through `parse`
+ * @param create_lib - another instance of the same, for a `create` case
+ */
+export const build_case = (
+	lib: SchemaLib,
+	create_lib: SchemaLib,
+	name: string,
+	strict: boolean
+): Case | undefined =>
+	name.startsWith('create/')
+		? create_case(create_lib, name, strict, [CREATE_GROUP])
+		: create_case(lib, name, strict, PARSE_GROUPS);
 
 /** Runs the program of `program.ts` with the arm's library, for a process of the `apart` regime. With `strict`, an entry that fails fails it. */
 export const run_arm_program = (lib: SchemaLib, strict: boolean): number =>

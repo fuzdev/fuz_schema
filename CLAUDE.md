@@ -92,7 +92,8 @@ dev server.
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
-  says and takes the path it names
+  says and takes the path it names, and the grader builds the `create` cases
+  with a library of their own
 - `src/test/program.test.ts` - the program of the grader's `apart` regime has
   every kind of schema and runs
 - `src/test/survey.test.ts` - every library gives the verdict each input of

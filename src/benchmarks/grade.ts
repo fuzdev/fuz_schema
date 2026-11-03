@@ -678,8 +678,8 @@ const format_band = (log_band: number): string =>
 const format_bytes_ratio = (b: CaseBytes): string =>
 	format_ratio(to_bytes_ratio(b.new, b.base)) + (b.settled ? ' ' : '~');
 
-const format_same = (same: boolean | undefined): string =>
-	same === undefined ? '-' : same ? 'input' : 'copy';
+const format_same = (same: boolean | undefined, c?: Case): string =>
+	same === undefined || c?.path === 'create' ? '-' : same ? 'input' : 'copy';
 
 const to_mark = (t: CaseTime): string => (t.flag ? '*' : t.candidate ? '?' : ' ');
 
@@ -721,7 +721,7 @@ print_table(
 			...to_time_cells(g.matrix),
 			...to_bytes_cells(g.bytes),
 			g.base_same === undefined || g.base_same === g.same
-				? format_same(g.same)
+				? format_same(g.same, g.c)
 				: `${format_same(g.base_same)}→${format_same(g.same)}`
 		])
 	])
@@ -789,7 +789,7 @@ if (uncompared.length) {
 				g.alone ? format_number(g.alone.new_ns) : '-',
 				format_number(g.bytes.new),
 				g.alone_bytes ? format_number(g.alone_bytes.new) : '-',
-				format_same(g.same)
+				format_same(g.same, g.c)
 			])
 		])
 	);
@@ -905,7 +905,11 @@ for (const regime of REGIMES) {
 				)
 			),
 			to_group_row('realistic †', realistic),
-			to_group_row('all', of_regime)
+			// a creation is not a parse, and has its group's row alone
+			to_group_row(
+				'all',
+				of_regime.filter((g) => g.c.path !== 'create')
+			)
 		])
 	);
 	print_table(`\nby path, ${regime}: what the parse does\n`);
@@ -1467,7 +1471,10 @@ const slowed = [
 			.map((p) => `realistic ${p.path} ${regime} ${format_speed(p.summary)}`)
 	),
 	...REGIMES.flatMap((regime) => {
-		const slower_cases = to_flagged(regime, 'slower', true).length;
+		// a creation parses nothing, and is listed below
+		const slower_cases = to_flagged(regime, 'slower', true).filter(
+			(g) => g.c.path !== 'create'
+		).length;
 		return slower_cases
 			? [`${slower_cases} valid ${slower_cases === 1 ? 'case' : 'cases'} slower ${regime}`]
 			: [];

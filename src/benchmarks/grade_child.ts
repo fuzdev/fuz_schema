@@ -8,7 +8,8 @@
  * what an arm's modules import. Two arms given the same file are then two
  * instances, with their own functions and their own feedback, which is what
  * lets one stand as the noise reference of the other. It is checked, not
- * assumed.
+ * assumed. An arm's `create` cases call a second instance of its library,
+ * which nothing else calls, see `grade_arm.ts`.
  *
  * **Three regimes.** In `matrix` every case of every arm is run before any is
  * measured, so each is measured in code that has seen every schema, whichever
@@ -120,6 +121,9 @@ const to_rotated = <T>(list: Array<T>, by: number): Array<T> =>
 // other code than the rest on some cases, and a version always loaded in the
 // same place reads that as a change.
 const libs: Array<SchemaLib> = [];
+const create_libs: Array<SchemaLib> = [];
+// what tells a timed arm's instance for its creations from its own library
+const CREATE_QUERY = '&create';
 const arms: Array<Arm> = [];
 // the instances that only use the library, by what runs their program
 const users: Array<{ instance: unknown; run_program: () => number }> = [];
@@ -136,12 +140,16 @@ for (const { id, path, graded, program } of to_rotated(job.arms, job.offset)) {
 		continue;
 	}
 	const loops: LoopsModule = await import(LOOPS_MODULE_URL + query);
+	// the factories the `create` cases call, an instance of the arm's own that
+	// nothing else calls, see `grade_arm.ts`
+	const create_lib: SchemaLib = await import(pathToFileURL(path).href + query + CREATE_QUERY);
+	create_libs.push(create_lib);
 	// a graded arm that lost a group would be graded on fewer cases, so it fails:
 	// only another version's arm may lack what a group needs
 	const built =
 		job.regime === 'matrix'
-			? module.build_cases(lib, graded)
-			: [module.build_case(lib, job.cases[0]!, graded)].filter((c) => c !== undefined);
+			? module.build_cases(lib, create_lib, graded)
+			: [module.build_case(lib, create_lib, job.cases[0]!, graded)].filter((c) => c !== undefined);
 	arms.push({
 		id,
 		loops,
@@ -160,6 +168,13 @@ for (const distinct of [
 	if (new Set(distinct).size !== job.arms.length) {
 		throw new Error('two arms share a module instance');
 	}
+}
+// and an instance for creations is no other's, nor any arm's library
+if (
+	new Set([...libs, ...create_libs].map((lib) => lib.is)).size !==
+	libs.length + create_libs.length
+) {
+	throw new Error('an instance for creations is shared');
 }
 // once every schema of the timed arms is made, and before any of them runs
 const program_ran = users.map((user) => user.run_program());

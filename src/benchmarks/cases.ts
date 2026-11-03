@@ -21,11 +21,14 @@
  *   of a parse, which `fixed` measures alone. The array's own loop is most of
  *   such a case, so it shows a schema getting slower, not what the schema costs.
  * - `scale` repeats a shape at the sizes where a different cost takes over.
+ * - `create` builds schemas and parses nothing, what an app pays once a
+ *   schema as its modules load.
  *
  * Every case names its path: `identity` returns the input itself, `copy`
- * returns another value, `issues` fails and builds issues, and `probe` goes
- * through `is`, which builds none. A summary by path says what a group mean
- * can't, such as a change that speeds identity up and slows copy down.
+ * returns another value, `issues` fails and builds issues, `probe` goes
+ * through `is`, which builds none, and `create` builds a schema and parses
+ * nothing. A summary by path says what a group mean can't, such as a change
+ * that speeds identity up and slows copy down.
  *
  * Schemas are written as literals and inputs come from `JSON.parse`, as a
  * consumer's do: an object built key by key can be a different kind of object
@@ -84,10 +87,18 @@ const to_one_of = (s: SchemaLib): OneOfFactory =>
  * - `copy` - matches, and the output is another value
  * - `issues` - doesn't match, through `parse`, which builds issues
  * - `probe` - goes through `is`, which builds none, matching or not
+ * - `create` - builds a schema and parses nothing, what an app pays as its
+ *   modules load
  */
-export type CasePath = 'identity' | 'copy' | 'issues' | 'probe';
+export type CasePath = 'identity' | 'copy' | 'issues' | 'probe' | 'create';
 
-export const CASE_PATHS: ReadonlyArray<CasePath> = ['identity', 'copy', 'issues', 'probe'];
+export const CASE_PATHS: ReadonlyArray<CasePath> = [
+	'identity',
+	'copy',
+	'issues',
+	'probe',
+	'create'
+];
 
 export interface Case {
 	name: string;
@@ -98,7 +109,7 @@ export interface Case {
 	 */
 	realistic: boolean;
 	path: CasePath;
-	/** Whether the input should match. */
+	/** Whether the input should match. A case of the `create` path has none, and is `valid`. */
 	valid: boolean;
 	input: unknown;
 	/** Parses `input`, returning the output, or `undefined` when it didn't match. */
@@ -634,6 +645,90 @@ const real_bench_results: CaseGroup = (s) => {
 		)
 	];
 };
+
+//
+// Creation
+//
+
+/**
+ * A case that builds a schema, whose `run` returns it. It builds one as it is
+ * made, so a version that lacks a factory it calls loses the case where it is
+ * built, as a case through `parse` does: with its group, or alone inside a
+ * `CaseBuild`. Every instance pays that one call the same.
+ */
+export const to_create_case = (
+	s: SchemaLib,
+	name: string,
+	create: () => schema_lib.AnySchema
+): Case => {
+	create();
+	return {
+		name,
+		group: 'create',
+		realistic: false,
+		path: 'create',
+		valid: true,
+		input: undefined,
+		run: create,
+		ok: () => s.is_schema(create())
+	};
+};
+
+// made once, as a consumer's module would, so a creation times the library and not the literal
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+$/;
+const SLUG_PATTERN = /^[a-z0-9-]+$/;
+
+// what building schemas costs, the factories called and nothing parsed: an app
+// pays it once a schema, as its modules load, and a change that moves work
+// from the parse to the factory shows here and in no parse
+const create: CaseGroup = (s) => [
+	to_create_case(s, 'create/string/valid', () => s.optional(s.string)),
+	to_create_case(s, 'create/pipe/valid', () =>
+		s.pipe(s.string, s.min_length(1), s.max_length(254), s.regex(EMAIL_PATTERN))
+	),
+	to_create_case(s, 'create/object_flat/valid', () =>
+		to_object(s)({
+			id: s.number,
+			name: s.string,
+			email: s.string,
+			active: s.boolean,
+			score: s.optional(s.number),
+			role: to_one_of(s)(['member', 'admin', 'owner'])
+		})
+	),
+	// an entity as an app writes one: nested objects, an array, optional and
+	// nullable entries, and pipes
+	to_create_case(s, 'create/object_nested/valid', () =>
+		to_object(s)({
+			id: s.pipe(s.number, s.integer, s.min_value(1)),
+			slug: s.pipe(s.string, s.max_length(80), s.regex(SLUG_PATTERN)),
+			title: s.pipe(s.string, s.min_length(1), s.max_length(200)),
+			body: s.string,
+			author: to_object(s)({
+				id: s.number,
+				name: s.string,
+				email: s.pipe(s.string, s.regex(EMAIL_PATTERN))
+			}),
+			tags: s.array(s.string),
+			published_at: s.nullable(s.string),
+			meta: s.optional(to_object(s)({ views: s.number, likes: s.number }))
+		})
+	),
+	to_create_case(s, 'create/union/valid', () =>
+		s.union([
+			to_object(s)({ type: s.literal('click'), x: s.number, y: s.number }),
+			to_object(s)({ type: s.literal('key'), key: s.string }),
+			to_object(s)({ type: s.literal('scroll'), dy: s.number })
+		])
+	),
+	to_create_case(s, 'create/variant/valid', () =>
+		s.variant('type', [
+			to_object(s)({ type: s.literal('click'), x: s.number, y: s.number }),
+			to_object(s)({ type: s.literal('key'), key: s.string }),
+			to_object(s)({ type: s.literal('scroll'), dy: s.number })
+		])
+	)
+];
 
 //
 // Paths
@@ -1422,8 +1517,15 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	nested,
 	array,
 	record,
-	scale
+	scale,
+	create
 ];
+
+/**
+ * The `create` group, which `grade` builds through an instance of the library
+ * of its own, see `grade_arm.ts`.
+ */
+export const CREATE_GROUP: CaseGroup = create;
 
 // a group or a case that throws while it builds, as the error a strict build fails with
 const to_build_error = (what: string, cause: unknown): Error =>
@@ -1480,11 +1582,20 @@ export const create_cases = (
  * case has a parse ahead of its own.
  *
  * @param strict - whether a group that throws while it builds fails the whole, as in `create_cases`, and the case itself when it is built on its own
+ * @param groups - the groups to look in, every one by default
  * @returns the case, or `undefined` when the given library version has none of that name or can't build it
  * @throws Error when `strict` and a group built on the way throws, or the case, naming it
  */
-export const create_case = (s: SchemaLib, name: string, strict = false): Case | undefined => {
-	for (const group of [...CASE_GROUPS.filter((g) => g !== real_docinfo), real_docinfo]) {
+export const create_case = (
+	s: SchemaLib,
+	name: string,
+	strict = false,
+	groups: ReadonlyArray<CaseGroup> = CASE_GROUPS
+): Case | undefined => {
+	const ordered = groups.includes(real_docinfo)
+		? [...groups.filter((g) => g !== real_docinfo), real_docinfo]
+		: groups;
+	for (const group of ordered) {
 		const found = to_entries_of(s, group, strict).find((entry) => entry.name === name);
 		if (found) return to_built(found, strict);
 	}

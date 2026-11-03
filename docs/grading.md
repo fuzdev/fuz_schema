@@ -99,7 +99,10 @@ read from it, and a summary's beside an A/A.
 
 - **matrix**: one process runs every case before it times any, so every call
   site in the library has seen many schemas, as in an app. It answers what a
-  change costs code that is shared.
+  change costs code that is shared. The `create` cases call a library
+  instance of their own, so a creation in `matrix` is timed in factories
+  that have seen only the `create` group's schemas, not the matrix's, see
+  [benchmarks.md](benchmarks.md).
 - **alone**: one process per case, which builds the groups of cases up to the
   case's own and runs only the case, so the engine specializes the library to that schema and can
   remove the context and the result object altogether. It answers what a
@@ -281,7 +284,8 @@ more in total, or starts slower. The rest is judgment.
 - **Rules 4 and 5**, for correctness, security, and feature, read the bytes
   alone, [below](#bytes). A figure over its price reads `ASK`: the user rules
   on it, and it is not a failure.
-- **Rule 6** fails when the valid path of the realistic cases reads slower
+- **Rule 6** reads parses, and no case of the `create` path. It fails when
+  the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in `matrix` or
   `alone`, or when a valid case, realistic or not, is confirmed slower in any
   regime, `apart` among them. The summary of the cases timed apart is printed

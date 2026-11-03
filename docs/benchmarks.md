@@ -41,10 +41,17 @@ Zod Mini, TypeBox, and ArkType.
     runs a schema over a hundred items, so its cost shows over the fixed cost
     of a parse, which `fixed` measures alone.
   - `scale` repeats a shape at the sizes where a different cost takes over.
+  - `create` builds schemas and parses nothing: an optional, a pipe, a flat
+    and a nested object, a union, and a variant. An app pays it once a
+    schema as its modules load, and a change that moves work from the parse
+    to the factory shows here and in no parse.
 
   Every case names its path: `identity` returns the input itself, `copy`
-  returns another value, `issues` fails through `parse`, and `probe` goes
-  through `is`. Schemas are written as literals and inputs come from
+  returns another value, `issues` fails through `parse`, `probe` goes
+  through `is`, and `create` builds a schema. A creation is in its group's
+  summary and its path's, and in no other: not in `all`, and not in rule
+  6, which reads parses. A creation case confirmed slower is listed with the
+  rest. Schemas are written as literals and inputs come from
   `JSON.parse`, as a consumer's do: an object built key by key can be a
   different kind of object to the engine, and cost differently.
 
@@ -430,6 +437,16 @@ is measured and how a difference is decided. What the code has to hold to:
   case first only where every instance has it and agrees on it, and measures
   such cases before any other, so a case only the new version has is no
   schema its call sites saw before a shared case was timed.
+- **The `create` cases call a library instance of their own**, one for each
+  timed instance, which nothing else calls. The engine decides by where an
+  object was allocated whether to allocate there in old space, from how many
+  of them survive a collection: the factories that build the matrix's schemas,
+  which live as long as the process, are decided for or not by when the
+  collections fall in each instance's build, and a creation through them read
+  up to about 2.8x slower in some instances than in others of one file, and
+  alike under `--no-allocation-site-pretenuring`, which a timing can't run
+  under. Through an instance only the creations call, whose schemas die at
+  once, the instances of one file read alike.
 - **Warm by time with a floor of calls**, never by a count alone, and force no
   collection.
 
