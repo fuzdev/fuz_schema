@@ -1,5 +1,24 @@
 # @fuzdev/fuz_schema
 
+## 0.5.1
+
+### Patch Changes
+
+- feat: add `find_schema_meta`, every value of a metadata key anywhere in a schema ([f99cf53](https://github.com/fuzdev/fuz_schema/commit/f99cf53))
+
+  - reads every schema a value can reach: wrappers, every step of a `pipe`, every option of a `union`, `memo_union`, or `variant`, and a `lazy`'s schema
+  - `{structural: true}` also reads object entries, an `object_with_rest`'s `rest`, and what an `array` or `record` holds
+  - each schema is read once, so a recursion through one schema object ends; values come depth first, outermost first, one for each schema object carrying it
+  - metadata on the schema given to `message` is found, as `message` carries it over
+
+- fix: `message` carries the metadata of the schema it is given to the one it returns ([b4faa1d](https://github.com/fuzdev/fuz_schema/commit/b4faa1d))
+
+  - `get_meta(s.message(meta(x, m), 'text'))` is `m`, the same object, where it was `undefined`; `get_schema_meta` and `get_schema_fields` find it there too
+  - `meta` on the result merges onto that metadata, as on any schema, so `meta` goes inside or outside `message` alike
+  - the schema given is left as it was
+
+- perf: a bundle that uses `union` is smaller ([1cea0d9](https://github.com/fuzdev/fuz_schema/commit/1cea0d9))
+
 ## 0.5.0
 
 ### Minor Changes
