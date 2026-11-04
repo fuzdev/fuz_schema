@@ -137,7 +137,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
-| refinement | `pipe`, `check`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
+| refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
@@ -315,6 +315,22 @@ when the path leads through something that isn't an object or array,
 and when what it finds isn't of the type in `issue.received`.
 It reads own keys only, so it never returns an inherited value,
 and a missing key is found as `undefined`, which is what the schema saw.
+
+A check of an object that is about one of its fields reports at that field with `check_at`,
+which takes a key or the keys from the value in, as Zod's `refine` takes a `path`:
+
+```ts
+const Signup = s.pipe(
+	s.object({password: s.string, confirm: s.string}),
+	s.message(s.check_at('confirm', (v) => v.password === v.confirm), 'passwords must match'),
+);
+// an issue at ['confirm'], below the keys above the object, received the type of `confirm`
+```
+
+The path is typed by the value: a key or each of the keys must be one of what it leads into,
+so `s.check_at('confrim', ...)` fails to compile.
+It is a `check` to every reader, and a `pipe` stops at the first step that fails,
+so of several `check_at`s, one per field, one reports its issue at a time.
 
 A key an `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` needs and the input lacks is a `missing_key`, which reads
 `a: expected a required key, received undefined`.

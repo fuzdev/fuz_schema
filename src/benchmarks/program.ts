@@ -180,6 +180,16 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		invalid: 0
 	},
 	{
+		name: 'check_at',
+		create: (s) =>
+			s.pipe(
+				s.object({ a: s.number }),
+				s.check_at('a', (v: { a: number }) => v.a > 0)
+			),
+		valid: { a: 1 },
+		invalid: { a: 0 }
+	},
+	{
 		name: 'transform',
 		create: (s) =>
 			s.pipe(

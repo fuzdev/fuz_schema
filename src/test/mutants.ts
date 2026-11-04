@@ -361,6 +361,33 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [{ find: `|[13579][26]00)-02-29`, replace: `|\\d\\d00)-02-29` }]
 	},
 	{
+		name: 'check_at_path_reversed',
+		edits: [
+			{
+				find: `for (let i = keys.length; i--;) prefix_path(ctx.issues!, count, keys[i]!);`,
+				replace: `for (let i = 0; i < keys.length; i++) prefix_path(ctx.issues!, count, keys[i]!);`
+			}
+		]
+	},
+	{
+		name: 'check_at_received_of_the_value',
+		edits: [
+			{
+				find: `for (const key of keys) at = at !== null && typeof at === 'object' ? at[key] : undefined;`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'check_at_walk_past_the_cap',
+		edits: [
+			{
+				find: `const builds = count < MAX_ISSUES && !ctx.probe;`,
+				replace: `const builds = !ctx.probe;`
+			}
+		]
+	},
+	{
 		name: 'to_lower_case_identity',
 		edits: [{ find: `run: (value) => value.toLowerCase()`, replace: `run: (value) => value` }]
 	},

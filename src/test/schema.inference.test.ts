@@ -69,6 +69,7 @@ interface Expected {
 	iso_datetime: [string, string];
 	regex: [string, string];
 	check: [unknown, unknown];
+	check_at: [unknown, unknown];
 	check_typed: [string, string];
 	transform: [Array<unknown>, unknown];
 	transform_typed: [number, string];
@@ -91,6 +92,7 @@ interface ExpectedStep {
 	pipe_transform: [number, string];
 	regex: [string, string];
 	check: [string, string];
+	check_at: [string, string];
 	check_typed: [string, string];
 	transform: [Array<string>, string];
 	transform_typed: [number, string];
@@ -304,6 +306,7 @@ describe('inference by position', () => {
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
+			check_at: s.check_at('k', (v) => v !== null),
 			check_typed: s.check((v: string) => v !== ''),
 			transform: s.transform((v) => [v]),
 			transform_typed: s.transform((v: string) => v.length),
@@ -363,6 +366,7 @@ describe('inference by position', () => {
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
+			check_at: s.check_at('k', (v) => v !== null),
 			check_typed: s.check((v: string) => v !== ''),
 			transform: s.transform((v) => [v]),
 			transform_typed: s.transform((v: string) => v.length),
@@ -425,6 +429,7 @@ describe('inference by position', () => {
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
+			check_at: s.check_at('k', (v) => v !== null),
 			check_typed: s.check((v: string) => v !== ''),
 			transform: s.transform((v) => [v]),
 			transform_typed: s.transform((v: string) => v.length),
@@ -484,6 +489,7 @@ describe('inference by position', () => {
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
+			check_at: s.check_at('k', (v) => v !== null),
 			check_typed: s.check((v: string) => v !== ''),
 			transform: s.transform((v) => [v]),
 			transform_typed: s.transform((v: string) => v.length),
@@ -544,6 +550,7 @@ describe('inference by position', () => {
 				iso_datetime: s.iso_datetime,
 				regex: s.regex(/x/),
 				check: s.check((v) => v !== null),
+				check_at: s.check_at('k', (v) => v !== null),
 				check_typed: s.check((v: string) => v !== ''),
 				transform: s.transform((v) => [v]),
 				transform_typed: s.transform((v: string) => v.length),
@@ -623,6 +630,10 @@ describe('inference by position', () => {
 				{},
 				s.check((v) => v !== null)
 			),
+			check_at: s.object_with_rest(
+				{},
+				s.check_at('k', (v) => v !== null)
+			),
 			check_typed: s.object_with_rest(
 				{},
 				s.check((v: string) => v !== '')
@@ -697,6 +708,7 @@ describe('inference by position', () => {
 			iso_datetime: s.union([s.iso_datetime]),
 			regex: s.union([s.regex(/x/)]),
 			check: s.union([s.check((v) => v !== null)]),
+			check_at: s.union([s.check_at('k', (v) => v !== null)]),
 			check_typed: s.union([s.check((v: string) => v !== '')]),
 			transform: s.union([s.transform((v) => [v])]),
 			transform_typed: s.union([s.transform((v: string) => v.length)]),
@@ -762,6 +774,7 @@ describe('inference by position', () => {
 			iso_datetime: s.union([s.iso_datetime]),
 			regex: s.union([s.regex(/x/)]),
 			check: s.union([s.check((v) => v !== null)]),
+			check_at: s.union([s.check_at('k', (v) => v !== null)]),
 			check_typed: s.union([s.check((v: string) => v !== '')]),
 			transform: s.union([s.transform((v) => [v])]),
 			transform_typed: s.union([s.transform((v: string) => v.length)]),
@@ -823,6 +836,7 @@ describe('inference by position', () => {
 				iso_datetime: s.iso_datetime,
 				regex: s.regex(/x/),
 				check: s.check((v) => v !== null),
+				check_at: s.check_at('k', (v) => v !== null),
 				check_typed: s.check((v: string) => v !== ''),
 				transform: s.transform((v) => [v]),
 				transform_typed: s.transform((v: string) => v.length),
@@ -993,6 +1007,10 @@ describe('inference by position', () => {
 				s.check((v) => v !== null),
 				s.check((v) => v !== undefined)
 			),
+			check_at: s.pipe(
+				s.check_at('k', (v) => v !== null),
+				s.check((v) => v !== undefined)
+			),
 			check_typed: s.pipe(
 				s.check((v: string) => v !== ''),
 				s.check((v) => v !== undefined)
@@ -1064,6 +1082,10 @@ describe('inference by position', () => {
 				s.string,
 				s.check((v) => v !== null)
 			),
+			check_at: s.pipe(
+				s.string,
+				s.check_at('length', (v) => v !== null)
+			),
 			check_typed: s.pipe(
 				s.string,
 				s.check((v: string) => v !== '')
@@ -1123,6 +1145,10 @@ describe('inference by position', () => {
 			check: s.pipe(
 				s.string,
 				s.check((v) => v !== null)
+			),
+			check_at: s.pipe(
+				s.string,
+				s.check_at('length', (v) => v !== null)
 			),
 			check_typed: s.pipe(
 				s.string,
@@ -1436,6 +1462,7 @@ describe('inference by position', () => {
 			iso_datetime: s.optional(s.iso_datetime),
 			regex: s.optional(s.regex(/x/)),
 			check: s.optional(s.check((v) => v !== null)),
+			check_at: s.optional(s.check_at('k', (v) => v !== null)),
 			check_typed: s.optional(s.check((v: string) => v !== '')),
 			transform: s.optional(s.transform((v) => [v])),
 			transform_typed: s.optional(s.transform((v: string) => v.length)),
@@ -1501,6 +1528,7 @@ describe('inference by position', () => {
 			iso_datetime: s.nullable(s.iso_datetime),
 			regex: s.nullable(s.regex(/x/)),
 			check: s.nullable(s.check((v) => v !== null)),
+			check_at: s.nullable(s.check_at('k', (v) => v !== null)),
 			check_typed: s.nullable(s.check((v: string) => v !== '')),
 			transform: s.nullable(s.transform((v) => [v])),
 			transform_typed: s.nullable(s.transform((v: string) => v.length)),
@@ -1576,6 +1604,10 @@ describe('inference by position', () => {
 			regex: s.with_default(s.regex(/x/), nothing),
 			check: s.with_default(
 				s.check((v) => v !== null),
+				nothing
+			),
+			check_at: s.with_default(
+				s.check_at('k', (v) => v !== null),
 				nothing
 			),
 			check_typed: s.with_default(
@@ -1667,6 +1699,10 @@ describe('inference by position', () => {
 				s.check((v) => v !== null),
 				() => nothing
 			),
+			check_at: s.with_default_fn(
+				s.check_at('k', (v) => v !== null),
+				() => nothing
+			),
 			check_typed: s.with_default_fn(
 				s.check((v: string) => v !== ''),
 				() => nothing
@@ -1741,6 +1777,7 @@ describe('inference by position', () => {
 			iso_datetime: s.optional(s.iso_datetime),
 			regex: s.optional(s.regex(/x/)),
 			check: s.optional(s.check((v) => v !== null)),
+			check_at: s.optional(s.check_at('k', (v) => v !== null)),
 			check_typed: s.optional(s.check((v: string) => v !== '')),
 			transform: s.optional(s.transform((v) => [v])),
 			transform_typed: s.optional(s.transform((v: string) => v.length)),
@@ -1818,6 +1855,10 @@ describe('inference by position', () => {
 				s.check((v) => v !== null),
 				nothing
 			),
+			check_at: s.with_default(
+				s.check_at('k', (v) => v !== null),
+				nothing
+			),
 			check_typed: s.with_default(
 				s.check((v: string) => v !== ''),
 				nothing
@@ -1892,6 +1933,7 @@ describe('inference by position', () => {
 			iso_datetime: s.array(s.iso_datetime),
 			regex: s.array(s.regex(/x/)),
 			check: s.array(s.check((v) => v !== null)),
+			check_at: s.array(s.check_at('k', (v) => v !== null)),
 			check_typed: s.array(s.check((v: string) => v !== '')),
 			transform: s.array(s.transform((v) => [v])),
 			transform_typed: s.array(s.transform((v: string) => v.length)),
@@ -1957,6 +1999,7 @@ describe('inference by position', () => {
 			iso_datetime: s.array(s.iso_datetime),
 			regex: s.array(s.regex(/x/)),
 			check: s.array(s.check((v) => v !== null)),
+			check_at: s.array(s.check_at('k', (v) => v !== null)),
 			check_typed: s.array(s.check((v: string) => v !== '')),
 			transform: s.array(s.transform((v) => [v])),
 			transform_typed: s.array(s.transform((v: string) => v.length)),
@@ -2022,6 +2065,7 @@ describe('inference by position', () => {
 			iso_datetime: s.record(s.iso_datetime),
 			regex: s.record(s.regex(/x/)),
 			check: s.record(s.check((v) => v !== null)),
+			check_at: s.record(s.check_at('k', (v) => v !== null)),
 			check_typed: s.record(s.check((v: string) => v !== '')),
 			transform: s.record(s.transform((v) => [v])),
 			transform_typed: s.record(s.transform((v: string) => v.length)),
@@ -2087,6 +2131,7 @@ describe('inference by position', () => {
 			iso_datetime: s.lazy(() => s.iso_datetime),
 			regex: s.lazy(() => s.regex(/x/)),
 			check: s.lazy(() => s.check((v) => v !== null)),
+			check_at: s.lazy(() => s.check_at('k', (v) => v !== null)),
 			check_typed: s.lazy(() => s.check((v: string) => v !== '')),
 			transform: s.lazy(() => s.transform((v) => [v])),
 			transform_typed: s.lazy(() => s.transform((v: string) => v.length)),
@@ -2152,6 +2197,7 @@ describe('inference by position', () => {
 			iso_datetime: s.lazy(() => s.iso_datetime),
 			regex: s.lazy(() => s.regex(/x/)),
 			check: s.lazy(() => s.check((v) => v !== null)),
+			check_at: s.lazy(() => s.check_at('k', (v) => v !== null)),
 			check_typed: s.lazy(() => s.check((v: string) => v !== '')),
 			transform: s.lazy(() => s.transform((v) => [v])),
 			transform_typed: s.lazy(() => s.transform((v: string) => v.length)),
@@ -2227,6 +2273,10 @@ describe('inference by position', () => {
 			regex: s.message(s.regex(/x/), 'm'),
 			check: s.message(
 				s.check((v) => v !== null),
+				'm'
+			),
+			check_at: s.message(
+				s.check_at('k', (v) => v !== null),
 				'm'
 			),
 			check_typed: s.message(
@@ -2313,6 +2363,10 @@ describe('inference by position', () => {
 			regex: s.message(s.regex(/x/), 'm'),
 			check: s.message(
 				s.check((v) => v !== null),
+				'm'
+			),
+			check_at: s.message(
+				s.check_at('k', (v) => v !== null),
 				'm'
 			),
 			check_typed: s.message(

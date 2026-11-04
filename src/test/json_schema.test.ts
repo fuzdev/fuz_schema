@@ -820,6 +820,13 @@ describe('to_json_schema', () => {
 				'cannot express `check` at #/properties/a: it holds a function'
 			);
 			assert.deepEqual(write(schema, ANY).properties, { a: { type: 'string' } });
+			// a `check_at` is a `check`
+			const at = s.pipe(
+				s.object({ a: s.string }),
+				s.check_at('a', (v) => v.a !== '')
+			);
+			assert_throws(() => to_json_schema(at), 'cannot express `check` at #: it holds a function');
+			assert.deepEqual(write(at, ANY), write(s.object({ a: s.string })));
 		});
 
 		test('a transform has no output, and its input is the steps before it', () => {

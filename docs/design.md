@@ -53,8 +53,9 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 - **`array` and `record` hold the schema itself.** They are containers, like
   `union`, and an object around the schema would be bytes in every bundle
   with an array.
-- **Some inputs are not in `def`**: the `expected` text given to `regex` and
-  `check`, and the text given to `message`.
+- **Some inputs are not in `def`**: the `expected` text given to `regex`,
+  `check`, and `check_at`, the path given to `check_at`, which is a `check`
+  to every reader, and the text given to `message`.
 - **A `def` is as close to plain JSON as its kind allows.** What isn't is the
   kind's own: a function, a `RegExp`, a `bigint` or `undefined` literal.
 - **`is_schema` is the structural guard**: an object with a string `kind`, a
@@ -546,6 +547,19 @@ is only bundled when used. There is no message registry.
   handed a copy of the issue whose path is the one below the schema it wraps,
   outermost first, and one that keeps that array keeps it without the keys
   above.
+- **A `check_at` reports below the value it checks.** It fails as a `check`
+  does and then adds its path's keys to its issue, innermost first, as a
+  container adds its key, so the path is from the root, the keys above the
+  value and then its own. Its `received` is the type of the value at the
+  path, read as an object schema reads an entry, so `get_issue_value` finds
+  it where the path is of own keys. Where no issue is built, in probe mode
+  and past the cap, it reads nothing past `fn`, so no getter on the path runs.
+- **A `check_at`'s path is typed by the value it checks**, a key or a tuple
+  of keys each of what the one before leads into, from the step before in a
+  `pipe`, and never types that value: a typo fails to compile. A key of a
+  `union` is one of every option's, of a `record` any string, of an array
+  any number, and of `unknown` anything. Of a generic value a tuple of keys
+  waits on the type, and is refused unless `fn` names its parameter's type.
 - **A `missing_key` issue is the entry's**, where an `unknown_key` is the
   object's: it is reported by the `unknown`, the `literal(undefined)`, or the
   `one_of` that needs the key. It is `{kind: 'missing_key', expected: 'a

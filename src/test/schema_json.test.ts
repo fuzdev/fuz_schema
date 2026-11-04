@@ -372,6 +372,15 @@ describe('to_schema_json refuses', () => {
 				}),
 			'cannot serialize `check` at /schema/def/a/def/1: it holds a JavaScript value and is not portable'
 		);
+		// a `check_at` is a `check`
+		refuses(
+			() =>
+				s.pipe(
+					s.array(s.number),
+					s.check_at(0, (v: Array<number>) => v.length > 0)
+				),
+			'cannot serialize `check` at /schema/def/1: it holds a JavaScript value and is not portable'
+		);
 		refuses(
 			() =>
 				s.array(

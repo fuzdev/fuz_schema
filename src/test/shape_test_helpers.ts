@@ -57,7 +57,7 @@ const expr: s.AnySchema = s.lazy(() =>
  * their own. Each is a function so that a lazy starts unused.
  */
 export const SHAPE_SAMPLES: Record<
-	s.SchemaKind | 'message' | 'flavor' | 'brand' | 'memo_union' | 'void',
+	s.SchemaKind | 'message' | 'flavor' | 'brand' | 'memo_union' | 'void' | 'check_at',
 	() => Array<ShapeSample>
 > = {
 	string: () => [{ schema: s.string, valid: ['a'], invalid: [1] }],
@@ -273,6 +273,20 @@ export const SHAPE_SAMPLES: Record<
 			invalid: [0]
 		}
 	],
+	check_at: () => [
+		{
+			action: true,
+			schema: s.check_at('a', (v: { a: number }) => v.a > 0, 'a positive a'),
+			valid: [{ a: 1 }],
+			invalid: [{ a: 0 }]
+		},
+		{
+			action: true,
+			schema: s.check_at(['a', 0], (v: { a: Array<number> }) => v.a.length > 0),
+			valid: [{ a: [1] }],
+			invalid: [{ a: [] }]
+		}
+	],
 	transform: () => [
 		{ action: true, schema: s.transform((v: number) => v + 1), valid: [1], invalid: [] }
 	]
@@ -324,7 +338,14 @@ const AROUND: Array<[string, (schema: s.AnySchema) => s.AnySchema, (value: unkno
 	['meta', (schema) => meta(schema, { description: 'd' }), (a) => a]
 ];
 
-const KINDLESS: ReadonlyArray<string> = ['message', 'flavor', 'brand', 'memo_union', 'void'];
+const KINDLESS: ReadonlyArray<string> = [
+	'message',
+	'flavor',
+	'brand',
+	'memo_union',
+	'void',
+	'check_at'
+];
 
 const format_input = (value: unknown): string => {
 	try {

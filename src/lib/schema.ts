@@ -2101,6 +2101,105 @@ export const check = <V extends T, T = V>(
 	run: (value, ctx) => (fn(value) ? value : fail(ctx, 'check', value, expected))
 });
 
+// what `TPath`, keys from a value of type `T` in, outermost first, leads to:
+// `never` where a key isn't one of the value's. A key of an array or a tuple
+// is a number, any of them, and of a union a key of every member; `null` and
+// `undefined` are skipped, as the walk reads `undefined` through them. Any
+// key of `unknown` and `any` leads to `unknown`, as nothing says it isn't one
+type SchemaPathValue<T, TPath extends ReadonlyArray<PropertyKey>> = TPath extends readonly []
+	? T
+	: unknown extends T
+		? unknown
+		: TPath extends readonly [infer K, ...infer R extends ReadonlyArray<PropertyKey>]
+			? [NonNullable<T>] extends [ReadonlyArray<infer I>]
+				? K extends number
+					? SchemaPathValue<I, R>
+					: never
+				: K extends keyof NonNullable<T>
+					? SchemaPathValue<NonNullable<T>[K], R>
+					: never
+			: never;
+
+// a key of a value of type `T`, any of `unknown` and `any`
+type SchemaKeyOf<T> = unknown extends T ? PropertyKey : keyof NonNullable<T>;
+
+// `TPath` where it leads somewhere in a `T`, and `never` where it doesn't
+type SchemaPathOf<T, TPath extends ReadonlyArray<PropertyKey>> = [
+	SchemaPathValue<T, TPath>
+] extends [never]
+	? never
+	: TPath;
+
+/**
+ * Fails when `fn` returns `false`, as `check` does, with its issue at `path`
+ * below the value: a check of an object that is about one of its fields, as
+ * `check_at('confirm', (v) => v.password === v.confirm)` is. The issue's path
+ * is from the root, as every issue's is, the keys above the value then `path`.
+ *
+ * `path` is a key of the value, or the keys from the value in, each a key of
+ * what the one before leads to, and a typo fails to compile in either form.
+ * A key of a `union` is one of every option's, of a `record` any string, of
+ * an array any number, and of `unknown` anything; a `nullable` is read
+ * through. It is checked against the value's type and never
+ * types it, which comes from the step before in a `pipe`, as a `check`'s does.
+ * Of a value of a generic type, a key is checked against the type's
+ * constraint, and a path of keys is refused unless `fn` names the type of
+ * its parameter, which the path is then checked against, as is a key or
+ * path typed wider than a literal.
+ *
+ * Its `received` is the type of the value at `path`, read through the value's
+ * keys, own or inherited, as an object schema reads an entry, and `undefined`
+ * where it leads through something that isn't an object. So
+ * `get_issue_value(issue, input)` finds it where the path is of own keys, and
+ * refuses otherwise.
+ *
+ * It is a `check` to every reader: its `kind` is `'check'`, its `def` is `fn`,
+ * and `path` is in neither. A `pipe` stops at the first step that fails, so
+ * of several `check_at`s one at a time reports its issue.
+ *
+ * @param path - a key, or the keys from the value in, outermost first
+ * @param fn - returns `false` for a value that fails
+ * @param expected - describes what was expected, defaulting to `'check'`
+ */
+// @__NO_SIDE_EFFECTS__
+export const check_at: {
+	<V extends T, T = V, const K extends SchemaKeyOf<T> = SchemaKeyOf<T>>(
+		path: K,
+		fn: (value: T) => boolean,
+		expected?: string
+	): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean>;
+	<V extends T, T = V, const TPath extends ReadonlyArray<PropertyKey> = ReadonlyArray<PropertyKey>>(
+		path: TPath & SchemaPathOf<T, TPath>,
+		fn: (value: T) => boolean,
+		expected?: string
+	): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean>;
+} = (
+	path: PropertyKey | ReadonlyArray<PropertyKey>,
+	fn: (value: any) => boolean,
+	expected: string = 'check'
+): SchemaRefinement<any, any, 'check', (value: any) => boolean> => {
+	const keys: ReadonlyArray<PropertyKey> = Array.isArray(path) ? [...path] : [path as PropertyKey];
+	return {
+		kind: 'check',
+		def: fn,
+		run: (value, ctx) => {
+			if (fn(value)) return value;
+			const count = ctx.fails;
+			// whether `fail` builds an issue, the only use of the value at the path,
+			// so no getter on the way is called where none is
+			const builds = count < MAX_ISSUES && !ctx.probe;
+			let at: any = value;
+			if (builds) {
+				for (const key of keys) at = at !== null && typeof at === 'object' ? at[key] : undefined;
+			}
+			fail(ctx, 'check', at, expected);
+			// innermost first, as every path is while a parse unwinds
+			if (builds) for (let i = keys.length; i--;) prefix_path(ctx.issues!, count, keys[i]!);
+			return value;
+		}
+	};
+};
+
 /**
  * Replaces the value with the result of `fn`.
  */

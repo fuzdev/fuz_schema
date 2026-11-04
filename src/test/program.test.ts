@@ -17,7 +17,7 @@ describe('program', () => {
 	});
 
 	test('every entry builds the kind it names', () => {
-		const kindless = ['message', 'flavor', 'brand', 'memo_union', 'void'];
+		const kindless = ['message', 'flavor', 'brand', 'memo_union', 'void', 'check_at'];
 		// an action is run inside a `pipe`, as it is used
 		const kinds: Array<string> = PROGRAM.filter((entry) => !kindless.includes(entry.name)).map(
 			(entry) => {

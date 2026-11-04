@@ -276,6 +276,286 @@ describe('pipe and actions', () => {
 	});
 });
 
+describe('check_at', () => {
+	const Passwords = s.pipe(
+		s.object({ password: s.string, confirm: s.optional(s.string) }),
+		s.check_at('confirm', (v) => v.password === v.confirm, 'the password again')
+	);
+
+	test('fails as check does, at the path below the value', () => {
+		assert.deepEqual(s.parse(Passwords, { password: 'a', confirm: 'a' }), {
+			ok: true,
+			value: { password: 'a', confirm: 'a' }
+		});
+		assert.deepEqual(issues_of(Passwords, { password: 'a', confirm: 'b' }), [
+			{
+				kind: 'check',
+				expected: 'the password again',
+				received: 'string',
+				path: ['confirm'],
+				message: undefined
+			}
+		]);
+		// the type received is of the value at the path, a missing key's `undefined` too
+		assert.deepEqual(issues_of(Passwords, { password: 'a' })[0]!.received, 'undefined');
+		// a refinement: the output is the input, typed as the step before
+		const input = { password: 'a', confirm: 'a' };
+		assert.strictEqual(s.parse_or_throw(Passwords, input), input);
+		expectTypeOf<s.Infer<typeof Passwords>>().toEqualTypeOf<{
+			password: string;
+			confirm?: string | undefined;
+		}>();
+	});
+
+	test('a path of keys, outermost first, below the keys above it', () => {
+		const Deep = s.object({
+			outer: s.pipe(
+				s.array(s.object({ a: s.number })),
+				s.check_at([0, 'a'], (v) => v.length === 0 || v[0]!.a > 0)
+			)
+		});
+		const value = { outer: [{ a: 0 }] };
+		const [issue] = issues_of(Deep, value);
+		assert.deepEqual(issue!.path, ['outer', 0, 'a']);
+		assert.strictEqual(issue!.received, 'number');
+		assert.deepEqual(s.get_issue_value(issue!, value), { ok: true, value: 0 });
+		assert.strictEqual(s.format_issue(issue!), 'outer.0.a: expected check, received number');
+		// an empty path is the value's own, as with check
+		assert.deepEqual(
+			issues_of(
+				s.check_at([], () => false),
+				1
+			)[0]!.path,
+			[]
+		);
+		// a path through what isn't an object receives `undefined`
+		assert.strictEqual(
+			issues_of(
+				s.check_at(['a', 'b'], () => false),
+				{ a: 1 }
+			)[0]!.received,
+			'undefined'
+		);
+		// the path is each issue's own array
+		const issues = issues_of(s.array(s.check_at('k', () => false)), [{}, {}]);
+		assert.deepEqual(
+			issues.map((i) => i.path),
+			[
+				[0, 'k'],
+				[1, 'k']
+			]
+		);
+		assert.notStrictEqual(issues[0]!.path, issues[1]!.path);
+	});
+
+	test('a message labels it, and probing builds no issue', () => {
+		const Invite = s.pipe(
+			s.object({ email: s.nullable(s.string), username: s.nullable(s.string) }),
+			s.message(
+				s.check_at('email', (v) => v.email !== null || v.username !== null),
+				'at least one of email or username is required'
+			)
+		);
+		assert.deepEqual(issues_of(Invite, { email: null, username: null }), [
+			{
+				kind: 'check',
+				expected: 'check',
+				received: 'null',
+				path: ['email'],
+				message: 'at least one of email or username is required'
+			}
+		]);
+		assert(!s.is(Invite, { email: null, username: null }));
+		assert(s.is(Invite, { email: null, username: 'u' }));
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+		Invite.run({ email: null, username: null }, ctx);
+		assert.strictEqual(ctx.fails, 1);
+		assert.strictEqual(ctx.issues, undefined);
+	});
+
+	test('past the cap it counts and builds no issue', () => {
+		const result = s.parse(
+			s.array(s.check_at(['k', 'j'], () => false)),
+			Array.from({ length: 150 }, () => ({}))
+		);
+		assert(!result.ok);
+		assert.strictEqual(result.issues.length, 100);
+		assert.deepEqual(result.issues[99]!.path, [99, 'k', 'j']);
+	});
+
+	test('reads the path only where an issue is built', () => {
+		let reads = 0;
+		const input = {
+			get a(): { b: number } {
+				reads++;
+				return { b: 1 };
+			}
+		};
+		const At = s.pipe(
+			s.unknown,
+			s.check_at(['a', 'b'], () => false)
+		);
+		assert(!s.is(At, input));
+		assert.strictEqual(reads, 0, 'a probe');
+		const ctx: s.SchemaContext = { issues: undefined, fails: 100, probe: false };
+		At.run(input, ctx);
+		assert.strictEqual(reads, 0, 'past the cap');
+		assert.strictEqual(ctx.fails, 101);
+		assert.strictEqual(ctx.issues, undefined);
+		assert.deepEqual(issues_of(At, input)[0]!.path, ['a', 'b']);
+		assert.strictEqual(reads, 1, 'an issue built');
+	});
+
+	test('its path is of keys of the value, a typo failing to compile', () => {
+		const Base = s.object({
+			email: s.string,
+			user: s.nullable(s.object({ name: s.string, tags: s.array(s.string) })),
+			pair: s.array(s.object({ a: s.number })),
+			counts: s.record(s.number)
+		});
+		type Base = s.Infer<typeof Base>;
+		// `fn` is typed from the step before, in either form
+		s.pipe(
+			Base,
+			s.check_at('email', (v) => {
+				expectTypeOf(v).toEqualTypeOf<Base>();
+				return v.email !== '';
+			}),
+			s.check_at(['user', 'name'], (v) => {
+				expectTypeOf(v).toEqualTypeOf<Base>();
+				return v.user?.name !== '';
+			}),
+			s.message(
+				s.check_at(['pair', 0, 'a'], (v) => v.pair.length > 0),
+				'm'
+			)
+		);
+		s.pipe(
+			Base,
+			s.check_at(['user', 'tags', 3], () => true),
+			s.check_at(['counts', 'any key'], () => true),
+			s.check_at([], () => true)
+		);
+		s.pipe(
+			Base,
+			// @ts-expect-error a key the value lacks
+			s.check_at('emial', () => true)
+		);
+		s.pipe(
+			Base,
+			// @ts-expect-error a key the value lacks, inside the path
+			s.check_at(['user', 'nmae'], () => true)
+		);
+		s.pipe(
+			Base,
+			// @ts-expect-error an array's key is a number
+			s.check_at(['pair', 'a'], () => true)
+		);
+		s.pipe(
+			Base,
+			// @ts-expect-error past an array's item
+			s.check_at(['pair', 0, 'b'], () => true)
+		);
+		s.pipe(
+			Base,
+			s.message(
+				// @ts-expect-error inside a message
+				s.check_at('emial', () => true),
+				'm'
+			)
+		);
+		// of a union, a key of every member
+		const Either = s.union([
+			s.object({ kind: s.literal('a'), a: s.string }),
+			s.object({ kind: s.literal('b'), b: s.string })
+		]);
+		s.pipe(
+			Either,
+			s.check_at('kind', () => true)
+		);
+		s.pipe(
+			Either,
+			// @ts-expect-error a key of one member only
+			s.check_at('a', () => true)
+		);
+		// an array's keys are numbers
+		s.pipe(
+			s.array(s.string),
+			s.check_at(0, (v) => v.length > 0)
+		);
+		// of `unknown`, any path
+		s.pipe(
+			s.unknown,
+			s.check_at(['a', 0, 'b'], () => true)
+		);
+		// of a generic value a key is checked against its constraint, and a path
+		// of keys is not, unless `fn` names the type it is checked against
+		const _generic = <T extends s.Schema<{ b: Array<string> }>>(x: T) => [
+			s.pipe(
+				x,
+				s.check_at('b', (v) => v.b.length > 0)
+			),
+			s.pipe(
+				x,
+				s.check_at(['b', 0], (_v: { b: Array<string> }) => true)
+			),
+			s.pipe(
+				x,
+				// @ts-expect-error a path of keys through a type not yet known
+				s.check_at(['b', 0], () => true)
+			)
+		];
+		expectTypeOf(_generic).toBeFunction();
+	});
+
+	test('its path never types the value', () => {
+		// alone, the value is what `fn` takes, and a path of an unknown value is any
+		const _annotated = s.check_at('a', (v: { a: number }) => v.a > 0);
+		expectTypeOf<s.Infer<typeof _annotated>>().toEqualTypeOf<{ a: number }>();
+		// @ts-expect-error a key of what `fn` takes
+		s.check_at('b', (v: { a: number }) => v.a > 0);
+		const _bare = s.check_at('a', () => true);
+		expectTypeOf<s.Infer<typeof _bare>>().toEqualTypeOf<unknown>();
+		const _bare_path = s.check_at(['a', 'b'], () => true);
+		expectTypeOf<s.Infer<typeof _bare_path>>().toEqualTypeOf<unknown>();
+		const _message = s.message(
+			s.check_at('a', () => true),
+			'm'
+		);
+		expectTypeOf<s.Infer<typeof _message>>().toEqualTypeOf<unknown>();
+		// in a pipe the output is the step before's, not one the path would make
+		const _piped = s.pipe(
+			s.object({ a: s.number, b: s.string }),
+			s.check_at('a', () => true)
+		);
+		expectTypeOf<s.Infer<typeof _piped>>().toEqualTypeOf<{ a: number; b: string }>();
+	});
+
+	test('one for each path, in a pipe, stopping at the first that fails', () => {
+		const Auth = s.pipe(
+			s.object({ roles: s.array(s.string), actor: s.string }),
+			s.check_at('roles', (v) => !v.roles.length || v.actor === 'required'),
+			s.check_at('actor', (v) => v.actor !== 'x')
+		);
+		assert.deepEqual(
+			issues_of(Auth, { roles: ['a'], actor: 'x' }).map((i) => i.path),
+			[['roles']]
+		);
+		assert.deepEqual(
+			issues_of(Auth, { roles: [], actor: 'x' }).map((i) => i.path),
+			[['actor']]
+		);
+	});
+
+	test('is a check to every reader', () => {
+		const fn = (): boolean => true;
+		const schema = s.check_at('k', fn);
+		assert.strictEqual(schema.kind, 'check');
+		assert.strictEqual(schema.def, fn);
+		expectTypeOf(schema).toExtend<s.SchemaNode<'check'>>();
+	});
+});
+
 describe('message', () => {
 	test('labels every issue of the schema it wraps that has no message, at any path', () => {
 		const O = s.message(
