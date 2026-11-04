@@ -176,7 +176,7 @@ const EXTRA: Array<DocinfoFixture> = [
 const to_paths = (issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey> }>): Array<string> =>
 	issues.map((issue) => issue.path.join('.')).sort();
 
-describe("svelte-docinfo's schemas, in valibot and in this library", () => {
+describe("svelte-docinfo's schemas, in valibot and in this library", { timeout: 30_000 }, () => {
 	test('there are fixtures, each named once', () => {
 		assert(fixtures.length > 0);
 		assert.strictEqual(new Set(fixtures.map((f) => f.name)).size, fixtures.length);

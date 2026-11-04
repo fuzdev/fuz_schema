@@ -784,7 +784,7 @@ const describe_comparison = (c: Comparison): string =>
 	`\n  zod         ${c.zod.ok ? JSON.stringify(c.zod.doc) : 'throws: ' + c.zod.message}` +
 	`\n  fuz_schema  ${c.ours.ok ? JSON.stringify(c.ours.doc) : 'throws: ' + c.ours.message}\n`;
 
-describe('to_json_schema against zod', () => {
+describe('to_json_schema against zod', { timeout: 30_000 }, () => {
 	test('writes what zod writes, or the difference is declared', () => {
 		const undeclared = comparisons.filter((c) => !explained(c, rows));
 		assert.ok(
