@@ -27,6 +27,9 @@ export const defaulted = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.object({
 export const defaulted_optional = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.object({ a: s.with_default(s.optional(x), d) });
 export const branded = <T extends s.Schema<string>>(x: T) => s.object({ a: s.brand(x, 'B'), b: s.flavor(x, 'F') });
 export const checked_at = <T extends s.Schema<{ a: string; b: Array<string> }>>(x: T) => s.pipe(x, s.check_at('a', (v) => v.a !== ''), s.check_at(['b', 0], (_v: { b: Array<string> }) => true));
+export const branded_uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid');
+export const branded_pipe = s.brand(s.pipe(s.string, s.min_length(1)), 'B');
+export const flavored_pipe = s.flavor(s.pipe(s.string, s.min_length(1)), 'F');
 export const regex_of = <T extends string>() => s.regex<T>(/a/);
 export const piped_action = <O>(a: s.SchemaAction<string, O>) => s.pipe(s.string, a, s.check((v) => v !== null));
 export const piped_named = <T extends Schema<string>>(x: T) => pipe(x, regex(/a/));

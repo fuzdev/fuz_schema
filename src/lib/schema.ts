@@ -262,7 +262,11 @@ export type SchemaNode<TKind extends SchemaKind = SchemaKind> = TKind extends un
 	? SchemaOfKind<TKind>
 	: never;
 
-interface SchemaOfKind<TKind extends SchemaKind> extends Schema<
+/**
+ * The member of `SchemaNode` of one kind. Exported so a declaration emitted
+ * for a `brand` or a `flavor` of a `pipe` can name it.
+ */
+export interface SchemaOfKind<TKind extends SchemaKind> extends Schema<
 	unknown,
 	unknown,
 	TKind,
