@@ -103,7 +103,9 @@ export const meta: {
  * Reads the metadata attached to `schema` by `meta`, or `undefined` when it
  * has none. Only that object is looked at, not the schemas inside it.
  *
- * @returns the stored object, the same one on every call
+ * @returns the stored object, the same one on every call and the one a
+ * `message` built over `schema` carries, so a change made to it through a
+ * cast shows on both
  */
 export const get_meta = (schema: AnySchema): Readonly<SchemaMeta> | undefined =>
 	registry.get(schema);
