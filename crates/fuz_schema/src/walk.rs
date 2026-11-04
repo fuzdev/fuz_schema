@@ -55,8 +55,9 @@ pub trait Report {
 /// What failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Failure {
-    /// The value did not match the node.
-    Schema,
+    /// The value did not match the node, a schema that fails with issues of
+    /// this kind.
+    Schema(SchemaIssueKind),
     /// The value is at the discriminator of the `variant` node, and no option
     /// has it.
     Discriminator,
@@ -65,6 +66,18 @@ pub enum Failure {
     /// The node is an `unknown` that an entry of an object schema reached,
     /// and the value has no key for the entry.
     MissingKey,
+}
+
+impl Failure {
+    /// The kind of the issue the TypeScript library reports for it.
+    pub const fn issue_kind(self) -> SchemaIssueKind {
+        match self {
+            Self::Schema(kind) => kind,
+            Self::Discriminator => SchemaIssueKind::Variant,
+            Self::UnknownKey => SchemaIssueKind::UnknownKey,
+            Self::MissingKey => SchemaIssueKind::MissingKey,
+        }
+    }
 }
 
 /// A step from a container to a value in it.
@@ -218,22 +231,19 @@ impl Report for Collect<'_> {
         if self.issues.len() >= MAX_ISSUES {
             return;
         }
-        let node = self.schema.at(node);
-        let kind = match failure {
-            Failure::Schema | Failure::Discriminator => SchemaIssueKind::of(node.kind()),
-            Failure::UnknownKey => Some(SchemaIssueKind::UnknownKey),
-            Failure::MissingKey => Some(SchemaIssueKind::MissingKey),
-        };
-        // the walker reports no failure of a kind that has no issue kind
-        debug_assert!(kind.is_some(), "a `{}` failed", node.kind());
-        if let Some(kind) = kind {
-            self.issues.push(SchemaIssue {
-                kind,
-                expected: expected(self.schema, node, failure),
-                received,
-                path: Vec::new(),
-            });
-        }
+        let at = self.schema.at(node);
+        // a schema fails with the issue kind of its own kind
+        debug_assert!(
+            !matches!(failure, Failure::Schema(kind) if SchemaIssueKind::of(at.kind()) != Some(kind)),
+            "a `{}` failed as {failure:?}",
+            at.kind()
+        );
+        self.issues.push(SchemaIssue {
+            kind: failure.issue_kind(),
+            expected: expected(self.schema, at, failure),
+            received,
+            path: Vec::new(),
+        });
     }
 
     fn count(&self) -> usize {
@@ -415,8 +425,7 @@ pub fn run<R: Report>(schema: &Schema, mut id: NodeId, value: Value<'_>, report:
                 if union(schema, id, options, value, report.probe()) {
                     return true;
                 }
-                report.fail(id, Failure::Schema, Received::of(value));
-                return false;
+                return fail(id, SchemaIssueKind::Union, value, report);
             }
             _ => match rest(schema, id, value, report) {
                 Rest::Matched(matched) => return matched,
@@ -436,17 +445,32 @@ enum Rest {
 fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R) -> Rest {
     let node = schema.at(id);
     let matched = match node {
-        SchemaNode::Object(entries) => object(schema, id, entries, true, value, report),
-        SchemaNode::LooseObject(entries) | SchemaNode::StripObject(entries) => {
-            object(schema, id, entries, false, value, report)
+        SchemaNode::Object(entries) => {
+            object(schema, id, entries, SchemaIssueKind::Object, value, report)
         }
+        SchemaNode::LooseObject(entries) => object(
+            schema,
+            id,
+            entries,
+            SchemaIssueKind::LooseObject,
+            value,
+            report,
+        ),
+        SchemaNode::StripObject(entries) => object(
+            schema,
+            id,
+            entries,
+            SchemaIssueKind::StripObject,
+            value,
+            report,
+        ),
         SchemaNode::Record(inner) => record(schema, id, *inner, value, report),
         SchemaNode::Array(inner) => array(schema, id, *inner, value, report),
         // each step reports its own failure, and the first one ends the pipe
         SchemaNode::Pipe(steps) => pipe(schema, steps, value, report),
         SchemaNode::Variant(variant) => match select(variant, value) {
             Selected::Option(option) => return Rest::Option(option),
-            Selected::NotObject => fail(id, value, report),
+            Selected::NotObject => fail(id, SchemaIssueKind::Variant, value, report),
             Selected::Unknown(discriminator) => fail_at(
                 id,
                 Failure::Discriminator,
@@ -461,14 +485,18 @@ fn rest<R: Report>(schema: &Schema, id: NodeId, value: Value<'_>, report: &mut R
             report.fail(id, Failure::MissingKey, Received::of(value));
             false
         }
-        _ => scalar(node, value) || fail(id, value, report),
+        _ => match scalar(node, value) {
+            Ok(()) => true,
+            Err(kind) => fail(id, kind, value, report),
+        },
     };
     Rest::Matched(matched)
 }
 
-/// Reports that `value` does not match the node `id`.
-fn fail<R: Report>(id: NodeId, value: Value<'_>, report: &mut R) -> bool {
-    report.fail(id, Failure::Schema, Received::of(value));
+/// Reports that `value` does not match the node `id`, which fails with
+/// issues of `kind`.
+fn fail<R: Report>(id: NodeId, kind: SchemaIssueKind, value: Value<'_>, report: &mut R) -> bool {
+    report.fail(id, Failure::Schema(kind), Received::of(value));
     false
 }
 
@@ -584,39 +612,79 @@ fn select<'a>(variant: &VariantDef, value: Value<'a>) -> Selected<'a> {
 }
 
 /// Whether `value` matches a node that looks no further than the value
-/// itself. The kinds that do look further are `run`'s, and so is an `unknown`
-/// given a missing key.
-fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
-    match node {
-        SchemaNode::String => matches!(value, Value::String(_)),
+/// itself, or the kind of the issue the node fails it with. The kinds that do
+/// look further are `run`'s and `rest`'s, and so is an `unknown` given a
+/// missing key.
+fn scalar(node: &SchemaNode, value: Value<'_>) -> Result<(), SchemaIssueKind> {
+    let (matched, kind) = match node {
+        SchemaNode::String => (matches!(value, Value::String(_)), SchemaIssueKind::String),
         // `number` rejects `NaN` and the infinities. JSON has no `NaN`, and a
         // number past a double is the parser's error, so no text hands an
         // evaluator either: the test is the library's all the same
-        SchemaNode::Number => {
-            matches!(value, Value::Number(number) if number.is_finite())
-        }
-        SchemaNode::Boolean => matches!(value, Value::Bool(_)),
-        SchemaNode::Unknown => true,
-        SchemaNode::Literal(literal) => literal.matches(value),
-        SchemaNode::OneOf(literals) => literals.iter().any(|literal| literal.matches(value)),
+        SchemaNode::Number => (
+            matches!(value, Value::Number(number) if number.is_finite()),
+            SchemaIssueKind::Number,
+        ),
+        SchemaNode::Boolean => (matches!(value, Value::Bool(_)), SchemaIssueKind::Boolean),
+        // JSON holds no bigint
+        SchemaNode::Bigint => (false, SchemaIssueKind::Bigint),
+        // `rest` reports the one value it refuses, as a missing key
+        SchemaNode::Unknown => return Ok(()),
+        SchemaNode::Literal(literal) => (literal.matches(value), SchemaIssueKind::Literal),
+        SchemaNode::OneOf(literals) => (
+            literals.iter().any(|literal| literal.matches(value)),
+            SchemaIssueKind::OneOf,
+        ),
         // a length action follows a string or an array, and a number action
         // is never true of anything but a number
-        SchemaNode::MinLength(min) => length(value).is_some_and(|length| length >= *min),
-        SchemaNode::MaxLength(max) => length(value).is_some_and(|length| length <= *max),
-        SchemaNode::MinValue(min) => matches!(value, Value::Number(number) if number >= *min),
-        SchemaNode::MaxValue(max) => matches!(value, Value::Number(number) if number <= *max),
-        SchemaNode::Integer => matches!(value, Value::Number(number) if js::is_integer(number)),
-        SchemaNode::SafeInteger => {
-            matches!(value, Value::Number(number) if js::is_safe_integer(number))
-        }
+        SchemaNode::MinLength(min) => (
+            length(value).is_some_and(|length| length >= *min),
+            SchemaIssueKind::MinLength,
+        ),
+        SchemaNode::MaxLength(max) => (
+            length(value).is_some_and(|length| length <= *max),
+            SchemaIssueKind::MaxLength,
+        ),
+        SchemaNode::MinValue(min) => (
+            matches!(value, Value::Number(number) if number >= *min),
+            SchemaIssueKind::MinValue,
+        ),
+        SchemaNode::MaxValue(max) => (
+            matches!(value, Value::Number(number) if number <= *max),
+            SchemaIssueKind::MaxValue,
+        ),
+        SchemaNode::Integer => (
+            matches!(value, Value::Number(number) if js::is_integer(number)),
+            SchemaIssueKind::Integer,
+        ),
+        SchemaNode::SafeInteger => (
+            matches!(value, Value::Number(number) if js::is_safe_integer(number)),
+            SchemaIssueKind::SafeInteger,
+        ),
         // the format tests follow a string, and are never true of anything else
-        SchemaNode::Uuid => matches!(value, Value::String(text) if format::is_uuid(text)),
-        SchemaNode::IsoDatetime => {
-            matches!(value, Value::String(text) if format::is_iso_datetime(text))
-        }
-        // JSON holds no bigint, and the rest are not scalars
-        _ => false,
-    }
+        SchemaNode::Uuid => (
+            matches!(value, Value::String(text) if format::is_uuid(text)),
+            SchemaIssueKind::Uuid,
+        ),
+        SchemaNode::IsoDatetime => (
+            matches!(value, Value::String(text) if format::is_iso_datetime(text)),
+            SchemaIssueKind::IsoDatetime,
+        ),
+        // `run` steps through these, and `rest` holds the containers
+        SchemaNode::Optional(_)
+        | SchemaNode::Nullable(_)
+        | SchemaNode::WithDefault(_)
+        | SchemaNode::Lazy(_)
+        | SchemaNode::Union(_)
+        | SchemaNode::Object(_)
+        | SchemaNode::LooseObject(_)
+        | SchemaNode::StripObject(_)
+        | SchemaNode::Record(_)
+        | SchemaNode::Array(_)
+        | SchemaNode::Variant(_)
+        | SchemaNode::Pipe(_) => unreachable!("`scalar` is handed a `{}`", node.kind()),
+    };
+    if matched { Ok(()) } else { Err(kind) }
 }
 
 /// The `length` of a string or an array.
@@ -628,8 +696,9 @@ fn length(value: Value<'_>) -> Option<f64> {
     }
 }
 
-/// The three object schemas: the entries in the schema's order, each reading
-/// a missing key as `undefined`, then for a `strict` one the input's keys.
+/// The three object schemas, by the kind of their issues: the entries in the
+/// schema's order, each reading a missing key as `undefined`, then for an
+/// `object` the input's keys.
 ///
 /// `Value::Undefined` is a missing key and nothing else, as JSON has no
 /// `undefined`. So an `unknown` that is given one refuses it, which is the
@@ -640,13 +709,12 @@ fn object<R: Report>(
     schema: &Schema,
     id: NodeId,
     entries: &SchemaEntries,
-    strict: bool,
+    kind: SchemaIssueKind,
     value: Value<'_>,
     report: &mut R,
 ) -> bool {
     let Value::Object(fields) = value else {
-        report.fail(id, Failure::Schema, Received::of(value));
-        return false;
+        return fail(id, kind, value, report);
     };
     let mut matched = true;
     for (key, entry) in entries.iter() {
@@ -661,7 +729,8 @@ fn object<R: Report>(
             matched = false;
         }
     }
-    if strict {
+    // only an `object` refuses a key it has no entry for
+    if kind == SchemaIssueKind::Object {
         // a key in the schema's order is known by its position
         let mut hint = 0;
         for (key, field) in fields.iter() {
@@ -695,8 +764,7 @@ fn record<R: Report>(
     report: &mut R,
 ) -> bool {
     let Value::Object(fields) = value else {
-        report.fail(id, Failure::Schema, Received::of(value));
-        return false;
+        return fail(id, SchemaIssueKind::Record, value, report);
     };
     let mut matched = true;
     for (key, field) in fields.iter() {
@@ -720,8 +788,7 @@ fn array<R: Report>(
     report: &mut R,
 ) -> bool {
     let Value::Array(items) = value else {
-        report.fail(id, Failure::Schema, Received::of(value));
-        return false;
+        return fail(id, SchemaIssueKind::Array, value, report);
     };
     let mut matched = true;
     for (index, item) in items.iter().enumerate() {
