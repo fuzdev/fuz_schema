@@ -354,6 +354,9 @@ whose output type is `unknown`.
 `introspect.ts` has the walks a consumer would otherwise write:
 `unwrap_schema` goes through `optional`, `nullable`, `with_default`, `with_default_fn`, `pipe`, and `lazy`;
 `get_schema_meta` finds a key on the outermost layer that has it;
+`find_schema_meta` finds every value of a key on any schema a value can reach:
+every step of a `pipe`, every option of a `union`, and, with `{structural: true}`,
+object entries and what an `array` or `record` holds, reading each schema once so a recursion through one schema object ends;
 `get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
 with each one's default and description, and never call a `with_default_fn`'s function;
 `format_schema_type` renders the type a schema accepts, for help output.
@@ -392,7 +395,8 @@ and as an object entry `meta(s.optional(...), ...)` still makes the key optional
 - Calling `meta` on a schema that has metadata merges the two, the new keys winning.
 - `get_meta` reads the object it is given and nothing inside it.
   For `s.optional(Port)` that is `undefined`, and `get_meta(schema.def.schema)` finds it:
-  metadata on a nested schema is reached by [walking](#introspection). `get_schema_meta` walks the layers.
+  metadata on a nested schema is reached by [walking](#introspection). `get_schema_meta` walks the layers,
+  and `find_schema_meta` every schema a value can reach.
 - `flavor` and `brand` return the schema itself, so its metadata is still there.
   `message` builds a new schema, so attach metadata last: `meta(s.message(...), ...)`.
 - Every copy of the module shares one `WeakMap`, on `globalThis`, so metadata attached through one

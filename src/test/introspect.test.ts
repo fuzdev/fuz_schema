@@ -5,6 +5,7 @@ import { meta } from '#lib/meta.ts';
 import {
 	unwrap_schema,
 	get_schema_meta,
+	find_schema_meta,
 	get_schema_entries,
 	get_schema_fields,
 	format_schema_type
@@ -76,6 +77,180 @@ describe('get_schema_meta', () => {
 		assert.strictEqual(get_schema_meta(F, 'description'), 'd');
 		const L = s.lazy(() => s.brand(meta(s.string, { description: 'l' }), 'B'));
 		assert.strictEqual(get_schema_meta(L, 'description'), 'l');
+	});
+});
+
+describe('find_schema_meta', () => {
+	const mark = (schema: s.AnySchema, description: string): s.AnySchema =>
+		meta(schema, { description });
+
+	// every kind, which the types hold the table to: whether a mark on what it
+	// holds is found always, only with `structural`, or it holds no schema
+	const kinds: Record<
+		s.SchemaKind,
+		[(m: s.AnySchema) => s.AnySchema, 'always' | 'structural' | 'none']
+	> = {
+		string: [() => s.string, 'none'],
+		number: [() => s.number, 'none'],
+		boolean: [() => s.boolean, 'none'],
+		bigint: [() => s.bigint, 'none'],
+		unknown: [() => s.unknown, 'none'],
+		literal: [() => s.literal('a'), 'none'],
+		one_of: [() => s.one_of(['a', 1]), 'none'],
+		optional: [(m) => s.optional(m), 'always'],
+		nullable: [(m) => s.nullable(m), 'always'],
+		with_default: [(m) => s.with_default(m, 'x'), 'always'],
+		with_default_fn: [(m) => s.with_default_fn(m, () => 'x'), 'always'],
+		lazy: [(m) => s.lazy(() => m), 'always'],
+		object: [(m) => s.object({ a: m }), 'structural'],
+		loose_object: [(m) => s.loose_object({ a: m }), 'structural'],
+		strip_object: [(m) => s.strip_object({ a: m }), 'structural'],
+		object_with_rest: [(m) => s.object_with_rest({ a: m }, s.number), 'structural'],
+		record: [(m) => s.record(m), 'structural'],
+		array: [(m) => s.array(m), 'structural'],
+		union: [(m) => s.union([s.number, m]), 'always'],
+		// the option is what a variant holds, so it carries the mark
+		variant: [
+			() =>
+				s.variant('t', [
+					s.object({ t: s.literal('a') }),
+					meta(s.object({ t: s.literal('b') }), { description: 'm' })
+				]),
+			'always'
+		],
+		pipe: [(m) => s.pipe(s.unknown, s.transform(String), m), 'always'],
+		min_length: [() => s.min_length(1), 'none'],
+		max_length: [() => s.max_length(1), 'none'],
+		min_value: [() => s.min_value(1), 'none'],
+		max_value: [() => s.max_value(1), 'none'],
+		integer: [() => s.integer, 'none'],
+		safe_integer: [() => s.safe_integer, 'none'],
+		regex: [() => s.regex(/a/), 'none'],
+		check: [() => s.check(() => true), 'none'],
+		transform: [() => s.transform((v) => v), 'none']
+	};
+	for (const [kind, [make, reach]] of Object.entries(kinds)) {
+		test(kind, () => {
+			const schema = make(mark(s.string, 'm'));
+			assert.strictEqual(schema.kind, kind);
+			assert.deepEqual(find_schema_meta(schema, 'description'), reach === 'always' ? ['m'] : []);
+			assert.deepEqual(
+				find_schema_meta(schema, 'description', { structural: true }),
+				reach === 'none' ? [] : ['m']
+			);
+			// its own mark, whatever it holds
+			assert.deepEqual(find_schema_meta(mark(schema, 'own'), 'description').at(0), 'own');
+		});
+	}
+
+	test('through a chain of wrappers, outermost first', () => {
+		const A = mark(
+			s.optional(mark(s.nullable(s.with_default(mark(s.string, 'c'), 'x')), 'b')),
+			'a'
+		);
+		assert.deepEqual(find_schema_meta(A, 'description'), ['a', 'b', 'c']);
+	});
+
+	test('a later step of a pipe, where get_schema_meta reads only the first', () => {
+		const Secret = mark(s.string, 'secret');
+		const P = s.pipe(s.unknown, s.transform(String), Secret);
+		assert.strictEqual(get_schema_meta(P, 'description'), undefined);
+		assert.deepEqual(find_schema_meta(P, 'description'), ['secret']);
+	});
+
+	test('a mark on an action of a pipe', () => {
+		const P = s.pipe(s.string, meta(s.min_length(1), { description: 'action' }));
+		assert.deepEqual(find_schema_meta(P, 'description'), ['action']);
+	});
+
+	test('every option of a union and a memo_union, in order', () => {
+		const U = s.union([mark(s.string, 'a'), s.number, mark(s.boolean, 'b')]);
+		assert.deepEqual(find_schema_meta(U, 'description'), ['a', 'b']);
+		const M = s.memo_union([s.number, mark(s.string, 'c')]);
+		assert.deepEqual(find_schema_meta(M, 'description'), ['c']);
+	});
+
+	test('a recursive lazy ends, through wrappers alone too', () => {
+		// `lazy(() => optional(L))` as `L`, which `get_schema_meta` never ends on
+		const L: s.AnySchema = mark(
+			s.lazy(() => s.optional(L)),
+			'l'
+		);
+		assert.deepEqual(find_schema_meta(L, 'description'), ['l']);
+		let calls = 0;
+		const Tree: s.AnySchema = s.object({
+			v: mark(s.number, 'v'),
+			children: s.array(
+				s.lazy(() => {
+					calls++;
+					return Tree;
+				})
+			)
+		});
+		assert.deepEqual(find_schema_meta(Tree, 'description', { structural: true }), ['v']);
+		assert.strictEqual(calls, 1);
+	});
+
+	test('object entries and their rest only with structural', () => {
+		const O = s.object_with_rest(
+			{ a: mark(s.string, 'a'), b: s.array(mark(s.string, 'b')) },
+			s.record(mark(s.number, 'rest'))
+		);
+		assert.deepEqual(find_schema_meta(O, 'description'), []);
+		assert.deepEqual(find_schema_meta(O, 'description', { structural: true }), ['a', 'b', 'rest']);
+	});
+
+	test('structural reaches the entries of a variant option', () => {
+		const V = s.variant('t', [
+			s.object({ t: s.literal('a'), x: mark(s.string, 'entry') }),
+			s.object({ t: s.literal('b') })
+		]);
+		assert.deepEqual(find_schema_meta(V, 'description'), []);
+		assert.deepEqual(find_schema_meta(V, 'description', { structural: true }), ['entry']);
+	});
+
+	test('a mark past message, inside a pipe step or a lazy result', () => {
+		const P = s.message(
+			mark(s.pipe(s.unknown, s.transform(String), mark(s.string, 'step')), 'pipe'),
+			'x'
+		);
+		assert.deepEqual(find_schema_meta(P, 'description'), ['step']);
+		const L = s.message(
+			mark(
+				s.lazy(() => mark(s.string, 'lazy')),
+				'own'
+			),
+			'x'
+		);
+		assert.deepEqual(find_schema_meta(L, 'description'), ['lazy']);
+	});
+
+	test('a value once for each schema object it is on', () => {
+		const Shared = mark(s.string, 'd');
+		const U = s.union([Shared, s.optional(Shared), mark(s.number, 'd')]);
+		assert.deepEqual(find_schema_meta(U, 'description'), ['d', 'd']);
+	});
+
+	test('passes a key given as undefined, and reads merged keys', () => {
+		const A = meta(s.optional(meta(s.string, { introspect_aliases: ['a'] })), {
+			description: undefined,
+			introspect_aliases: ['b']
+		});
+		assert.deepEqual(find_schema_meta(A, 'description'), []);
+		assert.deepEqual(find_schema_meta(A, 'introspect_aliases'), [['b'], ['a']]);
+	});
+
+	test('through flavor and brand, and not inside message', () => {
+		assert.deepEqual(find_schema_meta(s.flavor(mark(s.string, 'f'), 'F'), 'description'), ['f']);
+		assert.deepEqual(find_schema_meta(s.brand(mark(s.string, 'b'), 'B'), 'description'), ['b']);
+		// current behavior: `message` makes a new schema with the `kind` and
+		// `def` of the one given and no link a read can follow, so a mark on that one is lost
+		assert.deepEqual(find_schema_meta(s.message(mark(s.string, 'm'), 'x'), 'description'), []);
+		// what its `def` holds is still read
+		assert.deepEqual(
+			find_schema_meta(s.message(s.optional(mark(s.string, 'in')), 'x'), 'description'),
+			['in']
+		);
 	});
 });
 
@@ -480,6 +655,7 @@ describe('reading', () => {
 				Object.freeze(frozen);
 				unwrap_schema(frozen);
 				get_schema_meta(schema, 'description');
+				find_schema_meta(frozen, 'description', { structural: true });
 				get_schema_fields(frozen);
 				format_schema_type(frozen);
 			}

@@ -711,7 +711,10 @@ nothing until it imports the module.
   `message`, `flavor`, and `brand` are no layer, as what they return has the
   `kind` and `def` they were given.
 - **Metadata is read from the outermost layer that has the key**, as `meta`
-  attaches it to one object. Metadata inside a `message` is out of reach.
+  attaches it to one object. `find_schema_meta` reads every schema a value
+  can reach instead, each once: every step of a `pipe`, every option, and
+  with `structural` what a container holds. Metadata attached directly to
+  the schema given to `message` is out of reach to both.
 - **A default is the outermost `with_default`'s or `with_default_fn`'s**,
   unless an `optional` is outside it, which answers `undefined` before the
   default is asked. A `union` is not looked into. One of a `with_default_fn`
@@ -723,9 +726,10 @@ nothing until it imports the module.
 - **Nothing is called but a `lazy`'s function.** A `check` or a `transform`
   is read as its kind, and never run, and a `with_default_fn`'s `make` is
   never called.
-- **A new kind is a row** in the kind table of `src/test/introspect.test.ts`,
+- **A new kind is a row** in each kind table of `src/test/introspect.test.ts`,
   typed over `SchemaKind`, so the test doesn't typecheck until the kind says
-  how it renders and whether `unwrap_schema` walks through it.
+  how it renders, whether `unwrap_schema` walks through it, and whether
+  `find_schema_meta` reads what it holds.
 
 ## Costs are opt-in
 

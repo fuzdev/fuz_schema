@@ -66,8 +66,9 @@ dev server.
   the interchange form the Rust crate loads, separate so the core never
   carries it
 - `src/lib/introspect.ts` - `unwrap_schema`, `get_schema_meta`,
-  `get_schema_entries`, `get_schema_fields`, `format_schema_type`, reading a
-  schema as data, separate so the core never carries it
+  `find_schema_meta`, `get_schema_entries`, `get_schema_fields`,
+  `format_schema_type`, reading a schema as data, separate so the core never
+  carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
   behavior and type inference: `schema.test.ts` holds the primitives, the
   wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
@@ -242,7 +243,7 @@ Things that are easy to break without a test noticing:
   `optional`, `nullable`, `with_default`, and `with_default_fn` hold their
   schema as `def.schema`.
   The types don't force a new kind to be added there. Once it is, they force
-  a row for it in the kind table of `src/test/introspect.test.ts`.
+  a row for it in the kind tables of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
 - **Outside probe mode `ctx.issues.length` is `Math.min(ctx.fails, 100)`.**
@@ -305,7 +306,7 @@ Things that are easy to break without a test noticing:
   step is checked by its `~types.input`. `~refines` is a `boolean` on every
   `Schema` and `true` on a `SchemaRefinement`, which makes a `pipe` output the
   type of the step before it. No schema carries any of these keys at runtime.
-  A wrapper that gives back the schema it holds (`message`, `meta`, `brand`,
+  A wrapper typed as the schema it holds (`message`, `meta`, `brand`,
   `flavor`) needs an overload for an action first, or an action under it is
   not typed from the step before it, and one that keeps the output (`message`,
   `meta`) an overload for a refinement before that, or a refinement under it

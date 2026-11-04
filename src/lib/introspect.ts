@@ -15,7 +15,10 @@
  * given. Metadata is found on any layer, as `meta` attaches it to one object,
  * so `with_default(meta(s.boolean, {description}), true)` and
  * `meta(with_default(s.boolean, true), {description})` read the same. Metadata
- * attached inside a `message` is out of reach, as `message` holds no schema.
+ * attached directly to the schema given to `message` is out of reach, as
+ * `message` keeps it only in its `run`, where no read reaches.
+ * `find_schema_meta` reads every schema a value can reach, not only the
+ * layers.
  *
  * Import by name: `import {get_schema_fields} from '@fuzdev/fuz_schema/introspect.ts'`.
  *
@@ -76,6 +79,99 @@ export const get_schema_meta = <TKey extends keyof SchemaMeta>(
 		if (value !== undefined) return value;
 	}
 	return undefined;
+};
+
+/** Options of `find_schema_meta`. */
+export interface FindSchemaMetaOptions {
+	/**
+	 * Whether to look into the schemas of a value's parts too: the entries of
+	 * every object schema, the `rest` of an `object_with_rest`, and what an
+	 * `array` and a `record` hold for each item.
+	 */
+	structural?: boolean;
+}
+
+/**
+ * Every value of metadata `key` other than `undefined` on any schema
+ * reachable from `schema`, for a key that must not be missed wherever it is
+ * attached, as a mark on a shared schema reused deep inside another. The
+ * caller decides what several values mean, as which of them is the strongest.
+ *
+ * - It goes through every layer, as `get_schema_meta` does, and also every
+ *   schema and action of a `pipe`, not only its first, every option of a
+ *   `union`, a `memo_union`, and a `variant`, and with `structural` the
+ *   schemas of a value's parts.
+ * - Each schema object is read once, and a `lazy`'s function called once,
+ *   so a recursive schema ends, `lazy(() => optional(L))` as `L` included.
+ *   A cycle that builds a new `lazy` each time round, as
+ *   `const f = () => optional(lazy(f))`, never meets a schema it has read and
+ *   ends in a stack overflow, though a parse of a finite value can end on it.
+ * - The values come depth first, a schema before what it holds, which comes
+ *   in the order of its `def`: a pipe's steps, a union's options, an object's
+ *   entries, then the `rest`. A value is there once for each schema object it
+ *   is attached to, so the same value can come more than once.
+ * - `flavor` and `brand` return the schema they were given, so its metadata
+ *   is found. Metadata attached directly to the schema given to `message` is
+ *   out of reach: `message` returns a new schema that keeps the `kind` and
+ *   `def` and holds it only in its `run` closure, though what that one's
+ *   `def` holds is still read.
+ * - Nothing but a `lazy`'s function is called, and a kind defined outside the
+ *   library is read and not looked into.
+ *
+ * @param key - a key of `SchemaMeta`, `description` or one added by declaration merging
+ */
+export const find_schema_meta = <TKey extends keyof SchemaMeta>(
+	schema: AnySchema,
+	key: TKey,
+	options?: FindSchemaMetaOptions
+): Array<Exclude<SchemaMeta[TKey], undefined>> => {
+	const found: Array<Exclude<SchemaMeta[TKey], undefined>> = [];
+	const seen = new Set<SchemaNode>();
+	const structural = options?.structural;
+	const visit = (s: SchemaNode): void => {
+		if (seen.has(s)) return;
+		seen.add(s);
+		const value = get_meta(s)?.[key];
+		if (value !== undefined) found.push(value as Exclude<SchemaMeta[TKey], undefined>);
+		switch (s.kind) {
+			case 'optional':
+			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				visit(s.def.schema);
+				break;
+			case 'lazy':
+				visit(s.def());
+				break;
+			case 'pipe':
+			case 'union':
+				for (const o of s.def) visit(o);
+				break;
+			case 'variant':
+				for (const o of s.def.options) visit(o);
+				break;
+			case 'object':
+			case 'loose_object':
+			case 'strip_object':
+				if (structural) for (const k in s.def) visit(s.def[k]!);
+				break;
+			case 'object_with_rest':
+				if (structural) {
+					for (const k in s.def.entries) visit(s.def.entries[k]!);
+					visit(s.def.rest);
+				}
+				break;
+			case 'array':
+			case 'record':
+				if (structural) visit(s.def);
+				break;
+			default:
+				// holds no schema, or is a kind defined outside the library
+				break;
+		}
+	};
+	visit(schema as SchemaNode);
+	return found;
 };
 
 /**
