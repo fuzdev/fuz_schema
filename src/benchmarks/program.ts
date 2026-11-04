@@ -52,6 +52,7 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 	{ name: 'bigint', create: (s) => s.bigint, valid: 1n, invalid: 1 },
 	{ name: 'unknown', create: (s) => s.unknown, valid: 1 },
 	{ name: 'literal', create: (s) => s.literal('a'), valid: 'a', invalid: 'b' },
+	{ name: 'void', create: (s) => s.void, valid: undefined, invalid: null },
 	{ name: 'one_of', create: (s) => s.one_of(['a', 1]), valid: 1, invalid: 'b' },
 	{ name: 'optional', create: (s) => s.optional(s.string), valid: undefined, invalid: 1 },
 	{ name: 'nullable', create: (s) => s.nullable(s.string), valid: null, invalid: 1 },

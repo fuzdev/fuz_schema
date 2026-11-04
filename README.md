@@ -128,7 +128,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 
 | | |
 |---|---|
-| primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of` |
+| primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of`, `void` |
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
@@ -157,6 +157,10 @@ Where the first option that matches a missing key fills it in, as `s.with_defaul
 take the missing key as `undefined`, an `unknown` among them, and the first that matches is the union's.
 Write `s.optional(s.unknown)` for a key that may be missing.
 `s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
+
+`s.void` is `s.literal(undefined)` typed `void`, in and out, so a parameter typed from it can be left out:
+`(input: s.Infer<typeof s.void>) => ...` is called as `f()`. Every reader of a schema takes it as that literal,
+and as an entry it needs its key the same way.
 
 A `pipe` that starts with an `optional` runs none of its steps for a key that is missing,
 and leaves the key out, as in Valibot:
@@ -348,6 +352,7 @@ unwrap(User.def.age).kind; // 'number'
   `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
 
 `message`, `flavor`, and `brand` have no kind: the result has the `kind` and `def` of the schema given.
+`void` has none either: it is a `literal` whose `def` is `undefined`.
 
 `is_schema(value)` checks for the shape — an object with a string `kind`, a `def`, and a `run` function —
 and narrows to `SchemaNode`. It is structural: it doesn't check that the kind is known

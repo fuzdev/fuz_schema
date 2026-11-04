@@ -397,6 +397,8 @@ all a missing key costs an object that has no schema asking.
   are the schemas that need a key, and what follows of `unknown` holds for
   each. A `one_of` reads its values once, when it is made, `undefined` among
   them.
+- **`void` is the `literal` of `undefined`** to everything but the types,
+  which infer `void` from it, so it needs its key as that literal does.
 - **It is handed the object wherever the entry reaches it**: as the entry
   itself, through `flavor`, `brand`, and `meta`, which keep its `run`, and
   through `message`, `nullable`, `lazy`, an option of a `union`, and the first

@@ -252,6 +252,8 @@ describe('missing keys', () => {
 		// a `literal` of `undefined` and a `one_of` with it look for their key as
 		// `unknown` does, as the entry and wherever they are handed the object
 		['undefined literal', s.literal(undefined), false, true],
+		['void', s.void, false, true],
+		['optional void', s.optional(s.void), true, true],
 		['one_of with undefined', s.one_of(['x', undefined]), false, true],
 		['one_of of undefined alone', s.one_of([undefined]), false, true],
 		['flavor undefined literal', s.flavor(s.literal(undefined), 'F'), false, true],

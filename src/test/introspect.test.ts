@@ -555,6 +555,8 @@ describe('format_schema_type', () => {
 		assert.strictEqual(format_schema_type(s.literal(1n)), '1n');
 		assert.strictEqual(format_schema_type(s.literal(null)), 'null');
 		assert.strictEqual(format_schema_type(s.literal(undefined)), 'undefined');
+		// `void` is that literal to every reader
+		assert.strictEqual(format_schema_type(s.void), 'undefined');
 		assert.strictEqual(format_schema_type(s.literal(false)), 'false');
 	});
 

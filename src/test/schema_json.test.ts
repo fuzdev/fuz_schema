@@ -404,6 +404,11 @@ describe('to_schema_json refuses', () => {
 			() => s.literal(undefined),
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not undefined'
 		);
+		// `void` is that literal
+		refuses(
+			() => s.void,
+			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not undefined'
+		);
 		refuses(
 			() => s.literal(1n),
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not bigint'

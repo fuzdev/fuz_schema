@@ -82,6 +82,11 @@ describe('to_json_schema', () => {
 			() => to_json_schema(s.one_of(['a', NaN])),
 			'cannot express `one_of` at #: a literal of NaN is not JSON'
 		);
+		// `void` is that literal
+		assert_throws(
+			() => to_json_schema(s.void),
+			'cannot express `literal` at #: a literal of undefined is not JSON'
+		);
 		assert.deepEqual(write(s.literal(undefined), ANY), {});
 		assert.deepEqual(write(s.one_of(['a', undefined, 1n, Infinity]), ANY), {
 			type: 'string',

@@ -157,6 +157,41 @@ describe('primitives', () => {
 		]);
 	});
 
+	test('void is the literal of undefined, typed void', () => {
+		assert.strictEqual(s.void.kind, 'literal');
+		assert.strictEqual(s.void.def, undefined);
+		assert(s.is(s.void, undefined));
+		assert(!s.is(s.void, null));
+		assert.deepEqual(issues_of(s.void, null), issues_of(s.literal(undefined), null));
+		// as an entry it needs its key, as the literal does
+		assert.deepEqual(issues_of(s.object({ a: s.void }), {}), [
+			{
+				kind: 'missing_key',
+				expected: 'a required key',
+				received: 'undefined',
+				path: ['a'],
+				message: undefined
+			}
+		]);
+		assert(s.is(s.object({ a: s.void }), { a: undefined }));
+		expectTypeOf<s.Infer<typeof s.void>>().toEqualTypeOf<void>();
+		expectTypeOf<s.InferInput<typeof s.void>>().toEqualTypeOf<void>();
+		// a parameter typed from it can be left out, where one typed `undefined` can't
+		const handle = (_input: s.Infer<typeof s.void>): number => 1;
+		assert.strictEqual(handle(), 1);
+		const strict = (_input: s.Infer<ReturnType<typeof s.literal<undefined>>>): number => 1;
+		// @ts-expect-error a parameter typed `undefined` takes an argument
+		strict();
+		// as an entry, the key is required, and optional under `optional`
+		expectTypeOf<s.InferInput<ReturnType<typeof s.object<{ a: typeof s.void }>>>>().toEqualTypeOf<{
+			a: void;
+		}>();
+		const _O = s.object({ a: s.optional(s.void) });
+		expectTypeOf<s.InferInput<typeof _O>>().toEqualTypeOf<{ a?: void | undefined }>();
+		// it is a literal to the types that read a schema as data
+		expectTypeOf(s.void).toExtend<s.SchemaNode<'literal'>>();
+	});
+
 	test('a NaN literal matches NaN and nothing else', () => {
 		const Nan = s.literal(NaN);
 		assert.deepEqual(Object.keys(Nan), ['kind', 'def', 'run']);
@@ -484,8 +519,11 @@ describe('def', () => {
 	});
 
 	test('every schema the module exports is of a kind the contract has', () => {
-		for (const value of Object.values(s)) {
-			if (s.is_schema(value)) assert.strictEqual(by_kind[value.kind], value);
+		for (const [name, value] of Object.entries(s)) {
+			if (!s.is_schema(value)) continue;
+			// `void` is the `literal` of `undefined`
+			if (name === 'void') assert.deepEqual([value.kind, value.def], ['literal', undefined]);
+			else assert.strictEqual(by_kind[value.kind], value);
 		}
 	});
 

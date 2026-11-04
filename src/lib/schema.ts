@@ -747,6 +747,34 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
 };
 
 /**
+ * Matches `undefined`, typed `void` in and out, so a function whose parameter
+ * is typed from it can be called with no argument:
+ * `(input: Infer<typeof s.void>) => ...` is called as `f()`.
+ *
+ * It is `literal(undefined)` in all but its types: its `kind` is `'literal'`
+ * and its `def` is `undefined`, so every reader of a schema takes it as that
+ * literal, `to_schema_json` and `to_json_schema` refusing it as they refuse
+ * `literal(undefined)`. As an object entry it needs its key, as that literal
+ * does: write `optional(s.void)` to let the key be missing.
+ *
+ * Exported as `void`, a reserved word, so it is read as `s.void` through a
+ * namespace import.
+ */
+const void_: Schema<void, void, 'literal', undefined> = {
+	kind: 'literal',
+	def: undefined,
+	// the closure `literal(undefined)` has, with its `expected` written out
+	run: (v, ctx, parent, key) =>
+		v === undefined
+			? // the key comes with the object
+				parent && !((key as string) in parent)
+				? fail(ctx, 'missing_key', v, 'a required key')
+				: v
+			: fail(ctx, 'literal', v, 'undefined')
+};
+export { void_ as void };
+
+/**
  * Matches any of `values` as `literal` matches one: by `===`, so `0` and `-0`
  * match each other, and `NaN` when it is among them.
  *
