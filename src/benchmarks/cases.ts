@@ -771,6 +771,54 @@ const to_default_undefined = (s: SchemaLib): schema_lib.AnySchema =>
 		)
 	});
 
+// the format tests over a hundred items: a UUID and a date and time each
+// taken, and each refused at its last character, so the whole string is
+// read, and a date refused for its day, a February 29 of a year not leap
+const format_entries = (
+	s: SchemaLib,
+	of: (name: string, schema: schema_lib.AnySchema, item: unknown, path?: 'issues') => Case
+): Array<CaseBuild> => {
+	const entry = (name: string, to: () => Case): CaseBuild => ({ name: `each/${name}`, build: to });
+	// a `pipe` given a step this version lacks is made without a throw, so the lack throws here
+	const pipe_to = (format: 'uuid' | 'iso_datetime'): schema_lib.AnySchema => {
+		const step = s[format];
+		if (!step) throw Error(`this version has no \`${format}\``);
+		return s.pipe(s.string, step);
+	};
+	return [
+		entry('pipe_uuid/valid', () =>
+			of('pipe_uuid/valid', pipe_to('uuid'), '123e4567-e89b-42d3-a456-426614174000')
+		),
+		entry('pipe_uuid_last_char_bad/invalid', () =>
+			of(
+				'pipe_uuid_last_char_bad/invalid',
+				pipe_to('uuid'),
+				'123e4567-e89b-42d3-a456-42661417400g',
+				'issues'
+			)
+		),
+		entry('pipe_iso_datetime/valid', () =>
+			of('pipe_iso_datetime/valid', pipe_to('iso_datetime'), '2024-02-29T23:59:59.123Z')
+		),
+		entry('pipe_iso_datetime_last_char_bad/invalid', () =>
+			of(
+				'pipe_iso_datetime_last_char_bad/invalid',
+				pipe_to('iso_datetime'),
+				'2024-02-29T23:59:59.123z',
+				'issues'
+			)
+		),
+		entry('pipe_iso_datetime_leap_day_bad/invalid', () =>
+			of(
+				'pipe_iso_datetime_leap_day_bad/invalid',
+				pipe_to('iso_datetime'),
+				'2023-02-29T23:59:59.123Z',
+				'issues'
+			)
+		)
+	];
+};
+
 // a hundred items through one schema, so the schema's cost shows over a parse's
 const each: CaseGroup = (s) => {
 	const Name = create_name(s);
@@ -945,6 +993,9 @@ const each: CaseGroup = (s) => {
 			to_object(s)({ a: to_one_of(s)(['x', undefined]) }),
 			{ a: 'x' }
 		),
+		// the format tests, each scanning the whole string, built on their own as
+		// a baseline may not have them
+		...format_entries(s, of),
 		// a hundred issues, each with an index for its path
 		of('string/invalid', s.string, 42, 'issues'),
 		of('message/invalid', s.message(s.string, 'must be text'), 42, 'issues'),
