@@ -39,6 +39,12 @@
  * `SPLIT_RECOGNIZERS`, each of a `SIDES` row, must recognize it, and this
  * library's result is held to that of the row's side.
  *
+ * Strings for the format tests are also drawn alone, near misses of the
+ * grammars: where zod and valibot agree on one, this library must too, and
+ * where they disagree, the entries of `FORMAT_SPLIT_RECOGNIZERS`, each of a
+ * `SIDES` row, must explain it by rows of one side, and this library be on
+ * that side.
+ *
  * @module
  */
 
@@ -54,6 +60,7 @@ import {
 	build_spec,
 	create_differential_run,
 	differential_error_line,
+	gen_format_text,
 	gen_input,
 	gen_root_spec,
 	materialize_input,
@@ -65,6 +72,7 @@ import {
 	spec_has_kind,
 	value_in,
 	type DifferentialEntries,
+	type DifferentialFormat,
 	type DifferentialInput,
 	type DifferentialKind,
 	type DifferentialObjectSpec,
@@ -112,8 +120,13 @@ import {
 	type DifferentialRewritten,
 	type DifferentialRuleName
 } from './differential_rules.ts';
-import { split_side, type DifferentialSplit } from './differential_recognizers.ts';
-import { create_seeded_rng } from './seeded_rng.ts';
+import {
+	FORMAT_SPLIT_RECOGNIZERS,
+	format_split_side,
+	split_side,
+	type DifferentialSplit
+} from './differential_recognizers.ts';
+import { create_seeded_rng, type SeededRng } from './seeded_rng.ts';
 
 //
 // Comparing
@@ -1170,6 +1183,8 @@ export interface DifferentialOptions {
 	minimize_budget?: number;
 	/** Whether to minimize the cases where zod and valibot disagree and this library goes with neither. */
 	minimize_neither?: boolean;
+	/** How many strings to draw for each format test alone, a tenth of `count` by default. */
+	format_count?: number;
 }
 
 export interface DifferentialFinding {
@@ -1208,7 +1223,68 @@ export interface DifferentialReport {
 	invariants: Array<{ problem: string; spec: string; input: string; count: number }>;
 	/** Each case where zod or valibot threw, by its text. */
 	refusals: Array<{ text: string; spec: string; count: number }>;
+	/** The strings drawn for each format test alone, `format_count` of each. */
+	formats: DifferentialFormatReport;
 }
+
+/** What the three libraries did with strings for the format tests. */
+export interface DifferentialFormatReport {
+	/** Where zod and valibot agree, and ours with them. */
+	agree: number;
+	/** Where zod and valibot disagree, how many strings each row of `SIDES` recognized, ours on its side. */
+	rows: Partial<Record<ConformanceSidesRow, number>>;
+	/** Each string ours gives another result on, or whose disagreement the rows don't explain. */
+	findings: Array<{ format: DifferentialFormat; text: string; problem: string; count: number }>;
+}
+
+const FORMATS: Array<DifferentialFormat> = ['uuid', 'iso_datetime'];
+
+/**
+ * Runs the three libraries on `count` strings for each format test, drawn by
+ * `gen_format_text`: where zod and valibot agree, ours must too, and where
+ * they disagree, `format_split_side` must explain it by rows of one side,
+ * and ours be on that side.
+ */
+export const run_format_differential = (
+	rng: SeededRng,
+	count: number
+): DifferentialFormatReport => {
+	const report: DifferentialFormatReport = { agree: 0, rows: {}, findings: [] };
+	const found: Map<string, DifferentialFormatReport['findings'][number]> = new Map();
+	const run = create_differential_run();
+	for (const format of FORMATS) {
+		const spec: DifferentialSpec = { t: format };
+		for (let n = 0; n < count; n++) {
+			const text = gen_format_text(rng, format);
+			const { zod, valibot, fuz_schema: ours } = run_differential_case(spec, value_in(text), run);
+			let problem: string | null = null;
+			if (zod.text === valibot.text) {
+				if (ours.text === zod.text) report.agree++;
+				else problem = `zod and valibot give ${zod.text}, ours ${ours.text}`;
+			} else {
+				const split = format_split_side(format, text, zod, valibot, run);
+				if (split.kind === 'one' && split.held?.text === ours.text) {
+					for (const row of split.rows) report.rows[row] = (report.rows[row] ?? 0) + 1;
+				} else {
+					problem =
+						`zod ${zod.text}, valibot ${valibot.text}, ours ${ours.text}: ` +
+						(split.kind === 'none'
+							? 'no entry of FORMAT_SPLIT_RECOGNIZERS recognizes it'
+							: split.kind === 'several'
+								? `${split.rows.map((row) => `"${row}"`).join(', ')} recognize it, of different sides`
+								: `${split.rows.map((row) => `"${row}"`).join(', ')} recognize it, and ours is not on its side`);
+				}
+			}
+			if (problem === null) continue;
+			const key = format + ' ' + JSON.stringify(text);
+			const entry = found.get(key);
+			if (entry) entry.count++;
+			else found.set(key, { format, text, problem, count: 1 });
+		}
+	}
+	report.findings = [...found.values()];
+	return report;
+};
 
 const verdict_key = (verdict: DifferentialVerdict): string =>
 	verdict.kind === 'sides' ? 'sides ' + verdict.side : verdict.kind;
@@ -1221,7 +1297,8 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 		focus = null,
 		minimize_limit = 50,
 		minimize_budget = 4000,
-		minimize_neither = false
+		minimize_neither = false,
+		format_count = Math.ceil(count / 10)
 	} = options;
 	const rng = create_seeded_rng(seed);
 	const report: DifferentialReport = {
@@ -1241,7 +1318,8 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 		neither: [],
 		unminimized: 0,
 		invariants: [],
-		refusals: []
+		refusals: [],
+		formats: { agree: 0, rows: {}, findings: [] }
 	};
 	const found: Map<string, DifferentialFinding> = new Map();
 	const neither: Map<string, DifferentialFinding> = new Map();
@@ -1327,6 +1405,7 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 				break;
 		}
 	}
+	report.formats = run_format_differential(rng, format_count);
 	report.findings = [...found.values()];
 	report.neither = [...neither.values()];
 	report.invariants = [...invariants.values()];
@@ -1402,6 +1481,19 @@ export const format_differential_report = (report: DifferentialReport): string =
 	if (report.neither.length) {
 		lines.push('', 'where zod and valibot disagree and this library goes with neither, minimized:');
 		for (const finding of report.neither) lines.push('', describe_finding(finding));
+	}
+	const { formats } = report;
+	lines.push('', `format tests, strings alone (${formats.agree} agree), disagreements by row:`);
+	for (const entry of FORMAT_SPLIT_RECOGNIZERS) {
+		lines.push(`  ${String(formats.rows[entry.row] ?? 0).padStart(8)}  ${entry.row}`);
+	}
+	if (formats.findings.length) {
+		lines.push('', 'FORMAT FINDINGS:');
+		for (const entry of formats.findings) {
+			lines.push(
+				`  x${entry.count} ${entry.format} ${JSON.stringify(entry.text)}\n    ${entry.problem}`
+			);
+		}
 	}
 	if (report.refusals.length) {
 		lines.push('', 'refused or thrown by zod or valibot:');

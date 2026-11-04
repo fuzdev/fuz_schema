@@ -125,7 +125,8 @@ dev server.
   schemas and inputs and the run of a library on them;
   `differential_rules.ts`, the rules and the rewrites and comparison they are
   made of;
-  `differential_recognizers.ts`, `SPLIT_RECOGNIZERS` and `split_side`;
+  `differential_recognizers.ts`, `SPLIT_RECOGNIZERS` and `split_side`, and
+  `FORMAT_SPLIT_RECOGNIZERS` for the strings of the format tests;
   `differential_classify.ts`, the classifying, invariants, minimizer, and
   report. `differential.ts` is `npm run differential`, a deeper run of any
   seed

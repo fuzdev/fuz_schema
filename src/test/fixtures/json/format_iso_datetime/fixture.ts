@@ -17,6 +17,8 @@ export const fixture: JsonFixture = {
 		offset: '"2024-01-01T00:00:00+01:00"',
 		offset_negative_zero: '"2024-01-01T00:00:00-00:00"',
 		offset_no_colon: '"2024-01-01T00:00:00+0100"',
+		offset_hour: '"2024-01-01T00:00:00+01"',
+		offset_after_space: '"2024-01-01T00:00:00 +01:00"',
 		no_seconds: '"2024-01-01T00:00Z"',
 		local: '"2024-01-01T00:00:00"',
 		lowercase_t: '"2024-01-01t00:00:00Z"',

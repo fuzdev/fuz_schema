@@ -555,11 +555,11 @@ and never a table.
 
 Not a measurement: a test of conformance over generated cases.
 `src/test/differential_generate.ts` generates schemas from a seed, over every
-kind with a counterpart in Zod and Valibot but the format tests, which the
-conformance matrix holds, and inputs shaped by each schema
+kind with a counterpart in Zod and Valibot, and inputs shaped by each schema
 with edges mixed in: inherited and hidden keys, null and class prototypes,
 symbol keys, holes, array subclasses, frozen objects, numbers past `2 ** 53`,
-and surrogates. Each case runs through the adapters of the conformance matrix
+surrogates, and for a format test, a string Zod and Valibot give one verdict
+on alone. Each case runs through the adapters of the conformance matrix
 and is classified by the tables of `src/test/conformance_tables.ts`:
 
 - **agree**: this library's result is Zod's, and Zod's is Valibot's.
@@ -591,6 +591,17 @@ and is classified by the tables of `src/test/conformance_tables.ts`:
   Reported, with the error.
 - **THROWS**: this library threw. A failure.
 
+The format tests are also run on strings alone, a tenth as many as the cases
+for each: strings both grammars take, and near misses of them, by a
+character, the version or variant of a UUID, the case of the max UUID, the
+length of a fraction, an offset, or a day the month doesn't have. Where Zod
+and Valibot agree on one, this library must too. Where they disagree, the
+entries of `FORMAT_SPLIT_RECOGNIZERS` whose trigger it has, each of a `SIDES`
+row, taken away in turn, must leave a string both take, all of their rows of
+one side, each of whose rows records the verdicts Zod and Valibot gave, and
+this library's result is that side's. Anything else is a
+finding, and the report tallies the strings by row.
+
 Every case also runs through this library's invariants: the input is not
 mutated, every issue is the five fields, `is` agrees with `parse`, a second
 parse gives the same, and the context's count is kept. A case with a `union`
@@ -605,12 +616,12 @@ test's `SIDES` fails on.
 
 `gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a
 fixed count, the same everywhere, and fails on an undeclared difference, a
-throw, or a broken invariant. The seeds may reach none of the cases a split
-of zod and valibot is declared through, so it also pins a case for each entry
-of `SPLIT_RECOGNIZERS` and each rule of a split, of the prototype, or of a
-symbol key: its verdict and the rules it is credited to, and that its
-verdict, or the rules it is credited to, changes without its entry. For a
-review, run it deeper:
+throw, a broken invariant, or a finding of the format tests. The seeds may
+reach none of the cases a split of zod and valibot is declared through, so it
+also pins a case for each entry of `SPLIT_RECOGNIZERS` and each rule of a
+split, of the prototype, or of a symbol key: its verdict and the rules it is
+credited to, and that its verdict, or the rules it is credited to, changes
+without its entry. For a review, run it deeper:
 
 ```bash
 npm run differential -- --seed 1 --seed 2 --count 200000

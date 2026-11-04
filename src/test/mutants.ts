@@ -324,6 +324,10 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'uuid_leading_brace',
+		edits: [{ find: `/^(?:[0-9a-fA-F]{8}-`, replace: `/^\\{?(?:[0-9a-fA-F]{8}-` }]
+	},
+	{
 		name: 'uuid_no_type_guard',
 		edits: [
 			{
@@ -335,6 +339,22 @@ export const MUTANTS: Array<Mutant> = [
 	{
 		name: 'iso_datetime_fraction_of_ten',
 		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,10})?Z$/` }]
+	},
+	{
+		name: 'iso_datetime_offset_of_an_hour',
+		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,9})?(?:Z|[+-]\\d\\d)$/` }]
+	},
+	{
+		name: 'iso_datetime_offset_after_a_space',
+		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,9})?(?:Z| [+-]\\d\\d:\\d\\d)$/` }]
+	},
+	{
+		name: 'iso_datetime_offset_one_digit',
+		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,9})?(?:Z|[+-]\\d)$/` }]
+	},
+	{
+		name: 'iso_datetime_space_before_z',
+		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,9})? ?Z$/` }]
 	},
 	{
 		name: 'iso_datetime_1900_leap',
@@ -1263,6 +1283,47 @@ export const MUTANTS: Array<Mutant> = [
 	},`,
 				replace: `			valibot_given_keys(spec, input, zod, run, is_transform_under('union'))
 	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'format_recognizer_case_narrowed',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `without_nibble(text, UUID_VERSION_AT, 'abcdefABCDEF', '4')`,
+				replace: `without_nibble(text, UUID_VERSION_AT, 'abcdef', '4')`
+			}
+		]
+	},
+	{
+		name: 'format_recognizer_never_recognizes',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `		without: (text) => without_char_at(text, 10, ' ', 'T')`,
+				replace: `		without: () => null`
+			}
+		]
+	},
+	{
+		name: 'format_recognizer_any_direction',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `				zod.ok === SIDES[row].zod.startsWith('ok') &&
+				valibot.ok === SIDES[row].valibot.startsWith('ok')`,
+				replace: `				true`
+			}
+		]
+	},
+	{
+		name: 'format_recognizer_held_to_the_other_side',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `held: side === 'zod' ? zod : side === 'valibot' ? valibot : null`,
+				replace: `held: side === 'zod' ? valibot : side === 'valibot' ? zod : null`
 			}
 		]
 	},

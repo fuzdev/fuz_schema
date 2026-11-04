@@ -2,7 +2,9 @@
  * The disagreements of zod and valibot the differential tells apart, each by
  * its row of `SIDES`: where a rule brings one out, exactly one entry of
  * `SPLIT_RECOGNIZERS` must recognize it, and this library's result is held to
- * that of the row's side.
+ * that of the row's side. On a string for a format test, where they
+ * disagree, the entries of `FORMAT_SPLIT_RECOGNIZERS` must explain it by rows
+ * of one side, and this library's result is held to that side's.
  *
  * @module
  */
@@ -14,8 +16,11 @@ import {
 	type ConformanceSidesRow
 } from './conformance_tables.ts';
 import {
+	UUID_VARIANT_AT,
+	UUID_VERSION_AT,
 	map_spec_children,
 	type DifferentialEntries,
+	type DifferentialFormat,
 	type DifferentialInput,
 	type DifferentialResult,
 	type DifferentialRun,
@@ -775,4 +780,230 @@ const side_held = (
 		case 'both':
 			return null;
 	}
+};
+
+//
+// Formats
+//
+
+/**
+ * A disagreement of zod and valibot on a string for a format test, told
+ * apart by a row of `SIDES`, alone or with other rows of its side: ours is
+ * held to the result of that side.
+ */
+export interface FormatRecognizer {
+	/** The row of `SIDES`, whose side is read when a string is classified. */
+	row: ConformanceSidesRow;
+	format: DifferentialFormat;
+	/**
+	 * The string with the row's trigger taken away, where `text` has it, else
+	 * `null`. Zod and valibot both taking what it gives says the disagreement
+	 * was the trigger's alone.
+	 */
+	without: (text: string) => string | null;
+}
+
+const MAX_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+const OFFSET = /[+-]\d\d:?\d\d$/;
+
+// `text` with the character at `i` replaced by `char`, where the one there is in `chars`
+const without_char_at = (text: string, i: number, chars: string, char: string): string | null =>
+	chars.includes(text[i] ?? '') ? text.slice(0, i) + char + text.slice(i + 1) : null;
+
+// of a UUID, the same, where it is not the max UUID in some case, which the
+// rows of the max UUID are for
+const without_nibble = (text: string, i: number, chars: string, char: string): string | null =>
+	text.toLowerCase() === MAX_UUID ? null : without_char_at(text, i, chars, char);
+
+// a date's year, month, and day, where `text` starts with one of four, two, and two digits
+const date_parts = (text: string): [year: number, month: number, day: number] | null => {
+	const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(text);
+	return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+};
+
+// `text` with its day replaced by `day`, where its date is `month` and `day`
+// is one of `days`, of a year `year_is` takes
+const without_day = (
+	text: string,
+	months: ReadonlyArray<number>,
+	days: ReadonlyArray<number>,
+	day: string,
+	year_is: (year: number) => boolean = () => true
+): string | null => {
+	const parts = date_parts(text);
+	if (!parts) return null;
+	const [year, m, d] = parts;
+	return months.includes(m) && days.includes(d) && year_is(year)
+		? text.slice(0, 8) + day + text.slice(10)
+		: null;
+};
+
+const FORMAT_RECOGNIZERS: Array<FormatRecognizer> = [
+	// a UUID: zod refuses a version or variant outside the RFC's, and the max
+	// UUID in any case but lower
+	{
+		row: 'uuid, version 0',
+		format: 'uuid',
+		without: (text) => without_nibble(text, UUID_VERSION_AT, '0', '4')
+	},
+	{
+		row: 'uuid, version 9',
+		format: 'uuid',
+		without: (text) => without_nibble(text, UUID_VERSION_AT, '9', '4')
+	},
+	{
+		row: 'uuid, version f',
+		format: 'uuid',
+		without: (text) => without_nibble(text, UUID_VERSION_AT, 'abcdefABCDEF', '4')
+	},
+	{
+		row: 'uuid, variant 7',
+		format: 'uuid',
+		without: (text) => without_nibble(text, UUID_VARIANT_AT, '01234567', '8')
+	},
+	{
+		row: 'uuid, variant c',
+		format: 'uuid',
+		without: (text) => without_nibble(text, UUID_VARIANT_AT, 'cdefCDEF', '8')
+	},
+	{
+		row: 'uuid, max uppercase',
+		format: 'uuid',
+		without: (text) => (text === MAX_UUID.toUpperCase() ? MAX_UUID : null)
+	},
+	{
+		row: 'uuid, max mixed case',
+		format: 'uuid',
+		without: (text) =>
+			text !== MAX_UUID && text !== MAX_UUID.toUpperCase() && text.toLowerCase() === MAX_UUID
+				? MAX_UUID
+				: null
+	},
+	// a date and time: valibot refuses a fraction past 9 digits, and takes an
+	// offset, a space for the `T`, and a day the month doesn't have. A space
+	// before an offset is taken away first, leaving the offset to the rows after
+	{
+		row: 'iso_datetime, a space before the offset',
+		format: 'iso_datetime',
+		without: (text) => {
+			const m = / [+-]\d\d(?::?\d\d)?$/.exec(text);
+			return m ? text.slice(0, m.index) + text.slice(m.index + 1) : null;
+		}
+	},
+	{
+		row: 'iso_datetime, a fraction of 10',
+		format: 'iso_datetime',
+		without: (text) => {
+			const m = /\.(\d{10,})Z$/.exec(text);
+			return m ? text.slice(0, m.index + 10) + 'Z' : null;
+		}
+	},
+	{
+		row: 'iso_datetime, an offset',
+		format: 'iso_datetime',
+		without: (text) =>
+			/[+-]\d\d:\d\d$/.test(text) && !text.endsWith('-00:00') ? text.slice(0, -6) + 'Z' : null
+	},
+	{
+		row: 'iso_datetime, offset -00:00',
+		format: 'iso_datetime',
+		without: (text) => (text.endsWith('-00:00') ? text.slice(0, -6) + 'Z' : null)
+	},
+	{
+		row: 'iso_datetime, an offset with no colon',
+		format: 'iso_datetime',
+		without: (text) =>
+			OFFSET.test(text) && !/[+-]\d\d:\d\d$/.test(text) ? text.slice(0, -5) + 'Z' : null
+	},
+	{
+		// after the seconds, so a date's `-01` is not taken for one
+		row: 'iso_datetime, an offset of an hour',
+		format: 'iso_datetime',
+		without: (text) => (/:\d\d(?:\.\d+)?[+-]\d\d$/.test(text) ? text.slice(0, -3) + 'Z' : null)
+	},
+	{
+		row: 'iso_datetime, a space',
+		format: 'iso_datetime',
+		without: (text) => without_char_at(text, 10, ' ', 'T')
+	},
+	{
+		row: 'iso_datetime, February 30',
+		format: 'iso_datetime',
+		without: (text) => without_day(text, [2], [30, 31], '28')
+	},
+	{
+		row: 'iso_datetime, February 29 of 2023',
+		format: 'iso_datetime',
+		without: (text) => without_day(text, [2], [29], '28', (year) => year % 4 !== 0)
+	},
+	{
+		row: 'iso_datetime, February 29 of 1900',
+		format: 'iso_datetime',
+		without: (text) =>
+			without_day(text, [2], [29], '28', (year) => year % 100 === 0 && year % 400 !== 0)
+	},
+	{
+		row: 'iso_datetime, April 31',
+		format: 'iso_datetime',
+		without: (text) => without_day(text, [4, 6, 9, 11], [31], '30')
+	}
+];
+
+/** Each disagreement of zod and valibot on a string for a format test, by its row of `SIDES`. */
+export const FORMAT_SPLIT_RECOGNIZERS: ReadonlyArray<FormatRecognizer> =
+	Object.freeze(FORMAT_RECOGNIZERS);
+
+/**
+ * What `format_split_side` found of a disagreement of zod and valibot on a
+ * string: no entry of `FORMAT_SPLIT_RECOGNIZERS` that recognizes it, rows of
+ * more than one side, or rows of one, with the result ours is held to,
+ * `null` where that side holds ours to none.
+ */
+export type DifferentialFormatSplit =
+	| { kind: 'none' }
+	| { kind: 'several'; rows: Array<ConformanceSidesRow> }
+	| { kind: 'one'; rows: Array<ConformanceSidesRow>; held: DifferentialResult | null };
+
+/**
+ * Which entries of `FORMAT_SPLIT_RECOGNIZERS` recognize a disagreement of zod
+ * and valibot on `text` for `format`: each whose trigger it has, taken away
+ * in turn, where zod and valibot both take what is left and each row so
+ * found says what each of them gives `text`, so a row allows only the
+ * disagreement it declares. Where they do, and every row so found has one
+ * side, as a near miss of the nil UUID has both a version and a variant
+ * outside the RFC's, the result ours is held to, that of the side.
+ */
+export const format_split_side = (
+	format: DifferentialFormat,
+	text: string,
+	zod: DifferentialResult,
+	valibot: DifferentialResult,
+	run: DifferentialRun
+): DifferentialFormatSplit => {
+	const spec: DifferentialSpec = { t: format };
+	const rows: Array<ConformanceSidesRow> = [];
+	let rest = text;
+	for (const entry of FORMAT_SPLIT_RECOGNIZERS) {
+		if (entry.format !== format) continue;
+		const without = entry.without(rest);
+		if (without === null) continue;
+		rows.push(entry.row);
+		rest = without;
+	}
+	if (
+		!rows.length ||
+		!rows.every(
+			(row) =>
+				zod.ok === SIDES[row].zod.startsWith('ok') &&
+				valibot.ok === SIDES[row].valibot.startsWith('ok')
+		)
+	) {
+		return { kind: 'none' };
+	}
+	const input: DifferentialInput = { t: 'v', v: rest };
+	if (!run('zod', spec, input).ok || !run('valibot', spec, input).ok) return { kind: 'none' };
+	const sides = new Set(rows.map((row) => SIDES[row].side));
+	if (sides.size > 1) return { kind: 'several', rows };
+	const side = SIDES[rows[0]!].side;
+	return { kind: 'one', rows, held: side === 'zod' ? zod : side === 'valibot' ? valibot : null };
 };

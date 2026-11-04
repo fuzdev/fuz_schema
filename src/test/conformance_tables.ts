@@ -1332,6 +1332,16 @@ const sides = {
 		zod: 'fail at <root>',
 		valibot: 'ok "2024-01-01T00:00:00+0100"'
 	},
+	'iso_datetime, an offset of an hour': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01T00:00:00+01"'
+	},
+	'iso_datetime, a space before the offset': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01T00:00:00 +01:00"'
+	},
 	'iso_datetime, a space': {
 		side: 'zod',
 		zod: 'fail at <root>',
@@ -1487,6 +1497,8 @@ export const INFORMATIONAL: Record<string, Partial<Record<InformationalLibName, 
 		arktype: 'ok "2024-01-01T00:00:00+0100"',
 		typebox: 'fail'
 	},
+	'iso_datetime, an offset of an hour': { arktype: 'ok "2024-01-01T00:00:00+01"', typebox: 'fail' },
+	'iso_datetime, a space before the offset': { arktype: 'fail', typebox: 'fail' },
 	'iso_datetime, no seconds': { arktype: 'ok "2024-01-01T00:00Z"', typebox: 'fail' },
 	'iso_datetime, local': { arktype: 'ok "2024-01-01T00:00:00"', typebox: 'fail' },
 	'iso_datetime, lowercase t': { arktype: 'fail', typebox: 'ok "2024-01-01t00:00:00Z"' },

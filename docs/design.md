@@ -1044,7 +1044,8 @@ Where the two disagree, this library goes with:
   one, as Valibot's does, where Zod's takes any length.
 - **Zod on an offset, a space for the `T`, and a day the month doesn't
   have.** `iso_datetime` refuses each, as Zod's default does, where Valibot's
-  takes them. By design: the value is a UTC timestamp a consumer can parse
+  takes them, an offset with or without its colon or minutes and after a
+  space or not. By design: the value is a UTC timestamp a consumer can parse
   as it is. [formats.md](formats.md) says what decides each of these.
 
 These the test doesn't see, as they are in the count of the issues, in the

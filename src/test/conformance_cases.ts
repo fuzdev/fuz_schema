@@ -1775,6 +1775,18 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		also: BOTH
 	},
 	{
+		name: 'iso_datetime, an offset of an hour',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00+01',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a space before the offset',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00 +01:00',
+		also: BOTH
+	},
+	{
 		name: 'iso_datetime, no seconds',
 		schema: (l) => l.iso_datetime,
 		input: () => '2024-01-01T00:00Z',

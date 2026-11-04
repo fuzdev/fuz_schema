@@ -80,6 +80,10 @@ valibot both accept it.
   `src/test/conformance_tables.ts` says which this library goes with, and
   [design.md](design.md#behavior-that-differs-from-valibot-and-zod) says why.
   Where they agree, this library does the same.
+- **The differential**, `npm run differential`, draws strings and near
+  misses of them, and holds each disagreement of zod and valibot to the
+  `SIDES` rows that recognize it, see
+  [benchmarks.md](benchmarks.md#the-differential).
 - **The JSON fixtures**, `src/test/fixtures/json/format_*`, hold the edges as
   texts, so the Rust crate's matchers, byte scans in `format.rs`, give the
   library's verdict and issues on each.

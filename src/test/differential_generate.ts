@@ -23,11 +23,19 @@ import type { SeededRng } from './seeded_rng.ts';
 // Schemas
 //
 
-// TODO: `uuid` and `iso_datetime` are held by the conformance matrix and the
-// JSON fixtures, not generated here: drawing them needs near-miss strings and
-// a rule for each of their `SIDES` rows
 type LeafKind =
-	'string' | 'number' | 'integer' | 'safe_integer' | 'boolean' | 'bigint' | 'unknown' | 'undef';
+	| 'string'
+	| 'number'
+	| 'integer'
+	| 'safe_integer'
+	| 'boolean'
+	| 'bigint'
+	| 'unknown'
+	| 'undef'
+	| DifferentialFormat;
+
+/** A format test, which `build_spec` makes as a `pipe` from a string. */
+export type DifferentialFormat = 'uuid' | 'iso_datetime';
 type WrapKind = 'optional' | 'nullable' | 'lazy' | 'message' | 'array' | 'record';
 type LengthKind = 'min_length' | 'max_length';
 type ValueKind = 'min_value' | 'max_value';
@@ -72,6 +80,8 @@ export const DIFFERENTIAL_KINDS = [
 	'bigint',
 	'unknown',
 	'undef',
+	'uuid',
+	'iso_datetime',
 	'literal',
 	'one_of',
 	'optional',
@@ -155,6 +165,8 @@ export const build_spec = (spec: DifferentialSpec, l: ConformanceLib): any => {
 		case 'bigint':
 		case 'unknown':
 		case 'undef':
+		case 'uuid':
+		case 'iso_datetime':
 			return l[spec.t];
 		case 'literal':
 			return l.literal(spec.v);
@@ -230,6 +242,8 @@ const LEAF_KINDS: Array<DifferentialKind> = [
 	'boolean',
 	'unknown',
 	'undef',
+	'uuid',
+	'iso_datetime',
 	'literal',
 	'literal',
 	'one_of',
@@ -293,6 +307,8 @@ const gen_node = (
 		case 'bigint':
 		case 'unknown':
 		case 'undef':
+		case 'uuid':
+		case 'iso_datetime':
 			return { t: kind };
 		case 'literal':
 			return { t: 'literal', v: rng.pick(LITERALS) };
@@ -572,6 +588,203 @@ const EXTRA_KEYS = [
 	'valueOf'
 ];
 
+const HEX = '0123456789abcdefABCDEF';
+// what a character of a near miss is replaced by or added: hex digits of
+// either case, the separators, the letters of a date and time in either case,
+// a letter past hex, a space, a brace, a newline, a fullwidth digit, and an `é`
+const NEAR = HEX + '-:.+TZtz g{}\n\uFF10é';
+
+// a character of `chars`, each one code unit
+const pick_char = (rng: SeededRng, chars: string): string => chars[rng.int(chars.length)]!;
+
+const replace_char = (text: string, i: number, char: string): string =>
+	text.slice(0, i) + char + text.slice(i + 1);
+
+// a mutation of a single character: one replaced, one taken out, or one added
+const mutate_char = (rng: SeededRng, text: string): string => {
+	const i = rng.int(text.length + 1);
+	const char = pick_char(rng, NEAR);
+	const r = rng.int(3);
+	return r === 0
+		? replace_char(text, Math.min(i, text.length - 1), char)
+		: r === 1
+			? text.slice(0, i) + text.slice(i + 1)
+			: text.slice(0, i) + char + text.slice(i);
+};
+
+const hex_digits = (rng: SeededRng, n: number, upper: boolean): string =>
+	Array.from({ length: n }, () =>
+		pick_char(rng, upper ? '0123456789ABCDEF' : '0123456789abcdef')
+	).join('');
+
+// a UUID both grammars take: a version from 1 to 8 and the RFC's variant, in
+// one case, or the nil UUID, or the max UUID in lowercase
+const gen_uuid_base = (rng: SeededRng): string => {
+	const r = rng.int(10);
+	if (r === 0) return '00000000-0000-0000-0000-000000000000';
+	if (r === 1) return 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+	const upper = rng.chance(0.2);
+	const variant = pick_char(rng, upper ? '89AB' : '89ab');
+	return (
+		`${hex_digits(rng, 8, upper)}-${hex_digits(rng, 4, upper)}-${1 + rng.int(8)}` +
+		`${hex_digits(rng, 3, upper)}-${variant}${hex_digits(rng, 3, upper)}-${hex_digits(rng, 12, upper)}`
+	);
+};
+
+/** Where the version and the variant of a UUID are, its nibbles the RFC fixes. */
+export const UUID_VERSION_AT = 14;
+export const UUID_VARIANT_AT = 19;
+
+const gen_uuid_text = (rng: SeededRng): string => {
+	const base = gen_uuid_base(rng);
+	switch (rng.int(9)) {
+		case 0:
+		case 1:
+			return base;
+		case 2:
+			return replace_char(base, UUID_VERSION_AT, pick_char(rng, HEX));
+		case 3:
+			return replace_char(base, UUID_VARIANT_AT, pick_char(rng, HEX));
+		case 4: {
+			// the max UUID, all of it or one group in uppercase, or one character
+			const max = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+			const r = rng.int(3);
+			if (r === 0) return max.toUpperCase();
+			if (r === 1) return replace_char(max, rng.int(max.length), pick_char(rng, 'F-0'));
+			const groups = max.split('-');
+			const g = rng.int(groups.length);
+			groups[g] = groups[g]!.toUpperCase();
+			return groups.join('-');
+		}
+		case 5:
+			return rng.pick([
+				`{${base}}`,
+				base.replaceAll('-', ''),
+				`urn:uuid:${base}`,
+				base + '\n',
+				base.toUpperCase(),
+				base.slice(1),
+				base + '0'
+			]);
+		default:
+			return mutate_char(rng, base);
+	}
+};
+
+const pad = (n: number, width: number): string => String(n).padStart(width, '0');
+
+const is_leap = (year: number): boolean => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+
+const days_in = (year: number, month: number): number =>
+	month === 2 ? (is_leap(year) ? 29 : 28) : [4, 6, 9, 11].includes(month) ? 30 : 31;
+
+const YEARS = [0, 1, 1900, 1970, 2000, 2023, 2024, 2100, 2400, 9999];
+
+// a date and time zod's grammar takes, with a fraction of 0 to 12 digits, so
+// past 9 valibot's does not
+const gen_iso_datetime_base = (rng: SeededRng): string => {
+	const year = rng.chance(0.5) ? rng.pick(YEARS) : rng.int(10_000);
+	const month = 1 + rng.int(12);
+	const day = rng.chance(0.3) ? days_in(year, month) : 1 + rng.int(days_in(year, month));
+	const time = `${pad(rng.int(24), 2)}:${pad(rng.int(60), 2)}:${pad(rng.int(60), 2)}`;
+	const digits = rng.chance(0.5) ? 0 : rng.int(13);
+	const fraction = digits ? '.' + Array.from({ length: digits }, () => rng.int(10)).join('') : '';
+	return `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}T${time}${fraction}Z`;
+};
+
+// offsets for the `Z`: the ones of RFC 3339 valibot takes, with no colon, of
+// an hour alone, after a space, out of range, and near misses both refuse
+const OFFSETS = [
+	'+01:00',
+	'-00:00',
+	'+00:00',
+	'-23:59',
+	'+0100',
+	'-0530',
+	'+01',
+	' +01:00',
+	' +0100',
+	'+24:00',
+	'+01:60',
+	' +01',
+	' Z',
+	'+1',
+	'+1:00',
+	'+01:0',
+	'z'
+];
+
+const gen_iso_datetime_text = (rng: SeededRng): string => {
+	const base = gen_iso_datetime_base(rng);
+	switch (rng.int(8)) {
+		case 0:
+		case 1:
+			return base;
+		case 2:
+			return base.slice(0, -1) + rng.pick(OFFSETS);
+		case 3:
+			return replace_char(base, 10, rng.pick([' ', 't', '_']));
+		case 4: {
+			// a day the month doesn't have: February 29 of a year that is not
+			// leap, February 30 and 31, the 31st of a month of 30 days, and the
+			// 0th and the 32nd
+			const year = rng.pick(YEARS);
+			const [month, day] = rng.pick([
+				[2, 29],
+				[2, 30],
+				[2, 31],
+				[rng.pick([4, 6, 9, 11]), 31],
+				[1 + rng.int(12), 0],
+				[1 + rng.int(12), 32],
+				[13, 1],
+				[0, 1]
+			] as const);
+			return `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}` + base.slice(10);
+		}
+		case 5:
+			return rng.pick([
+				// no seconds, the hour 24, and a leap second
+				base.slice(0, 16) + 'Z',
+				base.slice(0, 11) + '24' + base.slice(13),
+				base.slice(0, 17) + '60' + base.slice(19),
+				base + '\n',
+				'+' + pad(10_000 + rng.int(10_000), 5) + base.slice(4),
+				base.slice(0, 10)
+			]);
+		default:
+			return mutate_char(rng, base);
+	}
+};
+
+/**
+ * A string for the format test `format`: one zod's grammar takes, or a near
+ * miss of one, by a character, the version or variant of a UUID, the case of
+ * the max UUID, the length of a fraction, an offset, or a day the month
+ * doesn't have.
+ */
+export const gen_format_text = (rng: SeededRng, format: DifferentialFormat): string =>
+	format === 'uuid' ? gen_uuid_text(rng) : gen_iso_datetime_text(rng);
+
+// a string of `gen_format_text` that zod and valibot give one verdict on
+// alone. Their disagreements are drawn alone, each by a row of `SIDES`, in
+// `run_format_differential`: under a structure, one beside a declared
+// difference is a combination, which needs a declared row of its own
+// TODO: declare the combinations of a format's `SIDES` row with a declared
+// difference, as a `record` given a class instance or a `max_length` after an
+// array, each with a UUID item zod refuses, and draw every near miss here
+const gen_agreed_format_text = (rng: SeededRng, format: DifferentialFormat): string => {
+	const zod = CONFORMANCE_LIBS.zod[format];
+	const valibot = CONFORMANCE_LIBS.valibot[format];
+	for (;;) {
+		const text = gen_format_text(rng, format);
+		if (
+			CONFORMANCE_LIBS.zod.parse(zod, text).ok === CONFORMANCE_LIBS.valibot.parse(valibot, text).ok
+		) {
+			return text;
+		}
+	}
+};
+
 const edge = (rng: SeededRng): DifferentialInput =>
 	rng.chance(0.15) ? (rng.chance(0.5) ? arr_in([]) : obj_in([])) : value_in(rng.pick(EDGES));
 
@@ -646,6 +859,9 @@ export const gen_input = (rng: SeededRng, spec: DifferentialSpec, depth = 0): Di
 			return value_in(rng.pick(BIGINTS));
 		case 'boolean':
 			return value_in(rng.pick([true, false]));
+		case 'uuid':
+		case 'iso_datetime':
+			return value_in(gen_agreed_format_text(rng, spec.t));
 		case 'literal':
 			return value_in(spec.v);
 		case 'one_of':

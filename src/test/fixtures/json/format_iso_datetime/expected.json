@@ -147,6 +147,36 @@
 			]
 		},
 		{
+			"name": "offset_hour",
+			"text": "\"2024-01-01T00:00:00+01\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "offset_after_space",
+			"text": "\"2024-01-01T00:00:00 +01:00\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
 			"name": "no_seconds",
 			"text": "\"2024-01-01T00:00Z\"",
 			"json": true,

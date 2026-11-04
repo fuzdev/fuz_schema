@@ -4,7 +4,7 @@
  * turn: its tallies, the cases each rule of a declared difference was needed
  * for, and every finding minimized, printed as a case to paste into the
  * matrix. Exits nonzero on an undeclared difference, a throw of this library,
- * or a broken invariant.
+ * a broken invariant, or a finding of the format tests.
  *
  * Runs under Node's type stripping, with the heap its npm script sets, and
  * its memory cap where `systemd-run --user` can start a scope.
@@ -56,6 +56,13 @@ for (const seed of seeds) {
 	});
 	console.log(format_differential_report(report));
 	console.log(`\n${Math.round(performance.now() - start)} ms\n`);
-	if (report.tally.undeclared || report.tally.throws || report.invariants.length) failed = true;
+	if (
+		report.tally.undeclared ||
+		report.tally.throws ||
+		report.invariants.length ||
+		report.formats.findings.length
+	) {
+		failed = true;
+	}
 }
 if (failed) process.exitCode = 1;

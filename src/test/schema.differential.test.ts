@@ -13,12 +13,14 @@ import {
 	classify_differential_case,
 	format_differential_report,
 	run_differential,
+	run_format_differential,
 	type DifferentialVerdict
 } from './differential_classify.ts';
 import {
 	DIFFERENTIAL_KINDS,
 	DIFFERENTIAL_SYMBOL,
 	build_spec,
+	create_differential_run,
 	differential_error_line,
 	gen_input,
 	gen_root_spec,
@@ -28,10 +30,15 @@ import {
 	show_input,
 	show_spec,
 	spec_has_kind,
+	value_in,
 	type DifferentialInput,
 	type DifferentialSpec
 } from './differential_generate.ts';
-import { SPLIT_RECOGNIZERS } from './differential_recognizers.ts';
+import {
+	FORMAT_SPLIT_RECOGNIZERS,
+	SPLIT_RECOGNIZERS,
+	format_split_side
+} from './differential_recognizers.ts';
 import {
 	DIFFERENTIAL_RULES,
 	DIFFERENTIAL_UNRULED,
@@ -50,7 +57,12 @@ describe('the differential', () => {
 		test(`seed ${seed}: no undeclared difference, no throw, no invariant broken`, () => {
 			const report = run_differential({ seed, count: COUNT, minimize_limit: 5 });
 			const { tally } = report;
-			if (tally.undeclared || tally.throws || report.invariants.length) {
+			if (
+				tally.undeclared ||
+				tally.throws ||
+				report.invariants.length ||
+				report.formats.findings.length
+			) {
 				assert.fail(
 					'\n' +
 						format_differential_report(report) +
@@ -103,6 +115,35 @@ describe('the differential', () => {
 					(d) => d.status === 'declared' && Object.hasOwn(d.rows, entry.combination)
 				),
 				`${entry.row}: "${entry.combination}" is no row of a declared difference`
+			);
+		}
+	});
+
+	test('every recognizer of a format is of a SIDES row of its format, and recognizes a string', () => {
+		const report = run_format_differential(create_seeded_rng(1), 4000);
+		assert.deepEqual(report.findings, []);
+		for (const entry of FORMAT_SPLIT_RECOGNIZERS) {
+			assert.ok(SIDES[entry.row], `"${entry.row}" is no row of SIDES`);
+			assert.ok(entry.row.startsWith(entry.format + ', '), `"${entry.row}" is of ${entry.format}`);
+			assert.ok(report.rows[entry.row], `"${entry.row}" recognizes no string drawn`);
+		}
+	});
+
+	test('a recognizer of a format allows only the disagreement its SIDES row declares', () => {
+		const run = create_differential_run();
+		for (const entry of FORMAT_SPLIT_RECOGNIZERS) {
+			const { zod, valibot } = SIDES[entry.row];
+			const text = JSON.parse((zod.startsWith('ok ') ? zod : valibot).slice(3)) as string;
+			const results = run_differential_case({ t: entry.format }, value_in(text), run);
+			const split = format_split_side(entry.format, text, results.zod, results.valibot, run);
+			assert.ok(
+				split.kind === 'one' && split.rows.includes(entry.row),
+				`"${entry.row}" recognizes ${text}`
+			);
+			assert.strictEqual(
+				format_split_side(entry.format, text, results.valibot, results.zod, run).kind,
+				'none',
+				`"${entry.row}" allows ${text} only as it declares`
 			);
 		}
 	});
