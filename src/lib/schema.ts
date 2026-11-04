@@ -269,7 +269,16 @@ interface SchemaOfKind<TKind extends SchemaKind> extends Schema<
 	SchemaDefs[TKind]
 > {}
 
-/** The output type of a schema. */
+/**
+ * The output type of a schema, the type its `run` returns. `Infer<Schema>` is
+ * `unknown` and `Infer<AnySchema>` is `any`.
+ *
+ * A helper generic over schemas of this library and of others reads it
+ * behind a test, as `T extends Schema ? Infer<T> : never`.
+ * `Infer<T & Schema>` is `unknown` for any `T`, a schema of this library
+ * included: the intersection's `run` is an overload of `T`'s and `Schema`'s,
+ * and `ReturnType` reads the last, `Schema`'s, which returns `unknown`.
+ */
 export type Infer<T extends Schema> = ReturnType<T['run']>;
 
 /** The input type a schema accepts. */
@@ -327,14 +336,86 @@ export type SchemaEntries = Record<string, Schema>;
 
 type Flatten<T> = { [K in keyof T]: T[K] } & {};
 
+/**
+ * Whether a missing key can match the entry `T`, as its `run` reads one,
+ * which makes the key optional in an object schema's input type. An
+ * `optional`, a `with_default`, and a `with_default_fn` take it, a
+ * `nullable`, a `lazy`, and a `pipe` take it where what they start with does,
+ * and a `union` where an option does. `message` and `meta` keep the type of
+ * what they wrap, and `flavor` and `brand` its `kind`, its `def`, and the
+ * first schema of a `pipe`. An entry typed as a union of schemas takes it
+ * where every one does, and `any` takes it.
+ *
+ * Exported so a declaration emitted for a generic function that builds an
+ * object schema can name it: inlined, it would be written out without end.
+ */
+export type EntryTakesMissing<T> = 0 extends 1 & T
+	? true
+	: T extends { readonly kind: 'optional' | 'with_default' | 'with_default_fn' }
+		? true
+		: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
+			? EntryTakesMissing<U>
+			: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+				? EntryTakesMissing<U>
+				: T extends { readonly kind: 'union'; readonly def: ReadonlyArray<infer U> }
+					? true extends EntryTakesMissing<U>
+						? true
+						: false
+					: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
+						? EntryTakesMissing<U>
+						: false;
+
+/**
+ * Whether `T` is an `optional`, or a `pipe` that starts with one, through
+ * every pipe it starts with: a `pipe` that runs no step for a missing key.
+ * Exported for the reason `EntryTakesMissing` is.
+ */
+export type PipeStartsOptional<T> = T extends { readonly kind: 'optional' }
+	? true
+	: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
+		? PipeStartsOptional<U>
+		: false;
+
+/**
+ * Whether a missing key can stay out of the output of the entry `T`, which
+ * makes the key optional in an object schema's output type. An `optional`
+ * leaves it out and a default fills it in, through a `nullable` and a `lazy`.
+ * A `pipe` that starts with an `optional` runs no step where it is the entry,
+ * which `TEntry` says, as it is as the entry itself and under a `message`, a
+ * `meta`, a `flavor`, or a `brand`, and not under a `nullable` or a `lazy`.
+ * Any other `pipe`, and a `union`, that takes a missing key can leave it out
+ * where it can give `undefined`. A default of `undefined` leaves it out too,
+ * which the types don't say. Exported for the reason `EntryTakesMissing` is.
+ */
+export type EntryLeavesMissingOut<T, TEntry extends boolean = true> = 0 extends 1 & T
+	? true
+	: T extends { readonly kind: 'optional' }
+		? true
+		: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
+			? EntryLeavesMissingOut<U, false>
+			: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+				? EntryLeavesMissingOut<U, false>
+				: T extends { readonly kind: 'pipe' | 'union'; readonly run: (...args: any) => infer O }
+					? [TEntry] extends [true]
+						? [PipeStartsOptional<T>] extends [true]
+							? true
+							: EntryGivesUndefined<T, O>
+						: EntryGivesUndefined<T, O>
+					: false;
+
+// whether `T`, which outputs `O`, takes a missing key and can give `undefined` for it
+type EntryGivesUndefined<T, O> = [EntryTakesMissing<T>] extends [true]
+	? undefined extends O
+		? true
+		: false
+	: false;
+
 type OptionalOutputKeys<T extends SchemaEntries> = {
-	[K in keyof T]: T[K] extends { kind: 'optional' } ? K : never;
+	[K in keyof T]: [EntryLeavesMissingOut<T[K]>] extends [true] ? K : never;
 }[keyof T];
 
 type OptionalInputKeys<T extends SchemaEntries> = {
-	[K in keyof T]: T[K] extends { kind: 'optional' | 'with_default' | 'with_default_fn' }
-		? K
-		: never;
+	[K in keyof T]: [EntryTakesMissing<T[K]>] extends [true] ? K : never;
 }[keyof T];
 
 export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
@@ -845,6 +926,27 @@ export interface SchemaDefaultFnDef<T extends Schema> extends SchemaWrapperDef<T
 }
 
 /**
+ * The output of a default over `T`, which never hands `T` an `undefined`: of
+ * an `optional`, and of a `nullable` of an `optional`, its output without the
+ * `optional`'s `undefined`, which keeps a `brand` or a `flavor` of it and any
+ * `undefined` what the `optional` holds can give. Of any other schema its
+ * output, as it can give `undefined` for a value that isn't.
+ */
+export type SchemaDefaultOutput<T extends Schema> = T extends {
+	readonly kind: 'optional';
+	readonly def: SchemaWrapperDef<infer U>;
+}
+	? Exclude<Infer<T>, undefined> | Extract<Infer<U>, undefined>
+	: T extends {
+		readonly kind: 'nullable';
+		readonly def: SchemaWrapperDef<
+			{ readonly kind: 'optional'; readonly def: SchemaWrapperDef<infer U> } & Schema
+		>;
+	}
+		? Exclude<Infer<T>, undefined> | Extract<Infer<U>, undefined>
+		: Infer<T>;
+
+/**
  * Accepts `undefined`. As an object entry it makes the key optional: the
  * input may leave it out, and a key left out stays out of the output.
  */
@@ -886,16 +988,31 @@ export const nullable = <T extends Schema>(
  * consumer is changed for every other. `with_default_fn` makes a new one each
  * time.
  *
+ * `schema` is never given `undefined`, which `value` replaces, so an
+ * `optional` it holds never gives one: `with_default(optional(string), 'd')`
+ * outputs a `string`, and so does `nullable(optional(string))`, with its
+ * `null`. Any other schema keeps its output type, `undefined` and all, as one
+ * can give `undefined` for a value that isn't, as a `transform` can.
+ *
  * @param value - returned as it is, the same reference on every parse
  */
 // @__NO_SIDE_EFFECTS__
-export const with_default = <T extends Schema>(
-	schema: T,
-	value: Infer<T>
-): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>> => ({
+export const with_default: {
+	// a value of the output without the `undefined` of an `optional` first, which the output then
+	// is. A value of a type that may be `undefined`, as one of a generic schema's output is,
+	// fails it and takes the second
+	<T extends Schema>(
+		schema: T,
+		value: SchemaDefaultOutput<T>
+	): Schema<SchemaDefaultOutput<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>>;
+	<T extends Schema>(
+		schema: T,
+		value: Infer<T>
+	): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>>;
+} = (schema: AnySchema, value: unknown): Schema<any, any, 'with_default', any> => ({
 	kind: 'with_default',
 	def: { schema, value },
-	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))
+	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
 });
 
 /**
@@ -910,17 +1027,32 @@ export const with_default = <T extends Schema>(
  *
  * As an object entry whose key is missing, a `make` that returns `undefined`
  * leaves the key out, as `with_default` with a value of `undefined` does.
+ * Over an `optional`, one typed to never return `undefined` makes an output
+ * that isn't, as `with_default` does for its value.
  *
  * @param make - called for each `undefined`, with no arguments, and never called otherwise
  */
 // @__NO_SIDE_EFFECTS__
-export const with_default_fn = <T extends Schema>(
-	schema: T,
-	make: () => Infer<T>
-): Schema<Infer<T>, InferInput<T> | undefined, 'with_default_fn', SchemaDefaultFnDef<T>> => ({
+export const with_default_fn: {
+	// a `make` that returns what the output is without the `undefined` of an `optional` first,
+	// as `with_default` takes a value
+	<T extends Schema>(
+		schema: T,
+		make: () => SchemaDefaultOutput<T>
+	): Schema<
+		SchemaDefaultOutput<T>,
+		InferInput<T> | undefined,
+		'with_default_fn',
+		SchemaDefaultFnDef<T>
+	>;
+	<T extends Schema>(
+		schema: T,
+		make: () => Infer<T>
+	): Schema<Infer<T>, InferInput<T> | undefined, 'with_default_fn', SchemaDefaultFnDef<T>>;
+} = (schema: AnySchema, make: () => unknown): Schema<any, any, 'with_default_fn', any> => ({
 	kind: 'with_default_fn',
 	def: { schema, make },
-	run: (v, ctx) => (v === undefined ? make() : (schema.run(v, ctx) as Infer<T>))
+	run: (v, ctx) => (v === undefined ? make() : schema.run(v, ctx))
 });
 
 /**
@@ -1129,6 +1261,15 @@ export type Flavored<TValue, TName> = TValue & (Flavor<TName> | Extract<TValue, 
  */
 export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, null | undefined>);
 
+// the type-only first schema of a `pipe`, which a `flavor` or a `brand` of one keeps for the
+// object schemas to read, and nothing of any other schema
+type PipeFirstOf<T extends Schema> = T extends {
+	readonly kind: 'pipe';
+	readonly '~types'?: { readonly first: infer U };
+}
+	? { readonly '~types'?: { readonly input: InferInput<T>; readonly first: U } }
+	: unknown;
+
 /**
  * Flavors the output type of `schema` with `name`, see `Flavored`.
  * The input type is unchanged. The schema is returned as-is, so this adds nothing
@@ -1154,7 +1295,7 @@ export const flavor: {
 	<T extends Schema, const TName extends string>(
 		schema: T,
 		name: TName
-	): Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
+	): Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> & PipeFirstOf<T>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
 /**
@@ -1182,7 +1323,7 @@ export const brand: {
 	<T extends Schema, const TName extends string>(
 		schema: T,
 		name: TName
-	): Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']>;
+	): Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> & PipeFirstOf<T>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
 //
@@ -1762,12 +1903,28 @@ export const variant = <
 // Pipe
 //
 
+/**
+ * A `pipe` that starts with `T`. Its type-only `~types` holds as `first` what
+ * a value reaches first, `T` or, where `T` is a pipe, the first of that, as
+ * the runtime reads it, which an object schema reads to tell whether a missing
+ * key can match it. So a pipe that starts with a pipe of a `string` is a
+ * `PipeSchema` of a `string` too.
+ */
 export type PipeSchema<TOutput, T extends Schema> = Schema<
 	TOutput,
 	InferInput<T>,
 	'pipe',
 	ReadonlyArray<SchemaNode>
->;
+> & { readonly '~types'?: { readonly input: InferInput<T>; readonly first: PipeHead<T> } };
+
+// what a value reaches first in a pipe that starts with `T`: the `first` of a
+// pipe, which is never a pipe, and `T` itself otherwise
+type PipeHead<T> = T extends {
+	readonly kind: 'pipe';
+	readonly '~types'?: { readonly first: infer U };
+}
+	? U
+	: T;
 
 // what a `pipe` takes as a step. An action, whose `~types` says `action`, is
 // checked by its `~accepts` alone, as a parameter is, so one that takes more
@@ -1794,6 +1951,10 @@ interface PipeStep<TInput, TOutput, TRefines> {
 // step after `integer` flavors that `number`
 type PipeStepOutput<TInput, TOutput, TRefines> = [TRefines] extends [true] ? TInput : TOutput;
 
+/**
+ * The overloads of `pipe`: a schema and one to four actions. A pipe of more
+ * starts with a pipe, `pipe(pipe(schema, a, b, c, d), e)`, which runs as one.
+ */
 export interface SchemaPipeFactory {
 	<T extends Schema, O1, R1>(
 		schema: T,
@@ -1833,6 +1994,9 @@ export interface SchemaPipeFactory {
 
 /**
  * Runs `schema` then each action on its output, stopping at the first failure.
+ * It takes one to four actions, which its types can follow. A pipe of more
+ * starts with a pipe of four, `pipe(pipe(schema, a, b, c, d), e)`, which runs
+ * as one pipe.
  *
  * As an object entry it hands `schema` the object and the key when `schema`
  * takes them, so `pipe(unknown, ...)` fails a missing key and runs no action.

@@ -468,9 +468,21 @@ all a missing key costs an object that has no schema asking.
   `check` or a `transform` that is the entry itself takes a missing key as
   the `undefined` it reads as. Why is
   [below](#behavior-that-differs-from-valibot-and-zod).
-- **The inferred types are narrower than this**: a key is optional in the
-  input type only where its entry's `kind` is `optional`, `with_default`, or
-  `with_default_fn`, and in the output type only where it is `optional`.
+- **The inferred types follow this through the wrappers.** A key is
+  optional in the input type where an `optional`, a `with_default`, or a
+  `with_default_fn` takes it missing: as the entry, under a `nullable`, a
+  `lazy`, a `message`, a `meta`, a `flavor`, or a `brand`, at the start of a
+  `pipe`, and as an option of a `union`. It is optional in the output type
+  where it can stay out: an `optional` reached the same way, a `pipe` that
+  starts with one where it is the entry, as itself or under a `message`, a
+  `meta`, a `flavor`, or a `brand`, and any other `pipe` or `union` that takes
+  it missing and can give `undefined`, as such a `pipe` under a `nullable` or
+  a `lazy` is, whose steps run. On the input side a `check` or a `transform`
+  that is the entry types its key as needed, which the parse can do without.
+  On the output side a default of `undefined` types as present a key the
+  parse leaves out, a known gap. The types are `EntryTakesMissing` and
+  `EntryLeavesMissingOut`, and `src/test/schema.inference.test.ts` pins a key
+  of every wrapper.
 
 ## Defaults
 
@@ -491,6 +503,16 @@ through the schema the default is of.
   value.
 - **A missing key whose default is `undefined` stays out**, whichever gives
   it, see [Missing keys](#missing-keys).
+- **The output excludes the `undefined` of an `optional` it holds**: the
+  schema a default holds is never given `undefined`, so
+  `with_default(optional(string), 'd')` outputs a `string`, and
+  `with_default(nullable(optional(string)), 'd')` a `string` or `null`. A
+  `brand` or a `flavor` of the `optional` is kept, so a default of a branded
+  `optional` is of the branded type, and so is any `undefined` the schema
+  inside the `optional` can give. Any
+  other schema keeps its output, as one can give `undefined` for a value that
+  isn't, as a `transform` can. A default typed to maybe be `undefined`, as
+  one of a generic schema's output is, keeps it.
 
 ## Issues
 
@@ -601,6 +623,10 @@ through the input, and refuses instead of guessing:
   is about the new value and the walk returns the input's.
 
 ## Actions in a pipe
+
+A `pipe` takes one to four actions, an overload each, which is what its
+types can follow step by step. A pipe of more starts with a pipe of four,
+`pipe(pipe(schema, a, b, c, d), e)`, which runs as one.
 
 Every action is typed as a `SchemaAction`, which adds a type-only `~accepts`,
 a function of the action's input, compared as a parameter is, and an `action`

@@ -22,6 +22,11 @@ export const piped_check = <T extends s.Schema<string>>(x: T) => s.pipe(x, s.che
 export const piped_two = <T extends s.Schema<string>>(x: T) => s.pipe(x, s.regex(/a/), s.max_length(9));
 export const piped_message = <T extends s.Schema<string>>(x: T) => s.pipe(x, s.message(s.regex(/a/), 'm'));
 export const piped_entry = <T extends s.Schema<string>>(x: T) => s.object({ a: s.pipe(x, s.regex(/a/)) });
+export const wrapped_entries = <T extends s.Schema<string>>(x: T) => s.object({ a: s.nullable(x), b: s.lazy(() => x), c: s.union([x, s.number]) });
+export const defaulted = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.object({ a: s.with_default(x, d) });
+export const defaulted_optional = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.object({ a: s.with_default(s.optional(x), d) });
+export const branded = <T extends s.Schema<string>>(x: T) => s.object({ a: s.brand(x, 'B'), b: s.flavor(x, 'F') });
+export const checked_at = <T extends s.Schema<{ a: string; b: Array<string> }>>(x: T) => s.pipe(x, s.check_at('a', (v) => v.a !== ''), s.check_at(['b', 0], (_v: { b: Array<string> }) => true));
 export const regex_of = <T extends string>() => s.regex<T>(/a/);
 export const piped_action = <O>(a: s.SchemaAction<string, O>) => s.pipe(s.string, a, s.check((v) => v !== null));
 export const piped_named = <T extends Schema<string>>(x: T) => pipe(x, regex(/a/));
@@ -81,4 +86,5 @@ test('a generic helper over the library emits a declaration that compiles', () =
 	);
 	const read_errors = reader.getSemanticDiagnostics(reader.getSourceFile(emitted_path));
 	assert.strictEqual(read_errors.length, 0, `${format(read_errors)}\n\n${emitted}`);
-});
+	// two programs over the library, which take seconds beside the other suites
+}, 60_000);

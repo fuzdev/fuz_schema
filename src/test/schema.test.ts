@@ -1283,7 +1283,7 @@ describe('types', () => {
 		s.variant('rest', [s.object_with_rest({} as any, s.literal('a'))]);
 	});
 
-	test('the object, key, and entry of run are optional, and a key is optional only by its kind', () => {
+	test('the object, key, and entry of run are optional, and a key is optional where a missing one matches', () => {
 		expectTypeOf<Parameters<s.Schema['run']>>().toEqualTypeOf<
 			[
 				value: any,
@@ -1305,11 +1305,11 @@ describe('types', () => {
 			defaulted: s.with_default(s.unknown, 'd'),
 			flavored: s.flavor(s.unknown, 'F')
 		});
-		// `held` lets its key be missing at run time, which the types don't say
+		// `held` lets its key be missing at run time, as the `optional` it holds does
 		expectTypeOf<s.InferInput<typeof _O>>().toEqualTypeOf<{
 			unknown: unknown;
-			held: unknown;
 			flavored: unknown;
+			held?: unknown;
 			optional?: unknown;
 			defaulted?: unknown;
 		}>();

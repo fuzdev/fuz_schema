@@ -1,4 +1,4 @@
-import { describe, test, expectTypeOf } from 'vitest';
+import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import { meta } from '#lib/meta.ts';
@@ -2391,6 +2391,344 @@ describe('inference by position', () => {
 });
 
 // object operations as spreads of `def`, which the library has no helper for
+describe('key modifiers by wrapper', () => {
+	// each entry's key in the input and the output: optional where the run
+	// takes a missing key, and where it can leave one out, `?:` against `:`
+	const passes = s.check((v: unknown) => v !== 0);
+	const _O = s.object({
+		string: s.string,
+		unknown: s.unknown,
+		void: s.void,
+		optional: s.optional(s.string),
+		optional_void: s.optional(s.void),
+		with_default: s.with_default(s.string, 'd'),
+		with_default_fn: s.with_default_fn(s.string, () => 'd'),
+		nullable: s.nullable(s.string),
+		nullable_unknown: s.nullable(s.unknown),
+		nullable_optional: s.nullable(s.optional(s.string)),
+		nullable_with_default: s.nullable(s.with_default(s.string, 'd')),
+		lazy_unknown: s.lazy(() => s.unknown),
+		lazy_optional: s.lazy(() => s.optional(s.string)),
+		lazy_with_default: s.lazy(() => s.with_default(s.string, 'd')),
+		nullable_lazy_optional: s.nullable(s.lazy(() => s.optional(s.string))),
+		// under a `nullable` or a `lazy` a pipe's steps run on a missing key
+		nullable_pipe_optional: s.nullable(s.pipe(s.optional(s.string), passes)),
+		nullable_pipe_optional_transform: s.nullable(
+			s.pipe(
+				s.optional(s.string),
+				s.transform((v) => v ?? 'x')
+			)
+		),
+		lazy_pipe_optional_transform: s.lazy(() =>
+			s.pipe(
+				s.optional(s.string),
+				s.transform((v) => v ?? 'x')
+			)
+		),
+		pipe_unknown: s.pipe(s.unknown, passes),
+		pipe_optional: s.pipe(s.optional(s.string), passes),
+		pipe_optional_transform: s.pipe(
+			s.optional(s.string),
+			s.transform((v) => v ?? 'x')
+		),
+		pipe_pipe_optional: s.pipe(s.pipe(s.optional(s.string), passes), passes),
+		pipe_with_default: s.pipe(s.with_default(s.string, 'd'), passes),
+		pipe_nullable_optional: s.pipe(s.nullable(s.optional(s.string)), passes),
+		union_unknown: s.union([s.string, s.unknown]),
+		union_optional: s.union([s.number, s.optional(s.string)]),
+		union_with_default: s.union([s.number, s.with_default(s.string, 'd')]),
+		union_unknown_with_default: s.union([s.unknown, s.with_default(s.string, 'd')]),
+		message_optional: s.message(s.optional(s.string), 'm'),
+		message_pipe_optional: s.message(s.pipe(s.optional(s.string), passes), 'm'),
+		meta_pipe_optional: meta(s.pipe(s.optional(s.string), passes), { description: 'd' }),
+		brand_optional: s.brand(s.optional(s.string), 'B'),
+		flavor_nullable_optional: s.flavor(s.nullable(s.optional(s.string)), 'F'),
+		// a `brand` or `flavor` of a `pipe` keeps its first schema
+		brand_pipe_optional: s.brand(s.pipe(s.optional(s.string), passes), 'B'),
+		flavor_pipe_optional: s.flavor(s.pipe(s.optional(s.string), passes), 'F'),
+		brand_pipe_pipe_optional: s.brand(s.pipe(s.pipe(s.optional(s.string), passes), passes), 'B'),
+		brand_pipe_string: s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid'),
+		flavor_pipe_unknown: s.flavor(s.pipe(s.unknown, passes), 'F'),
+		with_default_optional: s.with_default(s.optional(s.string), 'd'),
+		with_default_fn_optional: s.with_default_fn(s.optional(s.string), () => 'd')
+	});
+
+	test('the input', () => {
+		expectTypeOf<s.InferInput<typeof _O>>().toEqualTypeOf<{
+			string: string;
+			unknown: unknown;
+			void: void;
+			nullable: string | null;
+			nullable_unknown: unknown;
+			lazy_unknown: unknown;
+			pipe_unknown: unknown;
+			union_unknown: unknown;
+			brand_pipe_string: string;
+			flavor_pipe_unknown: unknown;
+			optional?: string | undefined;
+			optional_void?: void | undefined;
+			with_default?: string | undefined;
+			with_default_fn?: string | undefined;
+			nullable_optional?: string | null | undefined;
+			nullable_with_default?: string | null | undefined;
+			lazy_optional?: string | undefined;
+			lazy_with_default?: string | undefined;
+			nullable_lazy_optional?: string | null | undefined;
+			nullable_pipe_optional?: string | null | undefined;
+			nullable_pipe_optional_transform?: string | null | undefined;
+			lazy_pipe_optional_transform?: string | undefined;
+			pipe_optional?: string | undefined;
+			pipe_optional_transform?: string | undefined;
+			pipe_pipe_optional?: string | undefined;
+			pipe_with_default?: string | undefined;
+			pipe_nullable_optional?: string | null | undefined;
+			union_optional?: string | number | undefined;
+			union_with_default?: string | number | undefined;
+			union_unknown_with_default?: unknown;
+			message_optional?: string | undefined;
+			message_pipe_optional?: string | undefined;
+			meta_pipe_optional?: string | undefined;
+			brand_optional?: string | undefined;
+			flavor_nullable_optional?: string | null | undefined;
+			brand_pipe_optional?: string | undefined;
+			flavor_pipe_optional?: string | undefined;
+			brand_pipe_pipe_optional?: string | undefined;
+			with_default_optional?: string | undefined;
+			with_default_fn_optional?: string | undefined;
+		}>();
+	});
+
+	test('the output', () => {
+		expectTypeOf<s.Infer<typeof _O>>().toEqualTypeOf<{
+			string: string;
+			unknown: unknown;
+			void: void;
+			with_default: string;
+			with_default_fn: string;
+			nullable: string | null;
+			nullable_unknown: unknown;
+			nullable_with_default: string | null;
+			lazy_unknown: unknown;
+			lazy_with_default: string;
+			pipe_unknown: unknown;
+			pipe_with_default: string;
+			union_unknown: unknown;
+			union_with_default: string | number;
+			// the steps run on the `undefined` of a missing key, and the transform fills it
+			nullable_pipe_optional_transform: string | null;
+			lazy_pipe_optional_transform: string;
+			brand_pipe_string: s.Branded<string, 'Uuid'>;
+			flavor_pipe_unknown: s.Flavored<unknown, 'F'>;
+			with_default_optional: string;
+			with_default_fn_optional: string;
+			optional?: string | undefined;
+			optional_void?: void | undefined;
+			nullable_optional?: string | null | undefined;
+			lazy_optional?: string | undefined;
+			nullable_lazy_optional?: string | null | undefined;
+			nullable_pipe_optional?: string | null | undefined;
+			pipe_optional?: string | undefined;
+			// no step runs for a missing key, so the transform writes none
+			pipe_optional_transform?: string;
+			pipe_pipe_optional?: string | undefined;
+			pipe_nullable_optional?: string | null | undefined;
+			union_optional?: string | number | undefined;
+			// the `unknown` matches a missing key again, and leaves it out
+			union_unknown_with_default?: unknown;
+			message_optional?: string | undefined;
+			message_pipe_optional?: string | undefined;
+			meta_pipe_optional?: string | undefined;
+			brand_optional?: s.Branded<string | undefined, 'B'>;
+			flavor_nullable_optional?: s.Flavored<string | null | undefined, 'F'>;
+			brand_pipe_optional?: s.Branded<string | undefined, 'B'>;
+			flavor_pipe_optional?: s.Flavored<string | undefined, 'F'>;
+			brand_pipe_pipe_optional?: s.Branded<string | undefined, 'B'>;
+		}>();
+	});
+
+	test('the runtime agrees', () => {
+		// every key the input type lets be missing, a missing key matches
+		const missing = [
+			'optional',
+			'optional_void',
+			'with_default',
+			'with_default_fn',
+			'nullable_optional',
+			'nullable_with_default',
+			'lazy_optional',
+			'lazy_with_default',
+			'nullable_lazy_optional',
+			'nullable_pipe_optional',
+			'nullable_pipe_optional_transform',
+			'lazy_pipe_optional_transform',
+			'pipe_optional',
+			'pipe_optional_transform',
+			'pipe_pipe_optional',
+			'pipe_with_default',
+			'pipe_nullable_optional',
+			'union_optional',
+			'union_with_default',
+			'union_unknown_with_default',
+			'message_optional',
+			'message_pipe_optional',
+			'meta_pipe_optional',
+			'brand_optional',
+			'flavor_nullable_optional',
+			'brand_pipe_optional',
+			'flavor_pipe_optional',
+			'brand_pipe_pipe_optional',
+			'with_default_optional',
+			'with_default_fn_optional'
+		] as const;
+		const required = Object.keys(_O.def).filter(
+			(k) => !(missing as ReadonlyArray<string>).includes(k)
+		);
+		for (const key of missing) {
+			const entry = s.object({ [key]: _O.def[key] });
+			assert(s.is(entry, {}), key);
+		}
+		for (const key of required) {
+			const entry = s.object({ [key]: _O.def[key as keyof typeof _O.def] });
+			assert(!s.is(entry, {}), key);
+		}
+		// and a key the output type requires is there
+		const output = s.parse_or_throw(
+			s.object({
+				with_default_optional: _O.def.with_default_optional,
+				nullable_with_default: _O.def.nullable_with_default,
+				pipe_with_default: _O.def.pipe_with_default,
+				pipe_optional_transform: _O.def.pipe_optional_transform,
+				nullable_pipe_optional_transform: _O.def.nullable_pipe_optional_transform,
+				lazy_pipe_optional_transform: _O.def.lazy_pipe_optional_transform,
+				brand_pipe_optional: _O.def.brand_pipe_optional
+			}),
+			{}
+		);
+		assert.deepEqual(output, {
+			with_default_optional: 'd',
+			nullable_with_default: 'd',
+			pipe_with_default: 'd',
+			nullable_pipe_optional_transform: 'x',
+			lazy_pipe_optional_transform: 'x'
+		});
+	});
+});
+
+describe('defaults, the pipe cap, and generic helpers', () => {
+	test('a default that is not undefined takes the undefined of an optional out of the output', () => {
+		const _a = s.with_default(s.optional(s.string), 'd');
+		expectTypeOf<s.Infer<typeof _a>>().toEqualTypeOf<string>();
+		expectTypeOf<s.InferInput<typeof _a>>().toEqualTypeOf<string | undefined>();
+		assert.strictEqual(s.parse_or_throw(_a, undefined), 'd');
+		// a default of `undefined`, or of a type that may be, keeps it
+		const _b = s.with_default(s.optional(s.string), undefined);
+		expectTypeOf<s.Infer<typeof _b>>().toEqualTypeOf<string | undefined>();
+		const maybe = 'd' as string | undefined;
+		const _c = s.with_default(s.optional(s.string), maybe);
+		expectTypeOf<s.Infer<typeof _c>>().toEqualTypeOf<string | undefined>();
+		const _d = s.with_default_fn(s.optional(s.string), () => 'd');
+		expectTypeOf<s.Infer<typeof _d>>().toEqualTypeOf<string>();
+		const _e = s.with_default_fn(s.optional(s.string), () => maybe);
+		expectTypeOf<s.Infer<typeof _e>>().toEqualTypeOf<string | undefined>();
+		// a nullable keeps its null
+		const _f = s.with_default(s.nullable(s.optional(s.string)), null);
+		expectTypeOf<s.Infer<typeof _f>>().toEqualTypeOf<string | null>();
+		const _g = s.with_default(s.nullable(s.optional(s.string)), 'd');
+		expectTypeOf<s.Infer<typeof _g>>().toEqualTypeOf<string | null>();
+		// any other schema keeps its output, as it can give `undefined` for a value
+		// that isn't, as a `transform` can
+		const maybe_out = s.pipe(
+			s.string,
+			s.transform((v: string): string | undefined => v || undefined)
+		);
+		const _h = s.with_default(maybe_out, 'd');
+		expectTypeOf<s.Infer<typeof _h>>().toEqualTypeOf<string | undefined>();
+		assert.strictEqual(s.parse_or_throw(_h, ''), undefined);
+		const _i = s.with_default_fn(maybe_out, () => 'd');
+		expectTypeOf<s.Infer<typeof _i>>().toEqualTypeOf<string | undefined>();
+		// an `optional` of it gives what it gives
+		const _j = s.with_default(s.optional(maybe_out), 'd');
+		expectTypeOf<s.Infer<typeof _j>>().toEqualTypeOf<string | undefined>();
+		assert.strictEqual(s.parse_or_throw(_j, ''), undefined);
+		const _k = s.with_default(s.nullable(s.string), 'd');
+		expectTypeOf<s.Infer<typeof _k>>().toEqualTypeOf<string | null>();
+		// a brand or a flavor of the optional is kept, and refuses a plain default
+		const Uuid = s.brand(s.optional(s.pipe(s.string, s.uuid)), 'Uuid');
+		const _l = s.with_default(
+			Uuid,
+			'123e4567-e89b-42d3-a456-426614174000' as s.Branded<string, 'Uuid'>
+		);
+		expectTypeOf<s.Infer<typeof _l>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
+		// @ts-expect-error a default of the output, which is branded
+		s.with_default(Uuid, 'not a uuid');
+		// @ts-expect-error the same through a nullable
+		s.with_default(s.nullable(Uuid), 'not a uuid');
+		const _m = s.with_default(s.nullable(Uuid), null);
+		expectTypeOf<s.Infer<typeof _m>>().toEqualTypeOf<s.Branded<string, 'Uuid'> | null>();
+		const _n = s.with_default(s.flavor(s.optional(s.string), 'F'), 'd');
+		expectTypeOf<s.Infer<typeof _n>>().toEqualTypeOf<s.Flavored<string, 'F'>>();
+		const _o = s.with_default_fn(s.nullable(s.flavor(s.optional(s.string), 'F')), () => 'd');
+		expectTypeOf<s.Infer<typeof _o>>().toEqualTypeOf<s.Flavored<string, 'F'> | null>();
+		// a brand of an optional of what can give `undefined` keeps that `undefined`
+		const _p = s.with_default(s.brand(s.optional(maybe_out), 'B'), 'd' as s.Branded<string, 'B'>);
+		expectTypeOf<s.Infer<typeof _p>>().toEqualTypeOf<s.Branded<string, 'B'> | undefined>();
+		// a generic schema's output may be `undefined`, so it is kept
+		const _generic = <T extends s.Schema>(schema: T, value: s.Infer<T>) =>
+			s.with_default(schema, value);
+		expectTypeOf<s.Infer<ReturnType<typeof _generic<typeof _a>>>>().toEqualTypeOf<string>();
+		// @ts-expect-error a default is of the schema's output
+		s.with_default(s.optional(s.string), 1);
+	});
+
+	test('a pipe that starts with a pipe starts with what that one starts with', () => {
+		const Digits = s.pipe(
+			s.string,
+			s.transform((v: string) => v.trim()),
+			s.regex(/^\d+$/),
+			s.transform(Number)
+		);
+		// a declared type of the pipe names its first schema, as the runtime reads it
+		const env_integer = (min: number): s.PipeSchema<number, typeof s.string> =>
+			s.pipe(Digits, s.safe_integer, s.min_value(min), s.max_value(9));
+		const _integer = env_integer(0);
+		expectTypeOf<NonNullable<(typeof _integer)['~types']>['first']>().toEqualTypeOf<
+			typeof s.string
+		>();
+		const _nested = s.pipe(
+			s.pipe(s.pipe(s.string, s.min_length(1)), s.max_length(9)),
+			s.regex(/a/)
+		);
+		expectTypeOf<NonNullable<(typeof _nested)['~types']>['first']>().toEqualTypeOf<
+			typeof s.string
+		>();
+		assert.strictEqual(s.parse_or_throw(env_integer(0), ' 7 '), 7);
+	});
+
+	test('a pipe takes one to four actions, and nests for more', () => {
+		const a = s.min_length(1);
+		const _four = s.pipe(s.string, a, a, a, a);
+		expectTypeOf<s.Infer<typeof _four>>().toEqualTypeOf<string>();
+		// @ts-expect-error a fifth action has no overload
+		s.pipe(s.string, a, a, a, a, a);
+		const _five = s.pipe(s.pipe(s.string, a, a, a, a), s.max_length(9));
+		expectTypeOf<s.Infer<typeof _five>>().toEqualTypeOf<string>();
+	});
+
+	test('Infer of a bare Schema, AnySchema, and an intersection', () => {
+		expectTypeOf<s.Infer<s.Schema>>().toEqualTypeOf<unknown>();
+		expectTypeOf<s.InferInput<s.Schema>>().toEqualTypeOf<unknown>();
+		expectTypeOf<s.Infer<s.AnySchema>>().toBeAny();
+		expectTypeOf<s.InferInput<s.AnySchema>>().toBeAny();
+		const _O = s.object({ a: s.string });
+		// an intersection's `run` is an overload, and `ReturnType` reads its last, `Schema`'s
+		expectTypeOf<s.Infer<typeof _O & s.Schema>>().toEqualTypeOf<unknown>();
+		// a test reads the schema's own
+		type Output<T> = T extends s.Schema ? s.Infer<T> : never;
+		expectTypeOf<Output<typeof _O>>().toEqualTypeOf<{ a: string }>();
+		expectTypeOf<Output<{ parse: () => 1 }>>().toBeNever();
+	});
+});
+
 describe('composing object schemas', () => {
 	const Base = s.object({ id: s.string, count: s.number, secret: s.string });
 

@@ -509,8 +509,8 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'with_default_null',
 		edits: [
 			{
-				find: `	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))`,
-				replace: `	run: (v, ctx) => (v == null ? value : (schema.run(v, ctx) as Infer<T>))`
+				find: `	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))`,
+				replace: `	run: (v, ctx) => (v == null ? value : schema.run(v, ctx))`
 			}
 		]
 	},
@@ -864,9 +864,9 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'default_fills_undefined_output',
 		edits: [
 			{
-				find: `	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))
+				find: `	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
 });`,
-				replace: `	run: (v, ctx) => { if (v === undefined) return value; const r = schema.run(v, ctx) as Infer<T>; return r === undefined ? value : r; }
+				replace: `	run: (v, ctx) => { if (v === undefined) return value; const r = schema.run(v, ctx); return r === undefined ? value : r; }
 });`
 			}
 		]
@@ -875,9 +875,9 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'default_runs_schema',
 		edits: [
 			{
-				find: `	run: (v, ctx) => (v === undefined ? value : (schema.run(v, ctx) as Infer<T>))
+				find: `	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
 });`,
-				replace: `	run: (v, ctx) => (v === undefined ? (schema.run(value, ctx) as Infer<T>) : (schema.run(v, ctx) as Infer<T>))
+				replace: `	run: (v, ctx) => (v === undefined ? schema.run(value, ctx) : schema.run(v, ctx))
 });`
 			}
 		]

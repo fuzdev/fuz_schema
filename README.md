@@ -144,6 +144,12 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
 
+`Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
+A helper generic over this library's schemas and another's reads the output behind a test,
+`T extends s.Schema ? s.Infer<T> : ...`: `s.Infer<T & s.Schema>` is `unknown` whatever `T` is,
+as the intersection's `run` is an overload whose last signature, `Schema`'s, returns `unknown`.
+A `pipe` takes one to four actions; a pipe of more starts with a pipe, `s.pipe(s.pipe(schema, a, b, c, d), e)`.
+
 The object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
 `strip_object` drops them and pays for a copy when there are any,
