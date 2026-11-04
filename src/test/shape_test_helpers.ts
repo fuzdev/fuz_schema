@@ -13,6 +13,7 @@ import * as s from '#lib/schema.ts';
 import { get_meta, meta } from '#lib/meta.ts';
 import { to_standard_schema } from '#lib/standard_schema.ts';
 import { to_schema_json } from '#lib/schema_json.ts';
+import { to_json_schema } from '#lib/json_schema.ts';
 
 export interface ShapeSample {
 	schema: s.AnySchema;
@@ -350,7 +351,8 @@ export interface ShapeRun {
  * Builds every sample, and what each is put inside, and runs each through
  * `parse`, `is`, `parse_or_throw`, and a Standard Schema's `validate` on every
  * input. Each is also handed to what else the library takes a schema in:
- * `is_schema`, `get_meta`, and `to_schema_json`.
+ * `is_schema`, `get_meta`, `to_schema_json`, and `to_json_schema`, on both
+ * sides and in the mode that reads furthest.
  */
 export const run_shape_samples = (): ShapeRun => {
 	const schemas: ShapeRun['schemas'] = [];
@@ -400,6 +402,13 @@ export const run_shape_samples = (): ShapeRun => {
 					to_schema_json(schema);
 				} catch {
 					// what it refuses it has still read
+				}
+				for (const io of ['output', 'input'] as const) {
+					try {
+						to_json_schema(schema, { io, unrepresentable: 'any' });
+					} catch {
+						// as above
+					}
 				}
 				for (const value of sample.valid) run(at, schema, to_input(value), true);
 				for (const value of sample.invalid) run(at, schema, to_input(value), false);

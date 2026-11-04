@@ -740,11 +740,118 @@ nothing until it imports the module.
   how it renders, whether `unwrap_schema` walks through it, and whether
   `find_schema_meta` reads what it holds.
 
+## JSON Schema
+
+`src/lib/json_schema.ts` writes a schema as JSON Schema draft 2020-12 with
+`to_json_schema`. It has its own walk, imports from `schema_json.ts` only
+`SCHEMA_JSON_REFUSED_KEYS`, and calls nothing but a `lazy`'s function, once
+each.
+
+- **The shapes are zod's.** Where zod's `toJSONSchema` writes a schema this
+  library also expresses, the document is the same, deep equal:
+  `src/test/json_schema.conformance.test.ts` writes every case of the
+  conformance matrix from both, on both sides and in both modes, and fails on
+  a difference not declared below and on a declared one no longer needed.
+  `object` is closed with `additionalProperties: false`, `strip_object` on
+  the output side only, `loose_object` takes `{}` and `object_with_rest` its
+  `rest`; a `nullable` and a `union` are `anyOf`, folded into a `type` array
+  where each option is a bare `type`; a `variant` is `oneOf`; the actions of
+  a `pipe` are keywords of its first schema's node, the tightest bound
+  winning; the metadata of every layer is copied into its node, the outer
+  winning, over a `with_default`'s `default` too; a `lazy` is written in
+  place unless it comes back to itself, when it is in `$defs`, or `#` at the
+  root.
+- **`io` picks a side of a parse.** On the output side a default is required
+  and a `transform` has nothing to write; on the input side a default is
+  optional, a `transform` ends its `pipe`, and the `default`, and the
+  `examples` and `default` metadata, of a schema that transforms are left
+  out, as zod does.
+- **A key is optional where a missing key passes**: under an `optional`, or
+  a default on the input side, through a `nullable`, a `lazy`, the first
+  schema of a `pipe`, or an option of a `union`. Everything else is
+  required, `unknown` included, as the library needs its key.
+- **Refuse, don't guess.** What JSON Schema can't say throws, naming the kind
+  and the place in the document as a JSON Pointer, or with
+  `unrepresentable: 'any'` is `{}`, or a keyword left out of a `pipe`'s node:
+  a `bigint`, a `literal` of `undefined` or a `bigint`, a `transform` on the
+  output side, a step after a `transform` on the input side, which reads what
+  it gave, an action outside a `pipe` or after a schema of another type, a
+  `regex` whose source is no pattern under the flag `u`, or means something
+  else there, a bound that isn't finite or a length that isn't whole, a
+  default that isn't JSON, and a kind defined outside the library. Refused
+  in both modes, as mistakes of the schema's author: an entry named like a
+  member of `Object.prototype`, a schema that comes back to itself without
+  reading into the value, which a validator would follow forever, as
+  `to_schema_json` refuses it, metadata that isn't JSON, and a metadata key
+  that is a keyword of JSON Schema: one that asserts, applies a subschema,
+  or is the document's structure, from `type` and `pattern` to `$ref`,
+  `$defs`, and `$schema`, and those of older drafts and OpenAPI's `nullable`
+  that some validators still apply in a 2020-12 document, as each changes what
+  the document accepts. An annotation (`title`, `description`, `examples`,
+  `default`, `deprecated`, `readOnly`, `writeOnly`, `$comment`,
+  `contentMediaType`, `contentEncoding`) and every key of no keyword are
+  copied.
+- **The output side can refuse real output.** A `with_default` fills in its
+  value as it is, so where the value doesn't match its schema the document
+  refuses what the parse returns, and a `with_default_fn` whose `make` returns
+  `undefined` leaves out a key the document requires.
+- **`minLength` and `maxLength` count code points** in JSON Schema, where
+  `min_length` and `max_length` count UTF-16 code units, so a validator
+  reading the document takes a string of surrogate pairs this library
+  refuses as too long, and refuses one it takes as too short. The keywords
+  are written as zod writes them, whose own checks count code points.
+- **A `pattern` is read under `u`** by a validator, where a `regex` without
+  the flag reads its source by UTF-16 code units: `.` and a negated class
+  match one astral character there and half of one here, so `/^.$/`, written
+  as `^.$`, is taken by a validator for a character this library refuses. A
+  source that is no pattern under `u`, such as `^\-$`, is refused, and so is
+  one that is but matches other strings there than those astral ones: a
+  `\u{`, `\p{`, or `\P{`, which without `u` is letters and braces or a
+  quantifier, an `(?i:` group, which under `u` folds case by Unicode's
+  tables, so `^(?i:k)$` matches the Kelvin sign there, and a surrogate,
+  written or escaped, or an astral character, which under `u` a quantifier or
+  a range takes whole: `^a😀?$` takes `a` under `u`, and without it `a`
+  followed by the emoji's high surrogate. A plain `^😀$` is refused too.
+
+Where zod writes something else, this library:
+
+- `uuid` and `iso_datetime` write this library's grammars as their `pattern`,
+  see [formats.md](formats.md).
+- a `with_default_fn` writes no `default`, as calling `make` to read one
+  could do anything, nor the `default` of what it holds, which `make`
+  replaces.
+- `integer` writes `type: 'integer'`, where the nearest zod schema is a
+  refined number, which zod writes as a `number`.
+- a `pipe` that is the entry and starts with an `optional` leaves its key
+  optional on the output side, as no step runs for a missing key, where zod
+  requires what a `transform` after it gives.
+- a `literal` or a `one_of` value past the finite numbers is refused, or
+  dropped with `'any'`, where zod writes `null`; a `bigint` value is dropped
+  with `'any'`, where zod writes it as a number this library refuses.
+- a `check` is refused, where zod leaves out a refinement.
+- an entry named like a member of `Object.prototype` is refused, as the
+  library reads that entry through the prototype when the key is missing.
+- a `with_default` of `undefined` writes no `default`, and leaves its key
+  optional, where zod throws.
+- a `regex` with flags other than `d` and `u` is refused, or dropped with
+  `'any'`, where zod writes its source as though it had none.
+- a bound that is not finite is refused, or dropped with `'any'`, where zod
+  writes `null`.
+- a `regex` whose source is no pattern under the flag `u`, or means
+  something else there, is refused, or dropped with `'any'`, where zod writes
+  it.
+- a step after a `transform` is refused on the input side, or dropped with
+  `'any'`, where zod drops it unsaid.
+- a metadata key that is a keyword of JSON Schema, but an annotation, is
+  refused, where zod writes it over the keyword it writes there.
+- an `id` of metadata is copied as any other key, where zod moves the node
+  into `$defs` under that name and writes a `$ref` to it.
+
 ## Costs are opt-in
 
 A feature not every consumer needs is a separate export or module the core
 never reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
-`to_standard_schema`, `introspect.ts`. Factories are marked
+`to_standard_schema`, `introspect.ts`, `json_schema.ts`. Factories are marked
 `// @__NO_SIDE_EFFECTS__` so an unused definition is dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry

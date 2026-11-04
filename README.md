@@ -466,6 +466,26 @@ an entry named like a member of `Object.prototype`.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
 [`docs/rust.md`](docs/rust.md) has the form and everything refused.
 
+### JSON Schema
+
+`to_json_schema` writes a schema as JSON Schema draft 2020-12, in the shapes Zod's `toJSONSchema` writes,
+a module of its own. `io` picks the side of a parse it describes, `'output'` by default or `'input'`,
+which differ on defaults, `strip_object`, and `transform`.
+
+```ts
+import {to_json_schema} from '@fuzdev/fuz_schema/json_schema.ts';
+
+to_json_schema(s.object({name: s.string, port: s.optional(s.number)}));
+// {$schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object',
+//  properties: {name: {type: 'string'}, port: {type: 'number'}},
+//  required: ['name'], additionalProperties: false}
+```
+
+It throws on what JSON Schema can't say, saying where: a `bigint`, a `check`, a `transform` on the output side,
+a `regex` with flags other than `d` and `u`, a literal of `undefined`.
+With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
+Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema) has the mapping and where it differs from Zod's.
+
 ## Status
 
 > **status**: early experiment — unstable, incomplete
@@ -475,6 +495,7 @@ The text of `message` and the names of `flavor` and `brand` are not in a schema'
 - [x] Standard Schema v1, as an opt-in adapter
 - [x] metadata, as an opt-in module
 - [x] serializing a schema to JSON, as an opt-in module
+- [x] JSON Schema output, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
 - [ ] nested issues for a failed `union`
@@ -484,7 +505,7 @@ The text of `message` and the names of `flavor` and `brand` are not in a schema'
 - [x] a published package
 - [ ] the Rust side: the schema model, whether a JSON text matches, its issues, and a wasm build to measure are built, output is not
 
-Not designed yet: JSON Schema output, async validation, i18n.
+Not designed yet: async validation, i18n.
 
 Known regressions to fix: `strip_object` got slower when it has unknown keys to drop,
 and when a default applies late in a wide object.

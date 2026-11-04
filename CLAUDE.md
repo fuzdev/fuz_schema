@@ -65,6 +65,9 @@ dev server.
 - `src/lib/schema_json.ts` - `to_schema_json`, which serializes a schema to
   the interchange form the Rust crate loads, separate so the core never
   carries it
+- `src/lib/json_schema.ts` - `to_json_schema`, which writes a schema as JSON
+  Schema draft 2020-12 in the shapes zod writes, separate so the core never
+  carries it
 - `src/lib/introspect.ts` - `unwrap_schema`, `get_schema_meta`,
   `find_schema_meta`, `get_schema_entries`, `get_schema_fields`,
   `format_schema_type`, reading a schema as data, separate so the core never
@@ -106,6 +109,11 @@ dev server.
   data: the first for the valibot set, the second for the zod ones, with its
   helpers in `harvest_test_helpers.ts`
 - `src/test/schema_json.test.ts` - what `to_schema_json` writes and refuses
+- `src/test/json_schema.test.ts` - what `to_json_schema` writes and refuses,
+  on both sides and in both modes
+- `src/test/json_schema.conformance.test.ts` - `to_json_schema` against zod's
+  `toJSONSchema` over every case of the conformance matrix and its own, each
+  difference declared in its `DIFFERENCES` and in `docs/design.md`
 - `src/test/introspect.test.ts` - the readers, with a row for every kind
   that the types require
 - `src/test/schema.conformance.test.ts` - where zod and valibot agree this
@@ -213,7 +221,7 @@ dev server.
 - `README.md` - what the library is, its API, status, and what's been measured
 - `docs/design.md` - the internals and why: the one shape, the context and
   probe mode, copy-on-write and what it gives up, issues and messages,
-  metadata
+  metadata, JSON Schema
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by

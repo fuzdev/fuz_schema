@@ -1087,6 +1087,166 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'json_schema_object_left_open',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				return object(s.kind, s.def, path, () => false);`,
+				replace: `				return object(s.kind, s.def, path, () => ({}));`
+			}
+		]
+	},
+	{
+		name: 'json_schema_optional_key_required',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			if (!optional_key(entries[key]!, true)) required.push(key);`,
+				replace: `			required.push(key);`
+			}
+		]
+	},
+	{
+		name: 'json_schema_meta_overwrites_keyword',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			if (Object.hasOwn(KEYWORDS, key)) {`,
+				replace: `			if (false) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_step_after_transform_dropped',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `						if (i + 1 < steps.length) {`,
+				replace: `						if (false) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_not_read_under_u',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `							RegExp(re.source, 'u');`,
+				replace: `							RegExp(re.source);`
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_read_alike_under_u',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `							if (reads_else_under_u(re.source)) reason = 'means something else';`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_class_escape_missed',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: String.raw`		if (c === '\\') {`,
+				replace: String.raw`		if (c === '\\' && !in_class) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_surrogate_missed',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: String.raw`		if (c >= '\uD800' && c <= '\uDFFF') return true;`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_surrogate_escape_missed',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: String.raw`const ESCAPE_ELSE = /[upP]\{|u[dD][89a-fA-F]/y;`,
+				replace: String.raw`const ESCAPE_ELSE = /[upP]\{/y;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_class_not_read',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			in_class = true;`,
+				replace: `			in_class = false;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_default_fn_keeps_inner_default',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				delete node.default;`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_lazy_loop_referred_to',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			if (chain.has(value)) {`,
+				replace: `			if (false) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_regex_written_twice',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `						if (!patterns.includes(re)) patterns.push(re);`,
+				replace: `						patterns.push(re);`
+			}
+		]
+	},
+	{
+		name: 'json_schema_safe_integer_lower_bound_dropped',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `							narrow('minimum', -MAX_SAFE, true);`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_array_key_not_an_item',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `keys.length !== value.length || keys.some((k, i) => k !== String(i))`,
+				replace: `keys.length !== value.length`
+			}
+		]
+	},
+	{
+		name: 'json_schema_union_left_unfolded',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			if (keys.length !== 1 || keys[0] !== 'type') return node;`,
+				replace: `			return node;`
+			}
+		]
+	},
+	{
 		name: 'prefix_path_drops_deeper_keys',
 		edits: [
 			{

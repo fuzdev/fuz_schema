@@ -203,6 +203,7 @@
 		"meta.ts": 48,
 		"standard_schema.ts": 91,
 		"schema_json.ts": 2255,
+		"json_schema.ts": 3447,
 		"introspect.ts": 834
 	}
 }
