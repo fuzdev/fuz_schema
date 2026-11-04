@@ -389,3 +389,25 @@ error is `false`.
   `input_ptr` the memory can't hold. The crate has no Rust tests.
 - The output is under `target/`, so it is git-ignored and nothing of
   `gro check` reads it.
+
+### What it buys
+
+Figures are the wasm's time over the fastest JS of the same holding, under 1
+being faster, for an array of the `strict_nested` item. They are the medians of
+15 rounds of `npm run benchmark:wasm` at v0.5.4, defaults, on Node 26.13.0,
+with a `.wasm` of 250361 bytes, 99340 gzipped.
+
+| Input | wasm over JS |
+|---|---|
+| 4 MB of bytes, bad first element | 0.02x ASCII, 0.17-0.18x mostly not ASCII |
+| 4 MB of bytes, both sides read the whole text | 0.56-0.66x ASCII, 0.63-0.78x mostly not ASCII |
+| 10 KB of bytes, both sides read the whole text | 0.56-0.67x |
+| one item, about 130 bytes, valid | 0.41-0.47x |
+| 4 MB held as a string, `matches_json(text)`, valid or bad last element | 0.93-1.00x ASCII |
+
+It buys a verdict on bytes, most where it can stop early. The byte entry
+points validate the whole text as UTF-8 first, so on mostly non-ASCII text
+they stop at 0.17-0.18x where `matches_json(text)`, which doesn't validate,
+stops at 0.08x. It buys little for a string that is parsed anyway:
+`matches_json(text)` is no win on the whole of an ASCII text, and a wasm
+verdict followed by `JSON.parse` is slower than plain JS on valid input.
