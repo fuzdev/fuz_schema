@@ -1,5 +1,41 @@
 # @fuzdev/fuz_schema
 
+## 0.5.4
+
+### Patch Changes
+
+- fix: export `SchemaOfKind`, so a declaration emitted for a `brand` or `flavor` of a `pipe` compiles ([2b792fe](https://github.com/fuzdev/fuz_schema/commit/2b792fe))
+
+  - `export const Uuid = s.brand(s.pipe(s.string, s.uuid), 'Uuid')` in a consumer with `declaration` on failed with TS4023, naming the unexported member of `SchemaNode`
+
+- feat: add `check_at`, a `check` that reports its issue at a path below the value ([b412182](https://github.com/fuzdev/fuz_schema/commit/b412182))
+
+  - `s.check_at('confirm', (v) => v.password === v.confirm)` fails as `check` does, with its issue at `confirm`, as Zod's `refine` with a `path`
+  - `path` is a key or the keys from the value in, outermost first, typed by the value checked, so a typo fails to compile; the issue's path is from the root, and its `received` is the type of the value there
+  - it is a `check` to every reader, `to_schema_json` and `to_json_schema` refusing it as they refuse `check`
+  - a `pipe` stops at its first failing step, so of several `check_at`s one reports at a time, where Zod's `superRefine` reports each
+
+- fix: type a key optional where a missing one matches, through the wrappers ([41e2373](https://github.com/fuzdev/fuz_schema/commit/41e2373))
+
+  - this changes existing inferred types: a key typed required before can now be optional, so an inferred type assigned to one declaring that key required (`a: string | undefined`) no longer compiles; give the key `?:` there
+  - a key is optional in the input type under a `nullable`, a `lazy`, a `pipe`, a `union`, a `flavor`, or a `brand` whose `optional`, `with_default`, or `with_default_fn` takes it missing, as the runtime has it: `object({a: nullable(optional(string))})` takes `{}`
+  - it is optional in the output type where it can stay out: an `optional` reached the same way, a `pipe` that starts with one as the entry, a `pipe` or `union` that can give `undefined`
+  - `with_default(optional(string), 'd')` outputs a `string`, as the default replaces the `optional`'s `undefined`, and `with_default(nullable(optional(string)), 'd')` a `string` or `null`; `with_default_fn` likewise for a `make` that never returns one. A `brand` or `flavor` of the `optional` is kept, as `s.with_default(s.brand(s.optional(s.string), 'B'), 'x')` outputs the branded string. Over any other schema the output keeps its type
+  - `PipeSchema` carries its first schema in its type-only `~types`, as does a `flavor` or `brand` of one, and the new `EntryTakesMissing`, `EntryLeavesMissingOut`, and `PipeStartsOptional` name the reading for emitted declarations; `SchemaDefaultOutput` names a default's output
+
+- feat: add `to_lower_case`, a pipe step that lowercases a string ([0d3a1a0](https://github.com/fuzdev/fuz_schema/commit/0d3a1a0))
+
+  - `s.pipe(s.string, s.to_lower_case)` gives `toLowerCase()` of the string, as Zod's `toLowerCase` and Valibot's do, and never fails
+  - the steps after it are given the lowercase, and it outputs a `string`: a brand or flavor goes around the pipe, as in `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')`, and one of a step before it is dropped
+  - `to_json_schema` writes no keyword for it, as Zod writes none, and refuses a step but a `uuid` after it on the input side and before it on the output side, which read another string than the document's, where Zod writes them; `to_schema_json` writes it after a `string`
+  - alone, outside a `pipe`, it throws on a value with no `toLowerCase`, a missing key included
+
+- feat: add `void`, the literal of `undefined` typed `void`, read as `s.void` ([b62383e](https://github.com/fuzdev/fuz_schema/commit/b62383e))
+
+  - `(input: s.Infer<typeof s.void>) => ...` can be called with no argument, where a parameter typed `undefined` can't
+  - it is `literal(undefined)` to every reader: `kind` `'literal'`, `def` `undefined`, refused by `to_schema_json` and `to_json_schema`
+  - as an object entry it needs its key, as that literal does: `s.optional(s.void)` lets it be missing
+
 ## 0.5.3
 
 ### Patch Changes
