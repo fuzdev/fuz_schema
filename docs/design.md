@@ -755,21 +755,34 @@ each.
   `object` is closed with `additionalProperties: false`, `strip_object` on
   the output side only, `loose_object` takes `{}` and `object_with_rest` its
   `rest`; a `nullable` and a `union` are `anyOf`, folded into a `type` array
-  where each option is a bare `type`; a `variant` is `oneOf`; the actions of
+  where each option is a bare `type`; a `variant` is `oneOf` of the options
+  it can pick, one whose discriminator a later option shares never picked;
+  the actions of
   a `pipe` are keywords of its first schema's node, the tightest bound
   winning; the metadata of every layer is copied into its node, the outer
   winning, over a `with_default`'s `default` too; a `lazy` is written in
   place unless it comes back to itself, when it is in `$defs`, or `#` at the
   root.
+- **The verdict is the library's.** `src/test/json_schema.differential.test.ts`
+  reads each document with a checker of the keywords it writes, over
+  generated schemas and JSON inputs, and fails where the input side takes
+  other than `is` or the output side refuses what `parse` returns, unless a
+  sentence below says why.
 - **`io` picks a side of a parse.** On the output side a default is required
   and a `transform` has nothing to write; on the input side a default is
   optional, a `transform` ends its `pipe`, and the `default`, and the
   `examples` and `default` metadata, of a schema that transforms are left
   out, as zod does.
-- **A key is optional where a missing key passes**: under an `optional`, or
-  a default on the input side, through a `nullable`, a `lazy`, the first
-  schema of a `pipe`, or an option of a `union`. Everything else is
-  required, `unknown` included, as the library needs its key.
+- **A key is optional where the parse can do without it**: on the input
+  side where a missing key passes, and on the output side where the parse
+  can leave it out. It is read as the library runs the entry on a missing
+  key: an `optional` leaves it out and a default fills it in, through a
+  `nullable`, a `lazy`, a `pipe` and its steps, and a `union`'s options in
+  the order it tries them, those before one that fills the key in tried
+  again without the object and the key, so `union([unknown, with_default(..)])`
+  leaves it out. `unknown` needs its key. Where what a `check` says decides
+  it, in a `pipe` or not, the key is optional, and a `transform` and a
+  `with_default_fn` are taken to fill it in, as zod takes a `transform`.
 - **Refuse, don't guess.** What JSON Schema can't say throws, naming the kind
   and the place in the document as a JSON Pointer, or with
   `unrepresentable: 'any'` is `{}`, or a keyword left out of a `pipe`'s node:
@@ -778,7 +791,9 @@ each.
   it gave, an action outside a `pipe` or after a schema of another type, a
   `regex` whose source is no pattern under the flag `u`, or means something
   else there, a bound that isn't finite or a length that isn't whole, a
-  default that isn't JSON, and a kind defined outside the library. Refused
+  default that isn't JSON, a `variant` option whose discriminator is no
+  `literal` entry, as the variant picks it by a value its node doesn't say,
+  and a kind defined outside the library. Refused
   in both modes, as mistakes of the schema's author: an entry named like a
   member of `Object.prototype`, a schema that comes back to itself without
   reading into the value, which a validator would follow forever, as
@@ -791,10 +806,16 @@ each.
   `default`, `deprecated`, `readOnly`, `writeOnly`, `$comment`,
   `contentMediaType`, `contentEncoding`) and every key of no keyword are
   copied.
-- **The output side can refuse real output.** A `with_default` fills in its
-  value as it is, so where the value doesn't match its schema the document
-  refuses what the parse returns, and a `with_default_fn` whose `make` returns
-  `undefined` leaves out a key the document requires.
+- **The output side can refuse real output.** A `with_default` and a
+  `with_default_fn` fill in their value as it is, so where the value doesn't
+  match its schema the document refuses what the parse returns, and a
+  `with_default_fn` whose `make` returns `undefined` leaves out a key the
+  document requires. With `'any'`, so does an entry whose `transform` gives
+  `undefined`, given its key or not, as the emitter takes a `transform` to
+  give a value, as zod does.
+- **`object_with_rest` drops an own `__proto__` key unread**, where the
+  document's `additionalProperties` reads it, so an input whose `__proto__`
+  `rest` refuses is taken by the parse and refused by the document.
 - **`minLength` and `maxLength` count code points** in JSON Schema, where
   `min_length` and `max_length` count UTF-16 code units, so a validator
   reading the document takes a string of surrogate pairs this library
@@ -829,10 +850,22 @@ Where zod writes something else, this library:
   dropped with `'any'`, where zod writes `null`; a `bigint` value is dropped
   with `'any'`, where zod writes it as a number this library refuses.
 - a `check` is refused, where zod leaves out a refinement.
+- a `check` leaves its key optional with `'any'`, as it can take a missing
+  key, where zod requires it.
+- a `variant` whose discriminator is written as other than a `const` is
+  `anyOf`, as with `'any'` a `literal` of `undefined` is `{}`, and an option
+  whose discriminator is no `literal` entry is kept, either of which more than
+  one option can match, where zod writes `oneOf`, which refuses a value two
+  options match.
 - an entry named like a member of `Object.prototype` is refused, as the
   library reads that entry through the prototype when the key is missing.
 - a `with_default` of `undefined` writes no `default`, and leaves its key
   optional, where zod throws.
+- a `union` entry that holds a default or a transform has its key required
+  on the output side where its run gives a value for a missing key, and
+  optional where it can leave the key out, where zod requires it by its
+  options, and where zod's parse gives the key `undefined` or another
+  option's value.
 - a `regex` with flags other than `d` and `u` is refused, or dropped with
   `'any'`, where zod writes its source as though it had none.
 - a bound that is not finite is refused, or dropped with `'any'`, where zod

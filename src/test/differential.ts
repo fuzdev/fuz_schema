@@ -6,6 +6,11 @@
  * matrix. Exits nonzero on an undeclared difference, a throw of this library,
  * a broken invariant, or a finding of the format tests.
  *
+ * With `--json-schema` it runs the JSON Schema differential of
+ * `json_schema_differential.ts` instead, `--count` schemas of the
+ * differential's generator and a tenth as many generated JSON groups for each
+ * seed, and exits nonzero on a finding.
+ *
  * Runs under Node's type stripping, with the heap its npm script sets, and
  * its memory cap where `systemd-run --user` can start a scope.
  *
@@ -17,6 +22,10 @@ import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 import * as s from '#lib/schema.ts';
 import { format_differential_report, run_differential } from './differential_classify.ts';
 import { DIFFERENTIAL_KINDS } from './differential_generate.ts';
+import {
+	format_json_schema_differential_report,
+	run_json_schema_differential
+} from './json_schema_differential.ts';
 
 const Seeds = s.pipe(
 	s.union([s.number, s.array(s.number)]),
@@ -29,14 +38,15 @@ const Args = s.object({
 	count: s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 100_000),
 	focus: s.optional(s.one_of(DIFFERENTIAL_KINDS)),
 	limit: s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(0)), 50),
-	neither: s.with_default(s.boolean, false)
+	neither: s.with_default(s.boolean, false),
+	'json-schema': s.with_default(s.boolean, false)
 });
 
 const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
 if (!parsed.ok) {
 	console.error(parsed.issues.map(s.format_issue).join('\n'));
 	console.error(
-		'\nusage: npm run differential -- [--seed n]... [--count n] [--focus kind] [--limit n] [--neither]' +
+		'\nusage: npm run differential -- [--seed n]... [--count n] [--focus kind] [--limit n] [--neither] [--json-schema]' +
 			`\nkinds: ${DIFFERENTIAL_KINDS.join(', ')}`
 	);
 	process.exit(1);
@@ -47,6 +57,18 @@ const seeds = args.seed ?? [Math.floor(Math.random() * 2 ** 31)];
 let failed = false;
 for (const seed of seeds) {
 	const start = performance.now();
+	if (args['json-schema']) {
+		const report = run_json_schema_differential({
+			seed,
+			count: args.count,
+			focus: args.focus ?? null,
+			minimize_limit: args.limit
+		});
+		console.log(format_json_schema_differential_report(report));
+		console.log(`\n${Math.round(performance.now() - start)} ms\n`);
+		if (report.finding_count) failed = true;
+		continue;
+	}
 	const report = run_differential({
 		seed,
 		count: args.count,

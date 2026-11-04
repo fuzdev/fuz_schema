@@ -648,6 +648,42 @@ memo of a `memo_union` never answers there. The test holds it to `union` on
 a family of its own, from fixed seeds: a recursive union whose options walk
 their children before a `literal` tag, over inputs that reuse nodes.
 
+The JSON Schema differential holds what `to_json_schema` writes to the
+library's verdicts. `src/test/json_schema_check.ts` validates by draft
+2020-12 for exactly the keywords the emitter writes, and throws on any
+other keyword anywhere in a document, so a new one fails the run until the
+checker learns it. `src/test/json_schema_differential.ts` draws schemas from
+this generator and from the JSON fixtures' (`json_generate.ts`, recursive
+`lazy` schemas and defaults of any JSON among them), writes each on both
+sides in `'throw'` mode, counts and skips the refused, and compares JSON
+inputs: on the input side the document takes exactly what `is` takes, on the
+output side it takes what `parse` returns, a one-way check, so a looser output
+document is caught by the unit and conformance tests. A disagreement passes only where
+an entry of `JSON_SCHEMA_DIFFERENCES` explains it, each a sentence of
+`docs/design.md` § JSON Schema, by relaxing the checker, rewriting the
+schema past what triggers it, or checking what the parse gives without it,
+alone or with the fewest others. An entry with a rewrite applies only to a
+schema that holds what triggers it, and its rewritten document may differ
+only by a `default` and keys taken out of the `required` of a schema in it.
+A `transform` that gives `undefined` is explained by the parse of the same
+input with each `transform` giving a value instead: that output must differ
+and the original document take it. Its variants are varied past what the
+generator makes for zod, a discriminator shadowed, `0` beside `-0`, or no
+`literal`. Each schema is written again with `unrepresentable: 'any'`,
+which `{}` loosens past exactness, and held one way: the document takes
+every input `is` takes and every output of `parse`. Anything else is
+minimized, the input and the schema, and printed.
+`gro check` runs three fixed seeds, fails on a finding, on a seed whose
+schemas the emitter refuses too often on a side, and on a pinned case of an
+entry its recognizer no longer explains. For a review:
+
+```bash
+npm run differential -- --json-schema --seed 1 --count 100000
+```
+
+`--count` is the differential generator's schemas, with a tenth as many
+generated JSON groups, and `--focus` and `--limit` apply.
+
 ## Mutants
 
 Not a measurement either: a test of the tests. `src/test/mutants.ts` is a

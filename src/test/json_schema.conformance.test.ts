@@ -94,6 +94,52 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			if (!node.required.length) delete node.required;
 		}
 	},
+	union_fills_key: {
+		reason:
+			'a `union` entry that holds a default or a transform has its key required on the output side by what its run does with a missing key, which tries the options before one that fills the key in again, where zod requires it by its options',
+		docs: 'a `union` entry that holds a default or a transform has its key required on the output side where its run gives a value for a missing key',
+		// zod's document only, its key required as this library's parse of `{}`
+		// gives it, which `compare` writes into the mark
+		rewrite: (node, side, options) => {
+			if (side !== 'zod' || options.io !== 'output' || !node.properties) return;
+			const keys = Object.keys(node.properties);
+			const as = (key: string): unknown => node.properties[key][MARK + 'union_fills_key'];
+			const required = keys.filter((key) =>
+				as(key) === 'required'
+					? true
+					: as(key) === 'optional'
+						? false
+						: node.required?.includes(key)
+			);
+			if (required.length) node.required = required;
+			else delete node.required;
+		}
+	},
+	check_key: {
+		reason:
+			"a `check` leaves its key optional with `'any'`, as it can take a missing key, where zod requires it",
+		docs: "a `check` leaves its key optional with `'any'`",
+		rewrite: (node, side, options) => {
+			if (side !== 'zod' || options.unrepresentable !== 'any' || !node.properties) return;
+			if (!node.required) return;
+			node.required = node.required.filter(
+				(key: string) => !holds_mark(node.properties[key], 'check_key')
+			);
+			if (!node.required.length) delete node.required;
+		}
+	},
+	variant_any_of: {
+		reason:
+			"a `variant` whose discriminator is written as other than a `const`, as with `'any'`, is `anyOf`, where zod writes `oneOf`",
+		docs: 'a `variant` whose discriminator is written as other than a `const` is `anyOf`',
+		rewrite: (node, side) => {
+			const key = node[MARK + 'variant_key'];
+			if (side !== 'zod' || typeof key !== 'string' || !Array.isArray(node.oneOf)) return;
+			if (node.oneOf.every((o: Doc) => o.properties && 'const' in o.properties[key])) return;
+			node.anyOf = node.oneOf;
+			delete node.oneOf;
+		}
+	},
 	non_finite_literal: {
 		reason:
 			'a `literal` or a `one_of` value past the finite numbers is refused, or dropped, where zod writes `null`',
@@ -234,6 +280,25 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 	}
 };
 
+// whether `node` has the mark `name`, or an option of it, through `anyOf` and `oneOf`
+const holds_mark = (node: Doc | undefined, name: string): boolean =>
+	!!node &&
+	(node[MARK + name] !== undefined ||
+		[node.anyOf, node.oneOf].some(
+			(options) => Array.isArray(options) && options.some((o: Doc) => holds_mark(o, name))
+		));
+
+// whether a union's options hold a default or a transform, through the unions
+// among them: the unions whose key the two libraries require by different
+// rules, marked in zod's schemas
+const zod_union_fills = (options: ReadonlyArray<any>): boolean =>
+	options.some(
+		(o) =>
+			o instanceof z.ZodDefault ||
+			o instanceof z.ZodPipe ||
+			(o instanceof z.ZodUnion && zod_union_fills(o.options))
+	);
+
 const starts_optional = (schema: any): boolean =>
 	schema instanceof z.ZodOptional || (schema instanceof z.ZodPipe && starts_optional(schema.in));
 
@@ -258,6 +323,17 @@ const ZOD: JsonSchemaLib = {
 		return at.length ? schema.meta({ [MARK + 'bigint_literal']: at }) : schema;
 	},
 	integer: z.number().refine(Number.isInteger).meta(mark('integer')),
+	check: (fn) => z.custom(fn).meta(mark('check_key')),
+	variant: (key, options) =>
+		z.discriminatedUnion(key, options as any).meta({ [MARK + 'variant_key']: key }),
+	union: (options) => {
+		const union = z.union(options as any);
+		return zod_union_fills(options) ? union.meta(mark('union_fills_key')) : union;
+	},
+	memo_union: (options) => {
+		const union = z.union(options as any);
+		return zod_union_fills(options) ? union.meta(mark('union_fills_key')) : union;
+	},
 	// zod writes what `make` gives as the `default`, here a sentinel the rewrite removes
 	with_default_fn: (schema) => schema.default(() => MADE),
 	map: (schema, fn) => {
@@ -553,13 +629,55 @@ const OPTIONS: Array<Required<JsonSchemaOptions>> = [
 	{ io: 'input', unrepresentable: 'any' }
 ];
 
+// this library's adapter with a `transform` or a `make` that gives `undefined`
+// giving a value instead, as the emitter takes either to fill a missing key in
+const FILLED_VALUE = 'x-filled';
+const filled =
+	(fn: (x?: any) => any) =>
+	(x?: any): any => {
+		const out = fn(x);
+		return out === undefined ? FILLED_VALUE : out;
+	};
+const FILLED: JsonSchemaLib = {
+	...OURS,
+	with_default_fn: (schema, make) => s.with_default_fn(schema, filled(make)),
+	map: (schema, fn) => s.pipe(schema, s.transform(filled(fn))),
+	transform: (fn) => s.transform(filled(fn))
+};
+
+// the keys of `{}` this library's parse of `schema` gives, or `null` where it fails
+const keys_of_empty = (schema: s.AnySchema): Set<string> | null => {
+	const result = s.parse(schema, {});
+	if (!result.ok) return null;
+	const output: unknown = JSON.parse(JSON.stringify(result.value) ?? 'null');
+	return typeof output === 'object' && output !== null && !Array.isArray(output)
+		? new Set(Object.keys(output))
+		: null;
+};
+
 const comparisons: Array<Comparison> = [];
 const compare = (name: string, build: (l: JsonSchemaLib) => any): void => {
 	for (const options of OPTIONS) {
+		const zod = write(() => z.toJSONSchema(build(ZOD), options));
+		// each top-level key zod's union is marked on, as this library's parse
+		// gives it, a `transform` or a `make` taken to give a value as the emitter
+		// takes it
+		const properties: Doc | undefined = zod.ok ? zod.doc.properties : undefined;
+		const marked = properties
+			? Object.keys(properties).filter((key) => properties[key][MARK + 'union_fills_key'])
+			: [];
+		if (marked.length && options.io === 'output') {
+			const keys = keys_of_empty(build(FILLED));
+			if (keys) {
+				for (const key of marked) {
+					properties![key][MARK + 'union_fills_key'] = keys.has(key) ? 'required' : 'optional';
+				}
+			}
+		}
 		comparisons.push({
 			name: `${name} (${options.io}, ${options.unrepresentable})`,
 			options,
-			zod: write(() => z.toJSONSchema(build(ZOD), options)),
+			zod,
 			ours: write(() => to_json_schema(build(OURS), options))
 		});
 	}

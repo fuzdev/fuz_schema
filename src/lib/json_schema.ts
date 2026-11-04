@@ -8,9 +8,11 @@
  * a `pipe` or of another type than its step, a step after a `transform` on
  * the input side, a `regex` with flags beyond `d` and `u` or whose source is
  * no pattern under `u` or means something else there, a bound that isn't
- * finite, and a kind defined outside the library.
+ * finite, a `variant` option whose discriminator is no `literal` entry, and a
+ * kind defined outside the library.
  * By default it throws, naming the kind and where in the document, and with
- * `unrepresentable: 'any'` it writes `{}` there, or leaves the keyword out.
+ * `unrepresentable: 'any'` it writes `{}` there, or leaves the keyword out, or
+ * keeps the `variant` option, under `anyOf`.
  * Some things are refused in both modes, as they are the schema's author's
  * mistakes: an entry named like a member of `Object.prototype`, a schema that
  * comes back to itself without reading into the value, metadata that isn't
@@ -96,6 +98,11 @@ const ISO_DATETIME_PATTERN =
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 
+// what a run can do with the `undefined` of a missing key, as bits of a set
+const REFUSES = 1;
+const LEAVES_OUT = 2;
+const FILLS = 4;
+
 // read at an index by `lastIndex`: what follows a `\` that means something else
 // under `u`, and an `(` that opens a group folding case
 const ESCAPE_ELSE = /[upP]\{|u[dD][89a-fA-F]/y;
@@ -157,6 +164,26 @@ const json_refusal = (value: unknown, open: Set<unknown> = new Set()): string | 
 	}
 	open.delete(value);
 	return undefined;
+};
+
+/** Whether `s` is a `literal` the emitter writes as a `const`. */
+const json_literal = (s: SchemaNode | undefined): boolean => {
+	if (s?.kind !== 'literal') return false;
+	const v = s.def;
+	return (
+		v === null ||
+		typeof v === 'string' ||
+		typeof v === 'boolean' ||
+		(typeof v === 'number' && Number.isFinite(v))
+	);
+};
+
+// whether two options of a `variant` have one discriminator, as its `Map` reads them
+const same_discriminator = (a: SchemaNode, b: SchemaNode, key: string): boolean => {
+	const x = (a.def as Record<string, SchemaNode>)[key]?.def;
+	const y = (b.def as Record<string, SchemaNode>)[key]?.def;
+	// eslint-disable-next-line no-self-compare
+	return x === y || (x !== x && y !== y);
 };
 
 type Node = JsonSchema;
@@ -240,11 +267,15 @@ const put = (node: Node, key: string, value: unknown): void => {
  * - An object schema is `{type: 'object', properties, required}`: `object`
  *   closes it with `additionalProperties: false`, `strip_object` too on the
  *   output side, `loose_object` writes `{}` there, and `object_with_rest`
- *   its `rest`. An entry is optional where its key may be missing: under an
- *   `optional`, or a default on the input side, through a `nullable`, a
- *   `lazy`, the first schema of a `pipe`, or any option of a `union`.
+ *   its `rest`. A key is optional where the parse can do without it: on the
+ *   input side where a missing key passes, and on the output side where the
+ *   parse can leave it out, read as the library runs the entry on a missing
+ *   key, through a `nullable`, a `lazy`, a `pipe` and its steps, and a
+ *   `union`'s options in the order it tries them.
  * - A `nullable` and a `union` are `anyOf`, folded into a `type` array where
- *   every option is a bare `type`, and a `variant` is `oneOf`.
+ *   every option is a bare `type`, and a `variant` is `oneOf` of the options
+ *   it can pick, or `anyOf` where a discriminator is written as other than a
+ *   `const`.
  * - The actions of a `pipe` are keywords of its first schema's node: lengths,
  *   bounds, `integer`, formats, and patterns, the tightest bound winning.
  * - A `with_default` writes `default`, unless its schema transforms on the
@@ -358,44 +389,143 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 		}
 	};
 
-	// whether an entry of `s` lets its key be missing on this side. `entry` says
-	// `s` is the entry itself, which a `nullable`, a `lazy`, and a `union` don't pass on
-	const optional_key = (
+	// what a run of `s` can do with the `undefined` of a missing key, a set of
+	// `REFUSES`, `LEAVES_OUT` (it matches and gives `undefined`, so the key stays
+	// out), and `FILLS` (it matches and gives a value). `keyed` says `s` is handed
+	// the object and the key, which `unknown`, the `literal` of `undefined`, and a
+	// `one_of` holding `undefined` read, and `entry` the `1`, which only a `pipe`
+	// that starts with an `optional` reads. Where the walk can't tell, as of what
+	// a `check` says, in a `pipe` or not, it gives every outcome that can be. A
+	// `transform` and a `with_default_fn` are taken to give a value, as zod
+	// takes a `transform`, though either can give `undefined` and leave the key out
+	const missing = (
 		s: SchemaNode,
+		keyed: boolean,
 		entry: boolean,
 		seen: Set<SchemaNode> = new Set()
-	): boolean => {
-		if (!is_schema(s) || seen.has(s)) return false;
+	): number => {
+		// a schema that comes back to itself on the same value is refused elsewhere
+		if (!is_schema(s) || seen.has(s)) return REFUSES;
 		seen.add(s);
+		const m = (x: unknown, k: boolean = keyed, e: boolean = false): number =>
+			missing(x as SchemaNode, k, e, seen);
+		let outcomes: number;
 		switch (s.kind) {
 			case 'optional':
-				return true;
+				outcomes = LEAVES_OUT;
+				break;
 			case 'with_default':
 				// a default of `undefined` leaves the key out
-				return input || s.def.value === undefined;
+				outcomes = s.def.value === undefined ? LEAVES_OUT : FILLS;
+				break;
 			case 'with_default_fn':
 			case 'transform':
-				return input;
+				outcomes = FILLS;
+				break;
+			case 'check':
+				outcomes = REFUSES | LEAVES_OUT;
+				break;
+			case 'regex':
+				// it converts `undefined` to the string `'undefined'`; a `lastIndex` makes it unknowable
+				outcomes = /[gy]/.test(s.def.flags)
+					? REFUSES | LEAVES_OUT
+					: new RegExp(s.def.source, s.def.flags).test('undefined')
+						? LEAVES_OUT
+						: REFUSES;
+				break;
+			case 'unknown':
+				outcomes = keyed ? REFUSES : LEAVES_OUT;
+				break;
+			case 'literal':
+				outcomes = s.def === undefined && !keyed ? LEAVES_OUT : REFUSES;
+				break;
+			case 'one_of':
+				outcomes = s.def.includes(undefined) && !keyed ? LEAVES_OUT : REFUSES;
+				break;
 			case 'nullable':
-				return optional_key(s.def.schema, false, seen);
+				outcomes = m(s.def.schema);
+				break;
 			case 'lazy':
-				return optional_key(target(s) as SchemaNode, false, seen);
+				outcomes = m(target(s));
+				break;
 			case 'pipe': {
-				if (input || !s.def.some((step) => step.kind === 'transform')) {
-					return optional_key(s.def[0]!, entry, seen);
-				}
-				// what a transform gives is written, unless the pipe is the entry and
-				// starts with an `optional`, when no step runs for a missing key
 				let head = s.def[0]!;
 				while (head.kind === 'pipe') head = head.def[0]!;
-				return entry && head.kind === 'optional';
+				// as the entry, a missing key runs no step
+				if (head.kind === 'optional' && keyed && entry) {
+					outcomes = LEAVES_OUT;
+					break;
+				}
+				outcomes = m(s.def[0]);
+				for (let i = 1; i < s.def.length && outcomes & ~REFUSES; i++) {
+					const step = s.def[i]!;
+					// a step handed `undefined` does what it does with it, and one
+					// handed a value can refuse it, and a `transform` replaces it
+					outcomes =
+						(outcomes & REFUSES) |
+						(outcomes & LEAVES_OUT
+							? step.kind === 'check'
+								? LEAVES_OUT | REFUSES
+								: m(step, false)
+							: 0) |
+						(outcomes & FILLS ? (step.kind === 'transform' ? FILLS : FILLS | REFUSES) : 0);
+				}
+				break;
 			}
 			case 'union':
-				return s.def.some((o) => optional_key(o, false, seen));
+				outcomes = union_missing(s.def, keyed, seen);
+				break;
 			default:
-				return false;
+				outcomes = REFUSES;
 		}
+		seen.delete(s);
+		return outcomes;
 	};
+
+	// a `union`'s outcomes, as its `run` in `schema.ts` tries the options: the
+	// first that matches is the union's, and when it fills a missing key in,
+	// each option before it that takes the object and the key is run again
+	// without them, and the first of those that matches is the union's
+	const union_missing = (
+		options: ReadonlyArray<SchemaNode>,
+		keyed: boolean,
+		seen: Set<SchemaNode>
+	): number => {
+		// the union hands the object and the key on only when an option takes them
+		const takes = (o: SchemaNode): boolean => o.run.length > 2 || o.kind === 'lazy';
+		const passes = keyed && options.some(takes);
+		let outcomes = 0;
+		// whether every option so far can have refused, so the next is reached
+		let reached = true;
+		for (let i = 0; i < options.length && reached; i++) {
+			const o = options[i]!;
+			const own = missing(o, passes, false, seen);
+			outcomes |= own & LEAVES_OUT;
+			if (own & FILLS) {
+				if (passes) {
+					// the options before that take the object and the key, run again
+					let again = true;
+					for (let j = 0; j < i && again; j++) {
+						if (!takes(options[j]!)) continue;
+						const retried = missing(options[j]!, false, false, seen);
+						outcomes |= retried & ~REFUSES;
+						again = (retried & REFUSES) !== 0;
+					}
+					if (again) outcomes |= FILLS;
+				} else {
+					outcomes |= FILLS;
+				}
+			}
+			reached = (own & REFUSES) !== 0;
+		}
+		return reached ? outcomes | REFUSES : outcomes;
+	};
+
+	// whether an entry of `s` lets its key be missing on this side: on the input
+	// side where the parse can take it, and on the output side where the parse
+	// can leave it out of what it returns
+	const optional_key = (s: SchemaNode): boolean =>
+		(missing(s, true, true) & (input ? LEAVES_OUT | FILLS : LEAVES_OUT)) !== 0;
 
 	// folds `anyOf` options that are each a bare `type` into one `type`, as zod does
 	// TODO: an error names the path of an option, `anyOf/N`, which the document
@@ -452,7 +582,7 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				error(kind, at, 'the entry is named like a member of Object.prototype');
 			}
 			properties[key] = into(entries[key], at);
-			if (!optional_key(entries[key]!, true)) required.push(key);
+			if (!optional_key(entries[key]!)) required.push(key);
 		}
 		const node: Node = { type: 'object', properties };
 		if (required.length) node.required = required;
@@ -683,8 +813,33 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				return { type: 'array', items: into(s.def, `${path}/items`) };
 			case 'union':
 				return compact({ anyOf: s.def.map((o, i) => emit(o, `${path}/anyOf/${i}`)) });
-			case 'variant':
-				return { oneOf: s.def.options.map((o, i) => into(o, `${path}/oneOf/${i}`)) };
+			case 'variant': {
+				const { key, options } = s.def;
+				// an option of a discriminator a later one shares is never picked
+				const picked = options.filter(
+					(o, i) => !options.some((later, j) => j > i && same_discriminator(o, later, key))
+				);
+				// the runtime picks an option by `def[key].def`, so an option whose
+				// discriminator is no `literal` entry is picked by a value its node
+				// doesn't say, and its node takes others the variant refuses
+				const entry = (o: SchemaNode): boolean =>
+					(o.kind === 'object' || o.kind === 'strip_object' || o.kind === 'loose_object') &&
+					o.def[key]?.kind === 'literal';
+				// a discriminator of no JSON value, or no `literal` entry, is no `const`
+				// with `'any'`, which more than one option can match, and then `oneOf`
+				// refuses what the variant takes
+				const distinct = picked.every((o) => entry(o) && json_literal(o.def[key]));
+				const keyword = distinct ? 'oneOf' : 'anyOf';
+				return {
+					[keyword]: picked.map((o, i) => {
+						const at = `${path}/${keyword}/${i}`;
+						if (!entry(o)) {
+							unrepresentable(s.kind, at, 'its discriminator is not a `literal` entry');
+						}
+						return into(o, at);
+					})
+				};
+			}
 			case 'pipe':
 				return pipe(s, path);
 			case 'bigint':
@@ -761,6 +916,11 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 	const document: Node = { $schema: 'https://json-schema.org/draft/2020-12/schema', ...body };
 	if (count) document.$defs = $defs;
 	// a fresh tree of plain JSON, which also makes each `-0` a `0`
+	// TODO: a schema met again where it doesn't recurse is written in place
+	// each time, as zod's default does, so a DAG such as
+	// `union([nullable(u), with_default(u, 'x')])` nested `n` deep writes a
+	// document of `2^n` nodes, and the time is that size's; writing a reused
+	// node once into `$defs`, as zod's `reused: 'ref'` does, would bound it
 	return JSON.parse(
 		JSON.stringify(document, (_key, value: unknown) =>
 			typeof value === 'object' && value !== null ? (names.get(value) ?? value) : value

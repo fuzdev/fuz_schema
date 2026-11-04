@@ -246,6 +246,125 @@ describe('to_json_schema', () => {
 			assert.ok(required(entry, ANY));
 			assert.ok(!required(entry, INPUT_ANY));
 		});
+
+		// the key is required on the output side where the parse of `{}` writes it,
+		// and on the input side where it refuses `{}`, both asked of the library too
+		const assert_sides = (entry: s.Schema, output: boolean, input: boolean): void => {
+			const schema = s.object({ a: entry });
+			const result = s.parse(schema, {});
+			assert.strictEqual(required(entry, ANY), output, 'output');
+			assert.strictEqual(required(entry, INPUT_ANY), input, 'input');
+			assert.strictEqual(!s.is(schema, {}), input, 'the library on the input side');
+			if (result.ok) assert.strictEqual(Object.hasOwn(result.value, 'a'), output, 'the parse');
+		};
+
+		test('a union tries the options before one that fills the key in again', () => {
+			for (const entry of [
+				s.union([s.unknown, s.with_default(s.string, 'D')]),
+				s.memo_union([s.unknown, s.with_default(s.string, 'D')]),
+				s.union([s.lazy(() => s.unknown), s.with_default_fn(s.string, () => 'D')]),
+				s.union([s.union([s.number, s.unknown]), s.with_default(s.string, 'D')]),
+				s.union([s.nullable(s.unknown), s.with_default(s.string, 'D')]),
+				s.union([s.literal(undefined), s.with_default(s.string, 'D')]),
+				s.union([s.message(s.unknown, 'm'), s.with_default(s.string, 'D')]),
+				// the inner union is handed no object or key, and fills the key in
+				s.union([s.unknown, s.union([s.number, s.with_default(s.string, 'D')])])
+			]) {
+				assert_sides(entry, false, false);
+			}
+		});
+
+		test("the first option that matches a missing key is the union's", () => {
+			// an optional leaves the key out, and none is tried again
+			assert_sides(s.union([s.optional(s.string), s.with_default(s.string, 'D')]), false, false);
+			// a default first fills it in, with nothing before it
+			assert_sides(s.union([s.with_default(s.string, 'D'), s.unknown]), true, false);
+			// an option before it that takes no object or key isn't tried again
+			assert_sides(s.union([s.string, s.with_default(s.string, 'D')]), true, false);
+			// one tried again that fills the key in itself
+			assert_sides(
+				s.union([
+					s.pipe(
+						s.unknown,
+						s.transform(() => 'U')
+					),
+					s.with_default(s.string, 'D')
+				]),
+				true,
+				false
+			);
+			// a union that gives `undefined` inside another is that one's, tried no more
+			assert_sides(
+				s.union([
+					s.pipe(
+						s.unknown,
+						s.transform(() => 'U')
+					),
+					s.union([s.unknown, s.with_default(s.string, 'D')])
+				]),
+				false,
+				false
+			);
+			assert_sides(s.union([s.unknown, s.string]), true, true);
+		});
+
+		test('the steps of a pipe that starts with an optional run where it is not the entry', () => {
+			// the types refuse an action that takes no `undefined` after an optional
+			const entry = s.pipe(s.optional(s.number), s.min_value(1) as any);
+			// as the entry no step runs, and the key stays out
+			assert_sides(entry, false, false);
+			// elsewhere the bound refuses the `undefined`
+			assert_sides(s.union([entry]), true, true);
+			assert_sides(s.nullable(entry), true, true);
+			assert_sides(
+				s.lazy(() => entry),
+				true,
+				true
+			);
+			assert_sides(s.union([s.pipe(s.optional(s.string), s.regex(/^u/) as any)]), false, false);
+			assert_sides(s.union([s.pipe(s.optional(s.string), s.regex(/^x/) as any)]), true, true);
+		});
+
+		test('a check in a pipe that decides it leaves the key optional', () => {
+			// the parse fills the key in, but which depends on what the check says
+			const entry = s.union([
+				s.pipe(
+					s.unknown,
+					s.check((v) => v !== undefined)
+				),
+				s.with_default(s.string, 'D')
+			]);
+			assert.deepEqual(s.parse(s.object({ a: entry }), {}), { ok: true, value: { a: 'D' } });
+			assert.ok(!required(entry, ANY));
+		});
+
+		test('a bare check leaves the key optional with any, as it can take a missing key', () => {
+			for (const entry of [
+				s.check(() => true),
+				s.nullable(s.check(() => true)),
+				s.lazy(() => s.check(() => true)),
+				s.union([s.unknown, s.check(() => true)])
+			]) {
+				assert_sides(entry, false, false);
+			}
+			// what it says decides it, so the key is optional though this one refuses it
+			assert.ok(
+				!required(
+					s.check(() => false),
+					ANY
+				)
+			);
+			assert.ok(
+				!required(
+					s.check(() => false),
+					INPUT_ANY
+				)
+			);
+		});
+
+		test('a one_of of undefined tried again without the key leaves it out', () => {
+			assert_sides(s.union([s.one_of([undefined, 1]), s.with_default(s.number, 1)]), false, false);
+		});
 	});
 
 	describe('wrappers and containers', () => {
@@ -284,6 +403,74 @@ describe('to_json_schema', () => {
 					}))
 				}
 			);
+		});
+
+		test('variant is anyOf where a discriminator is no const, as with any', () => {
+			const schema = s.variant('t', [
+				s.object({ t: s.literal(undefined) }),
+				s.object({ t: s.literal('b'), b: s.number })
+			]);
+			const doc = write(schema, ANY);
+			assert.strictEqual(doc.oneOf, undefined);
+			assert.deepEqual(doc.anyOf[1].properties.t, { type: 'string', const: 'b' });
+			// both options match it, and the variant takes it
+			const value = { t: 'b', b: 1 };
+			assert.ok(s.is(schema, value));
+			assert.strictEqual(doc.anyOf.length, 2);
+		});
+
+		test('variant leaves out an option a later one shares the discriminator of', () => {
+			const schema = s.variant('t', [
+				s.object({ t: s.literal(0), a: s.string }),
+				s.object({ t: s.literal(-0), b: s.number })
+			]);
+			assert.ok(!s.is(schema, { t: 0, a: 'x' }));
+			assert.ok(s.is(schema, { t: 0, b: 1 }));
+			assert.deepEqual(write(schema), {
+				oneOf: [
+					{
+						type: 'object',
+						properties: { t: { type: 'number', const: 0 }, b: { type: 'number' } },
+						required: ['t', 'b'],
+						additionalProperties: false
+					}
+				]
+			});
+		});
+
+		test('a variant option whose discriminator is no literal entry is unrepresentable', () => {
+			const b = s.object({ t: s.literal('b') });
+			const rows: Array<[s.AnySchema, Array<unknown>]> = [
+				// picked where `t` is missing, as `string`'s `def` is `undefined`
+				[s.variant('t', [s.object({ t: s.string }), b]), [{ t: 'zz' }]],
+				[s.variant('t', [s.object({ t: s.optional(s.literal('a')) }), b]), [{ t: 'a' }, {}]],
+				[s.variant('t', [s.object({ t: s.nullable(s.literal('a')) }), b]), [{ t: 'a' }]],
+				[s.variant('t', [s.object({ t: s.one_of(['a', 'c']) }), b]), [{ t: 'a' }]],
+				[s.variant('t', [s.object({ t: s.pipe(s.number, s.min_value(5)) }), b]), [{ t: 5 }]],
+				// the rest's `literal` is what `def.rest` holds, which no entry is
+				[s.variant('rest', [s.object_with_rest({}, s.literal('a')) as any]), [{ x: 'a' }]]
+			];
+			for (const [schema, refused] of rows) {
+				for (const options of [OUTPUT, INPUT]) {
+					assert.throws(
+						() => to_json_schema(schema, options),
+						/^cannot express `variant` at #\/anyOf\/0: its discriminator is not a `literal` entry$/
+					);
+				}
+				for (const value of refused) assert.ok(!s.is(schema, value), JSON.stringify(value));
+				// with 'any', the option is kept, and the document is anyOf
+				const doc = write(schema, INPUT_ANY);
+				assert.strictEqual(doc.oneOf, undefined);
+				assert.ok(doc.anyOf.length >= 1);
+			}
+		});
+
+		test('a variant option whose discriminator is a literal under message or meta is written', () => {
+			for (const t of [s.message(s.literal('a'), 'm'), meta(s.literal('a'), { title: 'A' })]) {
+				const doc = write(s.variant('t', [s.object({ t }), s.object({ t: s.literal('b') })]));
+				assert.strictEqual(doc.oneOf.length, 2);
+				assert.strictEqual(doc.oneOf[0].properties.t.const, 'a');
+			}
 		});
 
 		test('with_default writes its value, as JSON', () => {

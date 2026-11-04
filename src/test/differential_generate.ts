@@ -466,6 +466,51 @@ export const map_spec_children = (
 	}
 };
 
+/**
+ * `spec` with the discriminators of its variants now and then made as
+ * `gen_spec` never makes them, as zod refuses them: the last option's the
+ * first's, which shadows the first, `0` and `-0`, which a `Map` reads as one,
+ * and one that is no `literal`, which `variant` registers by its `def`. The
+ * JSON Schema differential's alone.
+ */
+export const vary_variants = (rng: SeededRng, spec: DifferentialSpec): DifferentialSpec => {
+	const mapped = map_spec_children(spec, (child) => vary_variants(rng, child));
+	if (mapped.t !== 'variant') return mapped;
+	const discriminate = (
+		option: DifferentialObjectSpec,
+		t: DifferentialSpec
+	): DifferentialObjectSpec => ({
+		...option,
+		entries: option.entries.map(([k, e]): [string, DifferentialSpec] => [
+			k,
+			k === mapped.key ? t : e
+		])
+	});
+	const of = mapped.of.slice();
+	const first = of[0]!.entries.find(([k]) => k === mapped.key)![1];
+	const last = of.length - 1;
+	const roll = rng.int(20);
+	if (roll === 0) {
+		of[last] = discriminate(of[last]!, first);
+	} else if (roll === 1) {
+		of[0] = discriminate(of[0]!, { t: 'literal', v: 0 });
+		of[last] = discriminate(of[last]!, { t: 'literal', v: -0 });
+	} else if (roll === 2) {
+		const v = first.t === 'literal' ? first.v : 'a';
+		const others: Array<DifferentialSpec> = [
+			{ t: 'optional', of: first },
+			{ t: 'nullable', of: first },
+			{ t: 'one_of', vs: [v, 'z'] },
+			{ t: 'string' },
+			{ t: 'message', of: first }
+		];
+		of[0] = discriminate(of[0]!, rng.pick(others));
+	} else {
+		return mapped;
+	}
+	return { ...mapped, of };
+};
+
 /** The root schema of a case: most often an object, as most differences are in one. */
 export const gen_root_spec = (
 	rng: SeededRng,

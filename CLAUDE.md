@@ -46,7 +46,8 @@ gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes
 `--class`, see `docs/grading.md`. `npm run benchmark:harvest` takes `--set`,
 `--passes`, and `--duration`. `npm run benchmark:survey` takes `--filter`,
 `--lib`, `--passes`, `--duration`, and `--alone`. `npm run differential` takes
-`--seed` (repeatable), `--count`, `--focus`, `--limit`, and `--neither`, and
+`--seed` (repeatable), `--count`, `--focus`, `--limit`, `--neither`, and
+`--json-schema`, and
 `npm run mutate` takes `--filter`, `--workers`, `--timeout`, `--deep`, and
 `--keep`, see `docs/benchmarks.md`. `npm run fixtures:deep` takes `--seed`
 (repeatable), `--count`, `--cases`, and `--dir`, see `docs/rust.md`.
@@ -114,6 +115,16 @@ dev server.
 - `src/test/json_schema.conformance.test.ts` - `to_json_schema` against zod's
   `toJSONSchema` over every case of the conformance matrix and its own, each
   difference declared in its `DIFFERENCES` and in `docs/design.md`
+- `src/test/json_schema.differential.test.ts` - the documents `to_json_schema`
+  writes, read by a checker, against `is` on the input side and `parse`'s
+  output on the output side, and those of `unrepresentable: 'any'` one way,
+  over generated schemas and JSON inputs from fixed seeds, each disagreement
+  explained by an entry of
+  `JSON_SCHEMA_DIFFERENCES`, with a pinned case for each. Its modules, each
+  importing only those before it: `json_schema_check.ts`, a validator of
+  exactly the keywords the emitter writes, which throws on any other;
+  `json_schema_differential.ts`, the run, the declared differences and their
+  recognizers, the minimizer, and the report
 - `src/test/introspect.test.ts` - the readers, with a row for every kind
   that the types require
 - `src/test/schema.conformance.test.ts` - where zod and valibot agree this

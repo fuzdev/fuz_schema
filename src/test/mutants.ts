@@ -1097,12 +1097,45 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		// a looser output document: the differential's output side is one-way, so the unit tests hold this
+		name: 'json_schema_output_default_left_optional',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `outcomes = s.def.value === undefined ? LEAVES_OUT : FILLS;`,
+				replace: `outcomes = s.def.value === undefined || !input ? LEAVES_OUT : FILLS;`
+			}
+		]
+	},
+	{
 		name: 'json_schema_optional_key_required',
 		file: 'src/lib/json_schema.ts',
 		edits: [
 			{
-				find: `			if (!optional_key(entries[key]!, true)) required.push(key);`,
+				find: `			if (!optional_key(entries[key]!)) required.push(key);`,
 				replace: `			required.push(key);`
+			}
+		]
+	},
+	{
+		// the options before one that fills a missing key in tried again with the object and the key
+		name: 'json_schema_union_retried_with_key',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `const retried = missing(options[j]!, false, false, seen);`,
+				replace: `const retried = missing(options[j]!, true, false, seen);`
+			}
+		]
+	},
+	{
+		// a pipe's steps taken to run on no missing key, under a union or wherever it isn't the entry
+		name: 'json_schema_pipe_steps_skipped_for_missing_key',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `for (let i = 1; i < s.def.length && outcomes & ~REFUSES; i++) {`,
+				replace: `for (let i = 1; i < 1 && outcomes & ~REFUSES; i++) {`
 			}
 		]
 	},
@@ -1243,6 +1276,235 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `			if (keys.length !== 1 || keys[0] !== 'type') return node;`,
 				replace: `			return node;`
+			}
+		]
+	},
+	{
+		// a bare check taken to refuse a missing key, which with 'any' requires a key it takes
+		name: 'json_schema_bare_check_refuses_missing_key',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			case 'check':
+				outcomes = REFUSES | LEAVES_OUT;
+				break;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_one_of_undefined_always_refuses',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `outcomes = s.def.includes(undefined) && !keyed ? LEAVES_OUT : REFUSES;`,
+				replace: `outcomes = REFUSES;`
+			}
+		]
+	},
+	{
+		// with 'any', a discriminator of `{}` that two options match, which oneOf refuses
+		name: 'json_schema_variant_always_one_of',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `const keyword = distinct ? 'oneOf' : 'anyOf';`,
+				replace: `const keyword = 'oneOf';`
+			}
+		]
+	},
+	{
+		// an option picked by the `def` of a discriminator that is no `literal`
+		name: 'json_schema_variant_non_literal_discriminator_written',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `					o.def[key]?.kind === 'literal';`,
+				replace: `					true;`
+			}
+		]
+	},
+	{
+		// an `object_with_rest` option, whose `def[key]` is no entry
+		name: 'json_schema_variant_rest_discriminator_written',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `(o.kind === 'object' || o.kind === 'strip_object' || o.kind === 'loose_object') &&`,
+				replace: `true &&`
+			}
+		]
+	},
+	{
+		// as the entry, a pipe that starts with an optional and holds a transform taken to fill the key in
+		name: 'json_schema_pipe_head_optional_transform_fills',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				if (head.kind === 'optional' && keyed && entry) {
+					outcomes = LEAVES_OUT;`,
+				replace: `				if (head.kind === 'optional' && keyed && entry) {
+					outcomes = s.def.some((x) => x.kind === 'transform') ? FILLS : LEAVES_OUT;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_variant_keeps_shadowed_option',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `!options.some((later, j) => j > i && same_discriminator(o, later, key))`,
+				replace: `!options.some((later, j) => j > i && false)`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_default_applies_to_all',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `applies: (c) => holds_kind(c.schema, ['with_default', 'with_default_fn']),`,
+				replace: `applies: () => true,`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_transform_not_refilled',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `		return out === undefined ? FILLED_VALUE : out;`,
+				replace: `		return out;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_transform_in_throw_mode',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `		modes: ['any'],`,
+				replace: ``
+			}
+		]
+	},
+	{
+		// a `default` and a `required` read as keywords wherever the names are, a property's included
+		name: 'json_schema_differential_rewrite_reads_names_anywhere',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `		if (SCHEMA_MAPS.has(k) && is_node(a) && is_node(b)) {
+			if (!isDeepStrictEqual(Object.keys(a), Object.keys(b))) fail(here);
+			for (const n of Object.keys(a)) loosens(a[n], b[n], pointer(here, n));
+		} else if`,
+				replace: `		if`
+			},
+			{
+				find: `		if (SCHEMA_MAPS.has(k) && is_node(v)) {
+			out[k] = Object.fromEntries(Object.entries(v).map(([n, x]) => [n, without_defaults(x)]));
+		} else if`,
+				replace: `		if (SCHEMA_MAPS.has(k) && is_node(v)) {
+			out[k] = without_defaults(v);
+		} else if`
+			},
+			{
+				find: `const SCHEMA_ONE = new Set([`,
+				replace: `const SCHEMA_ONE = new Set([
+	...SCHEMA_MAPS,`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_variants_not_varied',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `const spec = vary_variants(vary, gen_root_spec(rng, focus));`,
+				replace: `const spec = gen_root_spec(rng, focus);`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_any_pass_skipped',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `for (const mode of any ? (['throw', 'any'] as const) : (['throw'] as const)) {`,
+				replace: `for (const mode of ['throw'] as const) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_counts_code_units',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: `const n = options.code_unit_lengths ? text.length : count_code_points(text);`,
+				replace: `const n = text.length;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_pattern_read_without_u',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: `				re = RegExp(source, 'u');`,
+				replace: `				re = RegExp(source);`
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_closed_object_left_open',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: `				} else if (additional === false) {
+					return false;`,
+				replace: `				} else if (additional === false) {
+					continue;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_one_of_as_any_of',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: `.length !== 1) return false;`,
+				replace: `.length < 1) return false;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_unknown_keyword_read_past',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: "\t\t\tmalformed(at, `the keyword ${JSON.stringify(key)}, which the checker doesn't know`);",
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_check_record_skips_proto',
+		file: 'src/test/json_schema_check.ts',
+		edits: [
+			{
+				find: `options.rest_skips_proto && properties !== undefined && s.propertyNames === undefined;`,
+				replace: `options.rest_skips_proto;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_differential_default_fn_not_rewritten',
+		file: 'src/test/json_schema_differential.ts',
+		edits: [
+			{
+				find: `return mapped.t === 'default_fn' ? { ...mapped, t: 'default' } : mapped;`,
+				replace: `return mapped;`
 			}
 		]
 	},

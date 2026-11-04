@@ -10,3 +10,4 @@ feat: `to_json_schema` writes a schema as JSON Schema draft 2020-12, in zod's sh
 - an `id` of metadata is copied as any other key, where zod moves the node into `$defs`
 - a `lazy` that comes back to itself without reading into the value is refused
 - `uuid` and `iso_datetime` write this library's grammars as their `pattern`, and a `with_default_fn` writes no `default`, nor that of what it holds
+- a `variant` is `oneOf` of the options it can pick, or `anyOf` where a discriminator is written as other than a `const`, as with `unrepresentable: 'any'`
