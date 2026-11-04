@@ -681,8 +681,10 @@ nothing until it imports the module.
   the copy, not the original, is what gets registered. The copy is
   `{kind, def, run}` in that order, with the original's values.
 - **Metadata belongs to one object.** `flavor` and `brand` return that object.
-  `message`, the wrappers, and the containers build a new one, which has none.
-  A wrapper holds its schema as `def.schema`, so a walk reaches it.
+  `message` builds a new one and registers it with the same metadata object,
+  as it keeps the `kind` and `def` and holds what it was given only in its
+  `run`, where no walk reaches. The wrappers and the containers build a new
+  one, which has none, and hold their schema in `def`, so a walk reaches it.
 - **Attaching again merges**, key by key, onto a new copy.
 - **`SchemaMeta` is an interface**, with `description`, that consumers extend
   by declaration merging. The library names no application's keys.
@@ -694,7 +696,10 @@ nothing until it imports the module.
   any other attached, where a registry of each copy's own drops it silently.
   So its shape is a contract between versions: a `WeakMap` from schema to
   metadata object, which attaching replaces with a merged copy and never
-  mutates. A change to it takes a new key. The registry is made in a call
+  mutates. A change to it takes a new key. `message` reads it by that key
+  in `schema.ts`, where importing `meta.ts` would need an export for the read
+  alone, and makes none when no copy of `meta.ts` has run, as then there is
+  no metadata to carry. The registry is made in a call
   marked pure, so a bundle of the source that never calls `meta` or
   `get_meta` drops it. A minifier that inlines the call drops the mark, so a
   library that ships `meta.ts` in a minified bundle writes the registry for
@@ -713,8 +718,8 @@ nothing until it imports the module.
 - **Metadata is read from the outermost layer that has the key**, as `meta`
   attaches it to one object. `find_schema_meta` reads every schema a value
   can reach instead, each once: every step of a `pipe`, every option, and
-  with `structural` what a container holds. Metadata attached directly to
-  the schema given to `message` is out of reach to both.
+  with `structural` what a container holds. Both find metadata attached to
+  the schema given to `message`, which carries it over.
 - **A default is the outermost `with_default`'s or `with_default_fn`'s**,
   unless an `optional` is outside it, which answers `undefined` before the
   default is asked. A `union` is not looked into. One of a `with_default_fn`

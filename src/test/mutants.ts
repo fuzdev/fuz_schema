@@ -1008,6 +1008,25 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'message_drops_meta',
+		edits: [
+			{
+				find: `	if (meta) registry!.set(labeled, meta);`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'message_meta_key_drifts',
+		file: 'src/lib/meta.ts',
+		edits: [
+			{
+				find: `		Symbol.for('@fuzdev/fuz_schema/meta')`,
+				replace: `		Symbol.for('@fuzdev/fuz_schema/meta@2')`
+			}
+		]
+	},
+	{
 		name: 'standard_schema_reverses_path_again',
 		file: 'src/lib/standard_schema.ts',
 		edits: [

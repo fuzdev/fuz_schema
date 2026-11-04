@@ -7,9 +7,10 @@
  *
  * - `flavor` and `brand` return the object they were given, so its metadata
  *   is still there.
- * - `message` builds a new schema, as does every wrapper and container, so
- *   what they return has none. Attach metadata last, outside `message`.
- * - A wrapper holds the schema it was given under `def.schema`, so metadata
+ * - `message` builds a new schema and carries the metadata over to it, the
+ *   same object, so it is found on either.
+ * - Every wrapper and container builds a new schema, which has none. A
+ *   wrapper holds the schema it was given under `def.schema`, so metadata
  *   on a wrapped schema is found by walking to it.
  *
  * `SchemaMeta` has `description` built in and takes other keys by
@@ -22,6 +23,7 @@
  * That makes the registry's shape a contract between versions: a `WeakMap`
  * from schema object to its metadata object, which `meta` replaces with a
  * merged copy and never mutates. A version that changes it takes a new key.
+ * `message` in `schema.ts` reads and writes it by the same key.
  *
  * Import as a namespace or by name:
  * `import {meta, get_meta} from '@fuzdev/fuz_schema/meta.ts'`.
@@ -53,9 +55,11 @@ type Registry = WeakMap<AnySchema, SchemaMeta>;
 
 // held weakly, so metadata lives as long as its schema and no longer.
 // The key holds the package's name, which no other package can publish under,
-// and no version: the shape is the contract. The call is pure as far as a
-// bundler needs: only this module reads what it writes, and a copy that is
-// kept writes it when it runs, so dropping an unused one loses nothing.
+// and no version: the shape is the contract. `message` in `schema.ts` reads
+// it by the same key, and writes to it only what it found there. The call is
+// pure as far as a bundler needs: only this module and `message` read what it
+// writes, and a copy that is kept writes it when it runs, so dropping an
+// unused one loses nothing.
 const registry: Registry = /* @__PURE__ */ (() =>
 	((globalThis as unknown as Record<symbol, Registry | undefined>)[
 		Symbol.for('@fuzdev/fuz_schema/meta')

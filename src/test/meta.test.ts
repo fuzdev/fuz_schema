@@ -90,15 +90,44 @@ describe('meta', () => {
 		});
 	});
 
-	test('is not carried by message, which builds a new schema', () => {
-		const a = meta(s.string, { description: 'a' });
-		assert.strictEqual(get_meta(s.message(a, 'x')), undefined);
-		// so metadata goes on last
-		const b = meta(s.message(s.string, 'must be text'), { description: 'b' });
-		assert.deepEqual(get_meta(b), { description: 'b' });
+	test('is carried by message to the schema it builds, the same object', () => {
+		const before = Object.entries(s.string);
+		const a = meta(s.string, { description: 'a', test_aliases: ['x'] });
+		const m = s.message(a, 'x');
+		assert.notStrictEqual(m, a);
+		assert.deepEqual(Object.keys(m), ['kind', 'def', 'run']);
+		assert.strictEqual(get_meta(m), get_meta(a));
+		assert.strictEqual(get_meta(s.message(s.message(a, 'y'), 'z')), get_meta(a));
+		// the schema given is left as it was
+		assert.deepEqual(get_meta(a), { description: 'a', test_aliases: ['x'] });
+		assert.strictEqual(get_meta(s.string), undefined);
+		assert.deepEqual(Object.entries(s.string), before);
+		// a schema without metadata gives one without
+		assert.strictEqual(get_meta(s.message(s.string, 'x')), undefined);
+		// on an action and a refinement too
+		const action = meta(s.transform(String), { description: 'action' });
+		assert.deepEqual(get_meta(s.message(action, 'x')), { description: 'action' });
+		const refinement = meta(s.min_length(1), { description: 'refinement' });
+		assert.deepEqual(get_meta(s.message(refinement, 'x')), { description: 'refinement' });
+		// and the result still labels its issues
+		const result = s.parse(m, 1);
+		assert(!result.ok);
+		assert.strictEqual(result.issues[0]!.message, 'x');
+	});
+
+	test('a later meta on a message merges as on the schema given', () => {
+		const a = meta(s.string, { description: 'a', test_aliases: ['x'] });
+		const b = meta(s.message(a, 'must be text'), { description: 'b' });
+		assert.deepEqual(get_meta(b), get_meta(meta(a, { description: 'b' })));
+		assert.deepEqual(get_meta(b), { description: 'b', test_aliases: ['x'] });
+		// neither the message nor what it was given changes
+		assert.deepEqual(get_meta(a), { description: 'a', test_aliases: ['x'] });
 		const result = s.parse(b, 1);
 		assert(!result.ok);
 		assert.strictEqual(result.issues[0]!.message, 'must be text');
+		// metadata on a message carries through another
+		const c = s.message(meta(s.message(s.string, 'inner'), { description: 'c' }), 'outer');
+		assert.deepEqual(get_meta(c), { description: 'c' });
 	});
 
 	test('is read from the schema given, not the ones inside it', () => {

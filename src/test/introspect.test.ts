@@ -65,11 +65,20 @@ describe('get_schema_meta', () => {
 		assert.strictEqual(get_schema_meta(A, 'description'), 'kept');
 	});
 
-	test('finds metadata outside message and not inside it', () => {
+	test('finds metadata outside message and inside it', () => {
 		const outside = meta(s.message(s.string, 'text'), { description: 'd' });
 		assert.strictEqual(get_schema_meta(outside, 'description'), 'd');
 		const inside = s.message(meta(s.string, { description: 'd' }), 'text');
-		assert.strictEqual(get_schema_meta(inside, 'description'), undefined);
+		assert.strictEqual(get_schema_meta(inside, 'description'), 'd');
+		const nested = s.message(s.message(meta(s.string, { description: 'n' }), 'a'), 'b');
+		assert.strictEqual(get_schema_meta(nested, 'description'), 'n');
+		const layered = meta(s.message(meta(s.string, { description: 'in' }), 'text'), {
+			introspect_aliases: ['a']
+		});
+		assert.strictEqual(get_schema_meta(layered, 'description'), 'in');
+		assert.deepEqual(get_schema_meta(layered, 'introspect_aliases'), ['a']);
+		const action = s.message(meta(s.min_length(1), { description: 'r' }), 'text');
+		assert.strictEqual(get_schema_meta(action, 'description'), 'r');
 	});
 
 	test('reads metadata through flavor, brand, and a lazy', () => {
@@ -214,7 +223,7 @@ describe('find_schema_meta', () => {
 			mark(s.pipe(s.unknown, s.transform(String), mark(s.string, 'step')), 'pipe'),
 			'x'
 		);
-		assert.deepEqual(find_schema_meta(P, 'description'), ['step']);
+		assert.deepEqual(find_schema_meta(P, 'description'), ['pipe', 'step']);
 		const L = s.message(
 			mark(
 				s.lazy(() => mark(s.string, 'lazy')),
@@ -222,7 +231,7 @@ describe('find_schema_meta', () => {
 			),
 			'x'
 		);
-		assert.deepEqual(find_schema_meta(L, 'description'), ['lazy']);
+		assert.deepEqual(find_schema_meta(L, 'description'), ['own', 'lazy']);
 	});
 
 	test('a value once for each schema object it is on', () => {
@@ -240,17 +249,27 @@ describe('find_schema_meta', () => {
 		assert.deepEqual(find_schema_meta(A, 'introspect_aliases'), [['b'], ['a']]);
 	});
 
-	test('through flavor and brand, and not inside message', () => {
+	test('through flavor, brand, and message', () => {
 		assert.deepEqual(find_schema_meta(s.flavor(mark(s.string, 'f'), 'F'), 'description'), ['f']);
 		assert.deepEqual(find_schema_meta(s.brand(mark(s.string, 'b'), 'B'), 'description'), ['b']);
-		// current behavior: `message` makes a new schema with the `kind` and
-		// `def` of the one given and no link a read can follow, so a mark on that one is lost
-		assert.deepEqual(find_schema_meta(s.message(mark(s.string, 'm'), 'x'), 'description'), []);
+		// `message` carries the metadata of the schema it was given over to the one it makes
+		assert.deepEqual(find_schema_meta(s.message(mark(s.string, 'm'), 'x'), 'description'), ['m']);
+		assert.deepEqual(
+			find_schema_meta(s.message(s.message(mark(s.string, 'n'), 'x'), 'y'), 'description'),
+			['n']
+		);
 		// what its `def` holds is still read
 		assert.deepEqual(
 			find_schema_meta(s.message(s.optional(mark(s.string, 'in')), 'x'), 'description'),
 			['in']
 		);
+		// a step under message, an action and a refinement, inside a pipe
+		const P = s.pipe(
+			s.string,
+			s.message(mark(s.min_length(1), 'refinement'), 'x'),
+			s.message(mark(s.transform(Number), 'action'), 'y')
+		);
+		assert.deepEqual(find_schema_meta(P, 'description'), ['refinement', 'action']);
 	});
 });
 
@@ -305,6 +324,22 @@ describe('get_schema_fields', () => {
 			]
 		);
 		assert.strictEqual(fields[0]!.schema, Args.def._);
+	});
+
+	test('a description through message', () => {
+		const fields = get_schema_fields(
+			s.object({
+				a: s.message(meta(s.string, { description: 'a' }), 'x'),
+				b: s.message(s.with_default(meta(s.number, { description: 'b' }), 1), 'y')
+			})
+		);
+		assert.deepEqual(
+			fields.map((f) => [f.name, f.description, f.has_default]),
+			[
+				['a', 'a', false],
+				['b', 'b', true]
+			]
+		);
 	});
 
 	test('the outermost default and description', () => {

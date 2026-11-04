@@ -14,9 +14,9 @@
  * `brand` are no layer: they keep the `kind` and `def` of what they were
  * given. Metadata is found on any layer, as `meta` attaches it to one object,
  * so `with_default(meta(s.boolean, {description}), true)` and
- * `meta(with_default(s.boolean, true), {description})` read the same. Metadata
- * attached directly to the schema given to `message` is out of reach, as
- * `message` keeps it only in its `run`, where no read reaches.
+ * `meta(with_default(s.boolean, true), {description})` read the same.
+ * `message` carries the metadata of the schema it was given over to the one
+ * it returns, so it is found there too.
  * `find_schema_meta` reads every schema a value can reach, not only the
  * layers.
  *
@@ -110,11 +110,9 @@ export interface FindSchemaMetaOptions {
  *   in the order of its `def`: a pipe's steps, a union's options, an object's
  *   entries, then the `rest`. A value is there once for each schema object it
  *   is attached to, so the same value can come more than once.
- * - `flavor` and `brand` return the schema they were given, so its metadata
- *   is found. Metadata attached directly to the schema given to `message` is
- *   out of reach: `message` returns a new schema that keeps the `kind` and
- *   `def` and holds it only in its `run` closure, though what that one's
- *   `def` holds is still read.
+ * - `flavor` and `brand` return the schema they were given, and `message`
+ *   carries its metadata over to the one it returns, so metadata on the
+ *   schema given to any of them is found.
  * - Nothing but a `lazy`'s function is called, and a kind defined outside the
  *   library is read and not looked into.
  *

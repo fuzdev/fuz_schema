@@ -960,6 +960,9 @@ const label_issues = (
  * the value, so text built from it puts input into an issue that otherwise
  * has none.
  *
+ * Metadata `meta` attached to `schema` is carried over to the result, the same
+ * object, so readers find it there as on `schema`, which is left as it was.
+ *
  * @param message - the text, or a function that builds it from the issue and the value
  */
 // @__NO_SIDE_EFFECTS__
@@ -984,8 +987,8 @@ export const message: {
 } = <T extends Schema>(
 	schema: T,
 	message: string | ((issue: SchemaIssue, value: unknown) => string)
-): T =>
-	({
+): T => {
+	const labeled = {
 		kind: schema.kind,
 		def: schema.def,
 		// two closures that differ only in what they pass on, chosen once here:
@@ -1011,7 +1014,19 @@ export const message: {
 						if (ctx.issues) label_issues(ctx.issues, count, message, value);
 						return output;
 					}
-	}) as AnySchema as T;
+	} as AnySchema as T;
+	// carries `schema`'s metadata over, read from the registry `meta.ts` keeps,
+	// by the same key: importing that module would need an export for this
+	// alone. When no copy of it has run there is no registry, and no metadata
+	// to carry, so none is made here. The metadata object is shared: `meta`
+	// replaces an entry with a merged copy and never mutates one
+	const registry = (globalThis as unknown as Record<symbol, WeakMap<object, object> | undefined>)[
+		Symbol.for('@fuzdev/fuz_schema/meta')
+	];
+	const meta = registry?.get(schema);
+	if (meta) registry!.set(labeled, meta);
+	return labeled;
+};
 
 //
 // Nominal types

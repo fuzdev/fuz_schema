@@ -656,6 +656,20 @@ A module-level context reset by each parse, in place of a new object.
 - **Why**: the valid path got slower, where a program has one schema.
 - **Reopens**: nothing known.
 
+## Metadata
+
+### `message` carrying metadata through an export of `meta.ts`
+
+`message` calls a function `meta.ts` exports, which reads and writes the
+registry, in place of reading the registry by its key in `schema.ts`.
+
+- **Gave**: the registry's key written once, and 12 gzip off `message` last in.
+- **Cost**: 28 gzip on `message` alone, as the registry is then made in
+  every bundle that uses `message`, and an export that is no API.
+- **Why**: larger where `message` is used without `meta`, and the key is a
+  contract between versions already, which a test holds `schema.ts` to.
+- **Reopens**: a module both can import that adds no export.
+
 ## Standard Schema
 
 ### `~standard` on every schema
