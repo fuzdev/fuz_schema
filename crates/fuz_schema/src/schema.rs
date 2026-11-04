@@ -92,6 +92,10 @@ pub enum SchemaKind {
     Integer,
     /// `safe_integer`.
     SafeInteger,
+    /// `uuid`.
+    Uuid,
+    /// `iso_datetime`.
+    IsoDatetime,
 }
 
 impl SchemaKind {
@@ -122,6 +126,8 @@ impl SchemaKind {
         Self::MaxValue,
         Self::Integer,
         Self::SafeInteger,
+        Self::Uuid,
+        Self::IsoDatetime,
     ];
 
     /// The kind's name, the `kind` of the TypeScript schema.
@@ -152,6 +158,8 @@ impl SchemaKind {
             Self::MaxValue => "max_value",
             Self::Integer => "integer",
             Self::SafeInteger => "safe_integer",
+            Self::Uuid => "uuid",
+            Self::IsoDatetime => "iso_datetime",
         }
     }
 
@@ -171,15 +179,24 @@ impl SchemaKind {
                 | Self::MaxValue
                 | Self::Integer
                 | Self::SafeInteger
+                | Self::Uuid
+                | Self::IsoDatetime
         )
     }
 
     /// Whether the kind is an action that only means something in a `pipe`.
-    /// The number tests answer for any value and stand alone.
+    /// The number tests answer for any value and stand alone. The format
+    /// tests answer for any value too, and are held to a `pipe` as the
+    /// library's `to_schema_json` holds them, for a string it has fixed.
     pub(crate) const fn needs_pipe(self) -> bool {
         matches!(
             self,
-            Self::MinLength | Self::MaxLength | Self::MinValue | Self::MaxValue
+            Self::MinLength
+                | Self::MaxLength
+                | Self::MinValue
+                | Self::MaxValue
+                | Self::Uuid
+                | Self::IsoDatetime
         )
     }
 }
@@ -311,6 +328,14 @@ pub enum SchemaNode {
     Integer,
     /// An integer every neighbor of which is a distinct double.
     SafeInteger,
+    /// A string that is a UUID of RFC 9562: 8-4-4-4-12 hex digits of either
+    /// case, a version from 1 to 8 and the RFC's variant, or the nil or max
+    /// UUID.
+    Uuid,
+    /// A string that is a date and time of RFC 3339 in UTC: a real date of a
+    /// four-digit year, `T`, the time with seconds, a fraction of 1 to 9
+    /// digits or none, and `Z`.
+    IsoDatetime,
 }
 
 impl SchemaNode {
@@ -342,6 +367,8 @@ impl SchemaNode {
             Self::MaxValue(_) => SchemaKind::MaxValue,
             Self::Integer => SchemaKind::Integer,
             Self::SafeInteger => SchemaKind::SafeInteger,
+            Self::Uuid => SchemaKind::Uuid,
+            Self::IsoDatetime => SchemaKind::IsoDatetime,
         }
     }
 
@@ -648,6 +675,8 @@ mod tests {
             SchemaKind::MaxValue => 22,
             SchemaKind::Integer => 23,
             SchemaKind::SafeInteger => 24,
+            SchemaKind::Uuid => 25,
+            SchemaKind::IsoDatetime => 26,
         }
     }
 
@@ -657,7 +686,7 @@ mod tests {
             assert_eq!(place(kind), index, "{kind}");
         }
         // the last place is the last of the list, so none is past its end
-        assert_eq!(place(SchemaKind::SafeInteger) + 1, SchemaKind::ALL.len());
+        assert_eq!(place(SchemaKind::IsoDatetime) + 1, SchemaKind::ALL.len());
     }
 
     #[test]

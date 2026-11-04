@@ -246,6 +246,16 @@ impl SchemaBuilder {
         self.push(SchemaNode::SafeInteger)
     }
 
+    /// An action: a string that is a UUID of RFC 9562.
+    pub fn uuid(&mut self) -> NodeId {
+        self.push(SchemaNode::Uuid)
+    }
+
+    /// An action: a string that is a date and time of RFC 3339 in UTC.
+    pub fn iso_datetime(&mut self) -> NodeId {
+        self.push(SchemaNode::IsoDatetime)
+    }
+
     /// Checks the nodes reachable from `root` and from every defined `lazy`,
     /// and makes the schema that starts at `root`.
     ///
@@ -894,7 +904,9 @@ impl<'a> Checker<'a> {
             | SchemaNode::Bigint
             | SchemaNode::Unknown
             | SchemaNode::Integer
-            | SchemaNode::SafeInteger => {}
+            | SchemaNode::SafeInteger
+            | SchemaNode::Uuid
+            | SchemaNode::IsoDatetime => {}
         }
         Ok(())
     }
@@ -917,9 +929,33 @@ impl<'a> Checker<'a> {
             if !kind.is_action() {
                 return Err((SchemaBuildErrorKind::PipeStep { kind }, id, step));
             }
+            // every action named, so a new one is given its type here
             let fits = match kind {
                 SchemaKind::MinLength | SchemaKind::MaxLength => value_type != ValueType::Number,
-                _ => value_type == ValueType::Number,
+                SchemaKind::MinValue
+                | SchemaKind::MaxValue
+                | SchemaKind::Integer
+                | SchemaKind::SafeInteger => value_type == ValueType::Number,
+                SchemaKind::Uuid | SchemaKind::IsoDatetime => value_type == ValueType::String,
+                SchemaKind::String
+                | SchemaKind::Number
+                | SchemaKind::Boolean
+                | SchemaKind::Bigint
+                | SchemaKind::Unknown
+                | SchemaKind::Literal
+                | SchemaKind::OneOf
+                | SchemaKind::Optional
+                | SchemaKind::Nullable
+                | SchemaKind::WithDefault
+                | SchemaKind::Lazy
+                | SchemaKind::Object
+                | SchemaKind::LooseObject
+                | SchemaKind::StripObject
+                | SchemaKind::Record
+                | SchemaKind::Array
+                | SchemaKind::Union
+                | SchemaKind::Variant
+                | SchemaKind::Pipe => false,
             };
             if !fits {
                 return Err((SchemaBuildErrorKind::ActionMismatch { kind }, id, step));
@@ -1072,7 +1108,9 @@ fn for_each_child(node: &SchemaNode, mut visit: impl FnMut(Step, NodeId)) {
         | SchemaNode::MinValue(_)
         | SchemaNode::MaxValue(_)
         | SchemaNode::Integer
-        | SchemaNode::SafeInteger => {}
+        | SchemaNode::SafeInteger
+        | SchemaNode::Uuid
+        | SchemaNode::IsoDatetime => {}
     }
 }
 
@@ -1230,7 +1268,7 @@ mod tests {
                 "/schema/def/1".to_owned()
             )
         );
-        let mismatches: [(Make, Make, SchemaKind); 6] = [
+        let mismatches: [(Make, Make, SchemaKind); 9] = [
             (
                 SchemaBuilder::string,
                 |b| b.min_value(0.0),
@@ -1266,6 +1304,20 @@ mod tests {
                 },
                 |b| b.max_value(1.0),
                 SchemaKind::MaxValue,
+            ),
+            (SchemaBuilder::number, SchemaBuilder::uuid, SchemaKind::Uuid),
+            (
+                SchemaBuilder::integer,
+                SchemaBuilder::iso_datetime,
+                SchemaKind::IsoDatetime,
+            ),
+            (
+                |b| {
+                    let item = b.string();
+                    b.array(item)
+                },
+                SchemaBuilder::uuid,
+                SchemaKind::Uuid,
             ),
         ];
         for (head, action, kind) in mismatches {

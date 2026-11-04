@@ -1574,6 +1574,372 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'safe_integer, Infinity', schema: (l) => l.safe_integer, input: () => Infinity },
 	{ name: 'safe_integer, NaN', schema: (l) => l.safe_integer, input: () => NaN },
 	{ name: 'safe_integer, a string', schema: (l) => l.safe_integer, input: () => '1' },
+	{
+		name: 'uuid, v1',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-12d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, v4',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, v7',
+		schema: (l) => l.uuid,
+		input: () => '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+		also: BOTH
+	},
+	{
+		name: 'uuid, v8',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-82d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, version 0',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-02d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, version 9',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-92d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, version f',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-f2d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, variant 7',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-7456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, variant c',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-c456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, variant B',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-B456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, uppercase v4',
+		schema: (l) => l.uuid,
+		input: () => '123E4567-E89B-42D3-A456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, nil',
+		schema: (l) => l.uuid,
+		input: () => '00000000-0000-0000-0000-000000000000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, max',
+		schema: (l) => l.uuid,
+		input: () => 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+		also: BOTH
+	},
+	{
+		name: 'uuid, max uppercase',
+		schema: (l) => l.uuid,
+		input: () => 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF',
+		also: BOTH
+	},
+	{
+		name: 'uuid, max mixed case',
+		schema: (l) => l.uuid,
+		input: () => 'ffffffff-FFFF-ffff-FFFF-ffffffffffff',
+		also: BOTH
+	},
+	{
+		name: 'uuid, braced',
+		schema: (l) => l.uuid,
+		input: () => '{123e4567-e89b-42d3-a456-426614174000}',
+		also: BOTH
+	},
+	{
+		name: 'uuid, no dashes',
+		schema: (l) => l.uuid,
+		input: () => '123e4567e89b42d3a456426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, a urn',
+		schema: (l) => l.uuid,
+		input: () => 'urn:uuid:123e4567-e89b-42d3-a456-426614174000',
+		also: BOTH
+	},
+	{
+		name: 'uuid, a trailing newline',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-a456-426614174000\n',
+		also: BOTH
+	},
+	{
+		name: 'uuid, a fullwidth digit',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-a456-42661417400\uff10',
+		also: BOTH
+	},
+	{
+		name: 'uuid, too short',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-a456-42661417400',
+		also: BOTH
+	},
+	{
+		name: 'uuid, too long',
+		schema: (l) => l.uuid,
+		input: () => '123e4567-e89b-42d3-a456-4266141740000',
+		also: BOTH
+	},
+	{ name: 'uuid, a number', schema: (l) => l.uuid, input: () => 1, also: BOTH },
+	{
+		name: 'uuid, an array of a uuid',
+		schema: (l) => l.uuid,
+		input: () => ['123e4567-e89b-42d3-a456-426614174000'],
+		also: BOTH
+	},
+	{ name: 'uuid, null', schema: (l) => l.uuid, input: () => null, also: BOTH },
+	{
+		name: 'iso_datetime, midnight',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a fraction of 1',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00.1Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a fraction of 9',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00.123456789Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a fraction of 10',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00.1234567890Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a fraction of 30',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00.123456789012345678901234567890Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, an empty fraction',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00.Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a comma fraction',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00,5Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, an offset',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00+01:00',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, offset -00:00',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00-00:00',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, an offset with no colon',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00+0100',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, no seconds',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, local',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, lowercase t',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01t00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, lowercase z',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a space',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01 00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 30',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-02-30T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 29 of 2023',
+		schema: (l) => l.iso_datetime,
+		input: () => '2023-02-29T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 29 of 2024',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-02-29T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 29 of 2000',
+		schema: (l) => l.iso_datetime,
+		input: () => '2000-02-29T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 29 of 1900',
+		schema: (l) => l.iso_datetime,
+		input: () => '1900-02-29T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, February 29 of 0000',
+		schema: (l) => l.iso_datetime,
+		input: () => '0000-02-29T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, April 31',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-04-31T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, month 13',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-13-01T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, month 00',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-00-01T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, day 00',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-00T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, hour 24',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T24:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, minute 60',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T23:60:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a leap second',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T23:59:60Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, year 0000',
+		schema: (l) => l.iso_datetime,
+		input: () => '0000-01-01T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, an expanded year',
+		schema: (l) => l.iso_datetime,
+		input: () => '+002024-01-01T00:00:00Z',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, a trailing newline',
+		schema: (l) => l.iso_datetime,
+		input: () => '2024-01-01T00:00:00Z\n',
+		also: BOTH
+	},
+	{
+		name: 'iso_datetime, fullwidth digits',
+		schema: (l) => l.iso_datetime,
+		input: () => '\uff12\uff10\uff12\uff14-01-01T00:00:00Z',
+		also: BOTH
+	},
+	{ name: 'iso_datetime, a number', schema: (l) => l.iso_datetime, input: () => 0, also: BOTH },
+	{
+		name: 'iso_datetime, an array of a datetime',
+		schema: (l) => l.iso_datetime,
+		input: () => ['2024-01-01T00:00:00Z'],
+		also: BOTH
+	},
+	{ name: 'iso_datetime, null', schema: (l) => l.iso_datetime, input: () => null, also: BOTH },
+	{
+		name: 'iso_datetime, a Date',
+		schema: (l) => l.iso_datetime,
+		input: () => new Date(0),
+		also: BOTH
+	},
+	{
+		name: 'uuid entry and iso_datetime entry',
+		entries: (l) => ({ id: l.uuid, at: l.optional(l.iso_datetime) }),
+		input: () => ({ id: '123e4567-e89b-42d3-a456-426614174000', at: '2024-01-01T00:00:00Z' })
+	},
+	{
+		name: 'uuid entry and iso_datetime entry, both wrong',
+		entries: (l) => ({ id: l.uuid, at: l.optional(l.iso_datetime) }),
+		input: () => ({ id: '123e4567-e89b-42d3-a456-42661417400', at: '2024-13-01T00:00:00Z' })
+	},
+	{
+		name: 'union[uuid, iso_datetime], a datetime',
+		schema: (l) => l.union([l.uuid, l.iso_datetime]),
+		input: () => '2024-01-01T00:00:00Z'
+	},
+	{
+		name: 'union[uuid, iso_datetime], neither',
+		schema: (l) => l.union([l.uuid, l.iso_datetime]),
+		input: () => '2024-01-01T00:00:00'
+	},
 	{ name: 'string, a String object', schema: (l) => l.string, input: () => Object('x') },
 	{ name: 'boolean, 0', schema: (l) => l.boolean, input: () => 0 },
 	{ name: 'bigint, a number', schema: (l) => l.bigint, input: () => 1 },

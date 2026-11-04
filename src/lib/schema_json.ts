@@ -78,7 +78,9 @@ const BARE_KINDS: ReadonlySet<string> = new Set([
 	'bigint',
 	'unknown',
 	'integer',
-	'safe_integer'
+	'safe_integer',
+	'uuid',
+	'iso_datetime'
 ]);
 
 /**
@@ -95,6 +97,9 @@ const OBJECT_KINDS: ReadonlySet<string> = new Set(['object', 'loose_object', 'st
 /** The actions that take a length, which a string or an array has. */
 const LENGTH_ACTIONS: ReadonlySet<string> = new Set(['min_length', 'max_length']);
 
+/** The actions that test a string's format. */
+const STRING_ACTIONS: ReadonlySet<string> = new Set(['uuid', 'iso_datetime']);
+
 /** The actions that take a number. */
 const NUMBER_ACTIONS: ReadonlySet<string> = new Set([
 	'min_value',
@@ -103,12 +108,18 @@ const NUMBER_ACTIONS: ReadonlySet<string> = new Set([
 	'safe_integer'
 ]);
 
-/** The actions that mean something only in a `pipe`, where the library would coerce or throw. */
+/**
+ * The actions that mean something only in a `pipe`, where the library would
+ * coerce or throw, and the format tests, which are for a string a `pipe` has
+ * fixed.
+ */
 const PIPE_ONLY_ACTIONS: ReadonlySet<string> = new Set([
 	'min_length',
 	'max_length',
 	'min_value',
-	'max_value'
+	'max_value',
+	'uuid',
+	'iso_datetime'
 ]);
 
 /** A key as a reference token of a JSON Pointer. */
@@ -401,14 +412,18 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 						if (i === 0 || (is_schema(step) && SCHEMA_JSON_UNSUPPORTED_KINDS.includes(step.kind))) {
 							return node(step, at, inner);
 						}
-						const length = is_schema(step) && LENGTH_ACTIONS.has(step.kind);
-						const number = is_schema(step) && NUMBER_ACTIONS.has(step.kind);
-						if (!length && !number) {
+						const action_kind = is_schema(step) ? step.kind : '';
+						const fits = LENGTH_ACTIONS.has(action_kind)
+							? type !== 'number'
+							: NUMBER_ACTIONS.has(action_kind)
+								? type === 'number'
+								: STRING_ACTIONS.has(action_kind)
+									? type === 'string'
+									: undefined;
+						if (fits === undefined) {
 							return refuse(kind, at, "only actions follow a pipe's first schema");
 						}
-						if (length ? type === 'number' : type !== 'number') {
-							refuse(kind, at, `the action is not for a ${type}`);
-						}
+						if (!fits) refuse(kind, at, `the action is not for a ${type}`);
 						return node(step, at, inner);
 					})
 				};

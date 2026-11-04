@@ -218,6 +218,8 @@ dev server.
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
 - `docs/declined.md` - trades that were built, measured, and not taken: what
   each gave and cost, why it was declined, and what would reopen it
+- `docs/formats.md` - the grammars of the format tests, what decides one
+  where zod and valibot disagree, and how a grammar is held
 - `docs/rust.md` - the Rust side: the model, the interchange form, the two
   evaluators, the issues, the declared divergences, what is refused, the
   fixtures, and the wasm build
@@ -434,6 +436,7 @@ whether a JSON text matches a schema, and the issues of one that doesn't.
 - `json.rs` - `Json`, the crate's tree, which holds an object as `JSON.parse`
   would
 - `js.rs` - the JavaScript semantics both evaluators share
+- `format.rs` - the format tests, `uuid` and `iso_datetime`, as byte scans
 - `walk.rs` - the tree evaluator behind `matches_json_exact` and
   `validate_json`, the reference
 - `issue.rs` - `SchemaIssue`, what it holds, and its `Display`, the text

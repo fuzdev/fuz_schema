@@ -211,6 +211,10 @@ pub enum SchemaIssueKind {
     Integer,
     /// `safe_integer`.
     SafeInteger,
+    /// `uuid`.
+    Uuid,
+    /// `iso_datetime`.
+    IsoDatetime,
     /// `unknown_key`: the value is at a key an `object` has no entry for.
     UnknownKey,
     /// `missing_key`: the value has no key for an entry of an object schema
@@ -241,6 +245,8 @@ impl SchemaIssueKind {
         Self::MaxValue,
         Self::Integer,
         Self::SafeInteger,
+        Self::Uuid,
+        Self::IsoDatetime,
         Self::UnknownKey,
         Self::MissingKey,
     ];
@@ -267,6 +273,8 @@ impl SchemaIssueKind {
             Self::MaxValue => "max_value",
             Self::Integer => "integer",
             Self::SafeInteger => "safe_integer",
+            Self::Uuid => "uuid",
+            Self::IsoDatetime => "iso_datetime",
             Self::UnknownKey => "unknown_key",
             Self::MissingKey => "missing_key",
         }
@@ -296,6 +304,8 @@ impl SchemaIssueKind {
             SchemaKind::MaxValue => Some(Self::MaxValue),
             SchemaKind::Integer => Some(Self::Integer),
             SchemaKind::SafeInteger => Some(Self::SafeInteger),
+            SchemaKind::Uuid => Some(Self::Uuid),
+            SchemaKind::IsoDatetime => Some(Self::IsoDatetime),
             SchemaKind::Unknown
             | SchemaKind::Optional
             | SchemaKind::Nullable
@@ -354,8 +364,10 @@ mod tests {
             SchemaIssueKind::MaxValue => 16,
             SchemaIssueKind::Integer => 17,
             SchemaIssueKind::SafeInteger => 18,
-            SchemaIssueKind::UnknownKey => 19,
-            SchemaIssueKind::MissingKey => 20,
+            SchemaIssueKind::Uuid => 19,
+            SchemaIssueKind::IsoDatetime => 20,
+            SchemaIssueKind::UnknownKey => 21,
+            SchemaIssueKind::MissingKey => 22,
         }
     }
 

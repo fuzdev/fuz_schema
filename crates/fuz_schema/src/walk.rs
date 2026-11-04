@@ -22,6 +22,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::error::JsonError;
+use crate::format;
 use crate::issue::{MAX_ISSUES, PathSegment, Received, SchemaIssue, SchemaIssueKind};
 use crate::js;
 use crate::json::{Json, Value};
@@ -607,6 +608,11 @@ fn scalar(node: &SchemaNode, value: Value<'_>) -> bool {
         SchemaNode::Integer => matches!(value, Value::Number(number) if js::is_integer(number)),
         SchemaNode::SafeInteger => {
             matches!(value, Value::Number(number) if js::is_safe_integer(number))
+        }
+        // the format tests follow a string, and are never true of anything else
+        SchemaNode::Uuid => matches!(value, Value::String(text) if format::is_uuid(text)),
+        SchemaNode::IsoDatetime => {
+            matches!(value, Value::String(text) if format::is_iso_datetime(text))
         }
         // JSON holds no bigint, and the rest are not scalars
         _ => false,
@@ -1594,6 +1600,24 @@ pub mod tests {
                 failures(&schema, "null"),
                 [format!(": {kind} received Null")]
             );
+        }
+        // and the format tests, which follow a string
+        let formats: [(Make, &str); 2] = [
+            (SchemaBuilder::uuid, "uuid"),
+            (SchemaBuilder::iso_datetime, "iso_datetime"),
+        ];
+        for (make, kind) in formats {
+            let schema = build(|b| {
+                let string = b.string();
+                let test = make(b);
+                b.pipe([string, test])
+            });
+            assert_eq!(expects(&schema, r#""x""#), [kind]);
+            assert_eq!(
+                failures(&schema, r#""x""#),
+                [format!(": {kind} received String")]
+            );
+            assert_eq!(failures(&schema, "null"), [": string received Null"]);
         }
         // `object` and `array` name themselves, the other object schemas `object`
         let number = |b: &mut SchemaBuilder| b.number();

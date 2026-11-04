@@ -311,6 +311,36 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'uuid_variant_c',
+		edits: [{ find: `-[89abAB][0-9a-fA-F]{3}-`, replace: `-[89abcAB][0-9a-fA-F]{3}-` }]
+	},
+	{
+		name: 'uuid_no_max',
+		edits: [
+			{
+				find: `|00000000-0000-0000-0000-000000000000|[fF]{8}-[fF]{4}-[fF]{4}-[fF]{4}-[fF]{12})$/`,
+				replace: `|00000000-0000-0000-0000-000000000000)$/`
+			}
+		]
+	},
+	{
+		name: 'uuid_no_type_guard',
+		edits: [
+			{
+				find: `typeof value === 'string' && UUID.test(value)`,
+				replace: `UUID.test(value)`
+			}
+		]
+	},
+	{
+		name: 'iso_datetime_fraction_of_ten',
+		edits: [{ find: `(?:\\.\\d{1,9})?Z$/`, replace: `(?:\\.\\d{1,10})?Z$/` }]
+	},
+	{
+		name: 'iso_datetime_1900_leap',
+		edits: [{ find: `|[13579][26]00)-02-29`, replace: `|\\d\\d00)-02-29` }]
+	},
+	{
 		name: 'run_entries_writes_missing',
 		edits: [
 			{

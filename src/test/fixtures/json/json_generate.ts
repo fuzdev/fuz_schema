@@ -72,6 +72,34 @@ const LITERALS: Array<s.SchemaLiteral> = [
 	false,
 	null
 ];
+// strings near each format test's grammar, either side of it
+const FORMAT_STRINGS: Record<string, Array<string>> = {
+	uuid: [
+		'123e4567-e89b-42d3-a456-426614174000',
+		'00000000-0000-0000-0000-000000000000',
+		'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF',
+		'123E4567-E89B-82D3-B456-426614174000',
+		'123e4567-e89b-02d3-a456-426614174000',
+		'123e4567-e89b-42d3-c456-426614174000',
+		'123e4567-e89b-42d3-a456-42661417400',
+		'123e4567e89b42d3a456426614174000',
+		'123e4567-e89b-42d3-a456-426614174000\n',
+		'123e4567-e89b-42d3-a456-42661417400０'
+	],
+	iso_datetime: [
+		'2024-01-01T00:00:00Z',
+		'2024-02-29T23:59:59.123456789Z',
+		'0000-02-29T00:00:00Z',
+		'2023-02-29T00:00:00Z',
+		'1900-02-29T00:00:00Z',
+		'2024-04-31T00:00:00Z',
+		'2024-01-01T00:00:00.1234567890Z',
+		'2024-01-01T00:00:00+01:00',
+		'2024-01-01T23:59:60Z',
+		'2024-01-01t00:00:00Z',
+		'2024-01-01T00:00:00Z\n'
+	]
+};
 const ENTRY_KEYS = ['a', 'b', 'c', '0', '1', '', 'é', 'a b', 'k"q', '😀'];
 const DEFAULTS: Array<unknown> = ['D', 1, 0, null, true, [], {}, { a: 1 }, [1, 'x']];
 const NUMBER_BOUNDS = [0, 1, -1, 1.5, 2, 2 ** 53];
@@ -128,6 +156,12 @@ const gen_leaf: Gen = (rng, _depth, self) => {
 		case 9:
 			return gen_number_pipe(rng);
 		case 10: {
+			if (rng.chance(0.25)) {
+				const format = rng.pick([s.uuid, s.iso_datetime]) as s.AnySchema;
+				return rng.chance(0.5)
+					? pipe(s.string, format)
+					: pipe(s.string, ...length_steps(rng), format);
+			}
 			const head = pipe(s.string, ...length_steps(rng));
 			// a pipe whose first schema is a pipe
 			return rng.chance(0.3) ? pipe(head, ...length_steps(rng)) : head;
@@ -490,6 +524,10 @@ const pipe_text = (t: TextState, schema: s.AnySchema, depth: number): string => 
 	const bounds = steps
 		.filter((step) => typeof step.def === 'number')
 		.map((step) => step.def as number);
+	const format = steps.find((step) => step.kind in FORMAT_STRINGS);
+	if (head.kind === 'string' && format) {
+		return string_text(t, t.rng.pick(FORMAT_STRINGS[format.kind]!));
+	}
 	if (head.kind === 'string') {
 		const length = Math.max(0, Math.floor(near(t, bounds, 1)));
 		let value = '';

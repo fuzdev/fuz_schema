@@ -1,0 +1,559 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "pipe",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "iso_datetime"
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "midnight",
+			"text": "\"2024-01-01T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction_1",
+			"text": "\"2024-01-01T00:00:00.1Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction_6",
+			"text": "\"2024-01-01T00:00:00.123456Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction_9",
+			"text": "\"2024-01-01T00:00:00.123456789Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fraction_10",
+			"text": "\"2024-01-01T00:00:00.1234567890Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "fraction_30",
+			"text": "\"2024-01-01T00:00:00.123456789012345678901234567890Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "fraction_empty",
+			"text": "\"2024-01-01T00:00:00.Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "fraction_comma",
+			"text": "\"2024-01-01T00:00:00,5Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "offset",
+			"text": "\"2024-01-01T00:00:00+01:00\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "offset_negative_zero",
+			"text": "\"2024-01-01T00:00:00-00:00\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "offset_no_colon",
+			"text": "\"2024-01-01T00:00:00+0100\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "no_seconds",
+			"text": "\"2024-01-01T00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "local",
+			"text": "\"2024-01-01T00:00:00\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "lowercase_t",
+			"text": "\"2024-01-01t00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "lowercase_z",
+			"text": "\"2024-01-01T00:00:00z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "space",
+			"text": "\"2024-01-01 00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "feb_30",
+			"text": "\"2024-02-30T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "feb_29_2023",
+			"text": "\"2023-02-29T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "feb_29_2024",
+			"text": "\"2024-02-29T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "feb_29_2000",
+			"text": "\"2000-02-29T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "feb_29_1900",
+			"text": "\"1900-02-29T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "feb_29_0000",
+			"text": "\"0000-02-29T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "april_31",
+			"text": "\"2024-04-31T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "april_30",
+			"text": "\"2024-04-30T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "december_31",
+			"text": "\"9999-12-31T23:59:59Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "month_13",
+			"text": "\"2024-13-01T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "month_00",
+			"text": "\"2024-00-01T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "day_00",
+			"text": "\"2024-01-00T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "hour_24",
+			"text": "\"2024-01-01T24:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "minute_60",
+			"text": "\"2024-01-01T23:60:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "leap_second",
+			"text": "\"2024-01-01T23:59:60Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "year_0000",
+			"text": "\"0000-01-01T00:00:00Z\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "year_expanded",
+			"text": "\"+002024-01-01T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "year_short",
+			"text": "\"024-01-01T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "trailing_newline",
+			"text": "\"2024-01-01T00:00:00Z\\n\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "escaped",
+			"text": "\"2024-01-01\\u005400:00:00\\u005a\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "fullwidth_digits",
+			"text": "\"２０２４-01-01T00:00:00Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "fullwidth_fraction",
+			"text": "\"2024-01-01T00:00:00.１Z\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [],
+					"formatted": "expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "1704067200000",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [],
+					"formatted": "expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "array_of_one",
+			"text": "[\"2024-01-01T00:00:00Z\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [],
+					"formatted": "expected string, received array"
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [],
+					"formatted": "expected string, received null"
+				}
+			]
+		}
+	]
+}

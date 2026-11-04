@@ -1,7 +1,7 @@
 {
 	"schema": {
 		"schema": {
-			"kind": "loose_object",
+			"kind": "strip_object",
 			"def": {
 				"1": {
 					"kind": "array",
@@ -25,7 +25,7 @@
 											},
 											{
 												"kind": "max_length",
-												"def": 2
+												"def": 3
 											},
 											{
 												"kind": "max_length",
@@ -36,30 +36,8 @@
 								}
 							},
 							"a b": {
-								"kind": "union",
-								"def": [
-									{
-										"kind": "pipe",
-										"def": [
-											{
-												"kind": "number"
-											},
-											{
-												"kind": "max_value",
-												"def": 1.5
-											},
-											{
-												"kind": "safe_integer"
-											}
-										]
-									},
-									{
-										"kind": "number"
-									},
-									{
-										"kind": "bigint"
-									}
-								]
+								"kind": "lazy",
+								"def": "$0"
 							}
 						}
 					}
@@ -77,49 +55,38 @@
 					}
 				}
 			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "strip_object",
+				"def": {
+					"0": {
+						"kind": "unknown"
+					},
+					"b": {
+						"kind": "string"
+					},
+					"k\"q": {
+						"kind": "safe_integer"
+					}
+				}
+			}
 		}
 	},
 	"cases": [
 		{
-			"name": "00_near",
-			"text": "{\"1\":[\t]\t, \"a\"\n:\n[ {\n}]}",
+			"name": "00_aimed",
+			"text": "{\"1\":[],\"a\":[]}",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "01_cut",
-			"text": "{\"a\":[{},{}],\"1\":[",
-			"json": false
-		},
-		{
-			"name": "02_aimed",
-			"text": "{\"1\":[[]],\"1\":[{\"k\\\"q\":{\"0\":false},\"😀\":\"😀\"},{\"k\\\"q\":{\" \":false},\"😀\":\"é\",\"a b\":5e-324},{\"😀\":\"ab\",\"toString\":true,\"k\\\"q\":{},\"a b\":null}],\"a\":[null],\"constructor\":[]}",
+			"name": "01_near",
+			"text": "{\"1\":[],\"\\u0061\":[null,{\"\":{}}]}",
 			"json": true,
 			"valid": false,
 			"issues": [
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "undefined",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received undefined"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
-					"path": [
-						"1",
-						2,
-						"a b"
-					],
-					"formatted": "1.2.\"a b\": expected number | bigint, received null"
-				},
 				{
 					"kind": "object",
 					"expected": "object",
@@ -129,161 +96,6 @@
 						0
 					],
 					"formatted": "a.0: expected object, received null"
-				}
-			]
-		},
-		{
-			"name": "03_aimed",
-			"text": "{\"1\":-1.5,\"a\":[{}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "number",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received number"
-				}
-			]
-		},
-		{
-			"name": "04_aimed",
-			"text": "{\"a\":null}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
-				},
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "null",
-					"path": [
-						"a"
-					],
-					"formatted": "a: expected array, received null"
-				}
-			]
-		},
-		{
-			"name": "05_aimed",
-			"text": "{\"a\":false}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
-				},
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "boolean",
-					"path": [
-						"a"
-					],
-					"formatted": "a: expected array, received boolean"
-				}
-			]
-		},
-		{
-			"name": "06_aimed",
-			"text": "{\"1\":[{\"\\u006b\\\"\\u0071\":{\"a\":1},\"\\ud83d\\uDE00\":\"\\u0061😀\",\"a\\u0020\\u0062\":0},{\"\\u006b\\\"\\u0071\":{\" \":{\"a\":1},\"0\":false},\"\\uD83D\\ude00\":\"\\uD83D\\uDE00\",\"a b\":null},{\"k\\\"\\u0071\":{\"\\u006b\\u0030\":true},\"\\ud83d\\ude00\":null,\"a\\u0020\\u0062\":\"x\",\"z\":1.5}],\"a\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],{\"\":{}}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "boolean",
-					"expected": "boolean",
-					"received": "number",
-					"path": [
-						"1",
-						0,
-						"k\"q",
-						"a"
-					],
-					"formatted": "1.0.\"k\\\"q\".a: expected boolean, received number"
-				},
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "boolean",
-					"expected": "boolean",
-					"received": "object",
-					"path": [
-						"1",
-						1,
-						"k\"q",
-						" "
-					],
-					"formatted": "1.1.\"k\\\"q\".\" \": expected boolean, received object"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
-					"path": [
-						"1",
-						1,
-						"a b"
-					],
-					"formatted": "1.1.\"a b\": expected number | bigint, received null"
-				},
-				{
-					"kind": "string",
-					"expected": "string",
-					"received": "null",
-					"path": [
-						"1",
-						2,
-						"😀"
-					],
-					"formatted": "1.2.\"😀\": expected string, received null"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "string",
-					"path": [
-						"1",
-						2,
-						"a b"
-					],
-					"formatted": "1.2.\"a b\": expected number | bigint, received string"
-				},
-				{
-					"kind": "object",
-					"expected": "object",
-					"received": "array",
-					"path": [
-						"a",
-						0
-					],
-					"formatted": "a.0: expected object, received array"
 				},
 				{
 					"kind": "unknown_key",
@@ -299,116 +111,32 @@
 			]
 		},
 		{
-			"name": "07_near",
-			"text": "{ \"\\u0031\":\r\n[\r\n{ \"\\u006B\\u0022\\u0071\"\n:{\"\\u006B1\" :\nfalse, \"😀\":\r\ntrue },\"\\ud83d\\uDE00\": \"a\\u0062\\u0063\",\"\\u0061 \\u0062\"\t:\"\\u0020\"}\t,\t{  \"\\ud83d\\ude00\" :\"\\uD83D\\ude00b\"  ,  \"\\u007A\"\n:false  ,  \"k\\u0022q\":\t{\"k\\u0030\":true,  \"\\ud83d\\ude00\":false}  ,  \"a\\u0020b\" :null\r\n} ],  \"\\u0061\":\n[{  },{},{ }  ]}",
+			"name": "02_tail",
+			"text": "{\"a\":[],\"\\u0031\":[[]]} null",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "03_aimed",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "string",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received string"
-				},
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						1,
-						"😀"
-					],
-					"formatted": "1.1.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
-					"path": [
-						"1",
-						1,
-						"a b"
-					],
-					"formatted": "1.1.\"a b\": expected number | bigint, received null"
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
 				}
 			]
 		},
 		{
-			"name": "08_near",
-			"text": "{\"1\":[{\"\\u006b\\\"\\u0071\":{},\"😀\":\"😀\",\"a b\":{\"\":null,\"\\ud83d\\uDE00\":1e300}}],\"a\":[{\"\\u0074\\u006f\\u0053t\\u0072\\u0069\\u006E\\u0067\":\"b\"}]}",
+			"name": "04_aimed",
+			"text": "{\"1\":[],\"a\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "object",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received object"
-				},
-				{
-					"kind": "unknown_key",
-					"expected": "no unknown keys",
-					"received": "string",
-					"path": [
-						"a",
-						0,
-						"toString"
-					],
-					"formatted": "a.0.toString: expected no unknown keys, received string"
-				}
-			]
-		},
-		{
-			"name": "09_aimed",
-			"text": "{\"\\u0031\":[{\"k\\\"\\u0071\":{\"\\u006b0\":0,\"_\\u005fp\\u0072\\u006f\\u0074o_\\u005F\":false,\"k\\u0031\":false},\"\\u0061\\u0020b\":9007199254740991},{\"\\u006b\\\"q\":{\"k\\u0030\":false},\"\\u0061 b\":-0,\"😀\":\"\\u00e9\"},{\"k\\\"\\u0071\":{\"\\ud83d\\uDE00\":true},\"😀\":\" \",\"\\u0061 \\u0062\":null}],\"\\u0061\":null}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "boolean",
-					"expected": "boolean",
-					"received": "number",
-					"path": [
-						"1",
-						0,
-						"k\"q",
-						"k0"
-					],
-					"formatted": "1.0.\"k\\\"q\".k0: expected boolean, received number"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
-					"path": [
-						"1",
-						2,
-						"a b"
-					],
-					"formatted": "1.2.\"a b\": expected number | bigint, received null"
-				},
 				{
 					"kind": "array",
 					"expected": "array",
@@ -421,105 +149,57 @@
 			]
 		},
 		{
-			"name": "10_tail",
-			"text": "{\"a\":[{},{}],\"1\":[{\"k\\\"q\":[],\"😀\":\"éb😀\",\"a b\":1e21},{\"😀\":null,\"a b\":{\"\":{}},\"k\\\"q\":{}}]} 1",
-			"json": false,
-			"diverges": "malformed_tail"
-		},
-		{
-			"name": "11_near",
-			"text": "{\"1\":[{\"\\u006b\\u0022\\u0071\":{},\"\\uD83D\\ude00\":\"\\u0061\\u0062\"},{\"k\\\"\\u0071\":null,\"a b\":100},{\"\\u006b\\u0022q\":{\"c\\u006F\\u006E\\u0073tr\\u0075ct\\u006f\\u0072\":true,\"\\uD83D\\ude00\":false},\"\\uD83D\\ude00\":null,\"a\\u0020\\u0062\":1.5}],\"a\":[{}]}",
+			"name": "05_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":{\"\":{}},\"😀\":\"éa😀\",\"a b\":{\"0\":{\"\":{}},\"k\\\"q\":1e21,\"z\":-1.5}}],\"a\":[{},null]}",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "undefined",
+					"kind": "boolean",
+					"expected": "boolean",
+					"received": "object",
 					"path": [
 						"1",
 						0,
-						"a b"
+						"k\"q",
+						""
 					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received undefined"
+					"formatted": "1.0.\"k\\\"q\".\"\": expected boolean, received object"
 				},
 				{
-					"kind": "record",
-					"expected": "object",
-					"received": "null",
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
 					"path": [
 						"1",
-						1,
-						"k\"q"
+						0,
+						"😀"
 					],
-					"formatted": "1.1.\"k\\\"q\": expected object, received null"
+					"formatted": "1.0.\"😀\": expected length <= 3, received string"
 				},
 				{
 					"kind": "string",
 					"expected": "string",
-					"received": "null",
-					"path": [
-						"1",
-						2,
-						"😀"
-					],
-					"formatted": "1.2.\"😀\": expected string, received null"
-				}
-			]
-		},
-		{
-			"name": "12_tail",
-			"text": "{\"1\":[{\"k\\\"q\":{\"k0\":true,\" \":true,\"__proto__\":false},\"😀\":\"abba\",\"a b\":null},{\"k\\\"q\":{\"0\":true},\"😀\":\"😀😀\",\"a b\":1E+21},{\"k\\\"q\":{\"10\":true},\"😀\":\"éba\",\"a b\":1.5}],\"a\":[]}}",
-			"json": false,
-			"diverges": "malformed_tail"
-		},
-		{
-			"name": "13_aimed",
-			"text": "{\"1\":[],\"a\":[{}]}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "14_aimed",
-			"text": "{\"1\":0,\"a\":true}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "number",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received number"
-				},
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "boolean",
-					"path": [
-						"a"
-					],
-					"formatted": "a: expected array, received boolean"
-				}
-			]
-		},
-		{
-			"name": "15_near",
-			"text": "{ \"a\":  [\nnull ]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
 					"received": "undefined",
 					"path": [
-						"1"
+						"1",
+						0,
+						"a b",
+						"b"
 					],
-					"formatted": "1: expected array, received undefined"
+					"formatted": "1.0.\"a b\".b: expected string, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received number"
 				},
 				{
 					"kind": "object",
@@ -527,41 +207,15 @@
 					"received": "null",
 					"path": [
 						"a",
-						0
+						1
 					],
-					"formatted": "a.0: expected object, received null"
+					"formatted": "a.1: expected object, received null"
 				}
 			]
 		},
 		{
-			"name": "16_aimed",
-			"text": "{\"a\":null,\"z\":{\"constructor\":\"\\u0000\"}}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
-				},
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "null",
-					"path": [
-						"a"
-					],
-					"formatted": "a: expected array, received null"
-				}
-			]
-		},
-		{
-			"name": "17_aimed",
-			"text": "{\"1\":null,\"a\":[null,{\"0\":-1.5,\"0\":-1.5},{}],\"\":1.5}",
+			"name": "06_aimed",
+			"text": "{\"1\":null,\"a\":[[[]],null,{\"\":\"a\\\"b\"}]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -577,51 +231,125 @@
 				{
 					"kind": "object",
 					"expected": "object",
+					"received": "array",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received array"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					],
+					"formatted": "a.1: expected object, received null"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"a",
+						2,
+						""
+					],
+					"formatted": "a.2.\"\": expected no unknown keys, received string"
+				}
+			]
+		},
+		{
+			"name": "07_aimed",
+			"text": "{\"a\":[null],\"1\":[{\"k\\\"q\":null,\"😀\":null,\"a b\":{\"b\":false,\"b\":\"a\",\"k\\\"q\":-1e21}},{\"k\\\"q\":{\"k0\":true,\"a\\\"b\":false},\"😀\":null,\"a b\":{\"k\\\"q\":1,\"b\":\"null\",\"0\":\"日本\"}},{\"k\\\"q\":{},\"😀\":null,\"a b\":{\"0\":-0.0,\"b\":\"/\",\"k\\\"q\":1.0}}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					],
+					"formatted": "1.0.\"k\\\"q\": expected object, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"0"
+					],
+					"formatted": "1.0.\"a b\".0: expected a required key, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"😀"
+					],
+					"formatted": "1.1.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					],
+					"formatted": "1.2.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
 					"received": "null",
 					"path": [
 						"a",
 						0
 					],
 					"formatted": "a.0: expected object, received null"
-				},
-				{
-					"kind": "unknown_key",
-					"expected": "no unknown keys",
-					"received": "number",
-					"path": [
-						"a",
-						1,
-						"0"
-					],
-					"formatted": "a.1.0: expected no unknown keys, received number"
 				}
 			]
 		},
 		{
-			"name": "18_aimed",
-			"text": "{ \"a\":[\t{ \n} ,  {\t}  ]  }",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
-				}
-			]
-		},
-		{
-			"name": "19_tail",
-			"text": "{\r\n\"1\":[\t],\"a\"\r\n:[{\t}]} ]",
-			"json": false
-		},
-		{
-			"name": "20_near",
-			"text": "{\"a\":[{},null],\"1\":[{\"k\\\"q\":{},\"😀\":null,\"a b\":123456789012345678901234567890},{\"a b\":2,\"😀\":null,\"k\\\"q\":{}}]}",
+			"name": "08_near",
+			"text": "{\"1\":[{\"😀\":\"x\",\"k\\\"q\":{},\"😀\":null,\"a b\":{\"0\":1E+21,\"b\":\"b\",\"k\\\"q\":9007199254740992}}],\"a\":[{},{},{}],\"__proto__\":{\"k0\":\"😀\"}}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -635,6 +363,319 @@
 						"😀"
 					],
 					"formatted": "1.0.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "09_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":{\"\":true},\"😀\":\"b😀\"},{\"k\\\"q\":{\"constructor\":true},\"a b\":{\"0\":true,\"b\":\"a\",\"k\\\"q\":2},\"z\":\"0\"},{\"k\\\"q\":{\"0\":false,\"a\\\"b\":false,\"k0\":true},\"😀\":null,\"a b\":{\"b\":\" \",\"k\\\"q\":1.5,\"0\":false}}],\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b"
+					],
+					"formatted": "1.0.\"a b\": expected object, received undefined"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					],
+					"formatted": "1.2.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						2,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.2.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "10_aimed",
+			"text": "{\"a\":[null,{},{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"1"
+					],
+					"formatted": "1: expected array, received undefined"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "11_near",
+			"text": "{\"1\":[{\"😀\":null,\"k\\\"q\":{\"a\\\"b\":true,\"0\":false},\"a b\":{\"b\":null,\"0\":false,\"k\\\"q\":0}},{\"k\\\"q\":{\"😀\":true,\"k1\":true},\"a b\":null,\"__proto__\":\"日本\"}],\"a\":[null,{},null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"b"
+					],
+					"formatted": "1.0.\"a b\".b: expected string, received null"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"a b"
+					],
+					"formatted": "1.1.\"a b\": expected object, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						2
+					],
+					"formatted": "a.2: expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "12_aimed",
+			"text": "{\"a\":[{}],\"1\":[{\"k\\\"q\":null,\"😀\":\"😀a😀\",\"a b\":{\"0\":\" \",\"b\":\"/\",\"k\\\"q\":-1e21}},{\"k\\\"q\":{\"a\\\"b\":false,\"k0\":false},\"😀\":\"aaa😀\"},{\"😀\":null,\"k\\\"q\":{},\"a b\":{\"k\\\"q\":2}}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					],
+					"formatted": "1.0.\"k\\\"q\": expected object, received null"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					],
+					"formatted": "1.1.\"😀\": expected length <= 3, received string"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						1,
+						"a b"
+					],
+					"formatted": "1.1.\"a b\": expected object, received undefined"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					],
+					"formatted": "1.2.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "missing_key",
+					"expected": "a required key",
+					"received": "undefined",
+					"path": [
+						"1",
+						2,
+						"a b",
+						"0"
+					],
+					"formatted": "1.2.\"a b\".0: expected a required key, received undefined"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"1",
+						2,
+						"a b",
+						"b"
+					],
+					"formatted": "1.2.\"a b\".b: expected string, received undefined"
+				}
+			]
+		},
+		{
+			"name": "13_tail",
+			"text": "{\"\\u0031\":[]}}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "14_aimed",
+			"text": "{\"1\":[],\"a\":[0,{\"z\":false}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"a",
+						1,
+						"z"
+					],
+					"formatted": "a.1.z: expected no unknown keys, received boolean"
+				}
+			]
+		},
+		{
+			"name": "15_near",
+			"text": "{\"1\":[{\"k\\\"q\":{\"constructor\":true,\"10\":true,\"__proto__\":false},\"😀\":\"😀é\",\"a b\":{\"0\":null,\"b\":\"a\\\\b\",\"k\\\"q\":2},\"z\":\"\"}],\"a\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"a"
+					],
+					"formatted": "a: expected array, received null"
+				}
+			]
+		},
+		{
+			"name": "16_aimed",
+			"text": "{\"1\":[{\n\"a\\u0020\\u0062\" :\n{\"0\"  :\r\n\"\\u006eu\\u006cl\"\r\n,\"\\u0062\":\r\n\"\\u006Eul\\u006c\"\r\n,\"k\\u0022\\u0071\":-0 },\t\"😀\"\n:\"\",\t\"\\u006B\\\"q\"\n:\nnull }\n,{\"\\u006b\\\"\\u0071\" : {    }\r\n,\n\"😀\"\t:\nnull\r\n,\n\"a\\u0020\\u0062\"\t:\t{\"0\": []\r\n,\t\"\\u0062\":\"a\\u0062c\"\r\n,\t\"\\u006B\\\"\\u0071\":9007199254740991}}],\n\"a\" :  [\tnull ,null ,{\t}]\n}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					],
+					"formatted": "1.0.\"k\\\"q\": expected object, received null"
 				},
 				{
 					"kind": "string",
@@ -653,6 +694,16 @@
 					"received": "null",
 					"path": [
 						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
 						1
 					],
 					"formatted": "a.1: expected object, received null"
@@ -660,32 +711,57 @@
 			]
 		},
 		{
-			"name": "21_aimed",
-			"text": "{\"1\":[{\"k\\\"q\":null,\"😀\":\" \",\"a b\":{}}],\"a\":[null,{}]}",
+			"name": "17_near",
+			"text": "{ \"a\"  :\n[]\t, \"1\"\t:\r\n[{ \"k\\\"q\":{\"k1\"  :true ,\"k0\"  : false\r\n}\t,\"😀\":\"bbé\"\t,\"a b\" :{\"0\"\r\n:2.5e-3,\"b\":\"a\",\"k\\\"q\":9007199254740992  }}\t]}",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "record",
-					"expected": "object",
-					"received": "null",
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
 					"path": [
 						"1",
 						0,
+						"a b",
 						"k\"q"
 					],
-					"formatted": "1.0.\"k\\\"q\": expected object, received null"
-				},
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "18_aimed",
+			"text": "{\"\\u0031\":{\"a\":1},\"\\u0061\":[],\"a\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
 				{
-					"kind": "union",
-					"expected": "number | bigint",
+					"kind": "array",
+					"expected": "array",
 					"received": "object",
 					"path": [
-						"1",
-						0,
-						"a b"
+						"1"
 					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received object"
+					"formatted": "1: expected array, received object"
+				}
+			]
+		},
+		{
+			"name": "19_aimed",
+			"text": "{\"1\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] ,\"a\"\n:[null\t]\r\n}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"1",
+						0
+					],
+					"formatted": "1.0: expected object, received array"
 				},
 				{
 					"kind": "object",
@@ -700,139 +776,20 @@
 			]
 		},
 		{
-			"name": "22_aimed",
-			"text": "{\"1\":[{\"k\\\"q\":{\"\":[[]],\"😀\":true},\"😀\":null,\"a b\":-1.5},{\"k\\\"q\":{\" \":true},\"😀\":\"é😀é\"}],\"a\":[{},{}],\"1\":[{\"k\\\"q\":{\"\":[[]],\"😀\":true},\"😀\":null,\"a b\":-1.5},{\"k\\\"q\":{\" \":true},\"😀\":\"é😀é\"}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "boolean",
-					"expected": "boolean",
-					"received": "array",
-					"path": [
-						"1",
-						0,
-						"k\"q",
-						""
-					],
-					"formatted": "1.0.\"k\\\"q\".\"\": expected boolean, received array"
-				},
-				{
-					"kind": "string",
-					"expected": "string",
-					"received": "null",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected string, received null"
-				},
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						1,
-						"😀"
-					],
-					"formatted": "1.1.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "undefined",
-					"path": [
-						"1",
-						1,
-						"a b"
-					],
-					"formatted": "1.1.\"a b\": expected number | bigint, received undefined"
-				}
-			]
+			"name": "20_tail",
+			"text": "{\"1\":[{\"k\\\"q\":{\"k0\":false},\"😀\":null,\"a b\":{\"0\":-0.0,\"b\":\"日本\",\"k\\\"q\":2},\"constructor\":true},{\"k\\\"q\":{\"\":false,\"a\\\"b\":false},\"😀\":\"éb\",\"a b\":{\"0\":\" \",\"b\":\"null\",\"k\\\"q\":-1e21}}],\"a\":[{},{},{}]} ]",
+			"json": false,
+			"diverges": "malformed_tail"
 		},
 		{
-			"name": "23_near",
-			"text": "{\"a\":[{},null],\"1\":[{\"k\\\"q\":{},\"😀\":null,\"a b\":2.0}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "string",
-					"expected": "string",
-					"received": "null",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected string, received null"
-				},
-				{
-					"kind": "object",
-					"expected": "object",
-					"received": "null",
-					"path": [
-						"a",
-						1
-					],
-					"formatted": "a.1: expected object, received null"
-				}
-			]
+			"name": "21_tail",
+			"text": "{\"1\":[{\"k\\\"q\":{\"constructor\":false},\"😀\":\"éa😀\",\"a b\":{\"0\":null,\"b\":\" \",\"k\\\"q\":1.5}},{\"k\\\"q\":{},\"😀\":\"😀b\",\"a b\":{\"0\":null,\"b\":\"null\",\"k\\\"q\":2}},{\"a b\":{\"b\":null,\"k\\\"q\":null},\"😀\":\"é\",\"k\\\"q\":{\"k0\":false}}],\"1\":[{\"k\\\"q\":{\"constructor\":false},\"😀\":\"éa😀\",\"a b\":{\"0\":null,\"b\":\" \",\"k\\\"q\":1.5}},{\"k\\\"q\":{},\"😀\":\"😀b\",\"a b\":{\"0\":null,\"b\":\"null\",\"k\\\"q\":2}},{\"a b\":{\"b\":null,\"k\\\"q\":null},\"😀\":\"é\",\"k\\\"q\":{\"k0\":false}}]},",
+			"json": false,
+			"diverges": "malformed_tail"
 		},
 		{
-			"name": "24_near",
-			"text": "{\"1\":[{\"k\\\"q\":{},\"😀\":\"éb\",\"a b\":null}],\"a\":[]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received null"
-				}
-			]
-		},
-		{
-			"name": "25_near",
-			"text": "{\r\n\"\\u0031\"\t:[  {\"\\u006b\\u0022\\u0071\":{\"k\\u0031\" :true\r\n}\r\n,\"😀\"  :null\r\n,\"\\u0061 \\u0062\"  :false}]\t,\n\"a\"  :[{\n},  {\n},  {   }] }",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "string",
-					"expected": "string",
-					"received": "null",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected string, received null"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "boolean",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received boolean"
-				}
-			]
-		},
-		{
-			"name": "26_aimed",
-			"text": "{\"a\":{\"\":{}}}",
+			"name": "22_near",
+			"text": "{\"a\":[{},null,null]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -844,156 +801,6 @@
 						"1"
 					],
 					"formatted": "1: expected array, received undefined"
-				},
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "object",
-					"path": [
-						"a"
-					],
-					"formatted": "a: expected array, received object"
-				}
-			]
-		},
-		{
-			"name": "27_aimed",
-			"text": "{ \"1\":\t[\r\n{\"\":{}},  {\"a b\"\t:1e21,  \"😀\":\n\"ébb\"},  {\"😀\":\t\"b\" }  ], \"a\"\t:[ {\n}  ,{}]\r\n}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "record",
-					"expected": "object",
-					"received": "undefined",
-					"path": [
-						"1",
-						0,
-						"k\"q"
-					],
-					"formatted": "1.0.\"k\\\"q\": expected object, received undefined"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "undefined",
-					"path": [
-						"1",
-						0,
-						"a b"
-					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received undefined"
-				},
-				{
-					"kind": "record",
-					"expected": "object",
-					"received": "undefined",
-					"path": [
-						"1",
-						1,
-						"k\"q"
-					],
-					"formatted": "1.1.\"k\\\"q\": expected object, received undefined"
-				},
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						1,
-						"😀"
-					],
-					"formatted": "1.1.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "record",
-					"expected": "object",
-					"received": "undefined",
-					"path": [
-						"1",
-						2,
-						"k\"q"
-					],
-					"formatted": "1.2.\"k\\\"q\": expected object, received undefined"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "undefined",
-					"path": [
-						"1",
-						2,
-						"a b"
-					],
-					"formatted": "1.2.\"a b\": expected number | bigint, received undefined"
-				}
-			]
-		},
-		{
-			"name": "28_aimed",
-			"text": "{\n\"a\":[{\r\n\"constructor\" :\r\n{\"a\":1}\t,\"constructor\"\t:\r\n{\"a\":1}},\nnull]  }",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
-				},
-				{
-					"kind": "unknown_key",
-					"expected": "no unknown keys",
-					"received": "object",
-					"path": [
-						"a",
-						0,
-						"constructor"
-					],
-					"formatted": "a.0.constructor: expected no unknown keys, received object"
-				},
-				{
-					"kind": "object",
-					"expected": "object",
-					"received": "null",
-					"path": [
-						"a",
-						1
-					],
-					"formatted": "a.1: expected object, received null"
-				}
-			]
-		},
-		{
-			"name": "29_aimed",
-			"text": "{\"1\":[{\"k\\\"q\":{},\"\\u0061\\u0020b\":1e300,\"\\ud83d\\ude00\":\"\\u0061b\\u0063\"}],\"a\":[[[[[[[[[[[]]]]]]]]]],null,null]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "object",
-					"expected": "object",
-					"received": "array",
-					"path": [
-						"a",
-						0
-					],
-					"formatted": "a.0: expected object, received array"
 				},
 				{
 					"kind": "object",
@@ -1018,14 +825,319 @@
 			]
 		},
 		{
-			"name": "30_tail",
-			"text": "{\"a\":[null,1e300]} 1",
+			"name": "23_aimed",
+			"text": "{\"1\":[true],\"a\":[{\"\":{}},{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"1",
+						0
+					],
+					"formatted": "1.0: expected object, received boolean"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"a",
+						0,
+						""
+					],
+					"formatted": "a.0.\"\": expected no unknown keys, received object"
+				}
+			]
+		},
+		{
+			"name": "24_aimed",
+			"text": "{\"\\u0031\":[[]],\"a\":{\"\":{}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"1",
+						0
+					],
+					"formatted": "1.0: expected object, received array"
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"a"
+					],
+					"formatted": "a: expected array, received object"
+				}
+			]
+		},
+		{
+			"name": "25_near",
+			"text": "{\"1\":\"x\",\"1\":[{\"k\\\"q\":{},\"😀\":\"😀ab\",\"a b\":null,\"z\":{\"constructor\":\"\\u0000\"}},{\"k\\\"q\":{},\"😀\":\"😀😀\",\"a b\":{\"0\":null,\"b\":\"é\",\"k\\\"q\":null},\"\":1.5},{\"😀\":\" \",\"k\\\"q\":{\"\":true,\"constructor\":true},\"😀\":\"a\\\\b\",\"a b\":{\"0\":{\"a\":1},\"b\":\"😀\",\"k\\\"q\":9007199254740991}}],\"a\":[null,{\"a\":\"\\u0000\"},null]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected length <= 3, received string"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b"
+					],
+					"formatted": "1.0.\"a b\": expected object, received null"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					],
+					"formatted": "1.1.\"😀\": expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.1.\"a b\".\"k\\\"q\": expected safe_integer, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"a",
+						1,
+						"a"
+					],
+					"formatted": "a.1.a: expected no unknown keys, received string"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						2
+					],
+					"formatted": "a.2: expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "26_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "string",
+					"path": [],
+					"formatted": "expected object, received string"
+				}
+			]
+		},
+		{
+			"name": "27_near",
+			"text": "{\"1\":[{\"😀\":\"bbb\",\"a b\":null}],\"a\":[{},{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					],
+					"formatted": "1.0.\"k\\\"q\": expected object, received undefined"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b"
+					],
+					"formatted": "1.0.\"a b\": expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "28_aimed",
+			"text": "{  \"\\u0031\"\t:\r\n[\n{\"\\u006B\\\"q\":{\r\n\"\\u00E9\" :  true},\"\\ud83d\\ude00\"\n:\t[[[[[[[[[[]]]]]]]]]],\"\\u0061\\u0020b\"\t:null} , {\n\"k\\u0022q\":\r\n{\n\"k\\u0030\":true, \"\"  :true }\n,\n\"\\ud83d\\uDE00\": \"a\\uD83D\\uDE00\"} , {\n\"😀\" :\tnull,\t\"\\u006b\\\"q\"\n:{\"\\u005F\\u005Fpr\\u006fto\\u005F\\u005F\"\n:false},\t\"a \\u0062\"\t:\n{\n\"0\":\"\\u0061\\u0022\\u0062\"\n,\"\\u0062\":\t\"\\u0062\"\n,\"k\\\"q\" :{\"a\":1} } }],\"a\": [\n ]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected string, received array"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b"
+					],
+					"formatted": "1.0.\"a b\": expected object, received null"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						1,
+						"a b"
+					],
+					"formatted": "1.1.\"a b\": expected object, received undefined"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					],
+					"formatted": "1.2.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "object",
+					"path": [
+						"1",
+						2,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.2.\"a b\".\"k\\\"q\": expected safe_integer, received object"
+				}
+			]
+		},
+		{
+			"name": "29_aimed",
+			"text": "false",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [],
+					"formatted": "expected object, received boolean"
+				}
+			]
+		},
+		{
+			"name": "30_aimed",
+			"text": "{\"1\":null,\"\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "null",
+					"path": [
+						"1"
+					],
+					"formatted": "1: expected array, received null"
+				},
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "undefined",
+					"path": [
+						"a"
+					],
+					"formatted": "a: expected array, received undefined"
+				}
+			]
+		},
+		{
+			"name": "31_tail",
+			"text": "{\"1\":[{\"a b\":null,\"k\\\"q\":{\"é\":false,\"constructor\":true},\"😀\":\"😀\"}],\"a\":[null]} null",
 			"json": false,
 			"diverges": "malformed_tail"
 		},
 		{
-			"name": "31_near",
-			"text": "{\"1\":null,\"a\":[{},null,{}]}",
+			"name": "32_aimed",
+			"text": "[[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "33_near",
+			"text": "{\"1\":null,\"a\":[null,{}]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1044,45 +1156,15 @@
 					"received": "null",
 					"path": [
 						"a",
-						1
+						0
 					],
-					"formatted": "a.1: expected object, received null"
+					"formatted": "a.0: expected object, received null"
 				}
 			]
 		},
 		{
-			"name": "32_near",
-			"text": "{\"\\u0031\":[{\"k\\u0022q\":{\"\":true,\"\\u0020\":false},\"\\uD83D\\uDE00\":\"\\u00e9\\u00e9\\u00E9\",\"\\u0061 b\":1.5},{\"k\\u0022\\u0071\":{},\"😀\":\"b😀\",\"\\u0061 \\u0062\":1e-400}],\"\\u0061\":[{},{},{}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						0,
-						"😀"
-					],
-					"formatted": "1.0.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						1,
-						"😀"
-					],
-					"formatted": "1.1.\"😀\": expected length <= 2, received string"
-				}
-			]
-		},
-		{
-			"name": "33_near",
-			"text": "{\"1\":[\"x\",\"😀\"],\"1\":[]}",
+			"name": "34_near",
+			"text": "{\"a\":[null,null],\"\":[]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1091,22 +1173,35 @@
 					"expected": "array",
 					"received": "undefined",
 					"path": [
-						"a"
+						"1"
 					],
-					"formatted": "a: expected array, received undefined"
+					"formatted": "1: expected array, received undefined"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						1
+					],
+					"formatted": "a.1: expected object, received null"
 				}
 			]
 		},
 		{
-			"name": "34_near",
-			"text": "{ \"1\"  : [   ],\n\"a\"\r\n:[  {\r\n}]}",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
 			"name": "35_aimed",
-			"text": "{\"1\":null,\"a\":[]}",
+			"text": "{\"1\":null,\"a\":[null]}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1118,12 +1213,204 @@
 						"1"
 					],
 					"formatted": "1: expected array, received null"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
 				}
 			]
 		},
 		{
 			"name": "36_near",
-			"text": "{\"1\":[{\"k\\\"q\":null,\"a b\":0},{\"k\\\"q\":{\"10\":false},\"😀\":null,\"a b\":-9007199254740992},{\"k\\\"q\":{\"k1\":false},\"😀\":\"😀😀\",\"a\":true}],\"a\":[]}",
+			"text": "{\"\\u0031\"  :[{\r\n\"\\u006B\\\"q\": {\"\\u0030\"\n:true}, \"\\uD83D\\uDE00\":null, \"a\\u0020\\u0062\"  : {  \"0\"\r\n:\"\\u0061\\\"b\",\t\"k\\\"q\":1\r\n}, \"\\u006B\\u0022q\"\r\n:{\"\\u0030\"\n:true}\t} ,{\n\"\\u006B\\\"q\":\r\n{\"😀\":\ntrue,  \"a\\u0022\\u0062\"\r\n:\r\nfalse }, \"😀\"\r\n:\n\"ba\\u0062\\ud83d\\uDE00\", \"\\u0061 \\u0062\"  :{  \"b\":\"\\u0020\"\n,\"\\u0030\" :123456789012345678901234567890\n,\"\\u006b\\u0022q\"  :  9007199254740992\n}}\t]\t,\"\\u0061\":[  {\t\"\\u0030\" :\t\"\\uD83D\\ude00\"},\n{ \r\n},\n{\t}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"b"
+					],
+					"formatted": "1.0.\"a b\".b: expected string, received undefined"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"1",
+						1,
+						"😀"
+					],
+					"formatted": "1.1.\"😀\": expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						1,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.1.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"a",
+						0,
+						"0"
+					],
+					"formatted": "a.0.0: expected no unknown keys, received string"
+				}
+			]
+		},
+		{
+			"name": "37_aimed",
+			"text": "{\"1\":[{}],\"a\":[{}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"k\"q"
+					],
+					"formatted": "1.0.\"k\\\"q\": expected object, received undefined"
+				},
+				{
+					"kind": "strip_object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b"
+					],
+					"formatted": "1.0.\"a b\": expected object, received undefined"
+				}
+			]
+		},
+		{
+			"name": "38_aimed",
+			"text": "{\"1\":[{\"k\\\"q\":{\" \":true},\"😀\":null,\"a b\":{\"0\":{\"\":{}},\"k\\\"q\":null}},{\"k\\\"q\":{\"\":false},\"😀\":null,\"a b\":{\"b\":\"0\",\"k\\\"q\":2,\"0\":\"\"}},{\"k\\\"q\":{\"k1\":true},\"😀\":null,\"a b\":{\"k\\\"q\":1e21,\"b\":\"😀\",\"0\":false}}],\"a\":[null],\"constructor\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"😀"
+					],
+					"formatted": "1.0.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"b"
+					],
+					"formatted": "1.0.\"a b\".b: expected string, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"1",
+						0,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						1,
+						"😀"
+					],
+					"formatted": "1.1.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"1",
+						2,
+						"😀"
+					],
+					"formatted": "1.2.\"😀\": expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"1",
+						2,
+						"a b",
+						"k\"q"
+					],
+					"formatted": "1.2.\"a b\".\"k\\\"q\": expected safe_integer, received number"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"a",
+						0
+					],
+					"formatted": "a.0: expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "39_near",
+			"text": "{\"1\":[{\"k\\\"q\":null,\"😀\":null,\"a b\":{\"0\":\"\",\"b\":\"a\\\\b\"}}],\"a\":null}",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -1144,86 +1431,33 @@
 					"received": "null",
 					"path": [
 						"1",
-						1,
+						0,
 						"😀"
 					],
-					"formatted": "1.1.\"😀\": expected string, received null"
+					"formatted": "1.0.\"😀\": expected string, received null"
 				},
 				{
-					"kind": "max_length",
-					"expected": "length <= 2",
-					"received": "string",
-					"path": [
-						"1",
-						2,
-						"😀"
-					],
-					"formatted": "1.2.\"😀\": expected length <= 2, received string"
-				},
-				{
-					"kind": "union",
-					"expected": "number | bigint",
+					"kind": "safe_integer",
+					"expected": "safe_integer",
 					"received": "undefined",
-					"path": [
-						"1",
-						2,
-						"a b"
-					],
-					"formatted": "1.2.\"a b\": expected number | bigint, received undefined"
-				}
-			]
-		},
-		{
-			"name": "37_near",
-			"text": "{\"1\":[{\"k\\\"\\u0071\":{\"\\u006B0\":false},\"a\\u0020\\u0062\":null},{\"\\u0061 b\":1e21,\"\\u007a\":[\"\\n\"],\"\\u006b\\\"\\u0071\":{\"é\":true,\"__\\u0070r\\u006fto__\":false},\"😀\":\"\\u00e9a\"}],\"\\u0061\":[{},{},{}]}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "union",
-					"expected": "number | bigint",
-					"received": "null",
 					"path": [
 						"1",
 						0,
-						"a b"
+						"a b",
+						"k\"q"
 					],
-					"formatted": "1.0.\"a b\": expected number | bigint, received null"
-				}
-			]
-		},
-		{
-			"name": "38_aimed",
-			"text": "{}",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "array",
-					"expected": "array",
-					"received": "undefined",
-					"path": [
-						"1"
-					],
-					"formatted": "1: expected array, received undefined"
+					"formatted": "1.0.\"a b\".\"k\\\"q\": expected safe_integer, received undefined"
 				},
 				{
 					"kind": "array",
 					"expected": "array",
-					"received": "undefined",
+					"received": "null",
 					"path": [
 						"a"
 					],
-					"formatted": "a: expected array, received undefined"
+					"formatted": "a: expected array, received null"
 				}
 			]
-		},
-		{
-			"name": "39_aimed",
-			"text": "{\"a\":[{}],\"1\":[]}",
-			"json": true,
-			"valid": true,
-			"issues": []
 		}
 	]
 }

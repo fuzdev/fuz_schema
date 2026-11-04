@@ -1,0 +1,301 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"id": {
+					"kind": "pipe",
+					"def": [
+						{
+							"kind": "string"
+						},
+						{
+							"kind": "uuid"
+						}
+					]
+				},
+				"at": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "iso_datetime"
+								}
+							]
+						}
+					}
+				},
+				"ids": {
+					"kind": "array",
+					"def": {
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "string"
+							},
+							{
+								"kind": "uuid"
+							}
+						]
+					}
+				},
+				"either": {
+					"kind": "union",
+					"def": [
+						{
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "uuid"
+								}
+							]
+						},
+						{
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "iso_datetime"
+								}
+							]
+						},
+						{
+							"kind": "number"
+						}
+					]
+				},
+				"ref": {
+					"kind": "union",
+					"def": [
+						{
+							"kind": "object",
+							"def": {
+								"id": {
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "uuid"
+										}
+									]
+								}
+							}
+						},
+						{
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "iso_datetime"
+								}
+							]
+						}
+					]
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "valid",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"at\":\"2024-01-01T00:00:00Z\",\"ids\":[],\"either\":1,\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_missing",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":[\"00000000-0000-0000-0000-000000000000\"],\"either\":\"2024-01-01T00:00:00Z\",\"ref\":{\"id\":\"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "either_uuid",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":[],\"either\":\"123e4567-e89b-42d3-a456-426614174000\",\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "every_entry_wrong",
+			"text": "{\"id\":\"123e4567-e89b-02d3-a456-426614174000\",\"at\":\"2024-02-30T00:00:00Z\",\"ids\":[\"x\",\"123e4567-e89b-42d3-a456-426614174000\",\"y\"],\"either\":\"x\",\"ref\":{\"id\":\"2024-01-01T00:00:00Z\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"id"
+					],
+					"formatted": "id: expected uuid, received string"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"at"
+					],
+					"formatted": "at: expected iso_datetime, received string"
+				},
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"ids",
+						0
+					],
+					"formatted": "ids.0: expected uuid, received string"
+				},
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"ids",
+						2
+					],
+					"formatted": "ids.2: expected uuid, received string"
+				},
+				{
+					"kind": "union",
+					"expected": "string | number",
+					"received": "string",
+					"path": [
+						"either"
+					],
+					"formatted": "either: expected string | number, received string"
+				},
+				{
+					"kind": "union",
+					"expected": "object | string",
+					"received": "object",
+					"path": [
+						"ref"
+					],
+					"formatted": "ref: expected object | string, received object"
+				}
+			]
+		},
+		{
+			"name": "either_a_non_string",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":[],\"either\":true,\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "string | number",
+					"received": "boolean",
+					"path": [
+						"either"
+					],
+					"formatted": "either: expected string | number, received boolean"
+				}
+			]
+		},
+		{
+			"name": "ref_an_offset",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":[],\"either\":1,\"ref\":\"2024-01-01T00:00:00+01:00\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object | string",
+					"received": "string",
+					"path": [
+						"ref"
+					],
+					"formatted": "ref: expected object | string, received string"
+				}
+			]
+		},
+		{
+			"name": "id_a_number",
+			"text": "{\"id\":1,\"ids\":[],\"either\":1,\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"id"
+					],
+					"formatted": "id: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "id_missing",
+			"text": "{\"ids\":[],\"either\":1,\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"id"
+					],
+					"formatted": "id: expected string, received undefined"
+				}
+			]
+		},
+		{
+			"name": "ids_an_object",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":{\"0\":\"123e4567-e89b-42d3-a456-426614174000\"},\"either\":1,\"ref\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "array",
+					"expected": "array",
+					"received": "object",
+					"path": [
+						"ids"
+					],
+					"formatted": "ids: expected array, received object"
+				}
+			]
+		},
+		{
+			"name": "ref_an_array",
+			"text": "{\"id\":\"123e4567-e89b-42d3-a456-426614174000\",\"ids\":[],\"either\":1,\"ref\":[\"2024-01-01T00:00:00Z\"]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object | string",
+					"received": "array",
+					"path": [
+						"ref"
+					],
+					"formatted": "ref: expected object | string, received array"
+				}
+			]
+		}
+	]
+}

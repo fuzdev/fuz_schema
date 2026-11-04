@@ -105,6 +105,10 @@ and the input is never mutated.
 - `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities:
   a JSON text carries one as a number too large for a double, which `JSON.parse` reads `1e999` as.
   `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
+- `pipe(string, uuid)` takes a UUID of RFC 9562 with a version from 1 to 8, as Zod's does,
+  and the max UUID in any case, as Valibot's does.
+  `pipe(string, iso_datetime)` takes `2024-02-29T23:59:59.123Z` in UTC with a real date, as Zod's does,
+  and a fraction of at most 9 digits, as Valibot's does. See [`docs/formats.md`](docs/formats.md).
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -128,6 +132,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
 | refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
+| formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
@@ -588,6 +593,8 @@ npm run benchmark:wasm
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
 - [`docs/declined.md`](docs/declined.md) — trades that were measured and not taken, each with
   what it gave, what it cost, and what would reopen it
+- [`docs/formats.md`](docs/formats.md) — the grammars of `uuid` and `iso_datetime`,
+  and what decides a grammar where Zod and Valibot disagree
 - [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the interchange form,
   the two evaluators, the issues, where they differ from this library, what is
   refused, and the wasm build

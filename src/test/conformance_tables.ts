@@ -1263,6 +1263,99 @@ const sides = {
 		side: 'zod',
 		zod: 'fail at [1]',
 		valibot: 'ok [1, Infinity]'
+	},
+
+	// the format tests, whose grammars `docs/formats.md` gives with the order
+	// of what decides a side. A UUID: zod refuses a version or variant outside
+	// the RFC's, as here, and the max UUID in any case but lower, where valibot
+	// takes it, as here
+	'uuid, version 0': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "123e4567-e89b-02d3-a456-426614174000"'
+	},
+	'uuid, version 9': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "123e4567-e89b-92d3-a456-426614174000"'
+	},
+	'uuid, version f': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "123e4567-e89b-f2d3-a456-426614174000"'
+	},
+	'uuid, variant 7': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "123e4567-e89b-42d3-7456-426614174000"'
+	},
+	'uuid, variant c': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "123e4567-e89b-42d3-c456-426614174000"'
+	},
+	'uuid, max uppercase': {
+		side: 'valibot',
+		zod: 'fail at <root>',
+		valibot: 'ok "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"'
+	},
+	'uuid, max mixed case': {
+		side: 'valibot',
+		zod: 'fail at <root>',
+		valibot: 'ok "ffffffff-FFFF-ffff-FFFF-ffffffffffff"'
+	},
+	// a date and time: valibot refuses a fraction past 9 digits, as here, and
+	// takes an offset, a space for the `T`, and a day the month doesn't have,
+	// where zod refuses them, as here
+	'iso_datetime, a fraction of 10': {
+		side: 'valibot',
+		zod: 'ok "2024-01-01T00:00:00.1234567890Z"',
+		valibot: 'fail at <root>'
+	},
+	'iso_datetime, a fraction of 30': {
+		side: 'valibot',
+		zod: 'ok "2024-01-01T00:00:00.123456789012345678901234567890Z"',
+		valibot: 'fail at <root>'
+	},
+	'iso_datetime, an offset': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01T00:00:00+01:00"'
+	},
+	'iso_datetime, offset -00:00': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01T00:00:00-00:00"'
+	},
+	'iso_datetime, an offset with no colon': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01T00:00:00+0100"'
+	},
+	'iso_datetime, a space': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-01-01 00:00:00Z"'
+	},
+	'iso_datetime, February 30': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-02-30T00:00:00Z"'
+	},
+	'iso_datetime, February 29 of 2023': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2023-02-29T00:00:00Z"'
+	},
+	'iso_datetime, February 29 of 1900': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "1900-02-29T00:00:00Z"'
+	},
+	'iso_datetime, April 31': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'ok "2024-04-31T00:00:00Z"'
 	}
 } satisfies Record<string, ConformanceSide>;
 
@@ -1308,7 +1401,133 @@ export const INFORMATIONAL: Record<string, Partial<Record<InformationalLibName, 
 	'default + unknown key / loose': { arktype: 'ok {z: 1, a: "x", d: "D"}' },
 	rest: { typebox: 'ok {a: "x", z: 1}' },
 	'rest, a key wrong': { typebox: 'fail' },
-	'rest, array': { typebox: 'fail' }
+	'rest, array': { typebox: 'fail' },
+	// arktype's `string.uuid` and `string.date.iso`, and typebox's `uuid` and
+	// `date-time` formats
+	'uuid, v1': {
+		arktype: 'ok "123e4567-e89b-12d3-a456-426614174000"',
+		typebox: 'ok "123e4567-e89b-12d3-a456-426614174000"'
+	},
+	'uuid, v4': {
+		arktype: 'ok "123e4567-e89b-42d3-a456-426614174000"',
+		typebox: 'ok "123e4567-e89b-42d3-a456-426614174000"'
+	},
+	'uuid, v7': {
+		arktype: 'ok "017f22e2-79b0-7cc3-98c4-dc0c0c07398f"',
+		typebox: 'ok "017f22e2-79b0-7cc3-98c4-dc0c0c07398f"'
+	},
+	'uuid, v8': {
+		arktype: 'ok "123e4567-e89b-82d3-a456-426614174000"',
+		typebox: 'ok "123e4567-e89b-82d3-a456-426614174000"'
+	},
+	'uuid, version 0': { arktype: 'fail', typebox: 'ok "123e4567-e89b-02d3-a456-426614174000"' },
+	'uuid, version 9': { arktype: 'fail', typebox: 'ok "123e4567-e89b-92d3-a456-426614174000"' },
+	'uuid, version f': { arktype: 'fail', typebox: 'ok "123e4567-e89b-f2d3-a456-426614174000"' },
+	'uuid, variant 7': { arktype: 'fail', typebox: 'ok "123e4567-e89b-42d3-7456-426614174000"' },
+	'uuid, variant c': { arktype: 'fail', typebox: 'ok "123e4567-e89b-42d3-c456-426614174000"' },
+	'uuid, variant B': {
+		arktype: 'ok "123e4567-e89b-42d3-B456-426614174000"',
+		typebox: 'ok "123e4567-e89b-42d3-B456-426614174000"'
+	},
+	'uuid, uppercase v4': {
+		arktype: 'ok "123E4567-E89B-42D3-A456-426614174000"',
+		typebox: 'ok "123E4567-E89B-42D3-A456-426614174000"'
+	},
+	'uuid, nil': {
+		arktype: 'ok "00000000-0000-0000-0000-000000000000"',
+		typebox: 'ok "00000000-0000-0000-0000-000000000000"'
+	},
+	'uuid, max': {
+		arktype: 'ok "ffffffff-ffff-ffff-ffff-ffffffffffff"',
+		typebox: 'ok "ffffffff-ffff-ffff-ffff-ffffffffffff"'
+	},
+	'uuid, max uppercase': { arktype: 'fail', typebox: 'ok "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"' },
+	'uuid, max mixed case': { arktype: 'fail', typebox: 'ok "ffffffff-FFFF-ffff-FFFF-ffffffffffff"' },
+	'uuid, braced': { arktype: 'fail', typebox: 'fail' },
+	'uuid, no dashes': { arktype: 'fail', typebox: 'fail' },
+	'uuid, a urn': { arktype: 'fail', typebox: 'fail' },
+	'uuid, a trailing newline': { arktype: 'fail', typebox: 'fail' },
+	'uuid, a fullwidth digit': { arktype: 'fail', typebox: 'fail' },
+	'uuid, too short': { arktype: 'fail', typebox: 'fail' },
+	'uuid, too long': { arktype: 'fail', typebox: 'fail' },
+	'uuid, a number': { arktype: 'fail', typebox: 'fail' },
+	'uuid, an array of a uuid': { arktype: 'fail', typebox: 'fail' },
+	'uuid, null': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, midnight': {
+		arktype: 'ok "2024-01-01T00:00:00Z"',
+		typebox: 'ok "2024-01-01T00:00:00Z"'
+	},
+	'iso_datetime, a fraction of 1': {
+		arktype: 'ok "2024-01-01T00:00:00.1Z"',
+		typebox: 'ok "2024-01-01T00:00:00.1Z"'
+	},
+	'iso_datetime, a fraction of 9': {
+		arktype: 'ok "2024-01-01T00:00:00.123456789Z"',
+		typebox: 'ok "2024-01-01T00:00:00.123456789Z"'
+	},
+	'iso_datetime, a fraction of 10': {
+		arktype: 'ok "2024-01-01T00:00:00.1234567890Z"',
+		typebox: 'ok "2024-01-01T00:00:00.1234567890Z"'
+	},
+	'iso_datetime, a fraction of 30': {
+		arktype: 'ok "2024-01-01T00:00:00.123456789012345678901234567890Z"',
+		typebox: 'ok "2024-01-01T00:00:00.123456789012345678901234567890Z"'
+	},
+	'iso_datetime, an empty fraction': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, a comma fraction': { arktype: 'ok "2024-01-01T00:00:00,5Z"', typebox: 'fail' },
+	'iso_datetime, an offset': {
+		arktype: 'ok "2024-01-01T00:00:00+01:00"',
+		typebox: 'ok "2024-01-01T00:00:00+01:00"'
+	},
+	'iso_datetime, offset -00:00': {
+		arktype: 'ok "2024-01-01T00:00:00-00:00"',
+		typebox: 'ok "2024-01-01T00:00:00-00:00"'
+	},
+	'iso_datetime, an offset with no colon': {
+		arktype: 'ok "2024-01-01T00:00:00+0100"',
+		typebox: 'fail'
+	},
+	'iso_datetime, no seconds': { arktype: 'ok "2024-01-01T00:00Z"', typebox: 'fail' },
+	'iso_datetime, local': { arktype: 'ok "2024-01-01T00:00:00"', typebox: 'fail' },
+	'iso_datetime, lowercase t': { arktype: 'fail', typebox: 'ok "2024-01-01t00:00:00Z"' },
+	'iso_datetime, lowercase z': {
+		arktype: 'ok "2024-01-01T00:00:00z"',
+		typebox: 'ok "2024-01-01T00:00:00z"'
+	},
+	'iso_datetime, a space': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, February 30': { arktype: 'ok "2024-02-30T00:00:00Z"', typebox: 'fail' },
+	'iso_datetime, February 29 of 2023': { arktype: 'ok "2023-02-29T00:00:00Z"', typebox: 'fail' },
+	'iso_datetime, February 29 of 2024': {
+		arktype: 'ok "2024-02-29T00:00:00Z"',
+		typebox: 'ok "2024-02-29T00:00:00Z"'
+	},
+	'iso_datetime, February 29 of 2000': {
+		arktype: 'ok "2000-02-29T00:00:00Z"',
+		typebox: 'ok "2000-02-29T00:00:00Z"'
+	},
+	'iso_datetime, February 29 of 1900': { arktype: 'ok "1900-02-29T00:00:00Z"', typebox: 'fail' },
+	'iso_datetime, February 29 of 0000': {
+		arktype: 'ok "0000-02-29T00:00:00Z"',
+		typebox: 'ok "0000-02-29T00:00:00Z"'
+	},
+	'iso_datetime, April 31': { arktype: 'ok "2024-04-31T00:00:00Z"', typebox: 'fail' },
+	'iso_datetime, month 13': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, month 00': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, day 00': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, hour 24': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, minute 60': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, a leap second': { arktype: 'fail', typebox: 'ok "2024-01-01T23:59:60Z"' },
+	'iso_datetime, year 0000': {
+		arktype: 'ok "0000-01-01T00:00:00Z"',
+		typebox: 'ok "0000-01-01T00:00:00Z"'
+	},
+	'iso_datetime, an expanded year': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, a trailing newline': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, fullwidth digits': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, a number': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, an array of a datetime': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, null': { arktype: 'fail', typebox: 'fail' },
+	'iso_datetime, a Date': { arktype: 'fail', typebox: 'fail' }
 };
 
 /**

@@ -246,6 +246,22 @@ export const SHAPE_SAMPLES: Record<
 	integer: () => [{ action: true, schema: s.integer, valid: [1], invalid: [1.5] }],
 	safe_integer: () => [{ action: true, schema: s.safe_integer, valid: [1], invalid: [2 ** 60] }],
 	regex: () => [{ action: true, schema: s.regex(/^a/), valid: ['a'], invalid: ['b'] }],
+	uuid: () => [
+		{
+			action: true,
+			schema: s.uuid,
+			valid: ['123e4567-e89b-12d3-a456-426614174000'],
+			invalid: ['123e4567-e89b-02d3-a456-426614174000', 1]
+		}
+	],
+	iso_datetime: () => [
+		{
+			action: true,
+			schema: s.iso_datetime,
+			valid: ['2024-02-29T00:00:00Z'],
+			invalid: ['2023-02-29T00:00:00Z', 1]
+		}
+	],
 	check: () => [
 		{
 			action: true,

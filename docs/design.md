@@ -33,7 +33,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 
 | `def` | Kinds |
 |---|---|
-| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer` |
+| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer`, `uuid`, `iso_datetime` |
 | the value given | `literal`, `one_of`, `min_length`, `max_length`, `min_value`, `max_value`, `regex` |
 | the function given | `check`, `transform`, `lazy` |
 | `{schema}` | `optional`, `nullable` |
@@ -649,6 +649,10 @@ annotates its parameter. `src/test/schema.inference.test.ts` asserts what
 every schema and action infers in each position, and the
 `src/test/schema.*.test.ts` files pin the runtime behavior above.
 
+`uuid` and `iso_datetime` differ: each asks `typeof` first, so
+alone they refuse any value that isn't a string, an array holding a UUID
+included, where a test of their grammar alone would convert it.
+
 ## Nominal types
 
 `flavor` and `brand` change only the output type and return the schema object
@@ -1030,6 +1034,18 @@ Where the two disagree, this library goes with:
   `JSON.parse` reads `1e999` as, and `JSON.stringify` writes it back as
   `null`. A `literal` or a `one_of` of an infinity still matches it, as in
   both, and a bound may be one.
+- **Zod on a UUID's version and variant.** `uuid` refuses a version outside
+  1 to 8 and a variant outside the RFC's, as Zod's does, where Valibot's takes
+  any hex digit there.
+- **Valibot on the max UUID in uppercase.** `uuid` takes the max UUID in any
+  case, as Valibot's does, where Zod's takes it in lowercase alone. By design:
+  hex digits of either case are the same UUID.
+- **Valibot on a fraction of a second past 9 digits.** `iso_datetime` refuses
+  one, as Valibot's does, where Zod's takes any length.
+- **Zod on an offset, a space for the `T`, and a day the month doesn't
+  have.** `iso_datetime` refuses each, as Zod's default does, where Valibot's
+  takes them. By design: the value is a UTC timestamp a consumer can parse
+  as it is. [formats.md](formats.md) says what decides each of these.
 
 These the test doesn't see, as they are in the count of the issues, in the
 API, or in the names:

@@ -135,6 +135,8 @@ describe('find_schema_meta', () => {
 		integer: [() => s.integer, 'none'],
 		safe_integer: [() => s.safe_integer, 'none'],
 		regex: [() => s.regex(/a/), 'none'],
+		uuid: [() => s.uuid, 'none'],
+		iso_datetime: [() => s.iso_datetime, 'none'],
 		check: [() => s.check(() => true), 'none'],
 		transform: [() => s.transform((v) => v), 'none']
 	};
@@ -513,6 +515,8 @@ describe('format_schema_type', () => {
 		integer: [s.integer, 'integer', false],
 		safe_integer: [s.safe_integer, 'safe_integer', false],
 		regex: [s.regex(/a/), 'regex', false],
+		uuid: [s.uuid, 'uuid', false],
+		iso_datetime: [s.iso_datetime, 'iso_datetime', false],
 		check: [s.check(() => true), 'check', false],
 		transform: [s.transform((v) => v), 'transform', false]
 	};

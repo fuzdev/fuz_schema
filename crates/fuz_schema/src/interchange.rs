@@ -311,6 +311,8 @@ impl<'a> Loader<'a> {
             SchemaKind::Unknown => self.bare(def, SchemaBuilder::unknown),
             SchemaKind::Integer => self.bare(def, SchemaBuilder::integer),
             SchemaKind::SafeInteger => self.bare(def, SchemaBuilder::safe_integer),
+            SchemaKind::Uuid => self.bare(def, SchemaBuilder::uuid),
+            SchemaKind::IsoDatetime => self.bare(def, SchemaBuilder::iso_datetime),
             SchemaKind::Literal => {
                 // with no `def` the TypeScript literal is `undefined`
                 let Some(def) = def else {
@@ -514,7 +516,7 @@ mod tests {
     }
 
     /// One schema of every kind, a text it matches, and one it does not.
-    const EVERY_KIND: [(&str, &str, &str); 25] = [
+    const EVERY_KIND: [(&str, &str, &str); 27] = [
         (r#"{"kind":"string"}"#, r#""a""#, "1"),
         (r#"{"kind":"number"}"#, "1.5", r#""1""#),
         (r#"{"kind":"boolean"}"#, "false", "0"),
@@ -607,6 +609,16 @@ mod tests {
             r#"{"kind":"safe_integer"}"#,
             "9007199254740991",
             "9007199254740992",
+        ),
+        (
+            r#"{"kind":"pipe","def":[{"kind":"string"},{"kind":"uuid"}]}"#,
+            r#""123e4567-e89b-12d3-a456-426614174000""#,
+            r#""123e4567-e89b-12d3-c456-426614174000""#,
+        ),
+        (
+            r#"{"kind":"pipe","def":[{"kind":"string"},{"kind":"iso_datetime"}]}"#,
+            r#""2024-02-29T00:00:00.123456789Z""#,
+            r#""2023-02-29T00:00:00Z""#,
         ),
     ];
 
@@ -1062,6 +1074,26 @@ mod tests {
                 format!(r#"{{"schema":{bound}}}"#),
                 SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::MinLength },
                 "/schema",
+            ),
+            (
+                r#"{"schema":{"kind":"uuid"}}"#.to_owned(),
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::Uuid },
+                "/schema",
+            ),
+            (
+                r#"{"schema":{"kind":"union","def":[{"kind":"string"},{"kind":"iso_datetime"}]}}"#.to_owned(),
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::IsoDatetime },
+                "/schema/def/1",
+            ),
+            (
+                r#"{"schema":{"kind":"pipe","def":[{"kind":"number"},{"kind":"uuid"}]}}"#.to_owned(),
+                SchemaBuildErrorKind::ActionMismatch { kind: SchemaKind::Uuid },
+                "/schema/def/1",
+            ),
+            (
+                r#"{"schema":{"kind":"uuid","def":1}}"#.to_owned(),
+                SchemaBuildErrorKind::UnexpectedKey { key: "def".into() },
+                "/schema/def",
             ),
             (
                 format!(r#"{{"schema":{{"kind":"lazy","def":"a"}},"defs":{{"a":{bound}}}}}"#),

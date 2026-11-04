@@ -7,374 +7,447 @@
 					"kind": "string"
 				},
 				{
-					"kind": "max_length",
-					"def": 1
+					"kind": "min_length",
+					"def": 0
 				},
 				{
 					"kind": "min_length",
-					"def": 0
+					"def": 2
 				}
 			]
 		}
 	},
 	"cases": [
 		{
-			"name": "00_tail",
-			"text": "\"\\u00e9\"}",
-			"json": false
+			"name": "00_near",
+			"text": "\"a\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "01_aimed",
 			"text": "\"é\"",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
-			"name": "02_tail",
-			"text": "\"\" ]",
-			"json": false
+			"name": "02_aimed",
+			"text": "\"😀\"",
+			"json": true,
+			"valid": true,
+			"issues": []
 		},
 		{
 			"name": "03_near",
-			"text": "\"\"",
+			"text": "\"é\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
+		},
+		{
+			"name": "04_aimed",
+			"text": "\"\\u0000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
+		},
+		{
+			"name": "05_near",
+			"text": "\"abc\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "04_tail",
-			"text": "\"\" {}",
-			"json": false
-		},
-		{
-			"name": "05_aimed",
+			"name": "06_near",
 			"text": "\"\"",
 			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "06_aimed",
-			"text": "\"\"",
-			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "07_aimed",
-			"text": "\"\"",
+			"text": "\"😀\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "08_near",
-			"text": "\"a\"",
+			"text": "\"a\\\\b\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "09_near",
-			"text": "\"abc\"",
+			"name": "09_aimed",
+			"text": "\"\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
 			"name": "10_near",
-			"text": "\"\\u006Eu\\u006cl\"",
+			"text": "\"\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
-			"name": "11_near",
-			"text": "\"a\\\"b\"",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "max_length",
-					"expected": "length <= 1",
-					"received": "string",
-					"path": [],
-					"formatted": "expected length <= 1, received string"
-				}
-			]
+			"name": "11_tail",
+			"text": "\"é\" 1",
+			"json": false,
+			"diverges": "malformed_tail"
 		},
 		{
 			"name": "12_near",
-			"text": "\"é\"",
+			"text": "\"a\\\"b\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "13_tail",
-			"text": "-1.5 //",
-			"json": false,
-			"diverges": "malformed_tail"
+			"name": "13_near",
+			"text": "\"ébb\"",
+			"json": true,
+			"valid": true,
+			"issues": []
 		},
 		{
-			"name": "14_near",
-			"text": "\"😀\"",
+			"name": "14_aimed",
+			"text": "\"\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
 			"name": "15_near",
-			"text": "\"😀\"",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "max_length",
-					"expected": "length <= 1",
-					"received": "string",
-					"path": [],
-					"formatted": "expected length <= 1, received string"
-				}
-			]
-		},
-		{
-			"name": "16_near",
-			"text": "\"\"",
+			"text": "\"ab\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "17_near",
-			"text": "\"\\ud83d\\uDE00\"",
+			"name": "16_aimed",
+			"text": "\"a\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
+		},
+		{
+			"name": "17_aimed",
+			"text": "\"a\\\\b\"",
+			"json": true,
+			"valid": true,
+			"issues": []
 		},
 		{
 			"name": "18_near",
 			"text": "\"\"",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "19_near",
-			"text": "\"é\"",
+			"text": "\"ééa\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "20_near",
-			"text": "\"😀\"",
+			"name": "20_aimed",
+			"text": "\"a\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
-			"name": "21_near",
-			"text": "\"abc\"",
+			"name": "21_aimed",
+			"text": "\"x\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
-			"name": "22_aimed",
-			"text": "\"\"",
-			"json": true,
-			"valid": true,
-			"issues": []
+			"name": "22_tail",
+			"text": "\"\" ]",
+			"json": false,
+			"diverges": "malformed_tail"
 		},
 		{
-			"name": "23_near",
-			"text": "\"😀\"",
-			"json": true,
-			"valid": false,
-			"issues": [
-				{
-					"kind": "max_length",
-					"expected": "length <= 1",
-					"received": "string",
-					"path": [],
-					"formatted": "expected length <= 1, received string"
-				}
-			]
+			"name": "23_tail",
+			"text": "\"ab😀\" //",
+			"json": false
 		},
 		{
 			"name": "24_near",
-			"text": "\"é\"",
+			"text": "\"\"",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "25_aimed",
 			"text": "\"\"",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "26_aimed",
-			"text": "\"\\u0061\"",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [],
+					"formatted": "expected string, received array"
+				}
+			]
 		},
 		{
 			"name": "27_near",
-			"text": "\"\"",
+			"text": "\"bé\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "28_tail",
-			"text": "\"\",",
-			"json": false
+			"name": "28_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "29_tail",
-			"text": "1e300 //",
-			"json": false,
-			"diverges": "malformed_tail"
+			"text": "\"\\u0062😀\"}",
+			"json": false
 		},
 		{
 			"name": "30_aimed",
-			"text": "\"\"",
+			"text": "\"\\u006Eu\\u006cl\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
 			"name": "31_near",
-			"text": "\"\"",
+			"text": "\"éa\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "32_near",
-			"text": "\"a\"",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "33_aimed",
-			"text": "\"\"",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "34_near",
-			"text": "\"null\"",
+			"name": "32_aimed",
+			"text": "\"\\u0000\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
 		},
 		{
-			"name": "35_near",
-			"text": "\"\\u2028\"",
+			"name": "33_tail",
+			"text": "\"x\" null",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "34_aimed",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
+		},
+		{
+			"name": "35_aimed",
+			"text": "\"😀\"",
 			"json": true,
 			"valid": true,
 			"issues": []
 		},
 		{
-			"name": "36_near",
-			"text": "\"\"",
+			"name": "36_aimed",
+			"text": "\"é\"",
 			"json": true,
-			"valid": true,
-			"issues": []
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [],
+					"formatted": "expected length >= 2, received string"
+				}
+			]
 		},
 		{
 			"name": "37_near",
-			"text": "\"\"",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "38_near",
-			"text": "\"a\"",
-			"json": true,
-			"valid": true,
-			"issues": []
-		},
-		{
-			"name": "39_near",
-			"text": "\"éé\"",
+			"text": "\"é\"",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "max_length",
-					"expected": "length <= 1",
+					"kind": "min_length",
+					"expected": "length >= 2",
 					"received": "string",
 					"path": [],
-					"formatted": "expected length <= 1, received string"
+					"formatted": "expected length >= 2, received string"
 				}
 			]
+		},
+		{
+			"name": "38_tail",
+			"text": "\"a\" {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "39_tail",
+			"text": "\"\" ]",
+			"json": false,
+			"diverges": "malformed_tail"
 		}
 	]
 }

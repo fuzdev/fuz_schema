@@ -88,6 +88,10 @@ export interface ConformanceLib {
 	max_value: (schema: any, max: number | bigint) => any;
 	/** `schema`, then a test of `pattern` on the output, a string. */
 	regex: (schema: any, pattern: RegExp) => any;
+	/** A string that is a UUID, as the library's own check has it. */
+	uuid: any;
+	/** A string that is a date and time in ISO 8601, as the library's own check has it. */
+	iso_datetime: any;
 	strip: (entries: Record<string, any>) => any;
 	strict: (entries: Record<string, any>) => any;
 	loose: (entries: Record<string, any>) => any;
@@ -132,6 +136,8 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => schema.check(z.gte(min)),
 		max_value: (schema, max) => schema.check(z.lte(max)),
 		regex: (schema, pattern) => schema.check(z.regex(pattern)),
+		uuid: z.uuid(),
+		iso_datetime: z.iso.datetime(),
 		strip: (entries) => z.object(entries),
 		strict: (entries) => z.strictObject(entries),
 		loose: (entries) => z.looseObject(entries),
@@ -180,6 +186,8 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => v.pipe(schema, v.minValue(min)),
 		max_value: (schema, max) => v.pipe(schema, v.maxValue(max)),
 		regex: (schema, pattern) => v.pipe(schema, v.regex(pattern)),
+		uuid: v.pipe(v.string(), v.uuid()),
+		iso_datetime: v.pipe(v.string(), v.isoTimestamp()),
 		strip: (entries) => v.object(entries),
 		strict: (entries) => v.strictObject(entries),
 		loose: (entries) => v.looseObject(entries),
@@ -233,6 +241,8 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => s.pipe(schema, s.min_value(min)),
 		max_value: (schema, max) => s.pipe(schema, s.max_value(max)),
 		regex: (schema, pattern) => s.pipe(schema, s.regex(pattern)),
+		uuid: s.pipe(s.string, s.uuid),
+		iso_datetime: s.pipe(s.string, s.iso_datetime),
 		strip: (entries) => s.strip_object(entries),
 		strict: (entries) => s.object(entries),
 		loose: (entries) => s.loose_object(entries),
@@ -289,6 +299,8 @@ export const INFORMATIONAL_LIBS: Record<InformationalLibName, Partial<Conformanc
 		string: type.string,
 		number: type.number,
 		unknown: type.unknown,
+		uuid: type('string.uuid'),
+		iso_datetime: type('string.date.iso'),
 		optional: (schema) => ({ [OPTIONAL]: schema }),
 		with_default: (schema, value) => schema.default(value),
 		strip: (entries) => to_arktype_object('delete', entries),
@@ -305,6 +317,8 @@ export const INFORMATIONAL_LIBS: Record<InformationalLibName, Partial<Conformanc
 		string: T.String(),
 		number: T.Number(),
 		unknown: T.Unknown(),
+		uuid: T.String({ format: 'uuid' }),
+		iso_datetime: T.String({ format: 'date-time' }),
 		optional: (schema) => ({ [OPTIONAL]: schema }),
 		strict: (entries) => to_typebox_object(entries, { additionalProperties: false }),
 		loose: (entries) => to_typebox_object(entries),

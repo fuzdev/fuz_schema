@@ -61,6 +61,7 @@ out where that is `undefined`:
 {"kind":"variant","def":{"key":"kind","options":[{"kind":"object","def":{"kind":{"kind":"literal","def":"a"}}}]}}
 {"kind":"pipe","def":[{"kind":"string"},{"kind":"min_length","def":1},{"kind":"max_length","def":50}]}
 {"kind":"pipe","def":[{"kind":"number"},{"kind":"min_value","def":0},{"kind":"max_value","def":150}]}
+{"kind":"pipe","def":[{"kind":"string"},{"kind":"uuid"}]}  {"kind":"pipe","def":[{"kind":"string"},{"kind":"iso_datetime"}]}
 ```
 
 A `lazy` holds a function in TypeScript, so here its `def` is a name, and the
@@ -239,7 +240,7 @@ it in the interchange form. Nothing is guessed at.
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
 | a `pipe` that is empty, or starts with a schema that doesn't fix its value's type | `EmptyPipe`, `PipeHead` |
 | a step after a pipe's first that isn't an action, or is for another type | `PipeStep`, `ActionMismatch` |
-| a length or bound outside a `pipe`, where the library coerces or throws | `ActionOutsidePipe` |
+| a length or bound outside a `pipe`, where the library coerces or throws, and a `uuid` or `iso_datetime` there | `ActionOutsidePipe` |
 | a `variant` option that isn't an object schema, or has no `literal` at the key | `VariantOption`, `VariantDiscriminator` |
 | a `lazy` naming nothing | `UnresolvedLazy` |
 | what only a builder can be given: an entry twice, a `lazy` never defined or defined twice, an id that isn't its own | `DuplicateKey`, `UndefinedLazy`, `RedefinedLazy`, `InvalidNode` |
@@ -251,6 +252,10 @@ it in the interchange form. Nothing is guessed at.
 A pipe's first schema fixes the type when it is `string`, `number`, `array`,
 one of the number tests, or a pipe of one of those. The number tests
 (`integer`, `safe_integer`) answer for any value, so they also stand alone.
+The format tests (`uuid`, `iso_datetime`) follow a `string`, and are held to a
+`pipe` as `to_schema_json` holds them. Their grammars are
+[formats.md](formats.md)'s, matched by byte scans in `format.rs`, with no
+regular expression.
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest

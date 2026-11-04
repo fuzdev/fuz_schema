@@ -151,6 +151,18 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 	},
 	{ name: 'regex', create: (s) => s.pipe(s.string, s.regex(/^a/)), valid: 'a', invalid: 'b' },
 	{
+		name: 'uuid',
+		create: (s) => s.pipe(s.string, s.uuid),
+		valid: '123e4567-e89b-12d3-a456-426614174000',
+		invalid: '123e4567-e89b-12d3-c456-426614174000'
+	},
+	{
+		name: 'iso_datetime',
+		create: (s) => s.pipe(s.string, s.iso_datetime),
+		valid: '2024-02-29T00:00:00Z',
+		invalid: '2024-02-30T00:00:00Z'
+	},
+	{
 		name: 'check',
 		create: (s) =>
 			s.pipe(

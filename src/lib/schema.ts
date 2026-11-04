@@ -218,6 +218,8 @@ export interface SchemaDefs {
 	integer: undefined;
 	safe_integer: undefined;
 	regex: RegExp;
+	uuid: undefined;
+	iso_datetime: undefined;
 	check: (value: any) => boolean;
 	transform: (value: any) => unknown;
 }
@@ -1981,6 +1983,41 @@ export const regex = <T extends string>(
 	def: pattern,
 	run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
 });
+
+// the grammars are in `docs/formats.md`, which says why each is the one it is
+const UUID =
+	/^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|[fF]{8}-[fF]{4}-[fF]{4}-[fF]{4}-[fF]{12})$/;
+const ISO_DATETIME =
+	/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$/;
+
+/**
+ * Fails a string that isn't a UUID of RFC 9562: five groups of hex digits,
+ * 8-4-4-4-12, with a version from 1 to 8 and the RFC's variant, or the nil
+ * or the max UUID. Either case of hex digit passes, and the output is the
+ * string as given. Fails any value that isn't a string, where `regex` would
+ * convert it.
+ * In a `pipe` its output is the type of the step before it.
+ */
+export const uuid: SchemaRefinement<string, string, 'uuid', undefined> = {
+	kind: 'uuid',
+	def: undefined,
+	run: (value, ctx) =>
+		typeof value === 'string' && UUID.test(value) ? value : fail(ctx, 'uuid', value)
+};
+
+/**
+ * Fails a string that isn't a date and time of RFC 3339 in UTC, as
+ * `2024-02-29T23:59:59.123Z`: a real date of a four-digit year, a `T`, the
+ * time with its seconds, a fraction of 1 to 9 digits or none, and a `Z`.
+ * No offset, no lowercase `t` or `z`, and no leap second. Fails any value
+ * that isn't a string. In a `pipe` its output is the type of the step before it.
+ */
+export const iso_datetime: SchemaRefinement<string, string, 'iso_datetime', undefined> = {
+	kind: 'iso_datetime',
+	def: undefined,
+	run: (value, ctx) =>
+		typeof value === 'string' && ISO_DATETIME.test(value) ? value : fail(ctx, 'iso_datetime', value)
+};
 
 /**
  * Fails when `fn` returns `false`.

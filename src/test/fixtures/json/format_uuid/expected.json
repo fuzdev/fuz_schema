@@ -1,0 +1,457 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "pipe",
+			"def": [
+				{
+					"kind": "string"
+				},
+				{
+					"kind": "uuid"
+				}
+			]
+		}
+	},
+	"cases": [
+		{
+			"name": "v1",
+			"text": "\"123e4567-e89b-12d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v2",
+			"text": "\"123e4567-e89b-22d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v3",
+			"text": "\"123e4567-e89b-32d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v4",
+			"text": "\"123e4567-e89b-42d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v5",
+			"text": "\"123e4567-e89b-52d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v6",
+			"text": "\"123e4567-e89b-62d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v7",
+			"text": "\"123e4567-e89b-72d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "v8",
+			"text": "\"123e4567-e89b-82d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "version_0",
+			"text": "\"123e4567-e89b-02d3-a456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "version_9",
+			"text": "\"123e4567-e89b-92d3-a456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "version_f",
+			"text": "\"123e4567-e89b-f2d3-a456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "variant_0",
+			"text": "\"123e4567-e89b-42d3-0456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "variant_7",
+			"text": "\"123e4567-e89b-42d3-7456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "variant_8",
+			"text": "\"123e4567-e89b-42d3-8456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_9",
+			"text": "\"123e4567-e89b-42d3-9456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_a",
+			"text": "\"123e4567-e89b-42d3-a456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_b",
+			"text": "\"123e4567-e89b-42d3-b456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_upper_a",
+			"text": "\"123e4567-e89b-42d3-A456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_upper_b",
+			"text": "\"123e4567-e89b-42d3-B456-426614174000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "variant_c",
+			"text": "\"123e4567-e89b-42d3-c456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "variant_f",
+			"text": "\"123e4567-e89b-42d3-f456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "nil",
+			"text": "\"00000000-0000-0000-0000-000000000000\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "max_lower",
+			"text": "\"ffffffff-ffff-ffff-ffff-ffffffffffff\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "max_upper",
+			"text": "\"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "max_mixed",
+			"text": "\"ffffffff-FFFF-ffff-FFFF-ffffffffffff\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "near_max",
+			"text": "\"ffffffff-ffff-ffff-ffff-fffffffffffe\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "v4_mixed_case",
+			"text": "\"123E4567-e89B-42D3-a456-426614174ABC\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "escaped",
+			"text": "\"123e4567-e89b-\\u00342d3-a456-42661417400\\u0030\"",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "braced",
+			"text": "\"{123e4567-e89b-42d3-a456-426614174000}\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "no_dashes",
+			"text": "\"123e4567e89b42d3a456426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "urn",
+			"text": "\"urn:uuid:123e4567-e89b-42d3-a456-426614174000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "trailing_newline",
+			"text": "\"123e4567-e89b-42d3-a456-426614174000\\n\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "fullwidth_digit",
+			"text": "\"123e4567-e89b-42d3-a456-42661417400０\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "too_short",
+			"text": "\"123e4567-e89b-42d3-a456-42661417400\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "too_long",
+			"text": "\"123e4567-e89b-42d3-a456-4266141740000\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "not_hex",
+			"text": "\"123e4567-e89b-42d3-a456-42661417400g\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "empty",
+			"text": "\"\"",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [],
+					"formatted": "expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "1",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [],
+					"formatted": "expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "array_of_one",
+			"text": "[\"123e4567-e89b-42d3-a456-426614174000\"]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [],
+					"formatted": "expected string, received array"
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "null",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [],
+					"formatted": "expected string, received null"
+				}
+			]
+		}
+	]
+}

@@ -23,6 +23,9 @@ import type { SeededRng } from './seeded_rng.ts';
 // Schemas
 //
 
+// TODO: `uuid` and `iso_datetime` are held by the conformance matrix and the
+// JSON fixtures, not generated here: drawing them needs near-miss strings and
+// a rule for each of their `SIDES` rows
 type LeafKind =
 	'string' | 'number' | 'integer' | 'safe_integer' | 'boolean' | 'bigint' | 'unknown' | 'undef';
 type WrapKind = 'optional' | 'nullable' | 'lazy' | 'message' | 'array' | 'record';

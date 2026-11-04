@@ -470,6 +470,8 @@ describe('def', () => {
 		integer: s.integer,
 		safe_integer: s.safe_integer,
 		regex: s.regex(pattern),
+		uuid: s.uuid,
+		iso_datetime: s.iso_datetime,
 		check: s.check(check_fn),
 		transform: s.transform(transform_fn)
 	};
@@ -517,6 +519,8 @@ describe('def', () => {
 			integer: undefined,
 			safe_integer: undefined,
 			regex: pattern,
+			uuid: undefined,
+			iso_datetime: undefined,
 			check: check_fn,
 			transform: transform_fn
 		};
@@ -1103,6 +1107,8 @@ describe('types', () => {
 				case 'unknown':
 				case 'integer':
 				case 'safe_integer':
+				case 'uuid':
+				case 'iso_datetime':
 					expectTypeOf(schema.def).toEqualTypeOf<undefined>();
 					break;
 				case 'literal':

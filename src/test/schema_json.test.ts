@@ -45,6 +45,18 @@ describe('to_schema_json', () => {
 		}
 	});
 
+	test('writes the format tests as their kind alone, in a pipe of a string', () => {
+		assert.deepEqual(node(s.pipe(s.string, s.uuid, s.iso_datetime, s.min_length(1))), {
+			kind: 'pipe',
+			def: [
+				{ kind: 'string' },
+				{ kind: 'uuid' },
+				{ kind: 'iso_datetime' },
+				{ kind: 'min_length', def: 1 }
+			]
+		});
+	});
+
 	test('writes negative zero as the zero it equals', () => {
 		assert.strictEqual(JSON.stringify(node(s.literal(-0))), '{"kind":"literal","def":0}');
 		assert(Object.is(node(s.literal(-0)).def, 0));
@@ -575,6 +587,16 @@ describe('to_schema_json refuses', () => {
 			() => s.lazy(() => s.min_value(1)),
 			'cannot serialize `min_value` at /defs/$0: it means something only in a pipe'
 		);
+		// the format tests are for a string, which a bare one doesn't know it has
+		refuses(() => s.uuid, 'cannot serialize `uuid` at /schema: it means something only in a pipe');
+		refuses(
+			() => s.object({ at: s.iso_datetime }),
+			'cannot serialize `iso_datetime` at /schema/def/at: it means something only in a pipe'
+		);
+		refuses(
+			() => s.union([s.string, s.uuid]),
+			'cannot serialize `uuid` at /schema/def/1: it means something only in a pipe'
+		);
 	});
 
 	test('pipes that do not fix a type, or act on another', () => {
@@ -610,6 +632,18 @@ describe('to_schema_json refuses', () => {
 		refuses(
 			() => s.pipe(s.array(s.string), s.safe_integer as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for a array'
+		);
+		refuses(
+			() => s.pipe(s.number, s.uuid as any),
+			'cannot serialize `pipe` at /schema/def/1: the action is not for a number'
+		);
+		refuses(
+			() => s.pipe(s.array(s.string), s.iso_datetime as any),
+			'cannot serialize `pipe` at /schema/def/1: the action is not for a array'
+		);
+		refuses(
+			() => s.pipe(s.uuid, s.min_length(1)),
+			'cannot serialize `pipe` at /schema/def/0: a pipe must start with a schema that fixes the type of its value'
 		);
 	});
 

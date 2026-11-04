@@ -65,6 +65,7 @@ mod builder;
 #[cfg(test)]
 mod differential;
 mod error;
+mod format;
 mod interchange;
 mod issue;
 mod js;
