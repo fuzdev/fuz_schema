@@ -1972,6 +1972,9 @@ export const safe_integer: SchemaRefinement<number, number, 'safe_integer', unde
  * Fails a string that `pattern` doesn't match. In a `pipe` it is typed as the
  * step before it, so a literal or a brand is kept.
  *
+ * `to_schema_json` refuses it, as it holds a `RegExp`. For a UUID or a date
+ * and time in UTC, use `uuid` or `iso_datetime`, which it writes.
+ *
  * @param pattern - must not have the `g` or `y` flag, whose `lastIndex` state would leak between calls
  */
 // @__NO_SIDE_EFFECTS__
@@ -2025,6 +2028,8 @@ export const iso_datetime: SchemaRefinement<string, string, 'iso_datetime', unde
  * In a `pipe` it is typed as the step before it, and `fn` may take more than
  * that, as `check((v: unknown) => ...)` after `string`, whose output is still
  * a `string`. Outside a `pipe` it takes what `fn` does.
+ *
+ * `to_schema_json` refuses it, as it holds a function.
  */
 // @__NO_SIDE_EFFECTS__
 export const check = <V extends T, T = V>(

@@ -555,7 +555,8 @@ and never a table.
 
 Not a measurement: a test of conformance over generated cases.
 `src/test/differential_generate.ts` generates schemas from a seed, over every
-kind with a counterpart in Zod and Valibot, and inputs shaped by each schema
+kind with a counterpart in Zod and Valibot but the format tests, which the
+conformance matrix holds, and inputs shaped by each schema
 with edges mixed in: inherited and hidden keys, null and class prototypes,
 symbol keys, holes, array subclasses, frozen objects, numbers past `2 ** 53`,
 and surrogates. Each case runs through the adapters of the conformance matrix

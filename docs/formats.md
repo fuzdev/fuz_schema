@@ -38,7 +38,17 @@ where `<date>` is a date of the Gregorian calendar with a four-digit year:
 
 A date and time of RFC 3339 in UTC: ASCII digits, an uppercase `T` and `Z`,
 seconds always, a fraction of 1 to 9 digits or none, no offset, no leap
-second. Zod's default `iso.datetime()`, with the fraction capped.
+second. Zod's default `iso.datetime()`, with the fraction capped, as of zod
+4.6; earlier zod 4 also took a time without seconds.
+
+## Not formats
+
+There is no `email` or `url`. An email address has no one grammar, and zod's
+`z.email()` is one of several, so a `regex` of your own says which you mean.
+Zod's `z.url()` trims the text, parses it by WHATWG, and returns it trimmed
+with tabs and newlines removed (`url.href` with `normalize`). A byte scan
+can't parse by WHATWG, and a format test returns the string given.
+fuz_util's `Url` is a `check` of `URL.canParse`.
 
 ## Choosing a grammar
 

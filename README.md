@@ -108,7 +108,8 @@ and the input is never mutated.
 - `pipe(string, uuid)` takes a UUID of RFC 9562 with a version from 1 to 8, as Zod's does,
   and the max UUID in any case, as Valibot's does.
   `pipe(string, iso_datetime)` takes `2024-02-29T23:59:59.123Z` in UTC with a real date, as Zod's does,
-  and a fraction of at most 9 digits, as Valibot's does. See [`docs/formats.md`](docs/formats.md).
+  and a fraction of at most 9 digits, as Valibot's `isoTimestamp` does,
+  and refuses an offset and a space for the `T`, which `isoTimestamp` takes. See [`docs/formats.md`](docs/formats.md).
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -457,7 +458,8 @@ to_schema_json(s.array(s.optional(s.number)));
 ```
 
 It throws on a schema the form can't hold, saying where:
-`regex`, `check`, `transform`, and `with_default_fn`, which hold JavaScript values;
+`regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
+(`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC);
 `object_with_rest`, which the crate doesn't carry yet;
 a `bigint` or `undefined` literal; a default that isn't a JSON value;
 an entry named like a member of `Object.prototype`.

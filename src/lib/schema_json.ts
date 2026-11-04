@@ -227,7 +227,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 		throw Error(`cannot serialize \`${kind}\` at ${path}: ${reason}`);
 	};
 
-	// a schema held by another, which a bound or a length can't be outside a pipe
+	// a schema held by another, which a bound, a length, or a format test can't be outside a pipe
 	const child = (value: unknown, path: string, depth: number): SchemaJsonNode => {
 		if (is_schema(value) && PIPE_ONLY_ACTIONS.has(value.kind)) {
 			refuse(value.kind, path, 'it means something only in a pipe');

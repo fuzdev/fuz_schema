@@ -168,8 +168,9 @@ pub enum SchemaBuildErrorKind {
         /// The kind as written.
         kind: Box<str>,
     },
-    /// A kind whose meaning is a JavaScript value: `regex`, `check`, or
-    /// `transform`.
+    /// A kind whose meaning is a JS value: `regex`, `check`, or `transform`.
+    /// For a UUID or a date and time in UTC, `uuid` and `iso_datetime` are
+    /// held in place of a `regex`.
     UnsupportedKind {
         /// The kind.
         kind: &'static str,
@@ -205,14 +206,16 @@ pub enum SchemaBuildErrorKind {
         /// The kind found.
         kind: SchemaKind,
     },
-    /// An action on a value it is not for: a length of a number, or a bound
-    /// or number test of a string or array.
+    /// An action on a value it is not for: a length of a number, a bound or
+    /// number test of a string or array, or a format test of anything but a
+    /// string.
     ActionMismatch {
         /// The action.
         kind: SchemaKind,
     },
-    /// A length or bound action outside a `pipe`, where the TypeScript
-    /// library would coerce or throw.
+    /// A length, bound, or format action outside a `pipe`. The TypeScript
+    /// library would coerce or throw on a length or bound there, and a format
+    /// test is held to a `pipe` of a `string`, as `to_schema_json` holds it.
     ActionOutsidePipe {
         /// The action.
         kind: SchemaKind,

@@ -255,7 +255,8 @@ one of the number tests, or a pipe of one of those. The number tests
 The format tests (`uuid`, `iso_datetime`) follow a `string`, and are held to a
 `pipe` as `to_schema_json` holds them. Their grammars are
 [formats.md](formats.md)'s, matched by byte scans in `format.rs`, with no
-regular expression.
+regular expression. For a UUID or a date and time in UTC, write `uuid` or
+`iso_datetime` in place of a `regex`.
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
@@ -312,7 +313,9 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   text has a number past a double, a lone surrogate, or nesting past the
   parser, so of the flags only `malformed_tail` is declared. A union has
   the recursion in one option at most: two that reach the same `lazy` make
-  the library's time exponential in a text's depth.
+  the library's time exponential in a text's depth. The format tests are
+  in the pool, rarely drawn by the committed seeds: `npm run fixtures:deep`
+  draws them, and the `format_*` groups hold their edges.
 - `npm run fixtures:deep` runs more of them, outside `gro check` and the repo:
   it writes each group's `expected.json` under `--dir`
   (`~/.cache/fuz_schema/fixtures_deep` by default) and runs
