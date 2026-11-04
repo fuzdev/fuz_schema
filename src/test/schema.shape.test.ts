@@ -18,7 +18,9 @@ import type { ShapeChildOutput } from './shape_test_child.ts';
 // a schema, which has no other way out. That print is the engine's own format,
 // so the process prints two controls first, an object nothing wrote to and
 // then the same map after a write, and a test here fails when they don't read
-// as that: a format this can't read fails, and never passes.
+// as that: a format this can't read fails, and never passes. The format read
+// is Node 26's, so this test needs Node 26.13 or later, though the library
+// does not.
 
 const CHILD_PATH = fileURLToPath(new URL('./shape_test_child.ts', import.meta.url));
 const SCHEMA_FIELDS = ['kind', 'def', 'run'];
@@ -31,13 +33,13 @@ interface PrintedField {
 }
 
 // the fields of one printed object: a line each, as
-// `#run: 0x... <JSFunction run> (const data field 2, attrs: [WEC]) @ Any`,
+// `0x...: [String] in OldSpace: #run: 0x... <JSFunction run (sfi = 0x...)> (const data field 2, attrs: [WEC]) @ Any`,
 // where a field that has been written to is a `data field` with no `const`
 const read_fields = (block: string, names: Array<string>): Array<PrintedField> =>
 	Array.from(
 		block.matchAll(
 			new RegExp(
-				String.raw`^\s*(?:0x[0-9a-f]+: \[String\]: )?#(${names.join('|')}): .*\((const )?data field (\d+)[,)]`,
+				String.raw`^\s*0x[0-9a-f]+: \[String\] in \w+: #(${names.join('|')}): .*\((const )?data field (\d+)[,)]`,
 				'gm'
 			)
 		),

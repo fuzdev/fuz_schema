@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['24.14']
+        node-version: ['26.13']
 
     steps:
       # persist-credentials: false keeps the GITHUB_TOKEN out of .git/config, so a
