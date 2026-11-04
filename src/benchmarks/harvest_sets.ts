@@ -434,8 +434,6 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 			return {
 				rows: [
 					to_zod_row('a fixture run', theirs, ours, fixture),
-					// the same at a size too large for any cache but the last
-					to_zod_row('a published run', theirs, ours, to_document(documents, 'latest')),
 					to_zod_row('a fixture run, last cell bad', theirs, ours, broken, false),
 					to_zod_guard_row('a fixture run, as a guard', theirs, ours, fixture)
 				]

@@ -622,7 +622,7 @@ const real_package_json: CaseGroup = (s) => {
 };
 
 // What syntax-highlighter-bench reads a run's results through
-// (`bench_results/`): a large document of strict objects, records keyed by id,
+// (`bench_results/`): a results document of strict objects, records keyed by id,
 // and numbers each with its checks.
 const real_bench_results: CaseGroup = (s) => {
 	const { BenchResults } = create_bench_results(s);
@@ -633,14 +633,6 @@ const real_bench_results: CaseGroup = (s) => {
 			'real/bench_results/valid',
 			BenchResults,
 			to_document(documents, 'fixture_run'),
-			'identity'
-		),
-		// a published run: the same at a size too large for any cache but the last
-		to_case(
-			s,
-			'scale/bench_results_run/valid',
-			BenchResults,
-			to_document(documents, 'latest'),
 			'identity'
 		)
 	];
