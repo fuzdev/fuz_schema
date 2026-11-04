@@ -423,7 +423,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 						if (fits === undefined) {
 							return refuse(kind, at, "only actions follow a pipe's first schema");
 						}
-						if (!fits) refuse(kind, at, `the action is not for a ${type}`);
+						if (!fits) refuse(kind, at, `the action is not for ${type}s`);
 						return node(step, at, inner);
 					})
 				};

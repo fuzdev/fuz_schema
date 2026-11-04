@@ -619,27 +619,27 @@ describe('to_schema_json refuses', () => {
 		);
 		refuses(
 			() => s.pipe(s.string, s.min_value(0) as any),
-			'cannot serialize `pipe` at /schema/def/1: the action is not for a string'
+			'cannot serialize `pipe` at /schema/def/1: the action is not for strings'
 		);
 		refuses(
 			() => s.pipe(s.string, s.min_length(0), s.integer as any),
-			'cannot serialize `pipe` at /schema/def/2: the action is not for a string'
+			'cannot serialize `pipe` at /schema/def/2: the action is not for strings'
 		);
 		refuses(
 			() => s.pipe(s.number, s.max_length(1) as any),
-			'cannot serialize `pipe` at /schema/def/1: the action is not for a number'
+			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
 		refuses(
 			() => s.pipe(s.array(s.string), s.safe_integer as any),
-			'cannot serialize `pipe` at /schema/def/1: the action is not for a array'
+			'cannot serialize `pipe` at /schema/def/1: the action is not for arrays'
 		);
 		refuses(
 			() => s.pipe(s.number, s.uuid as any),
-			'cannot serialize `pipe` at /schema/def/1: the action is not for a number'
+			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
 		refuses(
 			() => s.pipe(s.array(s.string), s.iso_datetime as any),
-			'cannot serialize `pipe` at /schema/def/1: the action is not for a array'
+			'cannot serialize `pipe` at /schema/def/1: the action is not for arrays'
 		);
 		refuses(
 			() => s.pipe(s.uuid, s.min_length(1)),
