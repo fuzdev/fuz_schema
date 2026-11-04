@@ -220,6 +220,7 @@ export interface SchemaDefs {
 	regex: RegExp;
 	uuid: undefined;
 	iso_datetime: undefined;
+	to_lower_case: undefined;
 	check: (value: any) => boolean;
 	transform: (value: any) => unknown;
 }
@@ -1133,6 +1134,10 @@ export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, nu
  * The input type is unchanged. The schema is returned as-is, so this adds nothing
  * to a parse and is invisible to introspection: `kind` and `def` are the wrapped schema's.
  *
+ * It goes outside a step that changes the value: of `pipe(string, uuid, to_lower_case)`
+ * and not of the `uuid` in it, as a `to_lower_case` outputs a new string and drops a
+ * flavor of the step before it.
+ *
  * @param schema - the schema to flavor
  * @param name - the flavor's name, which exists only in the types and is not stored
  */
@@ -1156,6 +1161,10 @@ export const flavor: {
  * Brands the output type of `schema` with `name`, see `Branded`.
  * The input type is unchanged. The schema is returned as-is, so this adds nothing
  * to a parse and is invisible to introspection: `kind` and `def` are the wrapped schema's.
+ *
+ * It goes outside a step that changes the value: of `pipe(string, uuid, to_lower_case)`
+ * and not of the `uuid` in it, as a `to_lower_case` outputs a new string and drops a
+ * brand of the step before it.
  *
  * @param schema - the schema to brand
  * @param name - the brand's name, which exists only in the types and is not stored
@@ -2048,6 +2057,29 @@ export const iso_datetime: SchemaRefinement<string, string, 'iso_datetime', unde
 	def: undefined,
 	run: (value, ctx) =>
 		typeof value === 'string' && ISO_DATETIME.test(value) ? value : fail(ctx, 'iso_datetime', value)
+};
+
+/**
+ * Replaces a string with `value.toLowerCase()`, its lowercase by Unicode's
+ * mappings and in no locale, and never fails. A step after it in a `pipe` is
+ * given the lowercase: `pipe(string, to_lower_case, min_length(2))` reads the
+ * length of what `toLowerCase` gave, which is not always the input's.
+ *
+ * In a `pipe` it outputs a `string`, as the value is a new one: a literal or
+ * a brand of the step before it is not kept, and one around the pipe is,
+ * `brand(pipe(string, uuid, to_lower_case), 'Uuid')`. Outside a `pipe` it
+ * calls `toLowerCase` on whatever it is given, which throws on a value that
+ * has none, as `undefined`, a missing key included, does.
+ *
+ * `to_json_schema` writes no keyword for it, as Zod writes none for its
+ * `toLowerCase`, and refuses a step but a `uuid` that reads another string
+ * than its document: after it on the input side, and before it on the output
+ * side. `to_schema_json` writes it after a `string`.
+ */
+export const to_lower_case: SchemaAction<string, string, 'to_lower_case', undefined> = {
+	kind: 'to_lower_case',
+	def: undefined,
+	run: (value) => value.toLowerCase()
 };
 
 /**

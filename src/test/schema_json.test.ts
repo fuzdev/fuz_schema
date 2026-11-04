@@ -57,6 +57,18 @@ describe('to_schema_json', () => {
 		});
 	});
 
+	test('writes to_lower_case as its kind alone, in a pipe of a string', () => {
+		assert.deepEqual(node(s.pipe(s.string, s.uuid, s.to_lower_case, s.max_length(36))), {
+			kind: 'pipe',
+			def: [
+				{ kind: 'string' },
+				{ kind: 'uuid' },
+				{ kind: 'to_lower_case' },
+				{ kind: 'max_length', def: 36 }
+			]
+		});
+	});
+
 	test('writes negative zero as the zero it equals', () => {
 		assert.strictEqual(JSON.stringify(node(s.literal(-0))), '{"kind":"literal","def":0}');
 		assert(Object.is(node(s.literal(-0)).def, 0));
@@ -602,6 +614,10 @@ describe('to_schema_json refuses', () => {
 			() => s.union([s.string, s.uuid]),
 			'cannot serialize `uuid` at /schema/def/1: it means something only in a pipe'
 		);
+		refuses(
+			() => s.object({ a: s.to_lower_case }),
+			'cannot serialize `to_lower_case` at /schema/def/a: it means something only in a pipe'
+		);
 	});
 
 	test('pipes that do not fix a type, or act on another', () => {
@@ -645,6 +661,10 @@ describe('to_schema_json refuses', () => {
 		refuses(
 			() => s.pipe(s.array(s.string), s.iso_datetime as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for arrays'
+		);
+		refuses(
+			() => s.pipe(s.number, s.to_lower_case as any),
+			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
 		refuses(
 			() => s.pipe(s.uuid, s.min_length(1)),

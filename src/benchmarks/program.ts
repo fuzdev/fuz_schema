@@ -164,6 +164,12 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		invalid: '2024-02-30T00:00:00Z'
 	},
 	{
+		name: 'to_lower_case',
+		create: (s) => s.pipe(s.string, s.to_lower_case, s.min_length(2)),
+		valid: 'AB',
+		invalid: 'A'
+	},
+	{
 		name: 'check',
 		create: (s) =>
 			s.pipe(

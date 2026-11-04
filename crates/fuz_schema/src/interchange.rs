@@ -313,6 +313,7 @@ impl<'a> Loader<'a> {
             SchemaKind::SafeInteger => self.bare(def, SchemaBuilder::safe_integer),
             SchemaKind::Uuid => self.bare(def, SchemaBuilder::uuid),
             SchemaKind::IsoDatetime => self.bare(def, SchemaBuilder::iso_datetime),
+            SchemaKind::ToLowerCase => self.bare(def, SchemaBuilder::to_lower_case),
             SchemaKind::Literal => {
                 // with no `def` the TypeScript literal is `undefined`
                 let Some(def) = def else {
@@ -516,7 +517,7 @@ mod tests {
     }
 
     /// One schema of every kind, a text it matches, and one it does not.
-    const EVERY_KIND: [(&str, &str, &str); 27] = [
+    const EVERY_KIND: [(&str, &str, &str); 28] = [
         (r#"{"kind":"string"}"#, r#""a""#, "1"),
         (r#"{"kind":"number"}"#, "1.5", r#""1""#),
         (r#"{"kind":"boolean"}"#, "false", "0"),
@@ -619,6 +620,12 @@ mod tests {
             r#"{"kind":"pipe","def":[{"kind":"string"},{"kind":"iso_datetime"}]}"#,
             r#""2024-02-29T00:00:00.123456789Z""#,
             r#""2023-02-29T00:00:00Z""#,
+        ),
+        // the step after it reads the lowercase, which of a dotted capital I is two units
+        (
+            r#"{"kind":"pipe","def":[{"kind":"string"},{"kind":"to_lower_case"},{"kind":"max_length","def":1}]}"#,
+            r#""A""#,
+            r#""\u0130""#,
         ),
     ];
 
@@ -1088,6 +1095,16 @@ mod tests {
             (
                 r#"{"schema":{"kind":"pipe","def":[{"kind":"number"},{"kind":"uuid"}]}}"#.to_owned(),
                 SchemaBuildErrorKind::ActionMismatch { kind: SchemaKind::Uuid },
+                "/schema/def/1",
+            ),
+            (
+                r#"{"schema":{"kind":"object","def":{"a":{"kind":"to_lower_case"}}}}"#.to_owned(),
+                SchemaBuildErrorKind::ActionOutsidePipe { kind: SchemaKind::ToLowerCase },
+                "/schema/def/a",
+            ),
+            (
+                r#"{"schema":{"kind":"pipe","def":[{"kind":"array","def":{"kind":"string"}},{"kind":"to_lower_case"}]}}"#.to_owned(),
+                SchemaBuildErrorKind::ActionMismatch { kind: SchemaKind::ToLowerCase },
                 "/schema/def/1",
             ),
             (

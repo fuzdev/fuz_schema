@@ -311,7 +311,8 @@ impl SchemaIssueKind {
             | SchemaKind::Nullable
             | SchemaKind::WithDefault
             | SchemaKind::Lazy
-            | SchemaKind::Pipe => None,
+            | SchemaKind::Pipe
+            | SchemaKind::ToLowerCase => None,
         }
     }
 }
@@ -395,6 +396,7 @@ mod tests {
                     | SchemaKind::WithDefault
                     | SchemaKind::Lazy
                     | SchemaKind::Pipe
+                    | SchemaKind::ToLowerCase
             );
             match SchemaIssueKind::of(kind) {
                 Some(issue_kind) => {

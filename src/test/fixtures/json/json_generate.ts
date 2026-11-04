@@ -156,13 +156,19 @@ const gen_leaf: Gen = (rng, _depth, self) => {
 		case 9:
 			return gen_number_pipe(rng);
 		case 10: {
+			// a `to_lower_case` after the format, which a uuid's grammar holds of and
+			// an `iso_datetime`'s doesn't, and among the lengths, which the texts
+			// below make differ from the input's with a dotted capital I
 			if (rng.chance(0.25)) {
 				const format = rng.pick([s.uuid, s.iso_datetime]) as s.AnySchema;
-				return rng.chance(0.5)
-					? pipe(s.string, format)
-					: pipe(s.string, ...length_steps(rng), format);
+				const steps = rng.chance(0.5) ? [format] : [...length_steps(rng), format];
+				if (rng.chance(0.5)) steps.push(s.to_lower_case as s.AnySchema);
+				return pipe(s.string, ...steps);
 			}
-			const head = pipe(s.string, ...length_steps(rng));
+			const steps = length_steps(rng);
+			if (rng.chance(0.25))
+				steps.splice(rng.int(steps.length + 1), 0, s.to_lower_case as s.AnySchema);
+			const head = pipe(s.string, ...steps);
 			// a pipe whose first schema is a pipe
 			return rng.chance(0.3) ? pipe(head, ...length_steps(rng)) : head;
 		}
@@ -531,7 +537,11 @@ const pipe_text = (t: TextState, schema: s.AnySchema, depth: number): string => 
 	if (head.kind === 'string') {
 		const length = Math.max(0, Math.floor(near(t, bounds, 1)));
 		let value = '';
-		while (value.length < length) value += t.rng.pick(['a', 'é', '😀', 'b']);
+		// with capitals for a `to_lower_case`, and one whose lowercase is longer
+		const letters = steps.some((step) => step.kind === 'to_lower_case')
+			? ['a', 'é', '😀', 'b', 'A', 'É', 'İ']
+			: ['a', 'é', '😀', 'b'];
+		while (value.length < length) value += t.rng.pick(letters);
 		return string_text(t, value);
 	}
 	if (head.kind === 'array') {

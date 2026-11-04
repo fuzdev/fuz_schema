@@ -65,6 +65,7 @@ interface Expected {
 	integer: [number, number];
 	safe_integer: [number, number];
 	uuid: [string, string];
+	to_lower_case: [string, string];
 	iso_datetime: [string, string];
 	regex: [string, string];
 	check: [unknown, unknown];
@@ -98,6 +99,7 @@ interface ExpectedStep {
 	integer: [number, number];
 	safe_integer: [number, number];
 	uuid: [string, string];
+	to_lower_case: [string, string];
 	iso_datetime: [string, string];
 	min_value: [number, number];
 	max_value: [number, number];
@@ -298,6 +300,7 @@ describe('inference by position', () => {
 			integer: s.integer,
 			safe_integer: s.safe_integer,
 			uuid: s.uuid,
+			to_lower_case: s.to_lower_case,
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
@@ -356,6 +359,7 @@ describe('inference by position', () => {
 			integer: s.integer,
 			safe_integer: s.safe_integer,
 			uuid: s.uuid,
+			to_lower_case: s.to_lower_case,
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
@@ -417,6 +421,7 @@ describe('inference by position', () => {
 			integer: s.integer,
 			safe_integer: s.safe_integer,
 			uuid: s.uuid,
+			to_lower_case: s.to_lower_case,
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
@@ -475,6 +480,7 @@ describe('inference by position', () => {
 			integer: s.integer,
 			safe_integer: s.safe_integer,
 			uuid: s.uuid,
+			to_lower_case: s.to_lower_case,
 			iso_datetime: s.iso_datetime,
 			regex: s.regex(/x/),
 			check: s.check((v) => v !== null),
@@ -534,6 +540,7 @@ describe('inference by position', () => {
 				integer: s.integer,
 				safe_integer: s.safe_integer,
 				uuid: s.uuid,
+				to_lower_case: s.to_lower_case,
 				iso_datetime: s.iso_datetime,
 				regex: s.regex(/x/),
 				check: s.check((v) => v !== null),
@@ -609,6 +616,7 @@ describe('inference by position', () => {
 			integer: s.object_with_rest({}, s.integer),
 			safe_integer: s.object_with_rest({}, s.safe_integer),
 			uuid: s.object_with_rest({}, s.uuid),
+			to_lower_case: s.object_with_rest({}, s.to_lower_case),
 			iso_datetime: s.object_with_rest({}, s.iso_datetime),
 			regex: s.object_with_rest({}, s.regex(/x/)),
 			check: s.object_with_rest(
@@ -685,6 +693,7 @@ describe('inference by position', () => {
 			integer: s.union([s.integer]),
 			safe_integer: s.union([s.safe_integer]),
 			uuid: s.union([s.uuid]),
+			to_lower_case: s.union([s.to_lower_case]),
 			iso_datetime: s.union([s.iso_datetime]),
 			regex: s.union([s.regex(/x/)]),
 			check: s.union([s.check((v) => v !== null)]),
@@ -749,6 +758,7 @@ describe('inference by position', () => {
 			integer: s.union([s.integer]),
 			safe_integer: s.union([s.safe_integer]),
 			uuid: s.union([s.uuid]),
+			to_lower_case: s.union([s.to_lower_case]),
 			iso_datetime: s.union([s.iso_datetime]),
 			regex: s.union([s.regex(/x/)]),
 			check: s.union([s.check((v) => v !== null)]),
@@ -809,6 +819,7 @@ describe('inference by position', () => {
 				integer: s.integer,
 				safe_integer: s.safe_integer,
 				uuid: s.uuid,
+				to_lower_case: s.to_lower_case,
 				iso_datetime: s.iso_datetime,
 				regex: s.regex(/x/),
 				check: s.check((v) => v !== null),
@@ -966,6 +977,10 @@ describe('inference by position', () => {
 				s.uuid,
 				s.check((v) => v !== undefined)
 			),
+			to_lower_case: s.pipe(
+				s.to_lower_case,
+				s.check((v) => v !== undefined)
+			),
 			iso_datetime: s.pipe(
 				s.iso_datetime,
 				s.check((v) => v !== undefined)
@@ -1066,6 +1081,7 @@ describe('inference by position', () => {
 			integer: s.pipe(s.number, s.integer),
 			safe_integer: s.pipe(s.number, s.safe_integer),
 			uuid: s.pipe(s.string, s.uuid),
+			to_lower_case: s.pipe(s.string, s.to_lower_case),
 			iso_datetime: s.pipe(s.string, s.iso_datetime),
 			min_value: s.pipe(s.number, s.min_value(1)),
 			max_value: s.pipe(s.number, s.max_value(1))
@@ -1125,6 +1141,7 @@ describe('inference by position', () => {
 			integer: s.pipe(s.number, s.integer),
 			safe_integer: s.pipe(s.number, s.safe_integer),
 			uuid: s.pipe(s.string, s.uuid),
+			to_lower_case: s.pipe(s.string, s.to_lower_case),
 			iso_datetime: s.pipe(s.string, s.iso_datetime),
 			min_value: s.pipe(s.number, s.min_value(1)),
 			max_value: s.pipe(s.number, s.max_value(1))
@@ -1415,6 +1432,7 @@ describe('inference by position', () => {
 			integer: s.optional(s.integer),
 			safe_integer: s.optional(s.safe_integer),
 			uuid: s.optional(s.uuid),
+			to_lower_case: s.optional(s.to_lower_case),
 			iso_datetime: s.optional(s.iso_datetime),
 			regex: s.optional(s.regex(/x/)),
 			check: s.optional(s.check((v) => v !== null)),
@@ -1479,6 +1497,7 @@ describe('inference by position', () => {
 			integer: s.nullable(s.integer),
 			safe_integer: s.nullable(s.safe_integer),
 			uuid: s.nullable(s.uuid),
+			to_lower_case: s.nullable(s.to_lower_case),
 			iso_datetime: s.nullable(s.iso_datetime),
 			regex: s.nullable(s.regex(/x/)),
 			check: s.nullable(s.check((v) => v !== null)),
@@ -1552,6 +1571,7 @@ describe('inference by position', () => {
 			integer: s.with_default(s.integer, nothing),
 			safe_integer: s.with_default(s.safe_integer, nothing),
 			uuid: s.with_default(s.uuid, nothing),
+			to_lower_case: s.with_default(s.to_lower_case, nothing),
 			iso_datetime: s.with_default(s.iso_datetime, nothing),
 			regex: s.with_default(s.regex(/x/), nothing),
 			check: s.with_default(
@@ -1640,6 +1660,7 @@ describe('inference by position', () => {
 			integer: s.with_default_fn(s.integer, () => nothing),
 			safe_integer: s.with_default_fn(s.safe_integer, () => nothing),
 			uuid: s.with_default_fn(s.uuid, () => nothing),
+			to_lower_case: s.with_default_fn(s.to_lower_case, () => nothing),
 			iso_datetime: s.with_default_fn(s.iso_datetime, () => nothing),
 			regex: s.with_default_fn(s.regex(/x/), () => nothing),
 			check: s.with_default_fn(
@@ -1716,6 +1737,7 @@ describe('inference by position', () => {
 			integer: s.optional(s.integer),
 			safe_integer: s.optional(s.safe_integer),
 			uuid: s.optional(s.uuid),
+			to_lower_case: s.optional(s.to_lower_case),
 			iso_datetime: s.optional(s.iso_datetime),
 			regex: s.optional(s.regex(/x/)),
 			check: s.optional(s.check((v) => v !== null)),
@@ -1789,6 +1811,7 @@ describe('inference by position', () => {
 			integer: s.with_default(s.integer, nothing),
 			safe_integer: s.with_default(s.safe_integer, nothing),
 			uuid: s.with_default(s.uuid, nothing),
+			to_lower_case: s.with_default(s.to_lower_case, nothing),
 			iso_datetime: s.with_default(s.iso_datetime, nothing),
 			regex: s.with_default(s.regex(/x/), nothing),
 			check: s.with_default(
@@ -1865,6 +1888,7 @@ describe('inference by position', () => {
 			integer: s.array(s.integer),
 			safe_integer: s.array(s.safe_integer),
 			uuid: s.array(s.uuid),
+			to_lower_case: s.array(s.to_lower_case),
 			iso_datetime: s.array(s.iso_datetime),
 			regex: s.array(s.regex(/x/)),
 			check: s.array(s.check((v) => v !== null)),
@@ -1929,6 +1953,7 @@ describe('inference by position', () => {
 			integer: s.array(s.integer),
 			safe_integer: s.array(s.safe_integer),
 			uuid: s.array(s.uuid),
+			to_lower_case: s.array(s.to_lower_case),
 			iso_datetime: s.array(s.iso_datetime),
 			regex: s.array(s.regex(/x/)),
 			check: s.array(s.check((v) => v !== null)),
@@ -1993,6 +2018,7 @@ describe('inference by position', () => {
 			integer: s.record(s.integer),
 			safe_integer: s.record(s.safe_integer),
 			uuid: s.record(s.uuid),
+			to_lower_case: s.record(s.to_lower_case),
 			iso_datetime: s.record(s.iso_datetime),
 			regex: s.record(s.regex(/x/)),
 			check: s.record(s.check((v) => v !== null)),
@@ -2057,6 +2083,7 @@ describe('inference by position', () => {
 			integer: s.lazy(() => s.integer),
 			safe_integer: s.lazy(() => s.safe_integer),
 			uuid: s.lazy(() => s.uuid),
+			to_lower_case: s.lazy(() => s.to_lower_case),
 			iso_datetime: s.lazy(() => s.iso_datetime),
 			regex: s.lazy(() => s.regex(/x/)),
 			check: s.lazy(() => s.check((v) => v !== null)),
@@ -2121,6 +2148,7 @@ describe('inference by position', () => {
 			integer: s.lazy(() => s.integer),
 			safe_integer: s.lazy(() => s.safe_integer),
 			uuid: s.lazy(() => s.uuid),
+			to_lower_case: s.lazy(() => s.to_lower_case),
 			iso_datetime: s.lazy(() => s.iso_datetime),
 			regex: s.lazy(() => s.regex(/x/)),
 			check: s.lazy(() => s.check((v) => v !== null)),
@@ -2194,6 +2222,7 @@ describe('inference by position', () => {
 			integer: s.message(s.integer, 'm'),
 			safe_integer: s.message(s.safe_integer, 'm'),
 			uuid: s.message(s.uuid, 'm'),
+			to_lower_case: s.message(s.to_lower_case, 'm'),
 			iso_datetime: s.message(s.iso_datetime, 'm'),
 			regex: s.message(s.regex(/x/), 'm'),
 			check: s.message(
@@ -2279,6 +2308,7 @@ describe('inference by position', () => {
 			integer: s.message(s.integer, 'm'),
 			safe_integer: s.message(s.safe_integer, 'm'),
 			uuid: s.message(s.uuid, 'm'),
+			to_lower_case: s.message(s.to_lower_case, 'm'),
 			iso_datetime: s.message(s.iso_datetime, 'm'),
 			regex: s.message(s.regex(/x/), 'm'),
 			check: s.message(

@@ -361,6 +361,10 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [{ find: `|[13579][26]00)-02-29`, replace: `|\\d\\d00)-02-29` }]
 	},
 	{
+		name: 'to_lower_case_identity',
+		edits: [{ find: `run: (value) => value.toLowerCase()`, replace: `run: (value) => value` }]
+	},
+	{
 		name: 'run_entries_writes_missing',
 		edits: [
 			{
@@ -1083,6 +1087,49 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `							path: issue.path`,
 				replace: `							path: issue.path.toReversed()`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_lower_case_after_any_type',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `					fits('string');
+					break;
+				case 'uuid':`,
+				replace: `					break;
+				case 'uuid':`
+			}
+		]
+	},
+	{
+		name: 'json_schema_step_after_to_lower_case_kept',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `input ? first_lower >= 0 && i > first_lower : i < last_lower`,
+				replace: `input ? false : i < last_lower`
+			}
+		]
+	},
+	{
+		name: 'json_schema_step_before_to_lower_case_kept',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `input ? first_lower >= 0 && i > first_lower : i < last_lower`,
+				replace: `input ? first_lower >= 0 && i > first_lower : false`
+			}
+		]
+	},
+	{
+		name: 'json_schema_uuid_after_to_lower_case_refused',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `if (action.kind !== 'uuid' && lowered(action.kind, i, at)) break;`,
+				replace: `if (lowered(action.kind, i, at)) break;`
 			}
 		]
 	},

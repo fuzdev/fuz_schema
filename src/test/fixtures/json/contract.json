@@ -30,5 +30,6 @@
 		"number_overflow_unread",
 		"lone_surrogate_unread",
 		"depth_limit_unread"
-	]
+	],
+	"unicode_version": "17.0"
 }

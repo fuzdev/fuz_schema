@@ -88,6 +88,8 @@ export interface ConformanceLib {
 	max_value: (schema: any, max: number | bigint) => any;
 	/** `schema`, then a test of `pattern` on the output, a string. */
 	regex: (schema: any, pattern: RegExp) => any;
+	/** `schema`, then its output, a string, lowercase, for the steps after. */
+	to_lower_case: (schema: any) => any;
 	/** A string that is a UUID, as the library's own check has it. */
 	uuid: any;
 	/** A string that is a date and time in ISO 8601, as the library's own check has it. */
@@ -136,6 +138,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => schema.check(z.gte(min)),
 		max_value: (schema, max) => schema.check(z.lte(max)),
 		regex: (schema, pattern) => schema.check(z.regex(pattern)),
+		to_lower_case: (schema) => schema.check(z.toLowerCase()),
 		uuid: z.uuid(),
 		iso_datetime: z.iso.datetime(),
 		strip: (entries) => z.object(entries),
@@ -186,6 +189,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => v.pipe(schema, v.minValue(min)),
 		max_value: (schema, max) => v.pipe(schema, v.maxValue(max)),
 		regex: (schema, pattern) => v.pipe(schema, v.regex(pattern)),
+		to_lower_case: (schema) => v.pipe(schema, v.toLowerCase()),
 		uuid: v.pipe(v.string(), v.uuid()),
 		iso_datetime: v.pipe(v.string(), v.isoTimestamp()),
 		strip: (entries) => v.object(entries),
@@ -241,6 +245,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		min_value: (schema, min) => s.pipe(schema, s.min_value(min)),
 		max_value: (schema, max) => s.pipe(schema, s.max_value(max)),
 		regex: (schema, pattern) => s.pipe(schema, s.regex(pattern)),
+		to_lower_case: (schema) => s.pipe(schema, s.to_lower_case),
 		uuid: s.pipe(s.string, s.uuid),
 		iso_datetime: s.pipe(s.string, s.iso_datetime),
 		strip: (entries) => s.strip_object(entries),

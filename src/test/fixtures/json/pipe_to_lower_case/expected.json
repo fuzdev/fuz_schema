@@ -1,0 +1,426 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"id": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "uuid"
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						}
+					}
+				},
+				"id_after": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "to_lower_case"
+								},
+								{
+									"kind": "uuid"
+								}
+							]
+						}
+					}
+				},
+				"short": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "to_lower_case"
+								},
+								{
+									"kind": "max_length",
+									"def": 1
+								}
+							]
+						}
+					}
+				},
+				"short_before": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "max_length",
+									"def": 1
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						}
+					}
+				},
+				"at": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "to_lower_case"
+								},
+								{
+									"kind": "iso_datetime"
+								}
+							]
+						}
+					}
+				},
+				"at_before": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "iso_datetime"
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						}
+					}
+				},
+				"nested": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "pipe",
+									"def": [
+										{
+											"kind": "string"
+										},
+										{
+											"kind": "to_lower_case"
+										}
+									]
+								},
+								{
+									"kind": "min_length",
+									"def": 2
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "id_upper",
+			"text": "{\"id\":\"123E4567-E89B-42D3-A456-426614174000\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "id_max_mixed",
+			"text": "{\"id\":\"ffffffff-FFFF-ffff-FFFF-ffffffffffff\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "id_not_uuid",
+			"text": "{\"id\":\"X\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"id"
+					],
+					"formatted": "id: expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "id_after_upper",
+			"text": "{\"id_after\":\"123E4567-E89B-42D3-A456-426614174000\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "id_after_kelvin",
+			"text": "{\"id_after\":\"123e4567-e89b-42d3-a456-42661417400K\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"id_after"
+					],
+					"formatted": "id_after: expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "short_ascii",
+			"text": "{\"short\":\"A\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "short_dotted_i",
+			"text": "{\"short\":\"İ\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": [
+						"short"
+					],
+					"formatted": "short: expected length <= 1, received string"
+				}
+			]
+		},
+		{
+			"name": "short_before_dotted_i",
+			"text": "{\"short_before\":\"İ\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "short_two",
+			"text": "{\"short\":\"AB\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": [
+						"short"
+					],
+					"formatted": "short: expected length <= 1, received string"
+				}
+			]
+		},
+		{
+			"name": "at_utc",
+			"text": "{\"at\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"at"
+					],
+					"formatted": "at: expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "at_before_utc",
+			"text": "{\"at_before\":\"2024-01-01T00:00:00Z\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_before_lower",
+			"text": "{\"at_before\":\"2024-01-01t00:00:00z\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"at_before"
+					],
+					"formatted": "at_before: expected iso_datetime, received string"
+				}
+			]
+		},
+		{
+			"name": "nested_sigma",
+			"text": "{\"nested\":\"ΑΣ\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nested_one",
+			"text": "{\"nested\":\"Σ\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [
+						"nested"
+					],
+					"formatted": "nested: expected length >= 2, received string"
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "{\"id\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "number",
+					"path": [
+						"id"
+					],
+					"formatted": "id: expected string, received number"
+				}
+			]
+		},
+		{
+			"name": "null",
+			"text": "{\"short\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"short"
+					],
+					"formatted": "short: expected string, received null"
+				}
+			]
+		},
+		{
+			"name": "every",
+			"text": "{\"id\":\"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\",\"id_after\":\"X\",\"short\":\"İ\",\"short_before\":\"ab\",\"at\":\"2024-01-01T00:00:00Z\",\"at_before\":\"x\",\"nested\":\"I\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"id_after"
+					],
+					"formatted": "id_after: expected uuid, received string"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": [
+						"short"
+					],
+					"formatted": "short: expected length <= 1, received string"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 1",
+					"received": "string",
+					"path": [
+						"short_before"
+					],
+					"formatted": "short_before: expected length <= 1, received string"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"at"
+					],
+					"formatted": "at: expected iso_datetime, received string"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"at_before"
+					],
+					"formatted": "at_before: expected iso_datetime, received string"
+				},
+				{
+					"kind": "min_length",
+					"expected": "length >= 2",
+					"received": "string",
+					"path": [
+						"nested"
+					],
+					"formatted": "nested: expected length >= 2, received string"
+				}
+			]
+		}
+	]
+}

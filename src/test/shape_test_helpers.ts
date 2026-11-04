@@ -264,6 +264,7 @@ export const SHAPE_SAMPLES: Record<
 			invalid: ['2023-02-29T00:00:00Z', 1]
 		}
 	],
+	to_lower_case: () => [{ action: true, schema: s.to_lower_case, valid: ['A', 'a'], invalid: [] }],
 	check: () => [
 		{
 			action: true,

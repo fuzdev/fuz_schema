@@ -80,7 +80,8 @@ const BARE_KINDS: ReadonlySet<string> = new Set([
 	'integer',
 	'safe_integer',
 	'uuid',
-	'iso_datetime'
+	'iso_datetime',
+	'to_lower_case'
 ]);
 
 /**
@@ -97,8 +98,8 @@ const OBJECT_KINDS: ReadonlySet<string> = new Set(['object', 'loose_object', 'st
 /** The actions that take a length, which a string or an array has. */
 const LENGTH_ACTIONS: ReadonlySet<string> = new Set(['min_length', 'max_length']);
 
-/** The actions that test a string's format. */
-const STRING_ACTIONS: ReadonlySet<string> = new Set(['uuid', 'iso_datetime']);
+/** The actions for a string: the format tests, and `to_lower_case`. */
+const STRING_ACTIONS: ReadonlySet<string> = new Set(['uuid', 'iso_datetime', 'to_lower_case']);
 
 /** The actions that take a number. */
 const NUMBER_ACTIONS: ReadonlySet<string> = new Set([
@@ -110,8 +111,8 @@ const NUMBER_ACTIONS: ReadonlySet<string> = new Set([
 
 /**
  * The actions that mean something only in a `pipe`, where the library would
- * coerce or throw, and the format tests, which are for a string a `pipe` has
- * fixed.
+ * coerce or throw, and the actions for a string, which are for one a `pipe`
+ * has fixed.
  */
 const PIPE_ONLY_ACTIONS: ReadonlySet<string> = new Set([
 	'min_length',
@@ -119,7 +120,8 @@ const PIPE_ONLY_ACTIONS: ReadonlySet<string> = new Set([
 	'min_value',
 	'max_value',
 	'uuid',
-	'iso_datetime'
+	'iso_datetime',
+	'to_lower_case'
 ]);
 
 /** A key as a reference token of a JSON Pointer. */

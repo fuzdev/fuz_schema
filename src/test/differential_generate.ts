@@ -231,6 +231,9 @@ const DISCRIMINATORS: Array<unknown> = ['a', 'b', 'c', 1];
 const NUMBER_BOUNDS: Array<number> = [0, 1, -1, 1.5, 2 ** 53];
 const BIGINT_BOUNDS: Array<bigint> = [0n, 1n, -1n];
 
+// TODO: `to_lower_case` is held by the conformance matrix and the JSON
+// fixtures, not generated here: it is a step that changes the value, which the
+// rules read as only a `map` does, and needs strings whose lowercase differs
 const LEAF_KINDS: Array<DifferentialKind> = [
 	'string',
 	'string',

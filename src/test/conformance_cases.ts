@@ -1933,6 +1933,52 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		also: BOTH
 	},
 	{
+		name: 'to_lower_case, mixed case',
+		schema: (l) => l.to_lower_case(l.string),
+		input: () => 'AbC-É'
+	},
+	{
+		name: 'to_lower_case, a final sigma',
+		schema: (l) => l.to_lower_case(l.string),
+		input: () => 'ΑΣ ΣΑ'
+	},
+	{ name: 'to_lower_case, a number', schema: (l) => l.to_lower_case(l.string), input: () => 1 },
+	{
+		name: 'to_lower_case, then a length of the lowercase',
+		schema: (l) => l.max_length(l.to_lower_case(l.string), 1),
+		input: () => 'İ'
+	},
+	{
+		name: 'to_lower_case, after a length of the input',
+		schema: (l) => l.to_lower_case(l.max_length(l.string, 1)),
+		input: () => 'İ'
+	},
+	{
+		name: 'to_lower_case, then a pattern of the lowercase',
+		schema: (l) => l.regex(l.to_lower_case(l.string), /^[a-z]+$/),
+		input: () => 'ABC'
+	},
+	{
+		name: 'to_lower_case, after a pattern of the input',
+		schema: (l) => l.to_lower_case(l.regex(l.string, /^[A-Z]+$/)),
+		input: () => 'ABC'
+	},
+	{
+		name: 'to_lower_case of a uuid',
+		schema: (l) => l.to_lower_case(l.uuid),
+		input: () => '123E4567-E89B-42D3-A456-426614174ABC'
+	},
+	{
+		name: 'to_lower_case entry',
+		entries: (l) => ({ id: l.to_lower_case(l.string), n: l.optional(l.to_lower_case(l.string)) }),
+		input: () => ({ id: 'A' })
+	},
+	{
+		name: 'to_lower_case entry, already lowercase',
+		entries: (l) => ({ id: l.to_lower_case(l.string) }),
+		input: () => ({ id: 'a' })
+	},
+	{
 		name: 'uuid entry and iso_datetime entry',
 		entries: (l) => ({ id: l.uuid, at: l.optional(l.iso_datetime) }),
 		input: () => ({ id: '123e4567-e89b-42d3-a456-426614174000', at: '2024-01-01T00:00:00Z' })

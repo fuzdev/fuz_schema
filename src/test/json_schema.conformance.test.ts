@@ -269,6 +269,36 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			inline(node);
 		}
 	},
+	lower_case_step: {
+		reason:
+			"a step but a `uuid` after a `to_lower_case` is dropped on the input side with `'any'`, and one before it on the output side, where zod writes its keyword",
+		docs: 'a step but a `uuid` after a `to_lower_case` is refused on the input side, and one before it on the output side',
+		// zod's document, without the keywords its adapter marked on that side
+		rewrite: (node, side, options) => {
+			const marked: Array<[string, unknown]> | undefined = node[MARK + 'lower_' + options.io];
+			if (side !== 'zod' || options.unrepresentable !== 'any' || !marked) return;
+			for (const [keyword, value] of marked) {
+				if (keyword !== 'pattern') {
+					if (node[keyword] === value) delete node[keyword];
+				} else if (node.pattern === value) {
+					delete node.pattern;
+				} else if (Array.isArray(node.allOf)) {
+					node.allOf = node.allOf.filter((p: Doc) => p.pattern !== value);
+					if (node.allOf.length === 1) node.pattern = node.allOf[0].pattern;
+					if (node.allOf.length < 2) delete node.allOf;
+				}
+			}
+		}
+	},
+	lower_case_step_refused: {
+		reason:
+			'a step but a `uuid` after a `to_lower_case` is refused on the input side, and one before it on the output side',
+		docs: 'a step but a `uuid` after a `to_lower_case` is refused on the input side, and one before it on the output side',
+		refusal: {
+			side: 'ours',
+			message: /: it reads (the lowercase of the input|what the output is the lowercase of)$/
+		}
+	},
 	step_after_transform: {
 		reason:
 			'a step after a `transform` is refused on the input side, or dropped, where zod drops it',
@@ -309,6 +339,54 @@ type JsonSchemaLib = ConformanceLib & { meta: (schema: any, data: Record<string,
 const bigints = (values: ReadonlyArray<unknown>): Array<number> =>
 	values.flatMap((v, i) => (typeof v === 'bigint' ? [i] : []));
 
+// the keywords of string steps each zod schema has written, and those written
+// after its first `toLowerCase`, which this library leaves out of a document
+// with `'any'`: those before its last on the output side, and those after its
+// first on the input side
+interface Lowered {
+	lowered: boolean;
+	all: Array<[string, unknown]>;
+	after: Array<[string, unknown]>;
+}
+const LOWERED: WeakMap<object, Lowered> = new WeakMap();
+const lowered_of = (schema: any): Lowered =>
+	LOWERED.get(schema) ?? { lowered: false, all: [], after: [] };
+const lower_case = (schema: any): any => {
+	const before = lowered_of(schema);
+	const out = schema.check(z.toLowerCase()).meta({ [MARK + 'lower_output']: [...before.all] });
+	LOWERED.set(out, { lowered: true, all: [...before.all], after: [...before.after] });
+	return out;
+};
+// `out`, `schema` with a step that writes `keyword` as `value`
+const lower_step = (schema: any, out: any, keyword: string, value: unknown): any => {
+	const before = lowered_of(schema);
+	const state: Lowered = {
+		lowered: before.lowered,
+		all: [...before.all, [keyword, value]],
+		after: before.lowered ? [...before.after, [keyword, value]] : before.after
+	};
+	const marked = state.lowered ? out.meta({ [MARK + 'lower_input']: state.after }) : out;
+	LOWERED.set(marked, state);
+	return marked;
+};
+const zod_regex = (schema: any, pattern: RegExp): any => {
+	const checked = schema.check(z.regex(pattern));
+	if (/[^du]/.test(pattern.flags)) return checked.meta(mark('regex_flags'));
+	if (pattern.unicode) return checked;
+	try {
+		RegExp(pattern.source, 'u');
+	} catch {
+		return checked.meta(mark('regex_u'));
+	}
+	// a `\u{`, `\p{`, `\P{`, or a surrogate's `\u` after an odd run of backslashes,
+	// a surrogate, or an `(?i:` group outside a class, which the cases have none of
+	return /(?:^|[^\\])(?:\\\\)*\\(?:[uPp]\{|u[dD][89a-fA-F])/.test(pattern.source) ||
+		/[\uD800-\uDFFF]/.test(pattern.source) ||
+		/(?:^|[^\\])(?:\\\\)*\(\?[ms]*i/.test(pattern.source)
+		? checked.meta(mark('regex_u'))
+		: checked;
+};
+
 // zod's adapter, marking what a declared difference needs to find in its document
 const ZOD: JsonSchemaLib = {
 	...CONFORMANCE_LIBS.zod,
@@ -342,23 +420,13 @@ const ZOD: JsonSchemaLib = {
 	},
 	// marked, as zod writes it in the node of what it holds
 	lazy: (get) => z.lazy(get).meta(mark('lazy')),
-	regex: (schema, pattern) => {
-		const checked = schema.check(z.regex(pattern));
-		if (/[^du]/.test(pattern.flags)) return checked.meta(mark('regex_flags'));
-		if (pattern.unicode) return checked;
-		try {
-			RegExp(pattern.source, 'u');
-		} catch {
-			return checked.meta(mark('regex_u'));
-		}
-		// a `\u{`, `\p{`, `\P{`, or a surrogate's `\u` after an odd run of backslashes,
-		// a surrogate, or an `(?i:` group outside a class, which the cases have none of
-		return /(?:^|[^\\])(?:\\\\)*\\(?:[uPp]\{|u[dD][89a-fA-F])/.test(pattern.source) ||
-			/[\uD800-\uDFFF]/.test(pattern.source) ||
-			/(?:^|[^\\])(?:\\\\)*\(\?[ms]*i/.test(pattern.source)
-			? checked.meta(mark('regex_u'))
-			: checked;
-	}
+	regex: (schema, pattern) =>
+		lower_step(schema, zod_regex(schema, pattern), 'pattern', pattern.source),
+	to_lower_case: lower_case,
+	min_length: (schema, min) =>
+		lower_step(schema, CONFORMANCE_LIBS.zod.min_length(schema, min), 'minLength', min),
+	max_length: (schema, max) =>
+		lower_step(schema, CONFORMANCE_LIBS.zod.max_length(schema, max), 'maxLength', max)
 };
 
 const OURS: JsonSchemaLib = {

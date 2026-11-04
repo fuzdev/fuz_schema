@@ -28,7 +28,7 @@ enum Mark {
 
 fn schemas() -> Vec<(&'static str, Schema)> {
     type Make = fn(&mut SchemaBuilder) -> NodeId;
-    let single: [(&str, Make); 28] = [
+    let single: [(&str, Make); 29] = [
         ("string", SchemaBuilder::string),
         ("number", SchemaBuilder::number),
         ("boolean", SchemaBuilder::boolean),
@@ -46,6 +46,13 @@ fn schemas() -> Vec<(&'static str, Schema)> {
         ("nullable", |b| {
             let number = b.number();
             b.nullable(number)
+        }),
+        ("lowercase", |b| {
+            let string = b.string();
+            let lower = b.to_lower_case();
+            let max = b.max_length(1.0);
+            let piped = b.pipe([string, lower, max]);
+            b.nullable(piped)
         }),
         ("numbers", |b| {
             let number = b.number();
@@ -211,6 +218,8 @@ const TEXTS: &[(&str, Mark)] = &[
     ("1e-400", Mark::Same),
     (r#""""#, Mark::Same),
     (r#""a""#, Mark::Same),
+    (r#""A""#, Mark::Same),
+    (r#""\u0130""#, Mark::Same),
     (r#""\u0061""#, Mark::Same),
     (r#""ab""#, Mark::Same),
     (r#""abc""#, Mark::Same),

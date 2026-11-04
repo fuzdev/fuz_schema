@@ -260,6 +260,12 @@ export interface JsonFixtureContract {
 	unsupported_kinds: ReadonlyArray<string>;
 	/** Every flag a case can declare. */
 	divergences: ReadonlyArray<JsonDivergence>;
+	/**
+	 * The version of Unicode the runtime's `toLowerCase` maps by, which the
+	 * crate's `to_lowercase` must have too, so a `to_lower_case` gives the same
+	 * string on both sides.
+	 */
+	unicode_version: string;
 }
 
 // the cap `fail` holds a parse's issues to, which the library doesn't export,
@@ -273,13 +279,21 @@ const read_max_issues = (): number => {
 	return result.issues.length;
 };
 
+// the version of Unicode the runtime's case mappings are of
+const read_unicode_version = (): string => {
+	const version = process.versions.unicode;
+	if (!version) throw Error('the runtime names no version of Unicode');
+	return version;
+};
+
 export const generate_json_fixture_contract = (): JsonFixtureContract => ({
 	max_nesting: SCHEMA_JSON_MAX_NESTING,
 	max_depth: SCHEMA_JSON_MAX_DEPTH,
 	max_issues: read_max_issues(),
 	object_prototype_keys: SCHEMA_JSON_REFUSED_KEYS,
 	unsupported_kinds: SCHEMA_JSON_UNSUPPORTED_KINDS,
-	divergences: JSON_DIVERGENCES
+	divergences: JSON_DIVERGENCES,
+	unicode_version: read_unicode_version()
 });
 
 const contract_path = join(JSON_FIXTURES_DIR, 'contract.json');

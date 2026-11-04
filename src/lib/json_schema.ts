@@ -6,10 +6,11 @@
  * `bigint`, a `check`, a `transform` on the output side, a `literal` of
  * `undefined`, a `bigint`, or a number past the finite ones, an action outside
  * a `pipe` or of another type than its step, a step after a `transform` on
- * the input side, a `regex` with flags beyond `d` and `u` or whose source is
- * no pattern under `u` or means something else there, a bound that isn't
- * finite, a `variant` option whose discriminator is no `literal` entry, and a
- * kind defined outside the library.
+ * the input side, a step but a `uuid` after a `to_lower_case` on the input
+ * side and before one on the output side, a `regex` with flags beyond `d`
+ * and `u` or whose source is no pattern under `u` or means something else
+ * there, a bound that isn't finite, a `variant` option whose discriminator is
+ * no `literal` entry, and a kind defined outside the library.
  * By default it throws, naming the kind and where in the document, and with
  * `unrepresentable: 'any'` it writes `{}` there, or leaves the keyword out, or
  * keeps the `variant` option, under `anyOf`.
@@ -277,7 +278,10 @@ const put = (node: Node, key: string, value: unknown): void => {
  *   it can pick, or `anyOf` where a discriminator is written as other than a
  *   `const`.
  * - The actions of a `pipe` are keywords of its first schema's node: lengths,
- *   bounds, `integer`, formats, and patterns, the tightest bound winning.
+ *   bounds, `integer`, formats, and patterns, the tightest bound winning. A
+ *   `to_lower_case` writes none, and the keyword of a step that reads another
+ *   string than the document's, after it on the input side or before it on
+ *   the output side, is unrepresentable, but a `uuid`'s, which holds of both.
  * - A `with_default` writes `default`, unless its schema transforms on the
  *   input side. A `with_default_fn` writes none, as its `make` is never called,
  *   and drops one of the schema it holds.
@@ -624,6 +628,37 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 			const current = node[key] as number | undefined;
 			if (current === undefined || (lower ? value > current : value < current)) node[key] = value;
 		};
+		// a step after a `to_lower_case` is given the lowercase, which the input
+		// is not, and one before the last reads what the output is the lowercase
+		// of, so on that side its keyword is of another string than the
+		// document's. A `uuid` holds of either, as its grammar takes both cases
+		// and the lowercase of what isn't one is none
+		let first_lower = -1;
+		let last_lower = -1;
+		for (let i = 0; i < steps.length; i++) {
+			const step = steps[i];
+			if (!is_schema(step) || step.kind !== 'to_lower_case') continue;
+			if (first_lower < 0) first_lower = i;
+			last_lower = i;
+		}
+		const lowered = (kind: string, i: number, at: string): boolean => {
+			const reads_other = input ? first_lower >= 0 && i > first_lower : i < last_lower;
+			if (reads_other) {
+				unrepresentable(
+					kind,
+					at,
+					input
+						? 'it reads the lowercase of the input'
+						: 'it reads what the output is the lowercase of'
+				);
+			}
+			return reads_other;
+		};
+		// the first schema is before every step
+		if (kind === 'iso_datetime' && lowered(kind, -1, path)) {
+			delete node.format;
+			patterns.length = 0;
+		}
 		for (let i = 0; i < steps.length; i++) {
 			const step = steps[i];
 			const at = path;
@@ -665,6 +700,8 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 					const bound = action.def;
 					if (!Number.isInteger(bound) || bound < 0) {
 						unrepresentable(action.kind, at, 'the bound is not a whole number');
+					} else if (type === 'string' && lowered(action.kind, i, at)) {
+						break;
 					} else if (type === 'string' || type === 'array') {
 						const lower = action.kind === 'min_length';
 						narrow(
@@ -698,10 +735,15 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 						}
 					}
 					break;
+				case 'to_lower_case':
+					// no keyword, as zod writes none for its `toLowerCase`
+					fits('string');
+					break;
 				case 'uuid':
 				case 'iso_datetime':
 				case 'regex': {
 					if (!fits('string')) break;
+					if (action.kind !== 'uuid' && lowered(action.kind, i, at)) break;
 					if (action.kind === 'regex') {
 						const re = action.def;
 						if (/[^du]/.test(re.flags)) {
@@ -850,6 +892,7 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 			case 'min_value':
 			case 'max_value':
 			case 'regex':
+			case 'to_lower_case':
 			case 'check':
 			case 'transform':
 				unrepresentable(s.kind, path, 'it means something only in a pipe after a schema it fits');

@@ -528,6 +528,18 @@ fn the_constants_of_both_sides_are_the_same() {
         );
         assert_eq!(SchemaKind::from_name(&kind), None, "{kind}");
     }
+    // a `to_lower_case` maps by the tables of one version of Unicode on both sides
+    let (major, minor, patch) = char::UNICODE_VERSION;
+    let unicode = if patch == 0 {
+        format!("{major}.{minor}")
+    } else {
+        format!("{major}.{minor}.{patch}")
+    };
+    assert_eq!(
+        contract.get("unicode_version").and_then(Value::as_str),
+        Some(unicode.as_str()),
+        "the TypeScript side's runtime lowercases by another version of Unicode than the crate"
+    );
     let keys = strings(contract, "object_prototype_keys", "contract.json").unwrap();
     assert!(!keys.is_empty());
     for key in keys {

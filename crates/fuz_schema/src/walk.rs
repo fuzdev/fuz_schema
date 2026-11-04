@@ -555,6 +555,9 @@ fn union(
 /// A pipe can start with a pipe. Those are followed down to the schema they
 /// all start with, keeping each one's actions, so that however many there are
 /// they cost the frames of one.
+///
+/// A `to_lower_case` gives the actions after it the string lowercase, which
+/// `build` lets follow only a string, so the value it is given is one.
 fn pipe<'a, R: Report>(
     schema: &'a Schema,
     mut steps: &'a [NodeId],
@@ -580,10 +583,17 @@ fn pipe<'a, R: Report>(
             break;
         }
     }
+    // what a `to_lower_case` made of the string, which the actions after it are given
+    let mut lowered: Option<String> = None;
     // the innermost pipe's actions are the first to follow the schema
     for actions in pipes[..count].iter().rev() {
         for &action in *actions {
-            if !run(schema, action, value, report) {
+            let current = lowered.as_deref().map_or(value, Value::String);
+            if matches!(schema.at(action), SchemaNode::ToLowerCase) {
+                if let Value::String(text) = current {
+                    lowered = Some(js::to_lower_case(text));
+                }
+            } else if !run(schema, action, current, report) {
                 return false;
             }
         }
@@ -682,7 +692,9 @@ fn scalar(node: &SchemaNode, value: Value<'_>) -> Result<(), SchemaIssueKind> {
         | SchemaNode::Record(_)
         | SchemaNode::Array(_)
         | SchemaNode::Variant(_)
-        | SchemaNode::Pipe(_) => unreachable!("`scalar` is handed a `{}`", node.kind()),
+        | SchemaNode::Pipe(_)
+        // `pipe` steps through it, the one place `build` lets it be
+        | SchemaNode::ToLowerCase => unreachable!("`scalar` is handed a `{}`", node.kind()),
     };
     if matched { Ok(()) } else { Err(kind) }
 }
@@ -2478,5 +2490,84 @@ pub mod tests {
                 }
             });
         thread.unwrap().join().unwrap();
+    }
+
+    #[test]
+    fn the_steps_after_to_lower_case_are_given_the_lowercase() {
+        // a dotted capital I is two units lowercase
+        let longer = build(|b| {
+            let string = b.string();
+            let lower = b.to_lower_case();
+            let max = b.max_length(1.0);
+            b.pipe([string, lower, max])
+        });
+        check(&longer, &[r#""A""#, r#""a""#], &[r#""\u0130""#]);
+        assert_eq!(
+            failures(&longer, r#""\u0130""#),
+            [": max_length received String"]
+        );
+        // a step before it is given the input
+        let before = build(|b| {
+            let string = b.string();
+            let max = b.max_length(1.0);
+            let lower = b.to_lower_case();
+            b.pipe([string, max, lower])
+        });
+        check(&before, &[r#""\u0130""#], &[r#""ab""#]);
+        // an `iso_datetime` after it is given a lowercase `t` and `z`, and
+        // matches nothing, and one before it matches as it would alone
+        let datetime = |after: bool| {
+            build(move |b| {
+                let string = b.string();
+                let lower = b.to_lower_case();
+                let test = b.iso_datetime();
+                b.pipe(if after {
+                    [string, lower, test]
+                } else {
+                    [string, test, lower]
+                })
+            })
+        };
+        check(
+            &datetime(false),
+            &[r#""2024-01-01T00:00:00Z""#],
+            &[r#""x""#],
+        );
+        check(&datetime(true), &[], &[r#""2024-01-01T00:00:00Z""#]);
+        assert_eq!(
+            failures(&datetime(true), r#""2024-01-01T00:00:00Z""#),
+            [": iso_datetime received String"]
+        );
+        // through a pipe it starts with, whose actions come first
+        let nested = build(|b| {
+            let string = b.string();
+            let lower = b.to_lower_case();
+            let inner = b.pipe([string, lower]);
+            let max = b.max_length(1.0);
+            let again = b.to_lower_case();
+            b.pipe([inner, max, again])
+        });
+        check(&nested, &[r#""A""#], &[r#""\u0130""#, "1"]);
+        // a uuid either side of it, in either case
+        for uuid_first in [true, false] {
+            let schema = build(move |b| {
+                let string = b.string();
+                let uuid = b.uuid();
+                let lower = b.to_lower_case();
+                b.pipe(if uuid_first {
+                    [string, uuid, lower]
+                } else {
+                    [string, lower, uuid]
+                })
+            });
+            check(
+                &schema,
+                &[
+                    r#""123E4567-E89B-42D3-A456-426614174000""#,
+                    r#""ffffffff-FFFF-ffff-FFFF-ffffffffffff""#,
+                ],
+                &[r#""x""#, "null"],
+            );
+        }
     }
 }

@@ -612,6 +612,80 @@ describe('to_json_schema', () => {
 			assert.strictEqual(write(s.pipe(s.string, s.regex(/0/), s.iso_datetime)).format, 'date-time');
 		});
 
+		test('to_lower_case writes nothing, and a step that reads another string is refused', () => {
+			const uuid = write(s.uuid);
+			const Uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid');
+			for (const options of [OUTPUT, INPUT]) {
+				assert.deepEqual(write(Uuid, options), uuid);
+				assert.deepEqual(write(s.pipe(s.string, s.to_lower_case), options), { type: 'string' });
+				// a uuid holds of either case, after it and before it
+				assert.deepEqual(write(s.pipe(s.string, s.to_lower_case, s.uuid), options), uuid);
+				assert.deepEqual(write(s.pipe(s.uuid, s.to_lower_case), options), uuid);
+			}
+			// after it, a step reads the lowercase, which the input is not: `is` refuses
+			// `ABC` and every `T`, which the keywords would take
+			const pattern = s.pipe(s.string, s.to_lower_case, s.regex(/^[a-z]+$/));
+			const length = s.pipe(s.string, s.to_lower_case, s.min_length(2));
+			const after = s.pipe(s.string, s.to_lower_case, s.iso_datetime);
+			assert(s.is(pattern, 'ABC'));
+			assert(s.is(length, 'İ'));
+			assert(!s.is(after, '2024-01-01T00:00:00Z'));
+			for (const [schema, kind] of [
+				[pattern, 'regex'],
+				[length, 'min_length'],
+				[after, 'iso_datetime']
+			] as const) {
+				assert_throws(
+					() => to_json_schema(schema, INPUT),
+					`cannot express \`${kind}\` at #: it reads the lowercase of the input`
+				);
+				assert.deepEqual(write(schema, INPUT_ANY), { type: 'string' });
+			}
+			// on the output side it is the output's
+			assert.deepEqual(write(pattern), { type: 'string', pattern: '^[a-z]+$' });
+			assert.deepEqual(write(length), { type: 'string', minLength: 2 });
+			// before it, a step reads what the output is the lowercase of: its
+			// pattern refuses the output, and its length can, as `İ` lowercases to two
+			const before = s.pipe(s.string, s.iso_datetime, s.to_lower_case);
+			const output = s.parse(before, '2024-01-01T00:00:00Z');
+			assert(output.ok && output.value === '2024-01-01t00:00:00z');
+			const short = s.pipe(s.string, s.max_length(1), s.to_lower_case);
+			assert.strictEqual(s.parse_or_throw(short, 'İ').length, 2);
+			for (const [schema, kind] of [
+				[before, 'iso_datetime'],
+				[short, 'max_length'],
+				[s.pipe(s.iso_datetime, s.to_lower_case), 'iso_datetime'],
+				[s.pipe(s.string, s.regex(/^[A-Z]+$/), s.to_lower_case, s.min_length(1)), 'regex']
+			] as const) {
+				assert_throws(
+					() => to_json_schema(schema),
+					`cannot express \`${kind}\` at #: it reads what the output is the lowercase of`
+				);
+			}
+			assert.deepEqual(write(before, ANY), { type: 'string' });
+			assert.deepEqual(
+				write(s.pipe(s.string, s.max_length(1), s.to_lower_case, s.min_length(1)), ANY),
+				{ type: 'string', minLength: 1 }
+			);
+			// on the input side a step before it is the input's
+			assert.deepEqual(write(before, INPUT), write(s.iso_datetime));
+			assert.deepEqual(write(short, INPUT), { type: 'string', maxLength: 1 });
+			// a default over it is written on both sides, as it is no transform
+			const defaulted = s.with_default(s.pipe(s.string, s.to_lower_case), 'x');
+			for (const options of [OUTPUT, INPUT]) {
+				assert.deepEqual(write(defaulted, options), { type: 'string', default: 'x' });
+			}
+			// alone it reads any value, and throws on most
+			assert_throws(
+				() => to_json_schema(s.to_lower_case),
+				'cannot express `to_lower_case` at #: it means something only in a pipe after a schema it fits'
+			);
+			assert_throws(
+				() => to_json_schema(s.pipe(s.number, s.to_lower_case as any)),
+				'cannot express `to_lower_case` at #: the action is not for numbers'
+			);
+		});
+
 		test('a regex object is written once, and a format each time, as zod does', () => {
 			const re = /a/;
 			assert.deepEqual(write(s.pipe(s.string, s.regex(re), s.regex(re))), {

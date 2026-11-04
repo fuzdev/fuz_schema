@@ -256,6 +256,11 @@ impl SchemaBuilder {
         self.push(SchemaNode::IsoDatetime)
     }
 
+    /// An action: a string, lowercase for the steps after it.
+    pub fn to_lower_case(&mut self) -> NodeId {
+        self.push(SchemaNode::ToLowerCase)
+    }
+
     /// Checks the nodes reachable from `root` and from every defined `lazy`,
     /// and makes the schema that starts at `root`.
     ///
@@ -906,7 +911,8 @@ impl<'a> Checker<'a> {
             | SchemaNode::Integer
             | SchemaNode::SafeInteger
             | SchemaNode::Uuid
-            | SchemaNode::IsoDatetime => {}
+            | SchemaNode::IsoDatetime
+            | SchemaNode::ToLowerCase => {}
         }
         Ok(())
     }
@@ -936,7 +942,9 @@ impl<'a> Checker<'a> {
                 | SchemaKind::MaxValue
                 | SchemaKind::Integer
                 | SchemaKind::SafeInteger => value_type == ValueType::Number,
-                SchemaKind::Uuid | SchemaKind::IsoDatetime => value_type == ValueType::String,
+                SchemaKind::Uuid | SchemaKind::IsoDatetime | SchemaKind::ToLowerCase => {
+                    value_type == ValueType::String
+                }
                 SchemaKind::String
                 | SchemaKind::Number
                 | SchemaKind::Boolean
@@ -1110,7 +1118,8 @@ fn for_each_child(node: &SchemaNode, mut visit: impl FnMut(Step, NodeId)) {
         | SchemaNode::Integer
         | SchemaNode::SafeInteger
         | SchemaNode::Uuid
-        | SchemaNode::IsoDatetime => {}
+        | SchemaNode::IsoDatetime
+        | SchemaNode::ToLowerCase => {}
     }
 }
 
@@ -1268,7 +1277,7 @@ mod tests {
                 "/schema/def/1".to_owned()
             )
         );
-        let mismatches: [(Make, Make, SchemaKind); 9] = [
+        let mismatches: [(Make, Make, SchemaKind); 10] = [
             (
                 SchemaBuilder::string,
                 |b| b.min_value(0.0),
@@ -1318,6 +1327,11 @@ mod tests {
                 },
                 SchemaBuilder::uuid,
                 SchemaKind::Uuid,
+            ),
+            (
+                SchemaBuilder::number,
+                SchemaBuilder::to_lower_case,
+                SchemaKind::ToLowerCase,
             ),
         ];
         for (head, action, kind) in mismatches {

@@ -25,6 +25,16 @@ pub fn utf16_len(text: &str) -> usize {
         .sum()
 }
 
+/// `String.prototype.toLowerCase`: Unicode's full lowercase mappings, in no
+/// locale, with a capital sigma that ends a word made final, as `str`'s
+/// `to_lowercase` has them. The two read Unicode's tables of their own
+/// versions, which agree on every code point for the toolchain and the Node
+/// the library is checked on, and a text holds no lone surrogate, which the
+/// parser refuses.
+pub fn to_lower_case(text: &str) -> String {
+    text.to_lowercase()
+}
+
 /// A length as the number JavaScript compares it as.
 #[expect(
     clippy::cast_precision_loss,
@@ -246,6 +256,35 @@ pub const OBJECT_PROTOTYPE_KEYS: [&str; 12] = [
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn to_lower_case_is_javascripts() {
+        // what `toLowerCase` gives each in Node
+        let cases = [
+            ("", ""),
+            ("ABC-def", "abc-def"),
+            (
+                "123E4567-E89B-42D3-A456-426614174000",
+                "123e4567-e89b-42d3-a456-426614174000",
+            ),
+            // a dotted capital I is two units lowercase, and a Kelvin sign an ASCII k
+            ("\u{130}", "i\u{307}"),
+            ("\u{212A}", "k"),
+            // a capital sigma is final at the end of a word, through what case ignores
+            ("\u{391}\u{3A3}", "\u{3B1}\u{3C2}"),
+            ("\u{391}\u{3A3} B", "\u{3B1}\u{3C2} b"),
+            ("\u{391}\u{3A3}\u{301}", "\u{3B1}\u{3C2}\u{301}"),
+            ("\u{3A3}", "\u{3C3}"),
+            ("\u{391}\u{3A3}\u{391}", "\u{3B1}\u{3C3}\u{3B1}"),
+            ("\u{1E9E}", "\u{DF}"),
+            ("😀", "😀"),
+            ("\u{10400}", "\u{10428}"),
+        ];
+        for (text, lower) in cases {
+            assert_eq!(to_lower_case(text), lower, "{text:?}");
+        }
+        assert_eq!(utf16_len(&to_lower_case("\u{130}")), 2);
+    }
 
     #[test]
     fn utf16_len_counts_code_units() {

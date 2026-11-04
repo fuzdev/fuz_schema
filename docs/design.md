@@ -33,7 +33,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 
 | `def` | Kinds |
 |---|---|
-| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer`, `uuid`, `iso_datetime` |
+| `undefined` | `string`, `number`, `boolean`, `bigint`, `unknown`, `integer`, `safe_integer`, `uuid`, `iso_datetime`, `to_lower_case` |
 | the value given | `literal`, `one_of`, `min_length`, `max_length`, `min_value`, `max_value`, `regex` |
 | the function given | `check`, `transform`, `lazy` |
 | `{schema}` | `optional`, `nullable` |
@@ -610,7 +610,7 @@ it is given is taken:
 `pipe(nullable(string), union([regex(/n/)]))` compiles, and matches `null`,
 which `regex` reads as `'null'`.
 
-Every action but `transform` is a `SchemaRefinement` too, whose type-only
+Every action but `transform` and `to_lower_case` is a `SchemaRefinement` too, whose type-only
 `~refines` is `true`, where `Schema` declares it a `boolean`: its `run` returns
 the value it is given, so a `pipe` outputs the type of the step before it
 there. `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` is
@@ -622,7 +622,12 @@ typed by its own output, and a `transform` is not assignable to a
 `brand` and `flavor` give an action back, typed by its branded or flavored
 output. The fold is of the pipe's output only: each step is given
 the declared output of the step before it, so a `check` after that `integer`
-is given a `number`. The keys are never set, so an action keeps the one
+is given a `number`. `to_lower_case` returns a new string, and outputs a
+`string`: a literal or a brand before it is not kept, as the output is a new
+string, so a brand or a flavor goes outside it, around the `pipe`, as in
+`brand(pipe(string, uuid, to_lower_case), 'Uuid')`. A step
+after it is given the lowercase, which can be longer than the input, as a
+dotted capital I's is. The keys are never set, so an action keeps the one
 shape.
 
 ## Actions outside a pipe
@@ -654,6 +659,9 @@ every schema and action infers in each position, and the
 `uuid` and `iso_datetime` differ: each asks `typeof` first, so
 alone they refuse any value that isn't a string, an array holding a UUID
 included, where a test of their grammar alone would convert it.
+`to_lower_case` doesn't: alone it calls `toLowerCase` on what it is given,
+and throws on `undefined`, a missing key included, and on any value that has
+no such method.
 
 ## Nominal types
 
@@ -675,6 +683,10 @@ wrapped schema's and nothing is stored at runtime.
   possibly `null`, and two flavors of a `T` constrained to rule out `null` and
   `undefined` assign to each other, where two brands don't. Flavoring the constraint keeps them apart:
   `T & Flavored<string, 'N'>`.
+- **They go outside a step that changes the value**, as
+  `brand(pipe(string, uuid, to_lower_case), 'Uuid')`: a `to_lower_case`
+  outputs a new string, so a brand or a flavor of a step before it is dropped
+  from the type.
 
 ## Metadata
 
@@ -790,7 +802,9 @@ each.
   `unrepresentable: 'any'` is `{}`, or a keyword left out of a `pipe`'s node:
   a `bigint`, a `literal` of `undefined` or a `bigint`, a `transform` on the
   output side, a step after a `transform` on the input side, which reads what
-  it gave, an action outside a `pipe` or after a schema of another type, a
+  it gave, a step but a `uuid` after a `to_lower_case` on the input side and
+  before one on the output side, which read another string than the
+  document's, an action outside a `pipe` or after a schema of another type, a
   `regex` whose source is no pattern under the flag `u`, or means something
   else there, a bound that isn't finite or a length that isn't whole, a
   default that isn't JSON, a `variant` option whose discriminator is no
@@ -818,6 +832,17 @@ each.
 - **`object_with_rest` drops an own `__proto__` key unread**, where the
   document's `additionalProperties` reads it, so an input whose `__proto__`
   `rest` refuses is taken by the parse and refused by the document.
+- **The keywords of a `pipe` are of the one string**, so a step that reads
+  another string than the document's is refused, or left out with `'any'`:
+  after a `to_lower_case` on the input side, given the lowercase, as an
+  `iso_datetime` there refuses every input's `T` and a `min_length(2)` takes
+  `İ`, whose lowercase is two code units, and before one on the output side,
+  given what the output is the lowercase of, as the `pattern` of
+  `pipe(string, iso_datetime, to_lower_case)` would refuse its output. A
+  `uuid` is written on both sides, its grammar taking both cases and the
+  lowercase of what isn't one being none, so
+  `brand(pipe(string, uuid, to_lower_case), 'Uuid')` is the document of a
+  `uuid`.
 - **`minLength` and `maxLength` count code points** in JSON Schema, where
   `min_length` and `max_length` count UTF-16 code units, so a validator
   reading the document takes a string of surrogate pairs this library
@@ -877,6 +902,9 @@ Where zod writes something else, this library:
   it.
 - a step after a `transform` is refused on the input side, or dropped with
   `'any'`, where zod drops it unsaid.
+- a step but a `uuid` after a `to_lower_case` is refused on the input side,
+  and one before it on the output side, or dropped with `'any'`, where zod
+  writes its keyword of the one string.
 - a metadata key that is a keyword of JSON Schema, but an annotation, is
   refused, where zod writes it over the keyword it writes there.
 - an `id` of metadata is copied as any other key, where zod moves the node

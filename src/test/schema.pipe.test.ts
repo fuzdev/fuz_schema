@@ -190,6 +190,90 @@ describe('pipe and actions', () => {
 			}
 		]);
 	});
+
+	describe('to_lower_case', () => {
+		test('lowercases, and never fails', () => {
+			const Lower = s.pipe(s.string, s.to_lower_case);
+			assert.strictEqual(s.parse_or_throw(Lower, 'AbC'), 'abc');
+			// a string already lowercase comes back as it is
+			assert.strictEqual(s.parse_or_throw(Lower, 'abc'), 'abc');
+			assert.strictEqual(s.parse_or_throw(Lower, 'İ'), 'i̇');
+			assert.strictEqual(s.parse_or_throw(Lower, 'ΑΣ'), 'ας');
+			assert.deepEqual(issues_of(Lower, 1), [
+				{ kind: 'string', expected: 'string', received: 'number', path: [], message: undefined }
+			]);
+			// an object it changes is copied, with the lowercase in it
+			const input = { id: 'A', n: 1 };
+			const O = s.object({ id: Lower, n: s.number });
+			const output = s.parse_or_throw(O, input);
+			assert.notStrictEqual(output, input);
+			assert.deepEqual(output, { id: 'a', n: 1 });
+			assert.strictEqual(s.parse_or_throw(O, { id: 'a', n: 1 }).id, 'a');
+		});
+
+		test('a step after it is given the lowercase, and one before it the input', () => {
+			// a dotted capital I is two units lowercase
+			assert(!s.is(s.pipe(s.string, s.to_lower_case, s.max_length(1)), 'İ'));
+			assert(s.is(s.pipe(s.string, s.max_length(1), s.to_lower_case), 'İ'));
+			const at = '2024-01-01T00:00:00Z';
+			assert(!s.is(s.pipe(s.string, s.to_lower_case, s.iso_datetime), at));
+			assert.strictEqual(
+				s.parse_or_throw(s.pipe(s.string, s.iso_datetime, s.to_lower_case), at),
+				'2024-01-01t00:00:00z'
+			);
+			// through a pipe it starts with
+			assert.deepEqual(
+				issues_of(
+					s.pipe(
+						s.pipe(s.string, s.to_lower_case),
+						s.check((v) => v === 'a')
+					),
+					'B'
+				),
+				[{ kind: 'check', expected: 'check', received: 'string', path: [], message: undefined }]
+			);
+		});
+
+		test('a uuid of either case comes out lowercase, branded', () => {
+			const Uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid');
+			assert.strictEqual(
+				s.parse_or_throw(Uuid, '123E4567-E89B-42D3-A456-426614174000'),
+				'123e4567-e89b-42d3-a456-426614174000'
+			);
+			assert.strictEqual(
+				s.parse_or_throw(Uuid, 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF'),
+				'ffffffff-ffff-ffff-ffff-ffffffffffff'
+			);
+			assert.deepEqual(
+				issues_of(Uuid, 'x').map((i) => i.kind),
+				['uuid']
+			);
+			expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
+			expectTypeOf<s.InferInput<typeof Uuid>>().toEqualTypeOf<string>();
+		});
+
+		test('outputs a string, as its value is a new one', () => {
+			// a literal before it is not kept, as the lowercase is another
+			const _literal = s.pipe(s.one_of(['A', 'B']), s.to_lower_case);
+			expectTypeOf<s.Infer<typeof _literal>>().toEqualTypeOf<string>();
+			// a brand before it is not kept, and one around the pipe is
+			const _inner = s.pipe(s.string, s.brand(s.uuid, 'Uuid'), s.to_lower_case);
+			expectTypeOf<s.Infer<typeof _inner>>().toEqualTypeOf<string>();
+			// a refinement after it keeps its string
+			const _after = s.pipe(s.string, s.to_lower_case, s.min_length(1));
+			expectTypeOf<s.Infer<typeof _after>>().toEqualTypeOf<string>();
+			// @ts-expect-error `to_lower_case` takes a string
+			s.pipe(s.number, s.to_lower_case);
+			// @ts-expect-error `null` would reach it
+			s.pipe(s.nullable(s.string), s.to_lower_case);
+		});
+
+		test('outside a pipe it throws on a value with no toLowerCase', () => {
+			assert.strictEqual(s.parse_or_throw(s.to_lower_case, 'A'), 'a');
+			assert.throws(() => s.parse(s.to_lower_case, 1), TypeError);
+			assert.throws(() => s.parse(s.object({ a: s.to_lower_case }), {}), TypeError);
+		});
+	});
 });
 
 describe('message', () => {

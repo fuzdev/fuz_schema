@@ -96,6 +96,8 @@ pub enum SchemaKind {
     Uuid,
     /// `iso_datetime`.
     IsoDatetime,
+    /// `to_lower_case`.
+    ToLowerCase,
 }
 
 impl SchemaKind {
@@ -128,6 +130,7 @@ impl SchemaKind {
         Self::SafeInteger,
         Self::Uuid,
         Self::IsoDatetime,
+        Self::ToLowerCase,
     ];
 
     /// The kind's name, the `kind` of the TypeScript schema.
@@ -160,6 +163,7 @@ impl SchemaKind {
             Self::SafeInteger => "safe_integer",
             Self::Uuid => "uuid",
             Self::IsoDatetime => "iso_datetime",
+            Self::ToLowerCase => "to_lower_case",
         }
     }
 
@@ -168,8 +172,9 @@ impl SchemaKind {
         Self::ALL.iter().copied().find(|kind| kind.as_str() == name)
     }
 
-    /// Whether the kind is an action: a check of a value whose type an
-    /// earlier step of a `pipe` has fixed.
+    /// Whether the kind is an action: a step of a `pipe` for a value whose
+    /// type an earlier step has fixed, a check of it or, as `to_lower_case`
+    /// is, a new value of that type for the steps after it.
     pub const fn is_action(self) -> bool {
         matches!(
             self,
@@ -181,6 +186,7 @@ impl SchemaKind {
                 | Self::SafeInteger
                 | Self::Uuid
                 | Self::IsoDatetime
+                | Self::ToLowerCase
         )
     }
 
@@ -188,6 +194,7 @@ impl SchemaKind {
     /// The number tests answer for any value and stand alone. The format
     /// tests answer for any value too, and are held to a `pipe` as the
     /// library's `to_schema_json` holds them, for a string it has fixed.
+    /// `to_lower_case` throws in the library on a value that isn't a string.
     pub(crate) const fn needs_pipe(self) -> bool {
         matches!(
             self,
@@ -197,6 +204,7 @@ impl SchemaKind {
                 | Self::MaxValue
                 | Self::Uuid
                 | Self::IsoDatetime
+                | Self::ToLowerCase
         )
     }
 }
@@ -336,6 +344,9 @@ pub enum SchemaNode {
     /// four-digit year, `T`, the time with seconds, a fraction of 1 to 9
     /// digits or none, and `Z`.
     IsoDatetime,
+    /// A string, which the steps of the `pipe` after it are given lowercase,
+    /// as JavaScript's `toLowerCase` makes it. It never fails.
+    ToLowerCase,
 }
 
 impl SchemaNode {
@@ -369,6 +380,7 @@ impl SchemaNode {
             Self::SafeInteger => SchemaKind::SafeInteger,
             Self::Uuid => SchemaKind::Uuid,
             Self::IsoDatetime => SchemaKind::IsoDatetime,
+            Self::ToLowerCase => SchemaKind::ToLowerCase,
         }
     }
 
@@ -677,6 +689,7 @@ mod tests {
             SchemaKind::SafeInteger => 24,
             SchemaKind::Uuid => 25,
             SchemaKind::IsoDatetime => 26,
+            SchemaKind::ToLowerCase => 27,
         }
     }
 
@@ -686,7 +699,7 @@ mod tests {
             assert_eq!(place(kind), index, "{kind}");
         }
         // the last place is the last of the list, so none is past its end
-        assert_eq!(place(SchemaKind::IsoDatetime) + 1, SchemaKind::ALL.len());
+        assert_eq!(place(SchemaKind::ToLowerCase) + 1, SchemaKind::ALL.len());
     }
 
     #[test]

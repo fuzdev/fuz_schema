@@ -20,7 +20,7 @@
 	"cases": [
 		{
 			"name": "00_near",
-			"text": "\"a\"",
+			"text": "\"\"",
 			"json": true,
 			"valid": false,
 			"issues": [
@@ -35,22 +35,22 @@
 		},
 		{
 			"name": "01_aimed",
-			"text": "\"é\"",
+			"text": "[null]",
 			"json": true,
 			"valid": false,
 			"issues": [
 				{
-					"kind": "min_length",
-					"expected": "length >= 2",
-					"received": "string",
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
 					"path": [],
-					"formatted": "expected length >= 2, received string"
+					"formatted": "expected string, received array"
 				}
 			]
 		},
 		{
-			"name": "02_aimed",
-			"text": "\"😀\"",
+			"name": "02_near",
+			"text": "\"abc\"",
 			"json": true,
 			"valid": true,
 			"issues": []

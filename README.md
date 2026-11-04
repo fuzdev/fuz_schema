@@ -110,6 +110,11 @@ and the input is never mutated.
   `pipe(string, iso_datetime)` takes `2024-02-29T23:59:59.123Z` in UTC with a real date, as Zod's does,
   and a fraction of at most 9 digits, as Valibot's `isoTimestamp` does,
   and refuses an offset and a space for the `T`, which `isoTimestamp` takes. See [`docs/formats.md`](docs/formats.md).
+- `pipe(string, to_lower_case)` gives `toLowerCase()` of the string, as Zod's `toLowerCase` and Valibot's do,
+  and the steps after it are given the lowercase: `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')`
+  takes a UUID in either case and gives it lowercase, as RFC 9562 asks.
+  A `brand` or `flavor` goes outside a step that changes the value, as there:
+  one on a step before it is dropped, as the output is a new string.
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -132,7 +137,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
-| refinement | `pipe`, `check`, `transform`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
+| refinement | `pipe`, `check`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
@@ -464,7 +469,7 @@ to_schema_json(s.array(s.optional(s.number)));
 
 It throws on a schema the form can't hold, saying where:
 `regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
-(`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC);
+(`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`);
 `object_with_rest`, which the crate doesn't carry yet;
 a `bigint` or `undefined` literal; a default that isn't a JSON value;
 an entry named like a member of `Object.prototype`.
@@ -489,6 +494,10 @@ to_json_schema(s.object({name: s.string, port: s.optional(s.number)}));
 It throws on what JSON Schema can't say, saying where: a `bigint`, a `check`, a `transform` on the output side,
 a `regex` with flags other than `d` and `u`, a literal of `undefined`.
 With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
+`to_lower_case` writes nothing, as Zod writes nothing for its `toLowerCase`,
+and a step that reads another string than the document's is refused, as Zod's is not:
+after it on the input side, which takes the input and not its lowercase, and before it on the output side.
+A `uuid` holds of both cases, so `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
 Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema) has the mapping and where it differs from Zod's.
 
 ## Status

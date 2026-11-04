@@ -62,6 +62,7 @@ out where that is `undefined`:
 {"kind":"pipe","def":[{"kind":"string"},{"kind":"min_length","def":1},{"kind":"max_length","def":50}]}
 {"kind":"pipe","def":[{"kind":"number"},{"kind":"min_value","def":0},{"kind":"max_value","def":150}]}
 {"kind":"pipe","def":[{"kind":"string"},{"kind":"uuid"}]}  {"kind":"pipe","def":[{"kind":"string"},{"kind":"iso_datetime"}]}
+{"kind":"pipe","def":[{"kind":"string"},{"kind":"uuid"},{"kind":"to_lower_case"}]}
 ```
 
 A `lazy` holds a function in TypeScript, so here its `def` is a name, and the
@@ -122,8 +123,8 @@ its own is written as that kind and behaves as the library's in the crate.
 - **A value the schema accepts whatever it is, is skipped**: one under
   `unknown`, or at a key a `loose_object` or `strip_object` has no entry for.
 - **`js.rs` holds the JavaScript semantics** both share: a string's length in
-  UTF-16 code units, the integer tests on the value and not the token, `===`
-  on doubles, and key order.
+  UTF-16 code units, its lowercase, the integer tests on the value and not
+  the token, `===` on doubles, and key order.
 - **`matches_json_bytes` validates UTF-8 first**, in full, then reads the text.
 - The walker reports failures to a `Report`. `Probe` wants only the verdict,
   and `Collect` keeps each failure as an issue, up to `MAX_ISSUES`.
@@ -240,7 +241,7 @@ it in the interchange form. Nothing is guessed at.
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
 | a `pipe` that is empty, or starts with a schema that doesn't fix its value's type | `EmptyPipe`, `PipeHead` |
 | a step after a pipe's first that isn't an action, or is for another type | `PipeStep`, `ActionMismatch` |
-| a length or bound outside a `pipe`, where the library coerces or throws, and a `uuid` or `iso_datetime` there | `ActionOutsidePipe` |
+| a length or bound outside a `pipe`, where the library coerces or throws, and a `uuid`, an `iso_datetime`, or a `to_lower_case` there | `ActionOutsidePipe` |
 | a `variant` option that isn't an object schema, or has no `literal` at the key | `VariantOption`, `VariantDiscriminator` |
 | a `lazy` naming nothing | `UnresolvedLazy` |
 | what only a builder can be given: an entry twice, a `lazy` never defined or defined twice, an id that isn't its own | `DuplicateKey`, `UndefinedLazy`, `RedefinedLazy`, `InvalidNode` |
@@ -257,6 +258,13 @@ The format tests (`uuid`, `iso_datetime`) follow a `string`, and are held to a
 [formats.md](formats.md)'s, matched by byte scans in `format.rs`, with no
 regular expression. For a UUID or a date and time in UTC, write `uuid` or
 `iso_datetime` in place of a `regex`.
+
+`to_lower_case` follows a `string` too, and is the one action that changes
+the value: the evaluators give the actions after it the string lowercase, by
+`str::to_lowercase`, whose mappings are those of JavaScript's `toLowerCase`
+where the two read one version of Unicode's tables, as the pinned toolchain
+and Node do: `contract.json` holds Node's, and a test fails where
+`char::UNICODE_VERSION` is another. It never fails, and has no issue kind.
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
@@ -290,7 +298,7 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   The file is never edited by hand.
 - It also generates `contract.json`, the constants both sides hold: the
   nesting limit, the parser's depth, the cap on issues, the refused key
-  names and kinds, and the flags.
+  names and kinds, the flags, and the version of Unicode Node lowercases by.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
   evaluators against the oracle or the declared divergence, and the issues
