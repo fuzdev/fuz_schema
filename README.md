@@ -662,7 +662,8 @@ npm run benchmark:wasm
 
 ## Credits
 
-[Valibot](https://valibot.dev/) for the strategy this builds on.
+[Valibot](https://valibot.dev/) for the strategy this builds on and
+[Zod](https://zod.dev/) before it.
 The process-per-sample cold-start and retained-heap methods follow
 [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench),
 which generalizes [Twinkleplop](https://github.com/pngwn/twinkleplop)'s cold-start harness.
