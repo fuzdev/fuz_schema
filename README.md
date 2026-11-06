@@ -658,6 +658,7 @@ npm run benchmark:wasm
   the two evaluators, the issues, where they differ from this library, what is
   refused, and the wasm build
 - `CLAUDE.md` — layout, commands, and invariants (also the context file for AI agents)
+- [fuz-stack skill](https://docs.fuz.dev/skills/fuz-stack) — coding conventions shared across the Fuz stack
 
 ## Credits
 
