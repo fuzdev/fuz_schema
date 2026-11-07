@@ -430,7 +430,8 @@ resolves on its own (relative paths, packages, `#lib/*`), and `import type`
 for types. `allocations.ts` measures allocation, which needs the node flags
 for a large young generation: its npm script passes them, and it refuses to
 run without. `run.ts`, `survey.ts`, `harvest.ts`, and `grade.ts` time, so they run under
-none and refuse them, and the last two pass them to the processes that
+none and refuse them, and refuse any `NODE_OPTIONS`, which every process they
+start would inherit; the last two pass the flags to the processes that
 measure their bytes.
 
 ## Rust workspace

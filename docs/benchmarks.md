@@ -384,8 +384,10 @@ and `survey_rows.ts` are what a process loads its rows through.
   printed under the tables: a row near it is mostly the call, and the ratio of
   two such rows says little.
 - **Time is taken under no flags of its own.** A timing process is started
-  with none, and refuses the ones bytes need, on its command line or in
-  `NODE_OPTIONS`. Any other `NODE_OPTIONS` the run was started under reaches it.
+  with none, and refuses the ones bytes need on its command line. `run.ts`,
+  `survey.ts`, `harvest.ts`, and `grade.ts` refuse to start under any
+  `NODE_OPTIONS`, which every process they start would inherit; the
+  processes that measure bytes are given their flags on their command line.
 - **`--duration`** is the milliseconds each row of each library is timed for
   in all, shared out over the passes. More passes at one duration cost the
   warming and the processes again, not the timing.

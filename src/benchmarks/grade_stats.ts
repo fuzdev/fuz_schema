@@ -48,13 +48,31 @@ export interface Reading {
 	new: Array<number>;
 }
 
-/** Adds what a process read of a case to a reading, the arms of the baseline and of the new version apart. */
+/**
+ * What of a round an arm's figure is: `ns`, the median batch of its slice, or
+ * `whole_ns`, the whole of its slice over its calls.
+ */
+export type ReadingSeries = 'ns' | 'whole_ns';
+
+/**
+ * Adds what a process read of a case to a reading, the arms of the baseline
+ * and of the new version apart. An arm's `ns` is its median over its rounds.
+ * Its `whole_ns` is its mean over them, the rounds being slices of one length,
+ * so the few rounds a collection lands in count as they cost: a median over
+ * rounds would leave them out, as the median batch does within one.
+ */
 export const to_reading = (
 	c: GradeChildCase,
-	reading: Reading = { base: [], new: [] }
+	reading: Reading = { base: [], new: [] },
+	series: ReadingSeries = 'ns'
 ): Reading => {
 	for (const arm of c.arms) {
-		reading[arm.startsWith('base') ? 'base' : 'new'].push(Math.log(stats_median(c.ns![arm]!)));
+		const rounds = c[series]![arm]!;
+		const figure =
+			series === 'ns'
+				? stats_median(rounds)
+				: rounds.reduce((sum, v) => sum + v, 0) / rounds.length;
+		reading[arm.startsWith('base') ? 'base' : 'new'].push(Math.log(figure));
 	}
 	return reading;
 };

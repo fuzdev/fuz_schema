@@ -30,11 +30,10 @@ import { fileURLToPath } from 'node:url';
 
 import { meta, parse_args, s } from './args.ts';
 import {
-	ALLOCATION_NODE_FLAGS,
 	format_table,
 	geometric_mean,
-	has_some_allocation_node_flag,
-	hold_benchmark_lock
+	hold_benchmark_lock,
+	refuse_timing_node_flags
 } from './measure.ts';
 import {
 	find_survey_disagreements,
@@ -106,13 +105,7 @@ if (unknown.length) {
 }
 const others = OTHER_LIBS.filter((lib) => !args.lib || args.lib.includes(lib));
 const libs: Array<SurveyLibName> = [SUBJECT_LIB, ...others];
-if (has_some_allocation_node_flag()) {
-	console.error(
-		`the survey times under the flags a consumer has: take \`${ALLOCATION_NODE_FLAGS}\` off ` +
-			'the command line and out of NODE_OPTIONS'
-	);
-	process.exit(1);
-}
+refuse_timing_node_flags('the survey', false);
 
 interface Row {
 	name: string;

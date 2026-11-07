@@ -52,12 +52,7 @@ import {
 	type HarvestRowsOf,
 	type HarvestSet
 } from './harvest_sets.ts';
-import {
-	ALLOCATION_NODE_FLAGS,
-	format_table,
-	has_some_allocation_node_flag,
-	hold_benchmark_lock
-} from './measure.ts';
+import { format_table, hold_benchmark_lock, refuse_timing_node_flags } from './measure.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
 	format_spread,
@@ -114,13 +109,7 @@ if (!sets.length || unknown?.length) {
 	);
 	process.exit(1);
 }
-if (has_some_allocation_node_flag()) {
-	console.error(
-		`harvest times under the flags a consumer has: take \`${ALLOCATION_NODE_FLAGS}\` off the ` +
-			'command line and out of NODE_OPTIONS, the processes that measure bytes are given them'
-	);
-	process.exit(1);
-}
+refuse_timing_node_flags('harvest', true);
 
 hold_benchmark_lock('fuz_schema harvest');
 

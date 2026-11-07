@@ -34,7 +34,9 @@
  * calls, then timed a round at a time, every arm once a round, in orders that
  * put each arm in every position equally often (`to_balanced_orders`). A round
  * of the same is timed first and thrown away. Which order leads moves on by a
- * case, and by a run.
+ * case, and by a run. An arm's figure of a round is the median batch of its
+ * slice, which a collection is mostly not in, and beside it the whole of the
+ * slice over its calls, which has every collection that fell in it.
  *
  * Usage: `node src/benchmarks/grade_child.ts <path to a job's JSON>`
  *
@@ -296,6 +298,7 @@ for (const [index, c] of measured.entries()) {
 	const batch = warm(to_rotated(of_case, lead), c.name);
 	if (job.mode === 'time') {
 		const ns: Array<Array<number>> = of_case.map(() => []);
+		const whole_ns: Array<Array<number>> = of_case.map(() => []);
 		// from -1: the round before the first is timed and thrown away
 		for (let round = -1; round < rounds; round++) {
 			for (const at of orders[(lead + round + orders.length) % orders.length]!) {
@@ -305,10 +308,15 @@ for (const [index, c] of measured.entries()) {
 					job.slice_ms,
 					GRADE_MIN_BATCHES
 				);
-				if (round >= 0) ns[at]!.push((median(samples) / batch) * 1e6);
+				if (round < 0) continue;
+				ns[at]!.push((median(samples) / batch) * 1e6);
+				let total = 0;
+				for (const sample of samples) total += sample;
+				whole_ns[at]!.push((total / (samples.length * batch)) * 1e6);
 			}
 		}
 		result.ns = Object.fromEntries(of_case.map((arm, i) => [arm.id, ns[i]!]));
+		result.whole_ns = Object.fromEntries(of_case.map((arm, i) => [arm.id, whole_ns[i]!]));
 	} else {
 		const bytes: Array<number> = of_case.map(() => NaN);
 		for (const at of orders[lead % orders.length]!) {

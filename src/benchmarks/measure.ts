@@ -56,6 +56,34 @@ export const has_some_allocation_node_flag = (): boolean =>
 	to_allocation_node_flags_given().some((given) => given);
 
 /**
+ * Exits with 1, saying why, unless a script that times may start: under no
+ * `NODE_OPTIONS`, which every process it starts would inherit, a timing among
+ * them, and with none of `ALLOCATION_NODE_FLAGS` on its command line. A
+ * process that measures bytes is given those on its command line.
+ *
+ * @param script - names the script in the message
+ * @param gives_bytes_flags - whether the script starts processes that measure bytes, which the message says
+ */
+export const refuse_timing_node_flags = (script: string, gives_bytes_flags: boolean): void => {
+	const options = process.env.NODE_OPTIONS?.trim();
+	if (options) {
+		console.error(
+			`${script} times under the flags a consumer has, and every process it starts would ` +
+				`inherit NODE_OPTIONS, here \`${options}\`: unset it`
+		);
+		process.exit(1);
+	}
+	if (has_some_allocation_node_flag()) {
+		console.error(
+			`${script} times under the flags a consumer has: take \`${ALLOCATION_NODE_FLAGS}\` off ` +
+				'the command line' +
+				(gives_bytes_flags ? ', the processes that measure bytes are given them' : '')
+		);
+		process.exit(1);
+	}
+};
+
+/**
  * Exits with 1, saying which node flags it needs, unless the process has
  * the ones `measure_bytes` needs. For a script to call before it does any
  * work, where `measure_bytes` would throw only once it is reached.

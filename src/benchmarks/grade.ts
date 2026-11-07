@@ -59,8 +59,9 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { availableParallelism, loadavg } from 'node:os';
+import { createHash } from 'node:crypto';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { availableParallelism, hostname, loadavg } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
@@ -109,6 +110,7 @@ import {
 	to_summary,
 	type CaseTime,
 	type Reading,
+	type ReadingSeries,
 	type Summary
 } from './grade_stats.ts';
 import { BASELINE_LIB } from './libs.ts';
@@ -150,8 +152,8 @@ import {
 	ALLOCATION_NODE_FLAGS,
 	format_table,
 	geometric_mean,
-	has_some_allocation_node_flag,
 	hold_benchmark_lock,
+	refuse_timing_node_flags,
 	to_balanced_orders
 } from './measure.ts';
 
@@ -225,13 +227,7 @@ if (args['against-libs-file'] && !args['against-file']) {
 	);
 	process.exit(1);
 }
-if (has_some_allocation_node_flag()) {
-	console.error(
-		`grade times under the flags a consumer has: take \`${ALLOCATION_NODE_FLAGS}\` off the ` +
-			'command line and out of NODE_OPTIONS, the processes that measure bytes are given them'
-	);
-	process.exit(1);
-}
+refuse_timing_node_flags('grade', true);
 
 hold_benchmark_lock('fuz_schema grade');
 
@@ -400,6 +396,8 @@ const run_job = async (job: GradeJob): Promise<GradeChildOutput> => {
 					return start();
 				})
 			: await start();
+	// kept beside its job, every round of every arm, for a reading the report doesn't make
+	writeFileSync(path.replace(/\.json$/, '.out.json'), JSON.stringify(output));
 	return output as GradeChildOutput;
 };
 
@@ -457,19 +455,91 @@ interface MachineState {
 	load: Array<number>;
 	/** Each CPU's clock in MHz, from `/proc/cpuinfo`, where there is one. */
 	cpu_mhz?: Array<number>;
+	/** The first CPU's frequency governor, from `/sys`, where there is one. */
+	governor?: string;
+	/** Whether the CPUs may boost past their base clock, from `/sys`, where it says. */
+	boost?: boolean;
 }
+
+// a file's text, trimmed, or `undefined` where it can't be read
+const read_text = (path: string): string | undefined => {
+	try {
+		return readFileSync(path, 'utf8').trim();
+	} catch {
+		return undefined;
+	}
+};
 
 const read_machine_state = (): MachineState => {
 	const state: MachineState = { node: process.version, load: loadavg() };
-	try {
-		const mhz = [
-			...readFileSync('/proc/cpuinfo', 'utf8').matchAll(/^cpu MHz\s*:\s*([\d.]+)/gm)
-		].map((m) => Number(m[1]));
-		if (mhz.length) state.cpu_mhz = mhz;
-	} catch {
-		// no `/proc` here, and the clock goes unrecorded
-	}
+	const mhz = [...(read_text('/proc/cpuinfo') ?? '').matchAll(/^cpu MHz\s*:\s*([\d.]+)/gm)].map(
+		(m) => Number(m[1])
+	);
+	if (mhz.length) state.cpu_mhz = mhz;
+	const governor = read_text('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor');
+	if (governor) state.governor = governor;
+	const boost = read_text('/sys/devices/system/cpu/cpufreq/boost');
+	if (boost) state.boost = boost === '1';
 	return state;
+};
+
+/** What a grade ran on and with, which is the same at its end, for the JSON report. */
+interface GradeSetup {
+	hostname: string;
+	/** The CPU's model, from `/proc/cpuinfo`, where there is one. */
+	cpu_model?: string;
+	node: string;
+	v8: string;
+	/** The versions of the comparison libraries and of the bundler, from their `package.json`. */
+	packages: Record<string, string | undefined>;
+	/** The commit the working tree is on, and whether it has changes. */
+	head: { sha?: string; dirty?: boolean };
+	/** The commit `--against` resolved to, for a baseline from git. */
+	against_sha?: string;
+	/** The first 16 hex digits of the SHA-256 of each version's `schema.ts` as it was loaded. */
+	base_hash: string;
+	new_hash: string;
+}
+
+const COMPARED_PACKAGES = ['valibot', 'zod', 'typebox', 'arktype', 'rolldown'];
+
+const to_git = (args: Array<string>): string | undefined => {
+	try {
+		return execFileSync('git', args, {
+			encoding: 'utf8',
+			stdio: ['ignore', 'pipe', 'ignore']
+		}).trim();
+	} catch {
+		return undefined;
+	}
+};
+
+const to_file_hash = (path: string): string =>
+	createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 16);
+
+const read_grade_setup = (): GradeSetup => {
+	const status = to_git(['status', '--porcelain']);
+	return {
+		hostname: hostname(),
+		cpu_model: /^model name\s*:\s*(.+)$/m.exec(read_text('/proc/cpuinfo') ?? '')?.[1],
+		node: process.versions.node,
+		v8: process.versions.v8,
+		packages: Object.fromEntries(
+			COMPARED_PACKAGES.map((name) => {
+				const text = read_text(resolve('node_modules', name, 'package.json'));
+				return [name, text && (JSON.parse(text) as { version?: string }).version];
+			})
+		),
+		head: {
+			sha: to_git(['rev-parse', 'HEAD']),
+			dirty: status === undefined ? undefined : !!status
+		},
+		against_sha: args['against-file']
+			? undefined
+			: to_git(['rev-parse', `${args.against}^{commit}`]),
+		base_hash: to_file_hash(baseline_path),
+		new_hash: to_file_hash(new_path)
+	};
 };
 
 const format_machine_state = (state: MachineState): string =>
@@ -477,9 +547,13 @@ const format_machine_state = (state: MachineState): string =>
 	(state.cpu_mhz
 		? `, cpu ${Math.round(Math.min(...state.cpu_mhz))} to ${Math.round(Math.max(...state.cpu_mhz))} MHz, ` +
 			`mean ${Math.round(state.cpu_mhz.reduce((sum, m) => sum + m, 0) / state.cpu_mhz.length)}`
-		: '');
+		: '') +
+	(state.governor ? `, governor ${state.governor}` : '') +
+	(state.boost === undefined ? '' : `, boost ${state.boost ? 'on' : 'off'}`);
 
 const machine_start = read_machine_state();
+const setup = read_grade_setup();
+const started_at = new Date();
 console.log(
 	`grading ${new_label} against ${baseline_label}: ${cases.length} cases, ` +
 		`${alone_cases.length} of them also alone, ${apart_cases.length} apart, ` +
@@ -503,6 +577,12 @@ console.log(
 );
 
 const names = cases.map((c) => c.name);
+
+/** A case apart in one run: its reading of the median batch, and of the whole slice. */
+interface ApartReading {
+	reading: Reading;
+	whole: Reading;
+}
 const started = performance.now();
 const to_elapsed = (since: number): string => format_seconds((performance.now() - since) / 1000);
 
@@ -511,12 +591,13 @@ const to_elapsed = (since: number): string => format_seconds((performance.now() 
  * `APART_PROCESSES` processes of each version, a process of one and then of
  * the other, and which goes first moves on by a process, a case, and a run.
  *
- * @returns by case, what the processes read: a figure a process, where the other regimes have one an instance
+ * @returns by case, what the processes read: a figure a process, where the other regimes have one an instance, of the median batch and of the whole slice
  */
-const time_apart = async (run: number): Promise<Array<Reading>> => {
-	const of_run: Array<Reading> = [];
+const time_apart = async (run: number): Promise<Array<ApartReading>> => {
+	const of_run: Array<ApartReading> = [];
 	for (const [index, c] of apart_cases.entries()) {
 		const reading: Reading = { base: [], new: [] };
+		const whole: Reading = { base: [], new: [] };
 		for (let at = 0; at < APART_PROCESSES; at++) {
 			for (const graded of (run + index + at) % 2 ? [true, false] : [false, true]) {
 				const output = await run_job(
@@ -524,10 +605,13 @@ const time_apart = async (run: number): Promise<Array<Reading>> => {
 				);
 				if (!graded) apart_program_ran = Math.min(apart_program_ran, output.program_ran ?? 0);
 				// a baseline that lacks the case, or disagrees on it, times nothing
-				if (output.cases.length) to_reading(output.cases[0]!, reading);
+				if (output.cases.length) {
+					to_reading(output.cases[0]!, reading);
+					to_reading(output.cases[0]!, whole, 'whole_ns');
+				}
 			}
 		}
-		of_run.push(reading);
+		of_run.push({ reading, whole });
 	}
 	return of_run;
 };
@@ -536,7 +620,7 @@ const time_apart = async (run: number): Promise<Array<Reading>> => {
 const matrix_runs: Array<GradeChildOutput> = [];
 const alone_runs: Array<Array<GradeChildCase>> = [];
 // by run, then by case: what each process read, by version
-const apart_runs: Array<Array<Reading>> = [];
+const apart_runs: Array<Array<ApartReading>> = [];
 // the fewest entries of the program a process of the baseline ran
 let apart_program_ran = PROGRAM.length;
 for (let run = 0; run < args.runs; run++) {
@@ -626,6 +710,11 @@ interface Graded {
 	matrix: CaseTime;
 	alone: CaseTime | undefined;
 	apart: CaseTime | undefined;
+	/**
+	 * The same of the whole slice, every batch over every call, so a collection
+	 * is in it: read and reported beside the median batch's, and judged by no rule.
+	 */
+	whole: Record<GradeRegime, CaseTime | undefined>;
 	bytes: CaseBytes;
 	alone_bytes: CaseBytes | undefined;
 	same: boolean;
@@ -644,16 +733,23 @@ const graded_all: Array<Graded> = cases.map((c) => {
 	const first = of_runs[0]!;
 	const alone_index = alone_cases.indexOf(c);
 	const apart_index = apart_cases.indexOf(c);
+	const to_alone = (series: ReadingSeries): CaseTime | undefined =>
+		alone_index === -1
+			? undefined
+			: to_case_time(alone_runs.map((run) => to_reading(run[alone_index]!, undefined, series)));
+	const to_apart = (key: keyof ApartReading): CaseTime | undefined =>
+		apart_index === -1 ? undefined : to_case_time(apart_runs.map((run) => run[apart_index]![key]));
 	return {
 		c,
 		compared: of_runs.every((r) => r.arms.some((arm) => arm.startsWith('base'))),
 		matrix: to_case_time(of_runs.map((r) => to_reading(r))),
-		alone:
-			alone_index === -1
-				? undefined
-				: to_case_time(alone_runs.map((run) => to_reading(run[alone_index]!))),
-		apart:
-			apart_index === -1 ? undefined : to_case_time(apart_runs.map((run) => run[apart_index]!)),
+		alone: to_alone('ns'),
+		apart: to_apart('reading'),
+		whole: {
+			matrix: to_case_time(of_runs.map((r) => to_reading(r, undefined, 'whole_ns'))),
+			alone: to_alone('whole_ns'),
+			apart: to_apart('whole')
+		},
 		bytes: to_case_bytes(matrix_bytes.find((b) => b.name === c.name)),
 		alone_bytes: alone_index === -1 ? undefined : to_case_bytes(alone_bytes[alone_index]),
 		same: first.same.new0!,
@@ -839,6 +935,10 @@ const to_alloc_sum = (gs: Array<Graded>, regime: Regime): number => {
 const summarize = (gs: Array<Graded>, regime: Regime): Summary =>
 	to_summary(gs.map((g) => g[regime]!));
 
+// the same of the whole slice
+const summarize_whole = (gs: Array<Graded>, regime: Regime): Summary =>
+	to_summary(gs.map((g) => g.whole[regime]!));
+
 /** A row of a summary table, for the JSON report: a group's, or a path's. */
 interface SummaryReport {
 	regime: Regime;
@@ -848,6 +948,9 @@ interface SummaryReport {
 	/** A group's valid cases, and its invalid; a path has one, as `valid`. */
 	valid: Summary;
 	invalid?: Summary;
+	/** The same of the whole slice. */
+	valid_whole: Summary;
+	invalid_whole?: Summary;
 	/** The ratio of summed bytes. */
 	alloc: number;
 }
@@ -857,14 +960,12 @@ for (const regime of REGIMES) {
 	const of_regime = graded.filter((g) => g[regime] && !Number.isNaN(g[regime].ratio));
 	if (!of_regime.length) continue;
 	const to_group_row = (label: string, gs: Array<Graded>): Array<string> => {
-		const valid = summarize(
-			gs.filter((g) => g.c.valid),
-			regime
-		);
-		const invalid = summarize(
-			gs.filter((g) => !g.c.valid),
-			regime
-		);
+		const valid_cases = gs.filter((g) => g.c.valid);
+		const invalid_cases = gs.filter((g) => !g.c.valid);
+		const valid = summarize(valid_cases, regime);
+		const invalid = summarize(invalid_cases, regime);
+		const valid_whole = summarize_whole(valid_cases, regime);
+		const invalid_whole = summarize_whole(invalid_cases, regime);
 		const alloc = to_alloc_sum(gs, regime);
 		summaries_report.push({
 			regime,
@@ -873,6 +974,8 @@ for (const regime of REGIMES) {
 			cases: gs.length,
 			valid,
 			invalid,
+			valid_whole,
+			invalid_whole,
 			alloc
 		});
 		return [
@@ -880,8 +983,12 @@ for (const regime of REGIMES) {
 			String(gs.length),
 			format_time(valid.ratio, ''),
 			format_band(valid.band),
+			format_time(valid_whole.ratio, ''),
+			format_band(valid_whole.band),
 			format_time(invalid.ratio, ''),
 			format_band(invalid.band),
+			format_time(invalid_whole.ratio, ''),
+			format_band(invalid_whole.band),
 			format_ratio(alloc)
 		];
 	};
@@ -891,6 +998,7 @@ for (const regime of REGIMES) {
 			.filter((of_path) => of_path.length)
 			.map((of_path) => {
 				const summary = summarize(of_path, regime);
+				const whole = summarize_whole(of_path, regime);
 				const alloc = to_alloc_sum(of_path, regime);
 				summaries_report.push({
 					regime,
@@ -898,6 +1006,7 @@ for (const regime of REGIMES) {
 					label: label + of_path[0]!.c.path,
 					cases: of_path.length,
 					valid: summary,
+					valid_whole: whole,
 					alloc
 				});
 				return [
@@ -905,6 +1014,8 @@ for (const regime of REGIMES) {
 					String(of_path.length),
 					format_time(summary.ratio, ''),
 					format_band(summary.band),
+					format_time(whole.ratio, ''),
+					format_band(whole.band),
 					format_ratio(alloc)
 				];
 			});
@@ -915,11 +1026,26 @@ for (const regime of REGIMES) {
 				? 'the processes of one version differ by over the same cases, in the same runs: a time inside\n' +
 					'it is no difference. Bytes are not read apart.\n'
 				: 'the instances of one version differ by over the same cases, in the same processes: a time inside\n' +
-					'it is no difference. alloc is the ratio of summed bytes.\n')
+					'it is no difference. alloc is the ratio of summed bytes.\n') +
+			"time is the median over the rounds of a slice's median batch, which a collection is mostly not\n" +
+			'in, and whole the mean over the rounds of the whole slice over its calls, collections and all,\n' +
+			'with its own A/A. No rule reads whole yet.\n'
 	);
 	print_table(
 		format_table([
-			['group', 'cases', 'valid time', 'A/A', 'invalid time', 'A/A', 'alloc'],
+			[
+				'group',
+				'cases',
+				'valid time',
+				'A/A',
+				'whole',
+				'A/A',
+				'invalid time',
+				'A/A',
+				'whole',
+				'A/A',
+				'alloc'
+			],
 			...[...new Set(of_regime.map((g) => g.c.group))].map((group) =>
 				to_group_row(
 					group,
@@ -937,7 +1063,7 @@ for (const regime of REGIMES) {
 	print_table(`\nby path, ${regime}: what the parse does\n`);
 	print_table(
 		format_table([
-			['path', 'cases', 'time', 'A/A', 'alloc'],
+			['path', 'cases', 'time', 'A/A', 'whole', 'A/A', 'alloc'],
 			...to_path_rows('realistic † ', realistic),
 			...to_path_rows('all ', of_regime)
 		])
@@ -1395,6 +1521,7 @@ const valid_by_regime = SUMMARY_RULE_REGIMES.map((regime) => {
 	return {
 		regime,
 		whole: summarize(valid, regime),
+		whole_slice: summarize_whole(valid, regime),
 		paths: CASE_PATHS.map((path) => ({
 			path,
 			summary: summarize(
@@ -1411,11 +1538,12 @@ print_verdict(
 if (!valid_by_regime.length) {
 	print_verdict('realistic valid-path speed: no realistic valid cases in this run');
 }
-for (const { regime, whole, paths } of valid_by_regime) {
+for (const { regime, whole, whole_slice, paths } of valid_by_regime) {
 	print_verdict(
 		`realistic valid-path speed, ${regime}: ${format_speed(whole)}: ${format_standing(whole)}\n` +
 			`  by run: ${whole.runs.map((r) => format_percent(1 - Math.exp(r))).join(', ')}\n` +
-			`  by path: ${paths.map((p) => `${p.path} ${format_speed(p.summary)}`).join(', ')}`
+			`  by path: ${paths.map((p) => `${p.path} ${format_speed(p.summary)}`).join(', ')}\n` +
+			`  whole slice, collections in it, reported: ${format_speed(whole_slice)}`
 	);
 }
 if (args.bundle) {
@@ -1618,6 +1746,7 @@ print_verdict(`the machine at the end: ${format_machine_state(machine_end)}`);
 console.log(report_verdict.join('\n'));
 console.log(report_tables.join('\n'));
 const REPORT_PATH = join(WORK_DIR, 'report.json');
+const ended_at = new Date();
 writeFileSync(
 	REPORT_PATH,
 	JSON.stringify(
@@ -1630,6 +1759,9 @@ writeFileSync(
 			against: baseline_label,
 			identical,
 			args,
+			started_at: started_at.toISOString(),
+			ended_at: ended_at.toISOString(),
+			setup,
 			machine: { start: machine_start, end: machine_end },
 			instances: INSTANCES,
 			cases: graded_all.map((g) => ({
@@ -1642,6 +1774,7 @@ writeFileSync(
 				matrix: g.matrix,
 				alone: g.alone,
 				apart: g.apart,
+				whole: g.whole,
 				bytes: g.bytes,
 				alone_bytes: g.alone_bytes,
 				same: g.same,
@@ -1669,5 +1802,14 @@ writeFileSync(
 		'\t'
 	) + '\n'
 );
-console.log(`\nthe whole report, as JSON: ${REPORT_PATH}`);
+// a copy under the time it started, so the next grade leaves this one's
+const report_copy = join(
+	WORK_DIR,
+	`report_${started_at
+		.toISOString()
+		.replace(/\.\d+Z$/, 'Z')
+		.replaceAll(':', '-')}.json`
+);
+copyFileSync(REPORT_PATH, report_copy);
+console.log(`\nthe whole report, as JSON: ${REPORT_PATH}, and a copy at ${report_copy}`);
 console.log(`\n${to_elapsed(started)}`);

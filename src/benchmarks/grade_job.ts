@@ -54,8 +54,14 @@ export interface GradeChildCase {
 	name: string;
 	/** The arms measured: those that have the case and agree on it. */
 	arms: Array<string>;
-	/** By arm, in `time` mode: nanoseconds per call, a figure a round. */
+	/** By arm, in `time` mode: nanoseconds per call in the median batch of a round's slice, a figure a round. */
 	ns?: Record<string, Array<number>>;
+	/**
+	 * By arm, in `time` mode: nanoseconds per call over the whole of a round's
+	 * slice, every batch of it over every call, so a collection that fell in it
+	 * is in the figure. A figure a round.
+	 */
+	whole_ns?: Record<string, Array<number>>;
 	/** By arm, in `bytes` mode: heap bytes per call. */
 	bytes?: Record<string, number>;
 	/** By arm: whether the output is the input itself. */

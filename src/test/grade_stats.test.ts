@@ -57,14 +57,20 @@ describe('grade_stats', () => {
 		assert.deepEqual(to_deviations([1, 2, 3, 5]), [1.5, 0.5, 0.5, 2.5]);
 	});
 
-	test('a reading takes the median of each arm, by version', () => {
-		const reading = to_reading({
+	test('a reading takes the median of each arm, and the mean of the whole slice, by version', () => {
+		const c = {
 			name: 'a',
 			arms: ['base0', 'new0', 'base1'],
 			ns: { base0: [10, 30, 20], new0: [40], base1: [5, 6, 7] },
+			whole_ns: { base0: [10, 10, 40], new0: [40], base1: [5, 6, 10] },
 			same: {}
+		};
+		assert.deepEqual(to_reading(c), { base: [log(20), log(6)], new: [log(40)] });
+		// a round a collection landed in counts in the whole slice's
+		assert.deepEqual(to_reading(c, undefined, 'whole_ns'), {
+			base: [log(20), log(7)],
+			new: [log(40)]
 		});
-		assert.deepEqual(reading, { base: [log(20), log(6)], new: [log(40)] });
 	});
 
 	test('equal samples read no difference, at the least floor', () => {

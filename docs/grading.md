@@ -18,13 +18,20 @@ npm run grade -- --class feature                # price the bytes as a new expor
 `grade` compares a version of `schema.ts`, the working tree's unless
 `--new-file` names one, with a baseline, from git or from a file. It prints
 what it expects to take before it starts, with the machine's state: Node's
-version, the load average, and each CPU's clock where `/proc/cpuinfo` gives
-it. A timing taken under load reads a wider A/A. When it is done it prints
-the verdict first, the rule lines and the lists of cases slower, faster,
-and marked, with the machine's state at the end, and the tables after, and
-writes the whole report, every case's readings with it, to
-`.gro/grade/report.json`. Per [case](benchmarks.md#scenarios-and-cases)
-the tables report:
+version, the load average, each CPU's clock where `/proc/cpuinfo` gives it,
+and the frequency governor and boost where `/sys` does. A timing taken under
+load reads a wider A/A. When it is done it prints the verdict first, the rule
+lines and the lists of cases slower, faster, and marked, with the machine's
+state at the end, and the tables after, and writes the whole report, every
+case's readings with it, to `.gro/grade/report.json`, and a copy named by the
+time the grade started beside it, which the next grade leaves. The report
+says what the grade ran on and with: the host, the CPU's model, Node's and
+V8's versions, the comparison libraries' and the bundler's, the commit of
+the working tree and whether it had changes, the commit `--against` resolved
+to, a hash of each version's `schema.ts` as it was loaded, the args, and when
+it started and ended. What each timing process printed, every round of every
+instance, is kept beside its job in `.gro/grade/jobs/`. Per
+[case](benchmarks.md#scenarios-and-cases) the tables report:
 
 - time per parse, the graded version over the baseline, beside its floor
 - heap bytes allocated per parse
@@ -131,10 +138,13 @@ version's instance is loaded first alternates by run, so an even count has
 each first equally often. Nothing is concluded from one run.
 
 **Time and bytes** come from different processes. Time is taken under Node's
-own flags, a consumer's. Bytes need a young generation sized by flag, which
-moves what a parse takes. A bytes process holds two instances of the baseline:
-where they differ by what a case is listed for, the case is marked `~` and
-left out of the lists.
+own flags, a consumer's, and `grade` refuses to start under any
+`NODE_OPTIONS`, which every process would inherit. Bytes need a young
+generation sized by flag, which moves what a parse takes. A bytes process
+holds two instances of each version: where the two of one version differ by
+what a case is listed for, the case is marked `~` and left out of the lists,
+and a case is listed as allocating more only when both instances of the
+graded version read past both of the baseline's.
 
 **Within a process** the instances of a case are warmed in turns, for a set
 time and a floor of calls, then timed a round at a time, every instance once a
@@ -143,6 +153,13 @@ timed first and thrown away. No collection is forced. An instance's time in a
 round is the median batch of its slice, so a collection that falls in one
 batch is mostly in no figure, where `npm run benchmark` keeps the whole of a
 timing on purpose, see [benchmarks.md](benchmarks.md#timing-across-libraries).
+Beside it each round records the whole of the slice over its calls,
+collections and all, and an instance's `whole` is its mean over the rounds, where
+its time is their median, so a round a collection lands in counts. Every
+summary prints that figure as `whole`, with its own A/A taken the same way.
+No rule reads it yet: a change that trades allocation for speed can read
+faster on the median batch and not on the whole slice, and the gap between the
+two is where to look for it.
 
 ### Apart
 
