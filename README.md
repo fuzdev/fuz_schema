@@ -578,12 +578,14 @@ What they've shown so far, read with the caveats below:
 - **Warm speed:** faster than Valibot on every scenario,
   by about 2x on a flat object, 3x on a list of records, and more on recursive and union-heavy ones,
   and by about a tenth where an object's unknown keys are dropped.
-  Not the fastest: Zod's generated object parser wins on flat objects, by 3x where keys are dropped,
+  Not the fastest: Zod's generated object parser wins on flat objects, slightly, and by about 2.5x where keys are dropped,
   and TypeBox and ArkType, which compile validators, win flat shapes by a wide margin.
 - **Allocation:** a valid parse that returns its input allocates a small fixed amount whatever the size of the value,
-  the same for a hundred records as for one. One that drops keys allocates its copy as well.
+  the same for a hundred records as for one, unless a step makes a new value, as `to_lower_case` does.
+  One that drops keys allocates its copy as well.
 - **Cold start:** under a millisecond to import, build a schema, and parse once, bundled.
   The libraries that compile validators pay here, by one to two orders of magnitude.
+  The first hundred parses of a fresh process, before the engine has optimized them, are several times faster than Valibot's on a recursive schema.
 - **Retained memory:** the lowest of the six.
 - **Type-checking cost:** in instantiations, below Valibot, Zod, and ArkType, and above Zod Mini and TypeBox.
 
@@ -592,7 +594,7 @@ Caveats:
 - The scenarios are few and small.
   One is a real recursive schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
   the rest are synthetic.
-- Timings come from a shared workstation, not a quiet machine. Bundle sizes are exact, and allocation is exact for the code the engine is running when it is sampled.
+- Timings come from one desktop (a Ryzen 7 5800X) on Node 26, quieted but not isolated. Bundle sizes are exact, and allocation is exact for the code the engine is running when it is sampled.
 - It's V8 only. The one-shape design is tuned to V8's hidden classes.
 - It isn't like-for-like. Valibot does more, and TypeBox's check doesn't build an output.
 - A test holds every library to the same answer on every scenario's valid and invalid input,
