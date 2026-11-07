@@ -156,6 +156,8 @@ The object schemas differ only on keys the schema doesn't name:
 and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
 as Zod's `catchall` and Valibot's `objectWithRest` do.
 None of them accepts an array, and neither do `record` and `variant`.
+With no entries, `object` and `strip_object` output `Record<string, never>`, not `{}`,
+which TypeScript reads as any value but `null` and `undefined`.
 
 A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
 `optional`, `with_default`, and `with_default_fn` do, which is how a key is made optional.

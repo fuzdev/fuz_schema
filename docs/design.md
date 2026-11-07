@@ -483,6 +483,13 @@ all a missing key costs an object that has no schema asking.
   parse leaves out, a known gap. The types are `EntryTakesMissing` and
   `EntryLeavesMissingOut`, and `src/test/schema.inference.test.ts` pins a key
   of every wrapper.
+- **An object schema with no entries types as what it matches.** `{}` is
+  any value but `null` and `undefined`, so `object({})` types as
+  `Record<string, never>` in and out, and `strip_object({})` outputs one
+  and takes a `Record<string, unknown>`, as it drops every key. A
+  `loose_object` and an `object_with_rest` keep their index signature. The
+  types are `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, and
+  `SchemaStripObjectInput`.
 
 ## Defaults
 

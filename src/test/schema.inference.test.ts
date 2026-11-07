@@ -2841,3 +2841,169 @@ describe('composing object schemas', () => {
 		}>();
 	});
 });
+
+describe('empty object schemas', () => {
+	// `{}` is any value but `null` and `undefined`, so an empty `object` or
+	// `strip_object` infers a record with no keys instead
+	const take = <T>(_value: T): void => {};
+	// the entries of `object({})`, an empty object type on purpose
+	type NoEntries = Record<never, never>; // eslint-disable-line @typescript-eslint/no-generated-empty-object-type
+
+	test('object and strip_object output a record with no keys', () => {
+		const _Object = s.object({});
+		expectTypeOf<s.Infer<typeof _Object>>().toEqualTypeOf<Record<string, never>>();
+		const _Strip = s.strip_object({});
+		expectTypeOf<s.Infer<typeof _Strip>>().toEqualTypeOf<Record<string, never>>();
+		// @ts-expect-error a number is not an empty object
+		take<s.Infer<typeof _Object>>(5);
+		// @ts-expect-error nor is an object with a key
+		take<s.Infer<typeof _Strip>>({ a: 1 });
+		take<s.Infer<typeof _Object>>({});
+	});
+
+	test('a union of entries keeps each member', () => {
+		const _entries = {} as { a: typeof s.string } | { b: typeof s.number };
+		expectTypeOf<s.Infer<ReturnType<typeof s.object<typeof _entries>>>>().toEqualTypeOf<
+			{ a: string } | { b: number }
+		>();
+		expectTypeOf<s.InferInput<ReturnType<typeof s.strip_object<typeof _entries>>>>().toEqualTypeOf<
+			{ a: string } | { b: number }
+		>();
+		expectTypeOf<s.InferInput<ReturnType<typeof s.object<typeof _entries>>>>().toEqualTypeOf<
+			{ a: string } | { b: number }
+		>();
+		const _mixed = {} as { a: typeof s.string } | NoEntries;
+		expectTypeOf<s.Infer<ReturnType<typeof s.object<typeof _mixed>>>>().toEqualTypeOf<
+			{ a: string } | Record<string, never>
+		>();
+	});
+
+	test('object takes no keys in, and strip_object takes any', () => {
+		const _Object = s.object({});
+		expectTypeOf<s.InferInput<typeof _Object>>().toEqualTypeOf<Record<string, never>>();
+		const _Strip = s.strip_object({});
+		expectTypeOf<s.InferInput<typeof _Strip>>().toEqualTypeOf<Record<string, unknown>>();
+		// @ts-expect-error `object` refuses every key
+		take<s.InferInput<typeof _Object>>({ a: 1 });
+		// @ts-expect-error neither takes a number
+		take<s.InferInput<typeof _Strip>>(5);
+		take<s.InferInput<typeof _Strip>>({ a: 1 });
+	});
+
+	test('the runtime agrees', () => {
+		assert(s.is(s.object({}), {}));
+		assert(!s.is(s.object({}), { a: 1 }));
+		assert(!s.is(s.object({}), 5));
+		assert.deepEqual(s.parse(s.strip_object({}), { a: 1 }), { ok: true, value: {} });
+		assert(!s.is(s.strip_object({}), 5));
+		assert(!s.is(s.strip_object({}), []));
+	});
+
+	test('loose_object and object_with_rest are unchanged', () => {
+		const _Loose = s.loose_object({});
+		// the shared types, unspecialized
+		expectTypeOf<s.Infer<typeof _Loose>>().toEqualTypeOf<
+			s.SchemaObjectOutput<NoEntries> & Record<string, unknown>
+		>();
+		expectTypeOf<s.InferInput<typeof _Loose>>().toEqualTypeOf<
+			s.SchemaObjectInput<NoEntries> & Record<string, unknown>
+		>();
+		expectTypeOf<s.Infer<typeof _Loose>>().not.toEqualTypeOf<Record<string, never>>();
+		const _Rest = s.object_with_rest({}, s.number);
+		expectTypeOf<s.Infer<typeof _Rest>>().toEqualTypeOf<
+			s.SchemaObjectOutput<NoEntries> & Record<string, number>
+		>();
+		expectTypeOf<s.InferInput<typeof _Rest>>().toEqualTypeOf<
+			s.SchemaObjectInput<NoEntries> & Record<string, number>
+		>();
+		const _RestKeyed = s.object_with_rest({ a: s.string }, s.number);
+		expectTypeOf<s.Infer<typeof _RestKeyed>>().toEqualTypeOf<
+			{ a: string } & Record<string, number>
+		>();
+	});
+
+	test('a schema with entries is unchanged, all of them optional too', () => {
+		const _Object = s.object({ a: s.optional(s.string) });
+		expectTypeOf<s.Infer<typeof _Object>>().toEqualTypeOf<{ a?: string | undefined }>();
+		expectTypeOf<s.InferInput<typeof _Object>>().toEqualTypeOf<{ a?: string | undefined }>();
+		const _Strip = s.strip_object({ a: s.string });
+		expectTypeOf<s.Infer<typeof _Strip>>().toEqualTypeOf<{ a: string }>();
+		expectTypeOf<s.InferInput<typeof _Strip>>().toEqualTypeOf<{ a: string }>();
+		// the entries of a bare `SchemaEntries` have keys
+		expectTypeOf<s.Infer<s.Schema<s.SchemaStrictObjectOutput<s.SchemaEntries>>>>().toEqualTypeOf<
+			Record<string, unknown>
+		>();
+	});
+
+	test('as a field, and wrapped', () => {
+		const _Nested = s.object({ a: s.object({}), b: s.strip_object({}) });
+		expectTypeOf<s.Infer<typeof _Nested>>().toEqualTypeOf<{
+			a: Record<string, never>;
+			b: Record<string, never>;
+		}>();
+		expectTypeOf<s.InferInput<typeof _Nested>>().toEqualTypeOf<{
+			a: Record<string, never>;
+			b: Record<string, unknown>;
+		}>();
+		const _Optional = s.optional(s.object({}));
+		expectTypeOf<s.Infer<typeof _Optional>>().toEqualTypeOf<Record<string, never> | undefined>();
+		const _Default = s.with_default(s.object({}), {});
+		expectTypeOf<s.Infer<typeof _Default>>().toEqualTypeOf<Record<string, never>>();
+		expectTypeOf<s.InferInput<typeof _Default>>().toEqualTypeOf<
+			Record<string, never> | undefined
+		>();
+		const _DefaultFn = s.with_default_fn(s.strip_object({}), () => ({}));
+		expectTypeOf<s.Infer<typeof _DefaultFn>>().toEqualTypeOf<Record<string, never>>();
+		const _Fields = s.object({ a: s.optional(s.object({})), b: s.with_default(s.object({}), {}) });
+		expectTypeOf<s.Infer<typeof _Fields>>().toEqualTypeOf<{
+			a?: Record<string, never> | undefined;
+			b: Record<string, never>;
+		}>();
+		expectTypeOf<s.InferInput<typeof _Fields>>().toEqualTypeOf<{
+			a?: Record<string, never> | undefined;
+			b?: Record<string, never> | undefined;
+		}>();
+		const _Array = s.array(s.object({}));
+		expectTypeOf<s.Infer<typeof _Array>>().toEqualTypeOf<Array<Record<string, never>>>();
+	});
+
+	test('a spread of an empty def composes to the keys spread beside it', () => {
+		const Empty = s.object({});
+		const _Extended = s.object({ ...Empty.def, x: s.string });
+		expectTypeOf<s.Infer<typeof _Extended>>().toEqualTypeOf<{ x: string }>();
+		expectTypeOf<s.InferInput<typeof _Extended>>().toEqualTypeOf<{ x: string }>();
+		const _Stripped = s.strip_object({ ...s.strip_object({}).def, x: s.string });
+		expectTypeOf<s.Infer<typeof _Stripped>>().toEqualTypeOf<{ x: string }>();
+		expectTypeOf<s.InferInput<typeof _Stripped>>().toEqualTypeOf<{ x: string }>();
+		const _Loose = s.loose_object(Empty.def);
+		expectTypeOf<s.Infer<typeof _Loose>>().toEqualTypeOf<
+			s.SchemaObjectOutput<NoEntries> & Record<string, unknown>
+		>();
+		// omitting every key leaves an empty object
+		const Single = s.object({ a: s.string });
+		const { a: _, ...rest } = Single.def;
+		const _Omitted = s.object(rest);
+		expectTypeOf<s.Infer<typeof _Omitted>>().toEqualTypeOf<Record<string, never>>();
+	});
+
+	test('a generic helper defers, and resolves at its call', () => {
+		const _wrap = <T extends s.SchemaEntries>(entries: T) => s.object(entries);
+		expectTypeOf<s.Infer<ReturnType<typeof _wrap<NoEntries>>>>().toEqualTypeOf<
+			Record<string, never>
+		>();
+		expectTypeOf<s.Infer<ReturnType<typeof _wrap<{ a: typeof s.string }>>>>().toEqualTypeOf<{
+			a: string;
+		}>();
+		const extend = <T extends s.SchemaEntries, U extends s.SchemaEntries>(
+			base: s.Schema<any, any, 'object', T>,
+			entries: U
+		) => {
+			const merged: Omit<T, keyof U> & U = { ...base.def, ...entries };
+			return s.object(merged);
+		};
+		const _FromEmpty = extend(s.object({}), { x: s.string });
+		expectTypeOf<s.Infer<typeof _FromEmpty>>().toEqualTypeOf<{ x: string }>();
+		const _ToEmpty = extend(s.object({}), {});
+		expectTypeOf<s.Infer<typeof _ToEmpty>>().toEqualTypeOf<Record<string, never>>();
+	});
+});

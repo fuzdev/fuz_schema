@@ -434,6 +434,39 @@ export type SchemaObjectInput<T extends SchemaEntries> = Flatten<
 	}
 >;
 
+/**
+ * The output of `object` and `strip_object`: `SchemaObjectOutput` of the
+ * entries, or `Record<string, never>` where there are none, as both output an
+ * object with no keys then, and `{}` is any value but `null` and `undefined`.
+ * Distributes over a union of entries, as `keyof` of a union is only the shared keys.
+ */
+export type SchemaStrictObjectOutput<T extends SchemaEntries> = T extends unknown
+	? [keyof T] extends [never]
+		? Record<string, never>
+		: SchemaObjectOutput<T>
+	: never;
+
+/**
+ * The input of `object`: `SchemaObjectInput` of the entries, or
+ * `Record<string, never>` where there are none, as it then refuses every key.
+ */
+export type SchemaStrictObjectInput<T extends SchemaEntries> = T extends unknown
+	? [keyof T] extends [never]
+		? Record<string, never>
+		: SchemaObjectInput<T>
+	: never;
+
+/**
+ * The input of `strip_object`: `SchemaObjectInput` of the entries, or
+ * `Record<string, unknown>` where there are none, as it then takes any object
+ * that isn't an array and drops each of its keys.
+ */
+export type SchemaStripObjectInput<T extends SchemaEntries> = T extends unknown
+	? [keyof T] extends [never]
+		? Record<string, unknown>
+		: SchemaObjectInput<T>
+	: never;
+
 export type SchemaResult<T> = { ok: true; value: T } | { ok: false; issues: Array<SchemaIssue> };
 
 export type SchemaLiteral = string | number | bigint | boolean | null | undefined;
@@ -1347,7 +1380,7 @@ export const brand: {
 // @__NO_SIDE_EFFECTS__
 export const object = <T extends SchemaEntries>(
 	entries: T
-): Schema<SchemaObjectOutput<T>, SchemaObjectInput<T>, 'object', T> => {
+): Schema<SchemaStrictObjectOutput<T>, SchemaStrictObjectInput<T>, 'object', T> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
@@ -1551,7 +1584,7 @@ export const object_with_rest = <T extends SchemaEntries, R extends Schema>(
 // @__NO_SIDE_EFFECTS__
 export const strip_object = <T extends SchemaEntries>(
 	entries: T
-): Schema<SchemaObjectOutput<T>, SchemaObjectInput<T>, 'strip_object', T> => {
+): Schema<SchemaStrictObjectOutput<T>, SchemaStripObjectInput<T>, 'strip_object', T> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
