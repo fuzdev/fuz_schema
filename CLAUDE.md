@@ -175,8 +175,8 @@ dev server.
 - `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
   of bytes and of retained heap, over figures made up for them
 - `src/test/grade_stats.test.ts` - the grader's statistics over made-up
-  samples: floors, marks, and the A/A, and how often two copies read past it
-  under independent noise
+  samples: floors, marks, and the A/A, and how often two copies fail rule 6
+  under noise of the shape a grade reads
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
   - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
     module per library

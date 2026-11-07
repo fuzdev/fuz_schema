@@ -34,9 +34,11 @@ export const RUNS_SHARE = 0.75;
  * A summary's A/A is this, over the root of the runs, times the standard
  * deviation of one version's instances over the summary's cases. The figure
  * it stands beside is a median over runs of a difference of medians over
- * instances, which moves by about a third of this, so the A/A is near three
- * of its standard errors: two copies of one file read past it on about one
- * line in a hundred, at three runs.
+ * instances. Set by resampling two ten-run A/As of one machine four runs at
+ * a time, `apart` left out, which counts what grades differ by short: there
+ * the figure's standard deviation was 0.4 to 0.8 of that deviation over the
+ * root of the runs on the lines rule 6 fails on, so the A/A is four or more
+ * of them, and about three on a path of a few cases, which only warns.
  */
 export const SUMMARY_BAND_DEVIATIONS = 3.3;
 

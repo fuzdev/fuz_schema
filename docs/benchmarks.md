@@ -443,8 +443,8 @@ difference is decided, and the module comments of `grade_child.ts` and
   [grading.md](grading.md#apart).
 - **Order is rotated.** Which instance is loaded first moves on by a run, so
   at an odd count of runs one version is loaded first once more than the
-  other. Which instance runs a case first, and which order of a round leads,
-  move on by a case and by a run.
+  other, and the default count is even. Which instance runs a case first, and
+  which order of a round leads, move on by a case and by a run.
 - **Time is taken under no flags of its own**, as
   [above](#timing-across-libraries). Bytes are taken in processes of their
   own, which are not timed and so run several at once.

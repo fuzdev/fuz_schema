@@ -15,6 +15,7 @@ import {
 	judge_core_feature,
 	judge_opt_in,
 	to_backstop_rows,
+	to_core_delta,
 	to_size_delta,
 	type SizeFigure
 } from '../benchmarks/grade_bytes.ts';
@@ -30,6 +31,19 @@ describe('grade_bytes', () => {
 	test('a side that has no figure counts as 0', () => {
 		assert.strictEqual(to_size_delta({ ...to_figure('added', NaN, 0), new: 40 }), 40);
 		assert.strictEqual(to_size_delta({ ...to_figure('removed', 40, 0), new: NaN }), -40);
+	});
+
+	test('core for speed is the more grown of the core scenario and parse alone', () => {
+		const scenario = (added: number): SizeFigure =>
+			to_figure('strict_nested', 900, added, { core: true, kind: 'scenario' });
+		const parse = (added: number): SizeFigure => to_figure('parse', 400, added, { core: true });
+		const opt_in = to_figure('union', 300, 40);
+		// parse grew where the scenario shrank: the growth is still paid for
+		assert.strictEqual(to_core_delta([scenario(-6), parse(5), opt_in]), 5);
+		assert.strictEqual(to_core_delta([scenario(7), parse(5), opt_in]), 7);
+		// both shrank, and the figure says by how little
+		assert.strictEqual(to_core_delta([scenario(-6), parse(-2)]), -2);
+		assert.strictEqual(to_core_delta([opt_in]), 0);
 	});
 
 	test('opt-in jitter is not growth, and core is read exactly', () => {

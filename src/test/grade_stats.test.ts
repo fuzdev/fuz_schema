@@ -1,6 +1,7 @@
 import { describe, test, assert } from 'vitest';
 
 import {
+	type CaseTime,
 	CASE_FLOOR_LEAST,
 	CASE_FLOOR_SPREADS,
 	SUMMARY_BAND_DEVIATIONS,
@@ -13,7 +14,8 @@ import {
 	to_runs_needed,
 	to_summary,
 	to_variance,
-	type Reading
+	type Reading,
+	type Summary
 } from '../benchmarks/grade_stats.ts';
 import { create_seeded_rng } from './seeded_rng.ts';
 
@@ -157,20 +159,84 @@ describe('grade_stats', () => {
 		assert.closeTo(Math.exp(shifted.ratio), 1.1, 0.02);
 	});
 
-	test('under independent noise two copies read past the A/A rarely, and no case is confirmed', () => {
-		// the model the band is set for: each instance off by its own normal draw, every run fresh
-		const normal = create_normal(11);
-		const trials = 2000;
+	// A grade's readings: each instance off by a draw of its own on every case,
+	// `common`, as an instance of the desk's A/A reads a percent from the others on
+	// all of its cases at once, and by another draw on each case, `spread`.
+	const to_grade = (
+		normal: () => number,
+		{ cases = 120, realistic = 17, shift = 1, spread = 0.01, common = 0.006, runs = 4 } = {}
+	): { realistic: Array<CaseTime>; all: Array<CaseTime> } => {
+		const offsets = Array.from({ length: runs }, () => ({
+			base: [0, 1, 2].map(() => common * normal()),
+			new: [0, 1, 2].map(() => common * normal())
+		}));
+		const all = Array.from({ length: cases }, (_, c) =>
+			to_case_time(
+				offsets.map((o) => ({
+					base: o.base.map((u) => log(100) + u + spread * normal()),
+					new: o.new.map((u) => log(100) + (c < realistic ? log(shift) : 0) + u + spread * normal())
+				}))
+			)
+		);
+		return { realistic: all.slice(0, realistic), all };
+	};
+
+	interface Grade {
+		realistic: Array<CaseTime>;
+		all: Array<CaseTime>;
+		alone: Array<CaseTime>;
+	}
+
+	// a grade of both regimes rule 6 reads, `alone` in processes of its own over the realistic cases
+	const to_both = (normal: () => number, shift = 1): Grade => {
+		const { realistic, all } = to_grade(normal, { shift });
+		return { realistic, all, alone: to_grade(normal, { cases: 17, shift }).all };
+	};
+
+	// the summary lines rule 6 fails on: the realistic one in `matrix` and `alone`, and every case's
+	const to_lines = (grade: Grade): Array<Summary> => [
+		to_summary(grade.realistic),
+		to_summary(grade.alone),
+		to_summary(grade.all)
+	];
+
+	test('two copies read past the A/A of each line rule 6 fails on about once in a few hundred', () => {
+		const normal = create_normal(5);
+		const trials = 1500;
 		let outside = 0;
-		let flagged = 0;
+		let lines = 0;
 		for (let i = 0; i < trials; i++) {
-			const times = Array.from({ length: 10 }, () => to_case_time(to_noisy_readings(normal)));
-			if (is_outside(to_summary(times))) outside++;
-			flagged += times.filter((t) => t.flag).length;
+			for (const s of to_lines(to_both(normal))) {
+				lines++;
+				if (is_outside(s)) outside++;
+			}
 		}
-		// about one line in a hundred, as `SUMMARY_BAND_DEVIATIONS` is set for
-		assert.isAbove(outside / trials, 0.002);
-		assert.isBelow(outside / trials, 0.03);
-		assert.isBelow(flagged / (trials * 10), 0.01);
+		// either way, at the default four runs: a band too narrow reads past far more,
+		// and one too wide never
+		assert.isAbove(outside / lines, 0.0005);
+		assert.isBelow(outside / lines, 0.01);
+	});
+
+	test('two copies fail rule 6 in few grades, and its lines find a realistic slowdown of 3%', () => {
+		const normal = create_normal(11);
+		const trials = 800;
+		let false_fails = 0;
+		let flagged = 0;
+		let read = 0;
+		let found = 0;
+		for (let i = 0; i < trials; i++) {
+			const grade = to_both(normal);
+			const cases = [...grade.all, ...grade.alone];
+			const flags = cases.filter((t) => t.flag === 'slower').length;
+			flagged += flags;
+			read += cases.length;
+			if (flags || to_lines(grade).some((s) => is_outside(s) && s.ratio > 0)) false_fails++;
+			// by the lines alone, which the cases would otherwise stand in for
+			if (to_lines(to_both(normal, 1.03)).some((s) => is_outside(s) && s.ratio > 0)) found++;
+		}
+		// the family's rate, every line and case it fails on, at the default four runs
+		assert.isBelow(false_fails / trials, 0.02);
+		assert.isBelow(flagged / read, 0.001);
+		assert.isAbove(found / trials, 0.9);
 	});
 });

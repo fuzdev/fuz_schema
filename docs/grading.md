@@ -5,7 +5,7 @@ npm run grade                                   # the working tree against HEAD
 npm run grade -- --against HEAD~2 --filter each/union
 npm run grade -- --against-file path/to/old_schema.ts
 npm run grade -- --new-file path/to/variant.ts  # a file as the graded version
-npm run grade -- --runs 5                       # more runs, for a smaller change
+npm run grade -- --runs 6                       # more runs, for a smaller change
 npm run grade -- --alone object/                # which cases also run alone
 npm run grade -- --apart each/                  # which cases also run a version to a process
 npm run grade -- --slice 2                      # longer timing slices
@@ -65,7 +65,7 @@ When a change targets a path no case isolates, add the case first.
 | `--against-file <path>`      | none                           | a file as the baseline, instead of a git ref                                                                                   |
 | `--against-libs-file <path>` | the working tree's             | the scenario module of a baseline given with `--against-file`, for one with another API. An error without `--against-file`      |
 | `--new-file <path>`          | the working tree's `schema.ts` | a file as the graded version                                                                                                   |
-| `--runs <n>`                 | 3                              | how many times the whole of the timing is repeated                                                                             |
+| `--runs <n>`                 | 4                              | how many times the whole of the timing is repeated: an even count has each version loaded first equally often                  |
 | `--alone [part]`             | `real/`                        | which cases also get processes of their own: those whose name includes this, and every case when given with no value           |
 | `--no-alone`                 | off                            | no case runs alone                                                                                                             |
 | `--apart [part]`             | a few cases, below             | which cases are also timed a version to a process: those whose name includes this, and every case when given with no value      |
@@ -125,9 +125,10 @@ the objects the engine removed.
 still runs every case first, so a filtered case is timed in the same code as
 in a whole run.
 
-**Runs.** The whole of the timing is repeated, three times by default, each
-run in fresh processes with the instances loaded in another order. Nothing is
-concluded from one run.
+**Runs.** The whole of the timing is repeated, four times by default, each
+run in fresh processes with the instances loaded in another order: which
+version's instance is loaded first alternates by run, so an even count has
+each first equally often. Nothing is concluded from one run.
 
 **Time and bytes** come from different processes. Time is taken under Node's
 own flags, a consumer's. Bytes need a young generation sized by flag, which
@@ -237,13 +238,23 @@ the median of the runs. Its A/A is from the same cases in the same processes:
 each instance's mean over them, the standard deviation of those among the
 instances of one version, pooled over the versions and the runs, times 3.3 over
 the root of the runs. Apart it is of the processes of one version in the same
-runs. That is near three standard errors of the figure, and two copies of one
-file read past it on about one line in a hundred at three runs. A figure inside
-its A/A is not a difference, and a shift inside it cannot be told from none. The
-grade prints the A/A it measured, and more runs narrow it. At the default run
-count a shift of a couple of percent on the realistic cases can pass unseen, so
-a series of small accepted changes should now and then be graded against an
-older ref (`--against <ref>`).
+runs. A figure inside its A/A is not a difference, and a shift inside it cannot
+be told from none. The grade prints the A/A it measured, and more runs narrow
+it.
+
+The 3.3 was set by resampling two ten-run A/As of one desktop machine, four
+runs at a time as a grade takes them, `apart` left out. That is a few grades'
+worth of processes, the draws overlap, and the band was fitted and checked on
+the same data, so what one grade differs from another by is counted short:
+runs of one grade agree with each other more than grades do. In those draws
+the figure's standard deviation on the lines rule 6 fails on was 0.4 to 0.8 of
+the deviation the A/A is built from, over the root of the runs, so the A/A is
+four or more of them, and on a path of a few cases, as the realistic copy
+path, about three, which is why a path only warns. A realistic slowdown spread
+over the realistic cases was found by four runs about one time in five at 1%,
+three in four at 1.5%, and nearly always from 2%; by six, one in three at 1%
+and nearly always from 1.5%. A series of small accepted changes should now and
+then be graded against an older ref (`--against <ref>`), with more runs.
 
 ## Rules
 
@@ -289,11 +300,16 @@ more in total, or starts slower. The rest is judgment.
   alone, [below](#bytes). A figure over its price reads `ASK`: the user rules
   on it, and it is not a failure. Core that grows under `feature` reads `FAIL`.
 - **Rule 6** reads parses, and no case of the `create` path. It fails when
-  the valid path of the realistic cases reads slower
-  past its A/A, whole or as the identity or the copy path, in `matrix` or
-  `alone`, or when a valid case, realistic or not, is confirmed slower in any
-  regime, `apart` among them. The summary of the cases timed apart is printed
-  and no rule reads it: they are a few chosen cases, read one at a time.
+  the valid path of the realistic cases reads slower past its A/A in `matrix`
+  or `alone`, when every valid case together does in `matrix`, or when a
+  valid case, realistic or not, is confirmed slower in any regime, `apart`
+  among them. Each line a rule fails on is one more chance for two copies of
+  one file to fail it, so the family is kept to these. A realistic path, as
+  identity or copy, and the realistic invalid path and its issues, read slower
+  past their A/A, `WARN`: a path of a few cases reads past its A/A by noise
+  far more often than the whole, and a warning is read with the lists. The
+  summary of the cases timed apart is printed and no rule reads it: they are a
+  few chosen cases, read one at a time. No rule reads the whole slice yet.
 - **Rule 9** reads every figure of retained heap per further schema, under
   any class, and one over the allowance reads `ASK`.
 - **Below three runs** rule 6, and rule 4 for speed when bytes were added,
@@ -339,8 +355,10 @@ Each figure is of one class too:
 
 - **Core** is what every consumer pays: the `strict_nested` scenario's
   bundle, the one built from `object`, the default object schema, and `parse`
-  alone. Under `speed` rule 4 reads the first, and `parse` is in the export
-  table and not priced. Under the other classes both are priced.
+  alone. Under `speed` rule 4 reads the more grown of the two, as each holds
+  the other's growth where they share code, and a change that shrinks one and
+  grows the other still pays for the growth. Under the other classes both are
+  priced.
 - **Opt-in** is what a consumer pays who uses it: every other scenario's
   bundle, and each other export's `last in` and its `alone`.
 
@@ -362,7 +380,7 @@ own; where they disagree, this is how its verdict is read.
 
 | change        | core                                   | opt-in                                                       |
 | ------------- | -------------------------------------- | ------------------------------------------------------------ |
-| `speed`       | rule 4's return, on `strict_nested`    | listed where it grew, to be weighed by rule 3                |
+| `speed`       | rule 4's return, on the more grown     | listed where it grew, to be weighed by rule 3                |
 | `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`                   |
 | `security`    | as `correctness`                       | as `correctness`                                             |
 | `feature`     | +0, past it `FAIL`                     | as `correctness` on what the baseline has, the rest reported |

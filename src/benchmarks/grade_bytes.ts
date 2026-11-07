@@ -151,6 +151,19 @@ export const judge_opt_in = (
 };
 
 /**
+ * What a change for speed adds to core, which rule 4 asks a return for: the
+ * most any core figure grew, the core scenario's bundle or `parse` alone. Each
+ * holds the other's growth where they share code, so they are not summed, and
+ * a change that shrinks one and grows the other still pays for the growth.
+ *
+ * @returns the largest delta of a core figure, below 0 where both shrank, and 0 where there is none
+ */
+export const to_core_delta = (figures: ReadonlyArray<SizeFigure>): number => {
+	const deltas = figures.filter((f) => f.core).map(to_size_delta);
+	return deltas.length ? Math.max(...deltas) : 0;
+};
+
+/**
  * Reads a correctness change's core figures: over the price, the user rules.
  *
  * @returns the core figures over the price

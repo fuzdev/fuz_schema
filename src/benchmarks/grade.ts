@@ -90,6 +90,7 @@ import {
 	judge_core_correctness,
 	judge_core_feature,
 	is_priced_as_correctness,
+	to_core_delta,
 	judge_opt_in,
 	to_size_delta,
 	to_vs_valibot,
@@ -171,8 +172,9 @@ const Args = s.object({
 	filter: meta(s.optional(s.string), {
 		description: 'only measure cases whose name includes this'
 	}),
-	runs: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 3), {
-		description: 'how many times the whole of the timing is repeated'
+	runs: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 4), {
+		description:
+			'how many times the whole of the timing is repeated: an even count has each version load first equally often'
 	}),
 	alone: meta(s.with_default(s.union([s.string, s.boolean]), 'real/'), {
 		description:
@@ -358,11 +360,13 @@ const TIME_ARMS: GradeJob['arms'] = Array.from({ length: INSTANCES }, (_, i) => 
 	{ id: `base${i}`, path: baseline_path, graded: false },
 	{ id: `new${i}`, path: new_path, graded: true }
 ]).flat();
-// two of the baseline, so that a case whose bytes are not settled shows as one
+// two of each version, so that a case whose bytes are not settled shows as
+// one, and a version allocates more only where both of its instances say so
 const BYTES_ARMS: GradeJob['arms'] = [
 	{ id: 'base0', path: baseline_path, graded: false },
+	{ id: 'new0', path: new_path, graded: true },
 	{ id: 'base1', path: baseline_path, graded: false },
-	{ id: 'new0', path: new_path, graded: true }
+	{ id: 'new1', path: new_path, graded: true }
 ];
 
 // A process of the `apart` regime: one version, as an instance that uses the
@@ -437,7 +441,7 @@ const ESTIMATE = {
 	alone_case: 0.17 + GRADE_WARM_MS.alone / 1000 + case_seconds,
 	// a process of one version, which a case has `APART_PROCESSES` of for each
 	apart_process: 0.17 + GRADE_WARM_MS.apart / 1000 + (GRADE_APART_ROUNDS + 1) * slice_seconds,
-	bytes: 2 + (cases.length * 2.3 + alone_cases.length * 3.8) / BYTES_CONCURRENCY,
+	bytes: 2 + (cases.length * 3.1 + alone_cases.length * 5.1) / BYTES_CONCURRENCY,
 	bundle: args.bundle ? 1 : 0,
 	process: args.process ? 10 + args.samples * 0.6 : 0
 };
@@ -569,11 +573,13 @@ const confirmable = is_confirmable(args.runs);
 const runs_needed = to_runs_needed(args.runs);
 const NOT_JUDGED = `not judged, fewer than ${RUNS_TO_CONFIRM} runs`;
 
-/** A case's bytes in one regime. */
+/** A case's bytes in one regime: the first instance of each version, and the second beside it. */
 interface CaseBytes {
 	base: number;
 	new: number;
-	/** Whether two instances of the baseline read the same. */
+	base1: number;
+	new1: number;
+	/** Whether the two instances of each version read the same. */
 	settled: boolean;
 }
 
@@ -582,17 +588,32 @@ interface CaseBytes {
 const is_past_alloc_floor = (bytes: number, from: number): boolean =>
 	Math.round(bytes - from) >= Math.max(ALLOC_FLOOR.bytes, from * ALLOC_FLOOR.share);
 
+// whether two instances of one version read apart, where both were read
+const is_apart = (a: number, b: number): boolean =>
+	!Number.isNaN(a) && !Number.isNaN(b) && (is_past_alloc_floor(a, b) || is_past_alloc_floor(b, a));
+
 const to_case_bytes = (c: GradeChildCase | undefined): CaseBytes => {
 	const bytes = c?.bytes ?? {};
 	const base = bytes.base0 ?? NaN;
-	const other = bytes.base1 ?? NaN;
+	const base1 = bytes.base1 ?? NaN;
+	const next = bytes.new0 ?? NaN;
+	const new1 = bytes.new1 ?? NaN;
 	return {
 		base,
-		new: bytes.new0 ?? NaN,
-		settled:
-			Number.isNaN(base) || !(is_past_alloc_floor(other, base) || is_past_alloc_floor(base, other))
+		new: next,
+		base1,
+		new1,
+		settled: !is_apart(base, base1) && !is_apart(next, new1)
 	};
 };
+
+// allocates more: both instances of the new version past the floor over both of the baseline's
+const is_more_alloc = (b: CaseBytes): boolean =>
+	b.settled &&
+	is_past_alloc_floor(
+		Math.min(b.new, b.new1),
+		Math.max(b.base, Number.isNaN(b.base1) ? b.base : b.base1)
+	);
 
 interface Graded {
 	c: Case;
@@ -710,7 +731,7 @@ print_table(
 	`\ncases, in the matrix: a process runs them all, so each is timed in code that has seen every schema.\n` +
 		`ns is per parse, the median of ${INSTANCES} instances and of the runs. time is new over base. floor is\n` +
 		`what a run's time must be past to show a difference: ${CASE_FLOOR_SPREADS} times what an instance is from the median of its own version, and at least ` +
-		`${format_band(CASE_FLOOR_LEAST)}.\nB is heap bytes per parse, ~ where two instances of the baseline differ. ` +
+		`${format_band(CASE_FLOOR_LEAST)}.\nB is heap bytes per parse, ~ where two instances of one version differ. ` +
 		`out is whether the output\nis the input itself.\n${marks_note}\n`
 );
 print_table(
@@ -1041,8 +1062,7 @@ if (args.bundle) {
 	];
 	// a scenario the baseline's module lacks is compared on nothing
 	size_figures = [...scenario_figures.filter((f) => !Number.isNaN(f.base)), ...export_figures];
-	const core_figure = size_figures.find((f) => f.kind === 'scenario' && f.core);
-	core_delta = core_figure ? to_size_delta(core_figure) : 0;
+	core_delta = to_core_delta(size_figures);
 
 	const format_size = (size: number): string => (Number.isNaN(size) ? '-' : String(size));
 	const format_class = (f: SizeFigure): string => (f.core ? 'core' : 'opt-in');
@@ -1418,7 +1438,7 @@ if (args.bundle) {
 	} else if (is_priced_as_correctness(args.class)) {
 		const over = judge_core_correctness(size_figures);
 		print_verdict(
-			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
+			`  core bytes (${CORE_SCENARIO} and parse, the more grown): ${format_size_delta(core_delta)} gzip, ` +
 				`which may be up to +${CORRECTNESS_PRICE.core} with no return: ` +
 				(over.length ? `ASK, ${format_size_figures(over)} over it, the user rules` : 'pass')
 		);
@@ -1461,7 +1481,7 @@ if (args.bundle) {
 					: ', and there are no realistic invalid cases in this run');
 		}
 		print_verdict(
-			`  core bytes (${CORE_SCENARIO}): ${format_size_delta(core_delta)} gzip, ` +
+			`  core bytes (${CORE_SCENARIO} and parse, the more grown): ${format_size_delta(core_delta)} gzip, ` +
 				`which needs ${format_percent(required)} realistic speed in the matrix, on the valid path ` +
 				`or with it not slower on the invalid: ${verdict}`
 		);
@@ -1482,15 +1502,26 @@ if (args.bundle) {
 const to_flagged = (regime: Regime, flag: CaseTime['flag'], valid?: boolean): Array<Graded> =>
 	graded.filter((g) => g[regime]?.flag === flag && (valid === undefined || g.c.valid === valid));
 
-// what of the valid path reads slower past its A/A: a summary, or cases, which are named below
-// the cases are counted in every regime, whether or not it has a realistic valid one,
-// and `apart` among them
+// Rule 6 fails on a family of lines, and the more lines a family has the more
+// often two copies of one file fail one of them, so it is kept to the lines
+// that read most of the valid path: the realistic valid summary in `matrix` and
+// `alone`, the summary of every valid case in `matrix`, and a valid case
+// confirmed slower in any regime, `apart` among them. The realistic paths, as
+// identity and copy, and the realistic invalid path warn: a path of a few cases
+// reads past its A/A by its noise far more often than the whole does.
+// TODO: read the whole slice too, once its A/A is calibrated on enough grades
+const all_valid_matrix = summarize(
+	graded.filter((g) => g.c.valid && g.c.path !== 'create' && !Number.isNaN(g.matrix.ratio)),
+	'matrix'
+);
+const is_slower_past = (summary: Summary): boolean => is_outside(summary) && summary.ratio > 0;
 const slowed = [
-	...valid_by_regime.flatMap(({ regime, whole, paths }) =>
-		[{ path: 'valid', summary: whole }, ...paths]
-			.filter((p) => is_outside(p.summary) && p.summary.ratio > 0)
-			.map((p) => `realistic ${p.path} ${regime} ${format_speed(p.summary)}`)
-	),
+	...valid_by_regime
+		.filter(({ whole }) => is_slower_past(whole))
+		.map(({ regime, whole }) => `realistic valid ${regime} ${format_speed(whole)}`),
+	...(all_valid_matrix.cases && is_slower_past(all_valid_matrix)
+		? [`every valid case matrix ${format_speed(all_valid_matrix)}`]
+		: []),
 	...REGIMES.flatMap((regime) => {
 		// a creation parses nothing, and is listed below
 		const slower_cases = to_flagged(regime, 'slower', true).filter(
@@ -1502,8 +1533,42 @@ const slowed = [
 	})
 ];
 print_verdict(
+	`every valid case, matrix: ${all_valid_matrix.cases ? `${format_speed(all_valid_matrix)}: ${format_standing(all_valid_matrix)}` : 'none in this run'}`
+);
+print_verdict(
 	'the valid path is not slowed: ' +
 		(!confirmable ? NOT_JUDGED : slowed.length ? `FAIL: ${slowed.join(', ')}` : 'pass')
+);
+// what warns: a realistic path, valid or invalid, slower past its A/A
+const warned = SUMMARY_RULE_REGIMES.flatMap((regime) => {
+	const realistic = graded.filter(
+		(g) => g.c.realistic && g[regime] && !Number.isNaN(g[regime].ratio)
+	);
+	const valid_paths =
+		valid_by_regime
+			.find((v) => v.regime === regime)
+			?.paths.map((p) => ({
+				label: p.path,
+				summary: p.summary
+			})) ?? [];
+	const invalid = realistic.filter((g) => !g.c.valid);
+	return [
+		...valid_paths,
+		{ label: 'invalid', summary: summarize(invalid, regime) },
+		{
+			label: 'issues',
+			summary: summarize(
+				invalid.filter((g) => g.c.path === 'issues'),
+				regime
+			)
+		}
+	]
+		.filter((p) => p.summary.cases && is_slower_past(p.summary))
+		.map((p) => `realistic ${p.label} ${regime} ${format_speed(p.summary)}`);
+});
+print_verdict(
+	'a realistic path is not slowed, a warning: ' +
+		(!confirmable ? NOT_JUDGED : warned.length ? `WARN: ${warned.join(', ')}` : 'none')
 );
 
 for (const regime of REGIMES) {
@@ -1517,7 +1582,7 @@ for (const regime of REGIMES) {
 const to_more_alloc = (regime: Regime): Array<Graded> =>
 	graded.filter((g) => {
 		const bytes = g[regime] && to_bytes_of(g, regime);
-		return bytes?.settled && is_past_alloc_floor(bytes.new, bytes.base);
+		return !!bytes && is_more_alloc(bytes);
 	});
 const unsettled = graded.filter((g) => !g.bytes.settled || g.alone_bytes?.settled === false);
 print_verdict(`cases allocating more, matrix: ${format_names(to_more_alloc('matrix'))}`);
@@ -1525,7 +1590,7 @@ if (graded_alone.length) {
 	print_verdict(`cases allocating more, alone: ${format_names(to_more_alloc('alone'))}`);
 }
 print_verdict(
-	`cases whose bytes two instances of the baseline differ on: ${format_names(unsettled)}`
+	`cases whose bytes two instances of one version differ on: ${format_names(unsettled)}`
 );
 print_verdict(
 	`cases whose output identity changed: ${format_names(graded.filter((g) => g.base_same !== undefined && g.base_same !== g.same))}`
