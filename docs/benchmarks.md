@@ -243,12 +243,20 @@ whoever runs it.
   way round: they refuse them, and give them to the processes that measure
   their bytes, and such a process that fails is started once more, announced
   on stderr, which a timing never is.
-- **Cold start**: one fresh Node process per sample, in three stages that build
-  on each other, against a bare process. Bundled and unbundled entries. Compile
-  cache off, rounds interleaved, medians. `--lib` and `--scenario` pick what
-  runs, every library and `object_flat` and `type_json` by default, `--form` is
-  `bundled`, `unbundled`, or both, `--samples` the rounds kept, 15 by default,
-  and `--discard` the rounds thrown away first, 2 by default.
+- **Cold start**: one fresh Node process per sample, in stages that build on
+  each other, against a bare process: the import, the schema built, the first
+  parse, and the tenth parse and the hundredth, each of a copy of the input
+  made before the clock starts, which are the first parses of a fresh process
+  in code the engine has yet to optimize. Those two also read their clock
+  after the first parse, so parses 2 to 100 are timed inside one process,
+  not as a difference of two stages' medians. Bundled and unbundled entries:
+  the unbundled one of this library loads its build, `dist/schema.js`, what
+  the package publishes, and refuses to run when that is missing or older
+  than `src/lib/schema.ts`, so run `gro build` first. Compile cache off, rounds
+  interleaved, medians. `--lib` and `--scenario` pick what runs, every library
+  and `object_flat` and `type_json` by default, `--form` is `bundled`,
+  `unbundled`, or both, `--samples` the rounds kept, 15 by default, and
+  `--discard` the rounds thrown away first, 2 by default.
 - **Retained heap**: a fresh process builds the schema, parses once, and
   collects until the heap settles. Read for one schema and for many. See
   [below](#retained-heap). `--lib` and `--scenario` pick what runs, every
@@ -517,7 +525,10 @@ repeated.
   those two drop nothing, which is the work the scenario is of.
 - Cold start reports work inside the process, which resolves sub-millisecond
   gaps. The whole process over bare is also reported, but can't be told from
-  zero inside the bare process's own spread.
+  zero inside the bare process's own spread. The tenth and hundredth parses
+  are of code the engine is still compiling, so they move with when it
+  decides to optimize, and a process's first hundred parses are a figure of
+  their own, not a hundred of the warmed timings.
 - Peak memory is `VmHWM`, not `maxRSS`, which a child inherits from its parent.
 - Heap figures are for one Node version and architecture. V8 only throughout.
 

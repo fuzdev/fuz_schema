@@ -83,10 +83,12 @@ console.log(
 		`peak ${(stats_median(bare.rss_kb) / 1024).toFixed(1)}MB`
 );
 console.log(
-	'import, create, and first parse are median ms of work inside the process, each stage\n' +
-		'including the ones before it; process is what first parse added to the whole process\n' +
-		`over bare, where an addition inside the bare band reads <${bare_band_ms.toFixed(1)}; ` +
-		'peak is MB of resident\nmemory first parse added over bare'
+	'import, create, first parse, parse 10, and parse 100 are median ms of work inside the process,\n' +
+		'each stage including the ones before it, the last two the tenth parse and the hundredth, each of\n' +
+		'a copy of the input; 2 to 100 is parse 100 from its clock after the first parse, in the same\n' +
+		'process; process is what first parse added to the whole process over bare, where an\n' +
+		`addition inside the bare band reads <${bare_band_ms.toFixed(1)}; ` +
+		'peak is MB of resident memory first parse added over bare'
 );
 
 for (const scenario of args.scenario) {
@@ -96,15 +98,22 @@ for (const scenario of args.scenario) {
 		console.log(`\n${scenario}, ${form}\n`);
 		console.log(
 			format_table([
-				['lib', ...COLDSTART_STAGES.map((s) => s.replace('_', ' ')), 'process', 'peak MB'],
+				[
+					'lib',
+					...COLDSTART_STAGES.map((s) => s.replace('_', ' ')),
+					'2 to 100',
+					'process',
+					'peak MB'
+				],
 				...args.lib.map((lib) => {
 					const stages = COLDSTART_STAGES.map((stage) =>
 						summarize_coldstart(group.find((p) => p.target === lib && p.stage === stage)!, bare)
 					);
-					const last = stages.at(-1)!;
+					const last = stages[COLDSTART_STAGES.indexOf('first_parse')]!;
 					return [
 						lib,
 						...stages.map((s) => format_ms(s.work_ms)),
+						format_ms(stages[COLDSTART_STAGES.indexOf('parse_100')]!.later_ms),
 						last.added_ms < bare_band_ms
 							? `<${bare_band_ms.toFixed(1)}`
 							: `+${last.added_ms.toFixed(1)}`,

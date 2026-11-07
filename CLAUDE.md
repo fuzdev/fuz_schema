@@ -24,7 +24,7 @@ npm run benchmark             # parse time, every library on every scenario, a l
 npm run benchmark:bundle      # bundle size, gzip bytes, per scenario and per export (add -- --raw for minified)
 npm run benchmark:allocations # heap bytes per parse and per schema creation
 npm run benchmark:types       # tsc instantiations and check time per library
-npm run benchmark:coldstart   # time and peak memory of a fresh process, per stage
+npm run benchmark:coldstart   # time and peak memory of a fresh process, per stage, to the 100th parse (gro build first)
 npm run benchmark:heap        # memory still held after building and parsing
 npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_wasm
 npm run benchmark:wasm        # that wasm against the library, on JSON texts

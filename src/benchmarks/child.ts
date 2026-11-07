@@ -11,16 +11,18 @@
  * one scenario, what a web page loads. `unbundled` is the library module
  * with its types stripped, importing its package from `node_modules`, so Node
  * resolves and loads every file the package reaches, as a server without a
- * bundler does.
+ * bundler does. This repo's library is then its built `dist/schema.js`, what
+ * the package publishes, and a version given as a variant is its `schema.ts`
+ * with the types stripped, there being no build of it.
  *
  * @module
  */
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { build_scenario_bundle } from './bundle_size.ts';
 
@@ -51,6 +53,27 @@ export const write_if_changed = (path: string, content: string): void => {
 };
 
 const strip_types = (path: string): string => stripTypeScriptTypes(readFileSync(path, 'utf8'));
+
+const SCHEMA_SOURCE_PATH = fileURLToPath(new URL('../lib/schema.ts', import.meta.url));
+const SCHEMA_BUILT_PATH = fileURLToPath(new URL('../../dist/schema.js', import.meta.url));
+
+/**
+ * The built `dist/schema.js`, which an unbundled entry of the working tree's
+ * library loads, as a consumer's server does the published package. When it
+ * is missing or older than `src/lib/schema.ts` the script says to build it and
+ * exits, which is no error of the harness.
+ */
+export const to_built_schema_path = (): string => {
+	const built = existsSync(SCHEMA_BUILT_PATH) && statSync(SCHEMA_BUILT_PATH).mtimeMs;
+	if (!built || built < statSync(SCHEMA_SOURCE_PATH).mtimeMs) {
+		console.error(
+			`the unbundled entry loads the built \`dist/schema.js\`, which is ${built ? 'older than `src/lib/schema.ts`' : 'missing'}: ` +
+				'run `gro build` first'
+		);
+		process.exit(1);
+	}
+	return SCHEMA_BUILT_PATH;
+};
 
 /**
  * Another version of this repo's library to build an entry against, for
@@ -96,15 +119,16 @@ export const prepare_entry = async (
 		variant?.lib_path ?? fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url))
 	);
 	if (source.includes('#lib/schema.ts')) {
-		// this repo's own library is loaded from its stripped source, not a built output
-		const schema_name = variant ? `schema.lib.${variant.id}.mjs` : 'schema.lib.mjs';
-		write_if_changed(
-			join(CHILD_DIR, 'unbundled', schema_name),
-			strip_types(
-				variant?.schema_path ?? fileURLToPath(new URL('../lib/schema.ts', import.meta.url))
-			)
-		);
-		source = source.replace('#lib/schema.ts', `./${schema_name}`);
+		// this repo's own library is its build, and a variant, which has none, its stripped source
+		let schema_specifier: string;
+		if (variant) {
+			const schema_name = `schema.lib.${variant.id}.mjs`;
+			write_if_changed(join(CHILD_DIR, 'unbundled', schema_name), strip_types(variant.schema_path));
+			schema_specifier = `./${schema_name}`;
+		} else {
+			schema_specifier = pathToFileURL(to_built_schema_path()).href;
+		}
+		source = source.replace('#lib/schema.ts', schema_specifier);
 	}
 	write_if_changed(path, source);
 	return path;

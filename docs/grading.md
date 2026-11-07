@@ -470,3 +470,17 @@ compared on nothing.
 The figures depend on Node's version and the machine's architecture, so they
 are read fresh in every grade, of both versions on one machine, and kept in
 no snapshot as `sizes.json` keeps the bytes.
+
+### Cold start
+
+`--no-process` skips it, with retained heap. Cold start is read by
+`coldstart.ts` (see [benchmarks.md](benchmarks.md#method)) for `object_flat`,
+`type_json`, and `app`, bundled and unbundled, in every stage, of both
+versions. The unbundled entry of either version is its `schema.ts` with the
+types stripped: the baseline has no build, so neither is one. A stage is
+listed as slower when it took more than a tenth longer and the medians differ
+by more than either's p10 to p90 spread. The verdict line gives the first
+parse's ratio and that of parses 2 to 100 of a fresh process, timed inside
+the processes of the hundredth from their clock after the first parse, each a
+geometric mean over the scenarios and forms. Both are reported, and no rule
+reads them.

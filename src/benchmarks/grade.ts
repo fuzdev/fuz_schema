@@ -119,7 +119,9 @@ import {
 	COLDSTART_STAGES,
 	plan_coldstart,
 	sample_coldstart,
-	summarize_coldstart
+	summarize_coldstart,
+	type ColdstartStage,
+	type ColdstartSummary
 } from './coldstart.ts';
 import {
 	GRADE_APART_ROUNDS,
@@ -267,8 +269,8 @@ const ALLOC_FLOOR = { bytes: 8, share: 0.002 };
 const SPEEDUP_PER_CORE_BYTES = { speedup: 0.1, bytes: 50 };
 // the least speedup any added core bytes need, the rule's second sentence
 const LEAST_SPEEDUP_FOR_BYTES = 0.05;
-// the scenarios cold start samples: one small schema, one large
-const COLDSTART_SCENARIOS = ['object_flat', 'type_json'];
+// the scenarios cold start samples: one small schema, one large, and an app's many
+const COLDSTART_SCENARIOS = ['object_flat', 'type_json', 'app'];
 const COLDSTART_DISCARD = 2;
 // what a cold-start stage must grow by to be listed
 const PROCESS_FLOOR = 0.1;
@@ -441,7 +443,7 @@ const ESTIMATE = {
 	apart_process: 0.17 + GRADE_WARM_MS.apart / 1000 + (GRADE_APART_ROUNDS + 1) * slice_seconds,
 	bytes: 2 + (cases.length * 3.1 + alone_cases.length * 5.1) / BYTES_CONCURRENCY,
 	bundle: args.bundle ? 1 : 0,
-	process: args.process ? 10 + args.samples * 0.6 : 0
+	process: args.process ? 10 + args.samples * 1.4 : 0
 };
 const estimate_apart =
 	args.runs * apart_cases.length * 2 * APART_PROCESSES * ESTIMATE.apart_process;
@@ -1327,6 +1329,8 @@ const coldstart_slower: Array<string> = [];
 // each stage's row of the table, for the JSON report
 const coldstart_report: Array<Record<string, number | string | boolean>> = [];
 let coldstart_ratio = NaN;
+// parses 2 to 100 of a fresh process, the new version's over the baseline's, reported
+let lukewarm_ratio = NaN;
 
 if (args.process) {
 	const variant: EntryVariant = {
@@ -1432,8 +1436,10 @@ if (args.process) {
 	// a baseline's module may be from before one of them
 	const coldstart_scenarios = COLDSTART_SCENARIOS.filter((name) => shared_scenarios.includes(name));
 	const plan = await plan_coldstart(
+		// the new version as a variant too, so an unbundled entry of either is its stripped source,
+		// where the working tree's would otherwise be its build
 		[
-			{ id: 'fuz_schema.new', lib: 'fuz_schema', variant: new_variant },
+			{ id: 'fuz_schema.new', lib: 'fuz_schema', variant: { id: 'new', schema_path: new_path } },
 			{ id: 'fuz_schema.base', lib: 'fuz_schema', variant }
 		],
 		coldstart_scenarios,
@@ -1442,16 +1448,23 @@ if (args.process) {
 	sample_coldstart(plan, args.samples, COLDSTART_DISCARD);
 	const coldstart_rows: Array<Array<string>> = [];
 	const ratios: Array<number> = [];
+	const lukewarm_ratios: Array<number> = [];
 	for (const scenario of coldstart_scenarios) {
 		for (const form of ENTRY_FORMS) {
-			for (const stage of COLDSTART_STAGES) {
-				const find = (target: string): (typeof plan.processes)[number] =>
+			const of_stage = (target: string, stage: ColdstartStage): ColdstartSummary =>
+				summarize_coldstart(
 					plan.processes.find(
 						(p) =>
 							p.target === target && p.scenario === scenario && p.form === form && p.stage === stage
-					)!;
-				const base = summarize_coldstart(find('fuz_schema.base'), plan.bare);
-				const current = summarize_coldstart(find('fuz_schema.new'), plan.bare);
+					)!,
+					plan.bare
+				);
+			// what parses 2 to 100 took, read within each process
+			const to_lukewarm = (target: string): number => of_stage(target, 'parse_100').later_ms;
+			lukewarm_ratios.push(to_lukewarm('fuz_schema.new') / to_lukewarm('fuz_schema.base'));
+			for (const stage of COLDSTART_STAGES) {
+				const base = of_stage('fuz_schema.base', stage);
+				const current = of_stage('fuz_schema.new', stage);
 				const ratio = current.work_ms / base.work_ms;
 				// slower only when the medians differ by more than either's own spread
 				const slower =
@@ -1462,12 +1475,17 @@ if (args.process) {
 				if (slower) coldstart_slower.push(name);
 				coldstart_report.push({
 					name,
+					stage,
 					base_ms: base.work_ms,
 					new_ms: current.work_ms,
 					ratio,
 					slower,
 					band_ms: Math.max(base.work_band_ms, current.work_band_ms),
-					peak_kb_delta: current.added_rss_kb - base.added_rss_kb
+					peak_kb_delta: current.added_rss_kb - base.added_rss_kb,
+					// the parses after the first, in the same processes
+					...(Number.isNaN(base.later_ms)
+						? {}
+						: { later_base_ms: base.later_ms, later_new_ms: current.later_ms })
 				});
 				coldstart_rows.push([
 					name,
@@ -1481,9 +1499,12 @@ if (args.process) {
 		}
 	}
 	coldstart_ratio = geometric_mean(ratios);
+	lukewarm_ratio = geometric_mean(lukewarm_ratios);
 	print_table(
 		`\ncold start: median ms of work inside a fresh process, ${args.samples} samples, each stage including\n` +
-			'the ones before it; band is the wider p10 to p90 spread of the two; peak is KB of resident memory\n'
+			'the ones before it, parse_10 and parse_100 the tenth parse and the hundredth, each of a copy of the\n' +
+			'input; band is the wider p10 to p90 spread of the two; peak is KB of resident memory. The verdict\n' +
+			"reads parses 2 to 100 within each process: parse_100's clock after its first parse\n"
 	);
 	print_table(
 		format_table([
@@ -1737,6 +1758,7 @@ if (apart_program_ran < PROGRAM.length) {
 if (args.process) {
 	print_verdict(
 		`cold start, first parse: ${format_ratio(coldstart_ratio)} the baseline's; ` +
+			`parses 2 to 100 of a fresh process, reported: ${format_ratio(lukewarm_ratio)}; ` +
 			`stages slower past their own spread: ${coldstart_slower.length ? coldstart_slower.join(', ') : 'none'}`
 	);
 	print_verdict(format_heap_line(judge_heap(heap_figures), heap_totals_grew));
@@ -1794,6 +1816,8 @@ writeFileSync(
 			heap_totals,
 			heap_totals_grew,
 			coldstart: coldstart_report,
+			coldstart_ratio,
+			lukewarm_ratio,
 			verdict: report_verdict,
 			tables: report_tables,
 			elapsed_s: (performance.now() - started) / 1000
