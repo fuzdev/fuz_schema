@@ -16,6 +16,11 @@ each module, these hold the library to more than its own examples:
   [rust.md](rust.md#fixtures).
 - **Mutants**, [below](#mutants): the tests against small breaks of the
   library.
+- **A fresh input**: `src/test/schema.fresh_input.test.ts` parses an input,
+  changes it in place, and parses it again, through every kind of container,
+  so a cache keyed by the input or a fast path for the last one fails a test
+  where a timing would read it as a win: the benchmarks cycle through a few
+  copies of an input, which defeats only a cache smaller than that.
 
 ## The differential
 

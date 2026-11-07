@@ -64,6 +64,17 @@ Zod Mini, TypeBox, and ArkType.
   `JSON.parse`, as a consumer's do: an object built key by key can be a
   different kind of object to the engine, and cost differently.
 
+Every timed function, a case, a scenario's row, a harvested set's, or a
+survey's, cycles through copies of its input (`inputs.ts`), a copy a call: 16,
+or fewer for a large input so that its copies hold about 64 KiB of JSON text
+together, never under 2, each made from the input's JSON text, or by
+`structuredClone` where `JSON.parse` would not give the value back. A function
+given one object for the whole of its timing reads a cache keyed by it, or a
+fast path for the last input seen, as a win. Cycling defeats a cache of fewer
+entries than the copies and no other, so
+`src/test/schema.fresh_input.test.ts` holds the library to reading every input
+afresh. Every library and both versions of a grade pay the same for the index.
+
 ### Harvested sets
 
 A harvested set is a consumer's own schemas and its own data, copied in as a

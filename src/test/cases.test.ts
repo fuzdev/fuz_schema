@@ -11,6 +11,7 @@ import {
 	type SchemaLib
 } from '../benchmarks/cases.ts';
 import { build_cases } from '../benchmarks/grade_arm.ts';
+import { INPUT_COPIES_MAX } from '../benchmarks/inputs.ts';
 
 describe('the case matrix', () => {
 	// strict, so a group or a case built on its own that throws fails here
@@ -28,8 +29,9 @@ describe('the case matrix', () => {
 			realistic: false,
 			path: 'identity',
 			valid: true,
-			input: 1,
+			inputs: [1],
 			run: () => 1,
+			given: () => 1,
 			ok: () => true
 		});
 		const fake: CaseGroup = () => [
@@ -76,6 +78,25 @@ describe('the case matrix', () => {
 		);
 	});
 
+	test('a case cycles through copies of its input, distinct objects made alike', () => {
+		for (const c of cases) {
+			if (c.path === 'create') {
+				assert.strictEqual(c.inputs.length, 0, c.name);
+				continue;
+			}
+			const count = c.inputs.length;
+			assert(count >= 2 && count <= INPUT_COPIES_MAX && (count & (count - 1)) === 0, c.name);
+			const given = new Set();
+			for (let i = 0; i < count; i++) {
+				c.run();
+				given.add(c.given());
+			}
+			// a lap gives every copy once
+			assert.strictEqual(given.size, typeof c.inputs[0] === 'object' ? count : 1, c.name);
+			for (const input of c.inputs) assert.deepEqual(input, c.inputs[0], c.name);
+		}
+	});
+
 	test('names are unique and are group/shape/outcome', () => {
 		assert.strictEqual(new Set(cases.map((c) => c.name)).size, cases.length);
 		for (const c of cases) {
@@ -95,10 +116,10 @@ describe('the case matrix', () => {
 				// a schema of its own each call
 				assert.notStrictEqual(c.run(), output, c.name);
 			} else if (c.path === 'probe') {
-				assert.strictEqual(output, c.valid ? c.input : undefined, c.name);
+				assert.strictEqual(output, c.valid ? c.given() : undefined, c.name);
 			} else if (c.valid) {
 				// `identity` is the input itself, `copy` anything else
-				assert.strictEqual(output === c.input, c.path === 'identity', c.name);
+				assert.strictEqual(output === c.given(), c.path === 'identity', c.name);
 			} else {
 				assert.strictEqual(c.path, 'issues', c.name);
 				assert.strictEqual(output, undefined, c.name);

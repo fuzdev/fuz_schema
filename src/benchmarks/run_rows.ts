@@ -4,11 +4,13 @@
  *
  * The library's module is imported by name, and no other library's, so the
  * process holds one library. A scenario's two rows share its schema, as a
- * consumer's valid and invalid inputs do.
+ * consumer's valid and invalid inputs do, and each cycles through copies of
+ * its input (`inputs.ts`).
  *
  * @module
  */
 
+import { to_input_copies } from './inputs.ts';
 import { SCENARIOS, type ScenarioModule } from './scenarios.ts';
 import type { LoadTimingRows, TimingRow } from './timing_job.ts';
 
@@ -43,7 +45,16 @@ export const load_rows: LoadTimingRows = async (of: RunRowsOf) => {
 				throw new Error(`${name}: ${of.lib} returned ${!expected}`);
 			}
 			// a match is told from a miss by what is returned, so the answer is read
-			rows.push({ name, run: () => (matches(input) ? input : undefined) });
+			const inputs = to_input_copies(input);
+			const mask = inputs.length - 1;
+			let at = 0;
+			rows.push({
+				name,
+				run: () => {
+					const given = inputs[(at = (at + 1) & mask)];
+					return matches(given) ? given : undefined;
+				}
+			});
 		}
 	}
 	return rows;

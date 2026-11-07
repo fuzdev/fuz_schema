@@ -43,6 +43,7 @@
 import { readFileSync } from 'node:fs';
 
 import type * as schema_lib from '#lib/schema.ts';
+import { to_input_copies } from './inputs.ts';
 import { create_docinfo } from './docinfo/docinfo_fuz_schema.ts';
 import { create_repos_status } from './repos_status/repos_status_fuz_schema.ts';
 import { create_package_json } from './package_json/package_json_fuz_schema.ts';
@@ -111,10 +112,16 @@ export interface Case {
 	path: CasePath;
 	/** Whether the input should match. A case of the `create` path has none, and is `valid`. */
 	valid: boolean;
-	input: unknown;
-	/** Parses `input`, returning the output, or `undefined` when it didn't match. */
+	/**
+	 * The copies of the input `run` cycles through, a copy a call, made by
+	 * `to_input_copies`. A case of the `create` path has none.
+	 */
+	inputs: ReadonlyArray<unknown>;
+	/** Parses the next copy of the input, returning the output, or `undefined` when it didn't match. */
 	run: () => unknown;
-	/** Whether the call succeeded, checked once against `valid` before measuring. */
+	/** The copy the last call of `run` was given. */
+	given: () => unknown;
+	/** Whether a parse of the input succeeds, checked once against `valid` before measuring. */
 	ok: () => boolean;
 }
 
@@ -150,18 +157,22 @@ const to_case = (
 	path: Exclude<CasePath, 'probe'>
 ): Case => {
 	const group = to_group(name);
+	const inputs = to_input_copies(input);
+	const mask = inputs.length - 1;
+	let at = 0;
 	return {
 		name,
 		group,
 		realistic: group === 'real',
 		path,
 		valid: path !== 'issues',
-		input,
+		inputs,
 		run: () => {
-			const result = to_parse(s)(schema, input);
+			const result = to_parse(s)(schema, inputs[(at = (at + 1) & mask)]);
 			return result.ok ? result.value : undefined;
 		},
-		ok: () => to_parse(s)(schema, input).ok
+		given: () => inputs[at],
+		ok: () => to_parse(s)(schema, inputs[0]).ok
 	};
 };
 
@@ -174,15 +185,22 @@ const to_probe_case = (
 	valid: boolean
 ): Case => {
 	const group = to_group(name);
+	const inputs = to_input_copies(input);
+	const mask = inputs.length - 1;
+	let at = 0;
 	return {
 		name,
 		group,
 		realistic: group === 'real',
 		path: 'probe',
 		valid,
-		input,
-		run: () => (s.is(schema, input) ? input : undefined),
-		ok: () => to_parse(s)(schema, input).ok
+		inputs,
+		run: () => {
+			const given = inputs[(at = (at + 1) & mask)];
+			return s.is(schema, given) ? given : undefined;
+		},
+		given: () => inputs[at],
+		ok: () => to_parse(s)(schema, inputs[0]).ok
 	};
 };
 
@@ -660,8 +678,9 @@ export const to_create_case = (
 		realistic: false,
 		path: 'create',
 		valid: true,
-		input: undefined,
+		inputs: [],
 		run: create,
+		given: () => undefined,
 		ok: () => s.is_schema(create())
 	};
 };
@@ -1005,7 +1024,10 @@ const each: CaseGroup = (s) => {
 const object: CaseGroup = (s) => {
 	const O = to_object(s)(to_six(s.string));
 	const input = to_six('v');
-	const all_bad = to_json(to_six(1));
+	// the copies the thrown case cycles through, as `to_case`'s do
+	const all_bad = to_input_copies(to_six(1));
+	const mask = all_bad.length - 1;
+	let at = 0;
 	return [
 		to_case(s, 'object/6_keys/valid', O, to_json(input), 'identity'),
 		// the input's keys in another order than the schema's
@@ -1110,15 +1132,16 @@ const object: CaseGroup = (s) => {
 			realistic: false,
 			path: 'issues',
 			valid: false,
-			input: all_bad,
+			inputs: all_bad,
 			run: () => {
 				try {
-					return to_parse_or_throw(s)(O, all_bad);
+					return to_parse_or_throw(s)(O, all_bad[(at = (at + 1) & mask)]);
 				} catch {
 					return undefined;
 				}
 			},
-			ok: () => to_parse(s)(O, all_bad).ok
+			given: () => all_bad[at],
+			ok: () => to_parse(s)(O, all_bad[0]).ok
 		},
 		to_probe_case(s, 'object/6_keys_is/valid', O, to_json(input), true),
 		to_probe_case(s, 'object/6_keys_last_bad_is/invalid', O, to_json({ ...input, k5: 1 }), false)

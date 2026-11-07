@@ -206,7 +206,7 @@ const to_case_arms = (c: Case, index: number): Array<Arm> => {
 		const ok = own.ok() === own.valid;
 		// and that a case through `parse` that matches takes the path it names,
 		// which is asked of the graded version alone: another may copy where it doesn't
-		const same = own.run() === own.input;
+		const same = own.run() === own.given();
 		const on_path = !own.valid || own.path === 'probe' || same === (own.path === 'identity');
 		if (arm === subject && subject_job.graded && !(ok && on_path)) {
 			throw new Error(`${c.name} expected valid=${c.valid} and path=${c.path}`);
@@ -292,7 +292,7 @@ for (const [index, c] of measured.entries()) {
 		name: c.name,
 		arms: of_case.map((arm) => arm.id),
 		same: Object.fromEntries(
-			of_case.map((arm, i) => [arm.id, runs[i]!() === arm.cases.get(c.name)!.input])
+			of_case.map((arm, i) => [arm.id, runs[i]!() === arm.cases.get(c.name)!.given()])
 		)
 	};
 	const batch = warm(to_rotated(of_case, lead), c.name);

@@ -19,6 +19,7 @@ import type * as v from 'valibot';
 import type { z } from 'zod';
 
 import * as s from '#lib/schema.ts';
+import { to_input_copies } from './inputs.ts';
 import type { LoadTimingRows, TimingRow } from './timing_job.ts';
 
 const to_json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -89,10 +90,20 @@ const to_document = (documents: Array<HarvestedDocument>, name: string): unknown
 	return found.value;
 };
 
-const to_ours = (schema: s.AnySchema, input: unknown) => (): unknown => {
-	const result = s.parse(schema, input);
-	return result.ok ? result.value : undefined;
+// A row's call: `parse` on the next of the input's copies (`inputs.ts`), each
+// call site's own copies and index, so every side pays the same for them.
+const to_cycled = (input: unknown, parse: (value: unknown) => unknown): (() => unknown) => {
+	const inputs = to_input_copies(input);
+	const mask = inputs.length - 1;
+	let at = 0;
+	return () => parse(inputs[(at = (at + 1) & mask)]);
 };
+
+const to_ours = (schema: s.AnySchema, input: unknown): (() => unknown) =>
+	to_cycled(input, (value) => {
+		const result = s.parse(schema, value);
+		return result.ok ? result.value : undefined;
+	});
 
 //
 // The reference libraries
@@ -173,10 +184,10 @@ const to_valibot_row = (
 	name,
 	valid,
 	theirs: [
-		() => {
-			const result = valibot.safeParse(theirs, input);
+		to_cycled(input, (value) => {
+			const result = valibot.safeParse(theirs, value);
 			return result.success ? result.output : undefined;
-		}
+		})
 	],
 	ours: to_ours(ours, input)
 });
@@ -191,14 +202,14 @@ const to_zod_row = (
 	name,
 	valid,
 	theirs: [
-		() => {
-			const result = theirs.safeParse(input);
+		to_cycled(input, (value) => {
+			const result = theirs.safeParse(value);
 			return result.success ? result.data : undefined;
-		},
-		() => {
-			const result = theirs.safeParse(input, ZOD_JITLESS);
+		}),
+		to_cycled(input, (value) => {
+			const result = theirs.safeParse(value, ZOD_JITLESS);
 			return result.success ? result.data : undefined;
-		}
+		})
 	],
 	ours: to_ours(ours, input)
 });
@@ -212,10 +223,10 @@ const to_zod_guard_row = (
 	name,
 	valid: true,
 	theirs: [
-		() => (theirs.safeParse(input).success ? input : undefined),
-		() => (theirs.safeParse(input, ZOD_JITLESS).success ? input : undefined)
+		to_cycled(input, (value) => (theirs.safeParse(value).success ? value : undefined)),
+		to_cycled(input, (value) => (theirs.safeParse(value, ZOD_JITLESS).success ? value : undefined))
 	],
-	ours: () => (s.is(ours, input) ? input : undefined)
+	ours: to_cycled(input, (value) => (s.is(ours, value) ? value : undefined))
 });
 
 //

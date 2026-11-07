@@ -3,13 +3,15 @@
  * `timing_child.ts` is: a row for each input of each shape the library has.
  *
  * The library is imported by name, and no other, so the process holds one
- * library. A shape's rows share its schema, as a consumer's inputs do.
+ * library. A shape's rows share its schema, as a consumer's inputs do, and
+ * each cycles through copies of its input (`inputs.ts`).
  *
  * @module
  */
 
 import { isDeepStrictEqual } from 'node:util';
 
+import { to_input_copies } from './inputs.ts';
 import type { ScenarioRunner } from './scenarios.ts';
 import {
 	SURVEY_LIBS,
@@ -154,7 +156,10 @@ export const load_rows: LoadTimingRows = async (of: SurveyRowsOf) => {
 			}
 			// a match is told from a miss by what is returned, so the answer is read.
 			// A row that matches is one whose runner doesn't throw
-			rows.push({ name, run: () => (matches(value) ? true : undefined) });
+			const inputs = to_input_copies(value);
+			const mask = inputs.length - 1;
+			let at = 0;
+			rows.push({ name, run: () => (matches(inputs[(at = (at + 1) & mask)]) ? true : undefined) });
 		}
 	}
 	return rows;

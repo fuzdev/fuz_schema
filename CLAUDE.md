@@ -99,6 +99,9 @@ dev server.
 - `src/test/schema.shape.test.ts` - every schema the library makes has one
   hidden class and no field written to, asked of the engine in a process of
   its own, `shape_test_child.ts`, over the samples in `shape_test_helpers.ts`
+- `src/test/schema.fresh_input.test.ts` - an input changed in place after a
+  parse gives the next parse's answer, through every kind of container, so a
+  cache keyed by the input fails a test and not only a benchmark
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
@@ -197,6 +200,8 @@ dev server.
     `child.ts` also starts the processes of the grader and of the timing.
   - `args.ts` - what the scripts parse their args through: the library
     imported under `?args`, an instance no measurement uses
+  - `inputs.ts` - the copies of an input every timed function cycles
+    through, a copy a call
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
   - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
     class of a change, and the backstop against Valibot
@@ -411,8 +416,11 @@ priced while core stays at +0, and speed by default, see `docs/grading.md`.
 
 Easy to break in the grader without a test noticing: an instance shares no
 function with another, every instance is called the same number of times in
-the same way, both versions load from the same directory, and a timing
-process is started under no flags of its own. For `apart`: a
+the same way, each cycling through copies of its input (`inputs.ts`) as
+every other does, both versions load from the same directory, and a timing
+process is started under no flags of its own and no `NODE_OPTIONS`. A bytes
+process holds two instances of each version, and a case allocates more only
+where both of the graded version's say so. For `apart`: a
 process holds one version and no module of the other, its program runs
 through an instance that is not timed, and a process does the same whichever
 version it holds. `docs/benchmarks.md`
