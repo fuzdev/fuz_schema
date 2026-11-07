@@ -9,13 +9,21 @@
  * generation large enough that a collection falls in few
  * (`ALLOCATION_NODE_FLAGS`), one that a collection fell in is left to the
  * median, and a function is sampled until two medians in a row agree.
+ *
+ * A young generation that is full is not collected at once while the engine
+ * compiles on another thread, and until it is, the used heap moves up and
+ * down by tens of kilobytes from one sample to the next whatever the calls
+ * allocate. So a median starts with much of the young generation free:
+ * `ensure_young_generation_free` allocates until it is collected when it
+ * isn't, which is the collection the samples would have run into, taken
+ * before them and not forced.
  * Optimized code can remove allocations entirely, which is the real cost and
  * is reported as such.
  *
  * @module
  */
 
-import { getHeapStatistics } from 'node:v8';
+import { getHeapSpaceStatistics, getHeapStatistics } from 'node:v8';
 import {
 	benchmark_lock_acquire,
 	benchmark_lock_format_refusal
@@ -108,6 +116,62 @@ const SETTLE_TRIES = 20;
 const SETTLED_WITHIN = 0.005;
 // the share of a median's samples a collection may fall in before the measurement throws
 const MAX_COLLECTED_SHARE = 1 / 3;
+// what of the young generation is free when a median starts, twice what its
+// samples aim to allocate
+const MEDIAN_YOUNG_FREE = 2 * SAMPLES * SAMPLE_BYTES;
+// what `ensure_young_generation_free` allocates at a time, an array of this
+// length, small enough to be made in the young generation
+const YOUNG_FILLER_LENGTH = 1024;
+// how many times the young generation's size it allocates before it throws
+const YOUNG_FILLS_MAX = 4;
+
+/**
+ * What the young generation holds, used and free together, and what of it is
+ * free, from V8's `new_space`. Its `space_size` is the memory reserved for it,
+ * which is not what it holds.
+ */
+export const get_young_generation = (): { size: number; free: number } => {
+	for (const space of getHeapSpaceStatistics()) {
+		if (space.space_name === 'new_space') {
+			return {
+				size: space.space_used_size + space.space_available_size,
+				free: space.space_available_size
+			};
+		}
+	}
+	throw new Error('V8 reports no `new_space`');
+};
+
+// what the filler arrays are written to, so that no compiler drops them
+const young_filler: Array<unknown> = [null];
+
+/**
+ * Allocates until at least `bytes` of the young generation are free, which
+ * means until it is collected when they are not. The collection is the one
+ * the allocation brings on, not a forced one, and of the young generation
+ * alone, see the module comment.
+ *
+ * @param bytes - what of the young generation must be free
+ * @throws Error when the young generation is not that free after allocating several times its size
+ */
+export const ensure_young_generation_free = (bytes: number): void => {
+	let young = get_young_generation();
+	const max = YOUNG_FILLS_MAX * Math.max(young.size, bytes);
+	let allocated = 0;
+	while (young.free < bytes) {
+		if (allocated > max) {
+			throw new Error(
+				`the young generation has ${young.free} bytes free of ${young.size} after ` +
+					`${allocated} were allocated, not the ${bytes} a median needs: it is smaller than ` +
+					`\`node ${ALLOCATION_NODE_FLAGS}\` makes it, or what survives fills it`
+			);
+		}
+		for (let i = 0; i < 64; i++) young_filler[0] = new Array(YOUNG_FILLER_LENGTH);
+		allocated += 64 * 8 * YOUNG_FILLER_LENGTH;
+		young = get_young_generation();
+	}
+	young_filler[0] = null;
+};
 
 export const median = (values: Array<number>): number => {
 	const sorted = values.toSorted((a, b) => a - b);
@@ -126,12 +190,14 @@ const sample_heap = (fn: () => unknown, calls: number): number => {
 const noop = (): void => {};
 
 const measure_bytes_median = (fn: () => unknown, calls: number): number => {
+	ensure_young_generation_free(MEDIAN_YOUNG_FREE);
 	const raw = Array.from({ length: SAMPLES }, () => sample_heap(fn, calls));
 	const collected = raw.filter((delta) => delta < 0).length;
 	if (collected > raw.length * MAX_COLLECTED_SHARE) {
 		throw new Error(
-			`a collection fell in ${collected} of ${raw.length} samples: the young generation is ` +
-				`smaller than \`node ${ALLOCATION_NODE_FLAGS}\` makes it, or a call allocates too large a share of it`
+			`the used heap fell in ${collected} of ${raw.length} samples of ${calls} calls, which ` +
+				`started with ${MEDIAN_YOUNG_FREE} bytes of the young generation free: a call ` +
+				'allocates too large a share of it'
 		);
 	}
 	// what a sample grows the heap by with nothing in it, the statistics objects,

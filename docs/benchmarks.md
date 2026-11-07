@@ -248,9 +248,15 @@ whoever runs it.
   optimized code, and the calls sampled after it allocate more than the code
   a consumer runs. A sample is a small share of a large young generation, or
   one call where a call is more than that, so a collection falls in few and
-  the median is of the rest. The function is run between medians until two in
-  a row agree within half a percent. The measurement throws when a collection
-  fell in too many samples or the bytes never settle. The sampling loop is
+  the median is of the rest. A young generation that is full is not collected
+  at once while the engine compiles on another thread, and until it is, the
+  used heap moves up and down from one sample to the next whatever the calls
+  allocate, so a median starts with twice what its samples aim to allocate
+  free: when less is, it allocates until the young generation is collected,
+  the collection the samples would have run into, not a forced one. The
+  function is run between medians until two in a row agree within half a
+  percent. The measurement throws when the used heap fell in too many samples
+  or the bytes never settle. The sampling loop is
   the engine's code as well: given one function it inlines it, and an object
   the function only returns is then never allocated. So a process measures
   two functions and throws them away before the first it keeps. The scripts

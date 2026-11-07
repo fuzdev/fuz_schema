@@ -183,6 +183,8 @@ dev server.
 - `src/test/grade_stats.test.ts` - the grader's statistics over made-up
   samples: floors, marks, and the A/A, and how often two copies fail rule 6
   under noise of the shape a grade reads
+- `src/test/measure.test.ts` - a median of the byte measurement starts with
+  the young generation free, by allocating until it is collected
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
   - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
     module per library
