@@ -25,8 +25,7 @@ else result.issues; // [{kind, expected, received, path, message}]
 
 **It's an experiment, and "use Valibot" is a valid outcome.**
 The question is whether the gap is worth owning a validation library for.
-So far, on this repo's benchmarks, it is about 0.8x Valibot's size gzipped with every scenario bundled together
-and less on each alone,
+So far, on this repo's benchmarks, it is smaller than Valibot gzipped on every scenario,
 faster on every scenario measured, and allocates nothing for a valid value it returns as it came
 beyond a fixed cost per parse.
 Those numbers come from one shared workstation and a small set of scenarios,
@@ -51,7 +50,8 @@ In order:
 Flexibility comes after all four.
 Where a feature not everyone needs would cost every user, it's a separate export
 that the core never reaches: custom messages, message formatting, metadata, serializing,
-and the Standard Schema adapter are all like this, and all bundle to nothing unused.
+JSON Schema output, the readers of a schema, and the Standard Schema adapter are all like this,
+and all bundle to nothing unused.
 
 ## What's different from Valibot
 
@@ -93,17 +93,17 @@ and the input is never mutated.
   It names its options as `received` names values, each once:
   a `union` among them by its own options, a `pipe` by its first schema,
   a `nullable` by its schema's and then `null`, an `optional` or a default by its schema's,
-  a `literal` or a `one_of` by its values, and any object schema as `object`:
+  a `literal` or a `one_of` by its values, an object schema, a `record`, or a `variant` as `object`,
+  and any other schema by its kind:
   `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])`
   reads `expected string | null | "a" | "b" | number`.
 - A missing object key is the `undefined` it reads as, except to an `unknown`, a `literal(undefined)`,
   and a `one_of` with `undefined` among its values, which need their key
   wherever their entry reaches them, as in Valibot and Zod.
-  They also need the key of the one other entry that accepts `undefined`,
-  a `check` with no schema before it,
-  and here that accepts a missing key. See [`docs/design.md`](docs/design.md#missing-keys).
-- `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities:
-  a JSON text carries one as a number too large for a double, which `JSON.parse` reads `1e999` as.
+  Valibot and Zod also need the key of a bare `check` entry (their `custom`),
+  which here accepts a missing key. See [`docs/design.md`](docs/design.md#missing-keys).
+- `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities.
+  An infinity reaches a parse from JSON too: `JSON.parse('1e999')` is `Infinity`.
   `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
 - `pipe(string, uuid)` takes a UUID of RFC 9562 with a version from 1 to 8, as Zod's does,
   and the max UUID in any case, as Valibot's does.
@@ -129,7 +129,8 @@ and the input is never mutated.
 ## API
 
 Everything here is a named export of `schema.ts`, used through a namespace import.
-[Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, the [serializer](#serializing), and the [readers of a schema](#introspection) are modules of their own.
+[Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, the [serializer](#serializing),
+[JSON Schema](#json-schema) output, and the [readers of a schema](#introspection) are modules of their own.
 
 | | |
 |---|---|
@@ -166,8 +167,9 @@ A key the input lacks reads as `undefined`, so it fails unless its entry accepts
 It needs it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
 so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either.
 A `union` with an option that lets the key be missing makes the key optional.
-Where the first option that matches a missing key fills it in, as `s.with_default` does, the options before it
-take the missing key as `undefined`, an `unknown` among them, and the first that matches is the union's.
+Where the first option that matches a missing key fills it in, as `s.with_default` does,
+the options before it are tried again on `undefined`, without the object and the key,
+so an `unknown` among them matches, and the first that matches is the union's.
 Write `s.optional(s.unknown)` for a key that may be missing.
 `s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
 
@@ -184,7 +186,7 @@ and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schem
 
 A recursive `union` whose options walk a node's children before an entry tells them apart
 takes time exponential in the input's depth, as each option walks them again:
-with two such options the time doubles with each level, and under 500 bytes of JSON took over a second.
+with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#running).
 On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
 Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
 and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
@@ -192,12 +194,12 @@ and an object the input holds twice gets one output object in both places.
 
 A schema runs its children by calling them, so input nested past the engine's stack makes
 `parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a `RangeError`:
-on Node's default stack a plain recursive object schema can throw from about 1400 levels
-before the engine has optimized it, and `JSON.parse` reads far deeper.
+on Node's default stack a plain recursive object schema can throw from about 1300 levels,
+see [`docs/design.md`](docs/design.md#running), and `JSON.parse` reads far deeper.
 On untrusted JSON that can nest without bound, catch it or bound the depth first.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
-`parse_or_throw` returns the value or throws a `SchemaError` listing the first ten issues and how many more issues there are.
+`parse_or_throw` returns the value or throws a `SchemaError` listing the first ten of its issues and how many more it holds.
 `is` answers yes or no without building issues.
 
 ```ts
@@ -288,7 +290,9 @@ Two things in an issue do come from the input:
   so treat them as untrusted text
 - a `message` function that writes the value into its text has put it there
 
-`format_issue` writes an issue as `path: expected X, received Y`, the keys joined with `.`.
+`format_issue` writes an issue as `path: expected X, received Y`, the keys joined with `.`,
+with no `path: ` for an issue at the root, and with the issue's `message` in place of the
+`expected X, received Y` where it has one.
 A key that isn't only word characters is quoted as JSON, so a key can't pass for two keys,
 for the rest of the line, or, with a newline in it, for a line of its own:
 `a.b` is two keys and `"a.b"` is one.
@@ -342,7 +346,7 @@ It is a `check` to every reader, and a `pipe` stops at the first step that fails
 so of several `check_at`s, one per field, one reports its issue at a time.
 
 A key an `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` needs and the input lacks is a `missing_key`, which reads
-`a: expected a required key, received undefined`.
+`a: expected a required key, received undefined`, except under a `union`, whose own issue it is.
 A missing key whose schema refuses `undefined` has that schema's issue.
 
 Its limit: it compares types, not values.
@@ -553,7 +557,7 @@ so the keys it keeps are read a second time. Dropping keys also has to enumerate
 
 ## Measurements
 
-Every claim above comes from a benchmark in `src/benchmarks/`,
+The measurements below come from the benchmarks in `src/benchmarks/`,
 run against Valibot, Zod, Zod Mini, TypeBox, and ArkType.
 
 ```bash
@@ -568,7 +572,7 @@ npm run benchmark:survey      # many small shapes against Valibot and Zod, by wh
 
 What they've shown so far, read with the caveats below:
 
-- **Size:** about 0.8x Valibot gzipped with the scenarios bundled together, and far below the rest.
+- **Size:** about 0.84x Valibot gzipped with the scenarios bundled together, and far below the rest.
   The gap is about 0.6 kB with every scenario together and about 0.4 kB on a lone string schema,
   so most of it is fixed cost, which is small in absolute terms.
 - **Warm speed:** faster than Valibot on every scenario,
@@ -580,7 +584,8 @@ What they've shown so far, read with the caveats below:
   the same for a hundred records as for one. One that drops keys allocates its copy as well.
 - **Cold start:** under a millisecond to import, build a schema, and parse once, bundled.
   The libraries that compile validators pay here, by one to two orders of magnitude.
-- **Retained memory and type-checking cost:** the lowest or near it of the six.
+- **Retained memory:** the lowest of the six.
+- **Type-checking cost:** in instantiations, below Valibot, Zod, and ArkType, and above Zod Mini and TypeBox.
 
 Caveats:
 
@@ -613,9 +618,10 @@ and checks the result against the rules a change is accepted by:
 - speed is judged on the realistic cases, valid input first
 - a time difference is read against its A/A, and inside it is noise
 - bytes that tree-shake away unless imported only have to pay for themselves
-- bytes every user pays need a return: roughly 10% on a realistic case per 50 gzipped bytes
+- bytes every user pays need a return: roughly 10% on the realistic cases per 50 gzipped bytes
 - a fix of correctness or conformance has a price instead: 4 gzipped bytes every user pays, 50 on any one export or scenario
-- every scenario of one schema stays under 0.75 of Valibot's gzipped size for the same scenario
+- every scenario of one schema stays at or under 0.75 of Valibot's gzipped size for the same scenario,
+  or at a size the user pinned it at
 - a fix of security (an input that should fail and doesn't, denial of service on data-shaped input, input leaking into issues) comes first, at the correctness price, and past that 0.75 the user rules
 - the valid path is never slowed to speed up the invalid one
 - anything that generates code at runtime is opt-in, because of CSP
@@ -628,7 +634,7 @@ and [`docs/benchmarks.md`](docs/benchmarks.md) the method behind every number.
 
 ```bash
 npm i
-gro check  # typecheck, test, format check, lint
+gro check  # typecheck, test, gen check, format check, lint
 gro test
 ```
 
@@ -649,9 +655,12 @@ npm run benchmark:wasm
 ## Docs
 
 - [`docs/design.md`](docs/design.md) — the internals and why: the one shape,
-  probe mode, copy-on-write and what it gives up, issues and messages, metadata
+  probe mode, copy-on-write and what it gives up, issues and messages, metadata,
+  JSON Schema
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
-  how far to trust each number, and what isn't measured
+  how far to trust each number, and how to extend them
+- [`docs/testing.md`](docs/testing.md) — what holds the library to more than its own examples:
+  conformance, the differential, the JSON fixtures, and mutants
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
 - [`docs/declined.md`](docs/declined.md) — trades that were measured and not taken, each with
   what it gave, what it cost, and what would reopen it
@@ -671,9 +680,7 @@ The process-per-sample cold-start and retained-heap methods follow
 [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench),
 which generalizes [Twinkleplop](https://github.com/pngwn/twinkleplop)'s cold-start harness.
 
-fuz_schema was written with [Claude Code](https://claude.com/claude-code) using Claude Opus 5.5:
-the library, tests, benchmarks, and docs.
-Valibot's source was not consulted while writing it; the comparison libraries are used only
+Valibot's source was not consulted while writing fuz_schema; the comparison libraries are used only
 through their public APIs, as benchmark baselines.
 
 ## Contributing

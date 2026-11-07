@@ -32,7 +32,7 @@ npm run benchmark:harvest     # each harvested set, in valibot or zod, against t
 npm run benchmark:survey      # many small shapes against valibot and zod, by what a parse does
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 npm run differential          # generated schemas and inputs against zod and valibot, memory-capped where systemd-run can
-npm run mutate                # break the library on purpose and check the tests fail, see docs/benchmarks.md
+npm run mutate                # break the library on purpose and check the tests fail, see docs/testing.md
 npm run fixtures:deep         # generated JSON fixtures, many seeds, through the Rust fixture tests, see docs/rust.md
 gro task src/test/fixtures/json/update.task.ts # regenerate the JSON fixtures' expected.json
 gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes.json
@@ -40,16 +40,20 @@ gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes
 
 `npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`,
 `--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
+`npm run benchmark:allocations` and `npm run benchmark:heap` take `--scenario`
+and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
+`--samples`, and `--discard`, and `npm run benchmark:wasm` takes `--rounds`
+and `--round-ms`, see `docs/benchmarks.md`.
 `npm run grade` takes `--against`, `--against-file`, `--against-libs-file`,
 `--new-file`, `--filter`, `--runs`, `--alone`, `--no-alone`, `--apart`,
-`--no-apart`, `--slice`, `--no-bundle`, `--no-process`, `--samples`, and
-`--class`, see `docs/grading.md`. `npm run benchmark:harvest` takes `--set`,
+`--no-apart`, `--slice`, `--bundle`, `--no-bundle`, `--process`,
+`--no-process`, `--samples`, and `--class`, see `docs/grading.md`. `npm run benchmark:harvest` takes `--set`,
 `--passes`, and `--duration`. `npm run benchmark:survey` takes `--filter`,
 `--lib`, `--passes`, `--duration`, and `--alone`. `npm run differential` takes
 `--seed` (repeatable), `--count`, `--focus`, `--limit`, `--neither`, and
 `--json-schema`, and
 `npm run mutate` takes `--filter`, `--workers`, `--timeout`, `--deep`, and
-`--keep`, see `docs/benchmarks.md`. `npm run fixtures:deep` takes `--seed`
+`--keep`, see `docs/testing.md`. `npm run fixtures:deep` takes `--seed`
 (repeatable), `--count`, `--cases`, and `--dir`, see `docs/rust.md`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
@@ -82,7 +86,7 @@ dev server.
 - `src/test/schema.missing_keys.test.ts` - what a missing key does in every
   schema and flavor
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
-- `src/test/schema.pipe.test.ts` - `pipe` and actions, and `message`
+- `src/test/schema.pipe.test.ts` - `pipe` and actions, `check_at`, and `message`
 - `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
   issues, `format_issue`, and `get_issue_value`
 - `src/test/schema_test_helpers.ts` - `issues_of`, which the `schema.*`
@@ -236,6 +240,8 @@ dev server.
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
+- `docs/testing.md` - what holds the library to more than its own examples:
+  conformance, the differential, the JSON fixtures, and mutants
 - `docs/declined.md` - trades that were built, measured, and not taken: what
   each gave and cost, why it was declined, and what would reopen it
 - `docs/formats.md` - the grammars of the format tests, what decides one
@@ -253,10 +259,12 @@ Things that are easy to break without a test noticing:
 - **Every schema is exactly `{kind, def, run}`, in that key order.** A fourth
   field or another order gives it a second hidden class. Kind-specific data
   goes in `def`.
-- **Nothing writes to a schema after it is made.** A write to one schema's
-  `run` makes that field mutable for every schema, and slows parses the
-  engine had folded. `src/test/schema.shape.test.ts` asks the engine for both:
-  one map, and no field written to. A new export gets a sample in
+- **Nothing writes to a schema after it is made**, a `lazy` included: it
+  keeps the schema it got in a closure. A write to one schema's `run` makes
+  that field mutable for every schema, and slows parses the engine had
+  folded, which `npm run grade` shows only in its `apart` regime.
+  `src/test/schema.shape.test.ts` asks the engine for both: one map, and no
+  field written to. A new export gets a sample in
   `shape_test_helpers.ts`, which the test fails without.
 - **Every issue is exactly `{kind, expected, received, path, message}`, built
   by `fail`.** It never holds the value that failed, or anything else of the
@@ -271,7 +279,7 @@ Things that are easy to break without a test noticing:
 - **Outside probe mode `ctx.issues.length` is `Math.min(ctx.fails, 100)`.**
   Past the hundredth failure `fail` counts and builds no issue, a cap that is
   fixed and silent, and `MAX_ISSUES` in the Rust crate. `issues` is
-  `undefined` until the first failure, when `fails` is `0`. Containers use
+  `undefined` while `fails` is `0`. Containers use
   the count as an index into `issues`, so one taken past the cap reaches no
   issue. Report failure only through `fail`, and restore `fails` after
   probing.
@@ -334,10 +342,6 @@ Things that are easy to break without a test noticing:
   `meta`) an overload for a refinement before that, or a refinement under it
   is not one. Only an action whose `run` returns the value it is given is a
   `SchemaRefinement`.
-- **Nothing writes to a schema after it is made**, a `lazy` included: it
-  keeps the schema it got in a closure. One write to a `run` makes the field
-  mutable for every schema, which slows parses the engine had folded and
-  which `npm run grade` shows only in its `apart` regime.
 - **`loose_object` has its own loop, and so does `object_with_rest` for the
   keys it doesn't name.** Folding `loose_object`'s into the shared one put its
   bytes in every bundle that uses any object schema.
@@ -359,8 +363,10 @@ Things that are easy to break without a test noticing:
   in the matrix.
 - **The library has no dependencies.** The comparison libraries and the
   bundler are devDependencies of the benchmarks only.
-- **A generated process module holds nothing of the harness.** The bare
-  baseline is that module with no library, and is what gets subtracted.
+- **A generated process module holds nothing of the harness** but what
+  cancels between the readings a figure is taken from, as an export's
+  `PROGRAM` does in `heap.ts`. The bare baseline is that module with no
+  library, and is what gets subtracted.
 
 ## Working on the library
 
@@ -406,7 +412,7 @@ priced while core stays at +0, and speed by default, see `docs/grading.md`.
 Easy to break in the grader without a test noticing: an instance shares no
 function with another, every instance is called the same number of times in
 the same way, both versions load from the same directory, and a timing
-process runs under no flags. For `apart`: a
+process is started under no flags of its own. For `apart`: a
 process holds one version and no module of the other, its program runs
 through an instance that is not timed, and a process does the same whichever
 version it holds. `docs/benchmarks.md`
@@ -449,6 +455,9 @@ that `fuz_schema_wasm` compiles for `wasm32-unknown-unknown`, the target
 whether a JSON text matches a schema, and the issues of one that doesn't.
 `docs/rust.md` describes it.
 
+- `lib.rs` - the crate root: `Schema::from_json`, `matches_json`,
+  `matches_json_bytes`, `matches_json_exact`, `validate_json`, and
+  `validate_json_bytes`, and what the crate exports
 - `schema.rs`, `builder.rs` - the model, an arena of nodes, and
   `SchemaBuilder`, whose `build` refuses what isn't portable
 - `interchange.rs` - `Schema::from_json`, the loader of the form

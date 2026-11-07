@@ -5,14 +5,22 @@ built again without a new reason, and so the reason can be checked when one
 turns up. What was taken instead is in [design.md](design.md).
 
 An entry says what it was, what it **gave**, what it **cost**, **why** it was
-declined, and what **reopens** it. The figures were measured on this repo's
-benchmarks: time by [`npm run grade`](grading.md) or in processes of their
-own, bytes as gzipped bundles where they say "gzip" and as heap allocated
-where they don't. "Core" is the `strict_nested` scenario's
-bundle, the bytes every consumer of an object schema pays, and the rules are
-[grading.md](grading.md#rules)'s. A ratio is the trade's time over the
-library's without it, as the library was when it was measured, so under 1 is
-faster. A part with nothing to say is left out.
+declined, what **reopens** it, and the release it was **measured** before: the
+library as it was then, which later changes can have moved. The figures were
+measured on this repo's benchmarks, on Node 24.14.1: time by [`npm run
+grade`](grading.md) or in processes of their own, bytes as gzipped bundles where
+they say "gzip" and as heap allocated where they don't. "Core" is the
+`strict_nested` scenario's bundle, the bytes every consumer of an object schema
+pays, which with `parse` alone is core in [grading.md](grading.md#bytes), where
+every class but `speed` prices both, and the rules are
+[grading.md](grading.md#rules)'s. A ratio is the trade's time over the library's
+without it, as the library was when it was measured, so under 1 is faster. A
+part with nothing to say is left out.
+
+Some entries were declined under an earlier rule 5: a ceiling on the bundle
+of every scenario together, as a share of Valibot's, raised from two thirds
+through 0.70 and 0.72 to 0.75, and since replaced by a price per class and a
+backstop per scenario. Such an entry names the ceiling it was over.
 
 Add an entry when a trade is declined, under the part of the library it
 changes, with its numbers. Entries are kept current, not in order of when
@@ -33,6 +41,7 @@ the parse runs.
   3 to 4 s there.
 - **Why**: denial of service on data-shaped input.
 - **Reopens**: nothing that keeps the copy per level.
+- **Measured**: before v0.5.0.
 
 ### A path as an array of exact size
 
@@ -42,12 +51,14 @@ the parse runs.
 - **Cost**: about 5% slower at one key, and +32 gzip on the core.
 - **Why**: slower at one key, and core bytes.
 - **Reopens**: nothing: it copies the path at every level, as the spread above does.
+- **Measured**: before v0.2.0.
 
 ### `toSpliced` and `concat`
 
 - **Gave**: nothing. Each is a call to a builtin, as slow as the `unshift`
   the spread replaced, or slower.
 - **Reopens**: nothing: each copies the path at every level, as the spread above does.
+- **Measured**: before v0.2.0.
 
 ### Every path reversed, whatever its length
 
@@ -60,6 +71,7 @@ length first, since a path of one key or none is its own reverse.
   and the `fixed` group's invalid cases 1.14x alone.
 - **Why**: slower on the invalid path for a few bytes.
 - **Reopens**: nothing: the length check is cheaper than the call it skips.
+- **Measured**: before v0.5.1.
 
 ## Object loops
 
@@ -74,6 +86,7 @@ make.
   none does.
 - **Reopens**: bundles of real schema sets that carry both loops and come out
   smaller with it.
+- **Measured**: before v0.2.0.
 
 ### The loop driven by `for...in`
 
@@ -88,6 +101,7 @@ The object loop run from a `for...in` over the input.
   consumer can see or prevent.
 - **Reopens**: an enumeration whose speed doesn't depend on what the loop has
   seen.
+- **Measured**: before v0.2.0.
 
 ### A copy cloned from the schema's entries
 
@@ -95,6 +109,7 @@ The object loop run from a `for...in` over the input.
 - **Cost**: the realistic copy path 1.45x, and +66 gzip on the core.
 - **Why**: real data rarely has every key, and the rest of the time it loses.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### A required-key check for every entry
 
@@ -103,13 +118,14 @@ The loops looking for each entry's key, so that every schema that accepts
 
 - **Gave**: conformance on a missing key for every kind.
 - **Cost**: +75 gzip on the core, which put all the scenarios together at
-  0.68 of Valibot's, over the ceiling rule 5 had then, and a list of flat
-  objects 1.10x.
+  0.68 of Valibot's, over the ceiling of two thirds rule 5 had then, and a
+  list of flat objects 1.10x.
 - **Why**: every object pays for a check few entries need. The opt-in form
   was taken: an entry is handed the object and its key, and the schemas that
   need a key look.
   See [design.md](design.md#missing-keys).
 - **Reopens**: a check that costs an object with no such entry nothing.
+- **Measured**: before v0.2.0.
 
 ### The unknown-key check by a `Set` of the keys
 
@@ -126,6 +142,92 @@ entries.
 - **Why**: rule 4 asks +5% on the realistic valid path for the core bytes,
   and the matrix showed no speedup past its A/A.
 - **Reopens**: real data whose keys are mostly out of the schema's order.
+- **Measured**: before v0.2.0.
+
+### The unknown-key check by counting the keys
+
+`object` counting the input's enumerable keys and comparing the count with
+the entries present, in place of asking `Object.hasOwn` of the keys.
+
+- **Gave**: no `Object.hasOwn` in the unknown-key check, which was about 30%
+  of a flat strict object's time.
+- **Cost**: an input with a non-enumerable own key that an entry names lets
+  one unknown key through.
+- **Why**: a hole in strictness is worse than the time.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### A one-key lookahead for the position check
+
+A key in the schema's order is known by its position, and after an absent
+optional key every later key is looked up. The lookahead tries the next
+position too.
+
+- **Gave**: the case it is for, an absent optional key early in a wide
+  object, back to the cost before the position check, which had made it 5 to
+  10% slower.
+- **Cost**: +7 gzip on the core, and reversed and rotated inputs slower.
+- **Why**: core bytes, for one shape, paid for by others.
+- **Reopens**: a form that costs input out of the schema's order nothing.
+  `object/21_keys_first_optional_absent` watches the case.
+- **Measured**: before v0.2.0.
+
+### A copy that leaves out a key whose value is `undefined`
+
+The shared loop's copy leaving out a key whose output is `undefined`, in
+place of asking `key in value` for each such entry, the check that keeps an
+`undefined` key in and a missing one out. A wide copy asks it once for each
+absent optional key, each a lookup that walks to `Object.prototype`.
+
+- **Gave**: the realistic valid path 3% faster in the matrix, and its copy
+  path 10%, a docinfo module 0.84x, nothing slower, allocation the same, core
+  -8 gzip and all the scenarios together -5.
+- **Cost**: a key the input has as `undefined`, own or inherited, and a
+  `transform` to `undefined` no longer stay in a copy, where Zod and Valibot
+  keep them by the same check. An input that comes back still has such a key,
+  so whether one survives would depend on whether a copy was made.
+- **Why**: a difference from both where they agree.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### The same, with the key kept by a rebuild
+
+The copy leaving out a key that is `undefined` while it is built, then, when
+it left one out, enumerating the input and rebuilding in the schema's order
+if the input has such a key.
+
+- **Gave**: the behavior kept, and a docinfo module 0.89x.
+- **Cost**: +53 gzip on the core for the same 3% on the realistic valid path.
+  It misses a non-enumerable key that is `undefined`, and adds a `for...in`
+  that reads values.
+- **Why**: rule 4 asks about 10% for those bytes.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### `Object.hasOwn` in place of `in` in a copy
+
+- **Gave**: a docinfo module 0.94x, not confirmed.
+- **Cost**: an inherited key that is `undefined` is dropped from a copy,
+  which a test holds.
+- **Why**: a change of behavior, for a speedup not shown.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### `object` copying by a spread of the input
+
+`object` copying by spreading the input, in place of copying the schema's
+keys.
+
+- **Gave**: the realistic copy path 9% faster, core -52 gzip, and an object
+  of 21 keys, all present, 0.50 to 0.65x with a fifth of the bytes.
+- **Cost**: small copies 1.13 to 1.38x, a docinfo module allocating 4 to 6%
+  more, and all the scenarios together +63, over the ceiling of two thirds
+  rule 5 had then, as `object` and `strip_object` stop sharing a loop. And
+  it changes the output: the key order, the keys inherited, and an own symbol
+  key copied into the output of an `object`.
+- **Why**: slower on small copies, and a change of behavior.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ## Dropping keys
 
@@ -147,6 +249,7 @@ as the entries run, with no key looked for.
 - **Why**: the copy every input pays, where most have nothing to drop and
   came back as themselves.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### A key to drop looked for first
 
@@ -168,6 +271,7 @@ after them.
   inputs with keys to drop.
 - **Reopens**: a way to look for a key to drop that costs a probe and a
   failure nothing.
+- **Measured**: before v0.2.0.
 
 Three forms of it were built beside it, and kept its costs on valid input: a
 `union` whose last option matches 1.07x to 1.24x and an entry that changes
@@ -202,22 +306,40 @@ after the enumeration, as `run_entries` runs them.
   alone, and shares its flaw: one input in dictionary mode, through the
   enumeration the schemas share, slows every later parse, and the win of
   running in the input's order does not survive it. Unpoisoned, it was over
-  the ceiling rule 5 had then, and is slower on some valid shapes.
+  the ceiling of 0.75 rule 5 had then, and is slower on some valid shapes.
 - **Reopens**: a form whose win on input in the schema's order survives a
   dictionary-mode input in the same program.
+- **Measured**: before v0.2.0.
 
-Re-made on the current schema, in two variants, the entries run eagerly and a
+Re-made later, before v0.2.0, in two variants, the entries run eagerly and a
 flag passed to the loop. Unpoisoned, the eager form is +44 gzip on all the
-scenarios together, over the ceiling rule 5 had then, and slower than the
-current loop on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
+scenarios together, over the ceiling of 0.75 rule 5 had then, and slower than
+the current loop on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
 `strip_object` (1.17x alone); the flag form is +100. Poisoned by one input in
 dictionary mode, a parse of a `strip_object` of 200 keys, through the shared
 `for...in`, both were slower than the current loop poisoned the same way on
-every strip case but one whose first optional key is absent: a geometric mean
-of 2.2x on the valid cases in the matrix and 2.8x to 3.1x alone and apart, and
-up to 12x on a probe that fails. The eager form's realistic valid path was 26%
+every strip case but one whose first optional key is absent: a geometric mean of
+2.2x on the valid cases in the matrix and 2.8x to 3.1x alone and apart, and up
+to 12x on a probe that fails. The eager form's realistic valid path was 26%
 slower in the matrix and 36% alone. The current loop itself, on an input with
 nothing to drop, moved from 111 to 121 ns.
+
+## `record`
+
+### Enumerating by `Object.keys`
+
+`record` reading `Object.keys` of the input, in place of `for...in` and
+`Object.hasOwn`.
+
+- **Gave**: on an input in dictionary mode, which `JSON.parse` gives from 128
+  keys, 23 µs against 35 at 1000 keys. The engine collects such an input's
+  keys either way, 16 KB at 1000 keys.
+- **Cost**: on an object in fast mode `for...in` allocates nothing, and
+  `Object.keys` allocates its list, 848 bytes at 100 keys, for about the
+  same time.
+- **Why**: which wins is the input's size and kind.
+- **Reopens**: real data of records past 128 keys.
+- **Measured**: before v0.2.0.
 
 ## Object operations
 
@@ -256,6 +378,7 @@ a base of three entries, 741 gzip:
   known extend bare objects with concrete overrides.
 - **Reopens**: a consumer that needs one, as `partial` over many wide
   schemas, or generic extenders throughout. Each is added on demand.
+- **Measured**: before v0.5.1.
 
 ## `variant`
 
@@ -276,6 +399,7 @@ read and clear.
 - **Reopens**: a way to skip the entry that the object schemas don't read
   outside a `variant`, and that keeps a skipped discriminator's missing key
   refused.
+- **Measured**: before v0.2.0.
 
 ## `lazy`
 
@@ -287,10 +411,12 @@ it.
 - **Gave**: arrays of a lazy 0.65x, and a real manifest schema 0.91x.
 - **Cost**: one write to a schema's `run` makes that field mutable for every
   schema, as they share a hidden class. A root array of strings went from
-  6.28 ns to 9.46 ns once any lazy had been used. A grade doesn't see it:
-  its two versions share a process, so both pay.
+  6.28 ns to 9.46 ns once any lazy had been used. A grade sees it only
+  apart: in `matrix` and `alone` its two versions share a process, so both
+  pay.
 - **Why**: every schema in a program pays for one lazy in it.
 - **Reopens**: nothing known. `src/test/schema.shape.test.ts` fails on it.
+- **Measured**: before v0.2.0.
 
 ### That `lazy` with a null prototype
 
@@ -300,6 +426,7 @@ class and the shared field stays constant.
 - **Cost**: a second hidden class at every `schema.run` load: the realistic
   valid path 15% slower in the matrix.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### A `lazy` of four parameters, or of a rest parameter
 
@@ -311,6 +438,7 @@ In place of reading the length of `arguments` on each call.
 - **Why**: a lazy is called with two arguments everywhere but as an object's
   entry.
 - **Reopens**: an engine that adapts the arguments for less.
+- **Measured**: before v0.2.0.
 
 ## A recursive `union`
 
@@ -343,6 +471,7 @@ its input, and starts only when an object comes back.
   a union. That is `memo_union`, whose bytes land only where it is used, and
   whose memo is kept by the union and not by the `lazy`. In the core, as
   here, it stays declined.
+- **Measured**: before v0.2.0.
 
 ### That memo in place of `memo_union`
 
@@ -380,6 +509,7 @@ machine:
   `variant`.
 - **Reopens**: an engine or a design that removes the cost on each outermost
   entry, or a consumer with recursive hostile input.
+- **Measured**: before v0.5.0.
 
 ### The `literal` entries first when probing
 
@@ -389,6 +519,7 @@ union's option is ruled out before it walks.
 - **Cost**: core +71 gzip, and `object` alone +67.
 - **Why**: core bytes for a shape that a consumer can write in order.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### `variant`'s dispatch inside `union`
 
@@ -400,6 +531,7 @@ share, and dispatches on it as `variant` does.
 - **Why**: bytes on every union, for what `variant` already does as an
   export of its own.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ## Passing the object and the key on
 
@@ -412,10 +544,12 @@ made.
 - **Gave**: fewer bytes, 42 gzip on `union`, and 30 on the `pipe` scenario.
 - **Cost**: slower on valid input, as it hands two arguments to a `run` that
   doesn't take them. For `pipe`, a hundred numbers each through three
-  actions 1.11x in the matrix, and each through a `check` 1.15x.
+  actions 1.11x in the matrix, and each through a `check` 1.15x. For
+  `nullable`, `each/nullable_null/valid` 1.52x in the matrix.
 - **Why**: time on the valid path, for bytes that only the bundles with the
   kind pay.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### One body for `union`'s two closures
 
@@ -449,6 +583,7 @@ key, and the retry over `options.slice(0, i)`.
   stays over the backstop, on a pin in the grader.
 - **Reopens**: a form that keeps the two closures and finds the bytes
   elsewhere.
+- **Measured**: before v0.5.1.
 
 ### A `pipe` that looks for the key wherever it has the object
 
@@ -468,6 +603,7 @@ an `optional` as after the `optional`.
 - **Why**: a difference from both where they agree, for bytes that only the
   bundles with a `pipe` pay.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### A `pipe` that looks for the key after any first schema
 
@@ -479,11 +615,13 @@ through, and not only after the ones the pipe has the object for.
 
 - **Gave**: one rule for every first schema.
 - **Cost**: +97 gzip on the `pipe` scenario and +85 on all the scenarios
-  together, which at 0.7502 of Valibot's was over the ceiling rule 5 had then.
+  together, which at 0.7502 of Valibot's was over the ceiling of 0.75 rule 5
+  had then.
 - **Why**: bytes in every bundle with a `pipe`, for first schemas on which
   Zod and Valibot disagree with each other.
 - **Reopens**: a way to tell that costs a pipe that starts with a `string`
   nothing.
+- **Measured**: before v0.2.0.
 
 ### A `pipe` that starts with an `optional` with a loop of its own
 
@@ -496,14 +634,16 @@ closure of two parameters, which it shares them with.
   the shared closure. That is the path that calling the shared closure costs
   in the matrix, 1.14x and 1.16x against a pipe that hands its `optional` the
   object and the key and loops itself.
-- **Cost**: +8 gzip on all the scenarios together, which at 2126 was over the
-  ceiling rule 5 had then, and +11 on the `pipe` scenario. Without the key,
-  alone, 1.16x, allocating 48 bytes a parse where the shared closure allocates
-  none.
-- **Why**: over the ceiling rule 5 had then. The present-key path keeps the
-  cost of the call.
-- **Reopens**: open under rule 5's price per class: its +11 on the `pipe`
-  scenario, weighed by rule 3 against its speed, and its 1.16x without the key.
+- **Cost**: +8 gzip on all the scenarios together, which at 2126 was over
+  the ceiling of 0.75 rule 5 had then, and +11 on the `pipe` scenario.
+  Without the key, alone, 1.16x, allocating 48 bytes a parse where the shared
+  closure allocates none.
+- **Why**: over the ceiling of 0.75 rule 5 had then. The present-key path
+  keeps the cost of the call.
+- **Reopens**: now, as rule 5 prices it by class: its +11 on the `pipe`
+  scenario, weighed by rule 3 against its speed, and its 1.16x without the
+  key. Not yet graded again.
+- **Measured**: before v0.2.0.
 
 ### The steps of a `pipe` in one loop from its first schema
 
@@ -519,6 +659,7 @@ once it has looked for the key.
   schema apart reads 0.985x and 0.970x there.
 - **Why**: a program of one such pipe pays half again on valid input.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### `literal` with four parameters
 
@@ -531,6 +672,7 @@ needs its key, as `unknown` does.
   four parameters, and so for `one_of`. That is +45 gzip on all the scenarios
   together and none on the core. See [design.md](design.md#missing-keys).
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### One function for whether a schema takes the key
 
@@ -547,6 +689,7 @@ at each.
   [grading.md](grading.md#bytes).
 - **Reopens**: more places that ask, enough that the function is smaller
   alone too.
+- **Measured**: before v0.2.0.
 
 ### A shared wrapper for the schemas that need a key
 
@@ -555,11 +698,12 @@ that looks for the key first, for `literal` and `one_of`, in place of a
 second closure in each.
 
 - **Cost**: +65 gzip on all the scenarios together where the two closures are
-  +45, which at 0.725 of Valibot's was over the ceiling rule 5 had then, and 6
-  gzip more over the whole library. A call more a parse for a schema that
+  +45, which at 0.725 of Valibot's was over the ceiling of 0.72 rule 5 had then,
+  and 6 gzip more over the whole library. A call more a parse for a schema that
   needs its key.
 - **Why**: more bytes, where it was built for fewer.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ### A missing key as the `literal`'s own issue
 
@@ -572,6 +716,7 @@ A `literal(undefined)` without its key failing as a `literal` that expected
   a second kind for a missing key.
 - **Why**: the issue has to say what is wrong.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
 
 ## Writing a missing key
 
@@ -600,6 +745,7 @@ write.
   shape few write.
 - **Reopens**: a form at most +4 on the core, with nothing on the path of an
   ordinary entry.
+- **Measured**: before v0.2.0.
 
 ### The same by a loop that `pipe` swaps in
 
@@ -616,6 +762,7 @@ with a `with_default` replaces with one that writes the key.
 - **Why**: time on every object parse of a program that writes the shape
   once, and bytes over the opt-in price, for a shape few write.
 - **Reopens**: as above.
+- **Measured**: before v0.2.0.
 
 ## `number`
 
@@ -642,6 +789,7 @@ it refused the infinities.
   `value * 0 === 0`, and `value - value === 0` were slower.
 - **Reopens**: a form that refuses the infinities and is faster on fractional
   doubles without slowing whole numbers.
+- **Measured**: before v0.2.0.
 
 ## The parse context
 
@@ -655,6 +803,31 @@ A module-level context reset by each parse, in place of a new object.
   escapes.
 - **Why**: the valid path got slower, where a program has one schema.
 - **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+## Types
+
+### A tighter fold of a `pipe`'s types
+
+Each step's input folded as its output is, so
+`pipe(one_of([1, 2]), integer, transform((v) => v))` outputs `1 | 2`.
+
+- **Cost**: +108 type instantiations, and
+  `pipe(brand(string, 'B'), min_length(1), string)` refused.
+- **Why**: checker cost on every pipe, and a pipe refused that runs.
+- **Reopens**: nothing known.
+- **Measured**: before v0.5.0.
+
+### A brand marker of one name
+
+`Branded` marking its type with the name as the value of one key, in place of
+an object whose keys are the names.
+
+- **Cost**: a brand of a branded type intersects two values of the one key,
+  so it was `never`.
+- **Why**: marks must compose.
+- **Reopens**: nothing known.
+- **Measured**: before v0.5.6.
 
 ## Metadata
 
@@ -669,6 +842,7 @@ registry, in place of reading the registry by its key in `schema.ts`.
 - **Why**: larger where `message` is used without `meta`, and the key is a
   contract between versions already, which a test holds `schema.ts` to.
 - **Reopens**: a module both can import that adds no export.
+- **Measured**: before v0.5.1.
 
 ## Standard Schema
 
@@ -682,6 +856,7 @@ Every schema a Standard Schema natively, in place of the
 - **Why**: bytes every consumer pays, for those who want the interface. The
   adapter is opt-in.
 - **Reopens**: a form that costs a bundle not using it nothing.
+- **Measured**: before v0.2.0.
 
 ## Degenerate schemas
 
@@ -713,8 +888,9 @@ it when `Array.isArray` throws, so a primitive's `parse` returns its issue.
   revoked `Proxy` can't come from parsed data, only from code in the
   process. Zod's primitives throw the same `TypeError` from their issues on
   a revoked object or array, except `literal` and `enum`, its containers
-  throw from the parse, and Valibot throws on every schema but `unknown` and
-  `any`. And it would fix the primitives, and the containers not at all for
-  a revoked object or array.
+  throw from the parse, and Valibot throws on every schema but `unknown`,
+  `any`, and an `object` with no entries. And it would fix the primitives,
+  and the containers not at all for a revoked object or array.
 - **Reopens**: a form that costs the core nothing, or a value of that kind
   that data-shaped input can produce.
+- **Measured**: before v0.5.0.

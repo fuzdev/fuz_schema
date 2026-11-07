@@ -79,21 +79,22 @@ When a change targets a path no case isolates, add the case first.
 The exit code is 0 whatever the verdicts, and nonzero only when the grade
 could not run.
 
-The grader parses its own args with the working tree's `schema.ts` and
-`meta.ts`, `--new-file` included: one that doesn't load stops it at start,
-and one that parses wrong misreads its args.
+The grader builds the schemas of its own args with the working tree's
+`schema.ts` and `meta.ts`, whatever `--new-file` names: a working tree whose
+`schema.ts` doesn't load stops it at start, and one that parses wrong
+misreads its args.
 
 ## How it measures
 
 **Instances.** A timing process of `matrix` or `alone` loads each version
-three times over, as module instances with their own functions. Two instances
-of one file don't read the same. On a case here and there one settles several percent from
-another, sometimes more than a tenth, and stays there for the life of the
-process, and the next process draws again. So one instance of each version is
-one draw of each, and their difference can be all draw. What the instances of
-one version differ by is the noise, measured in the same process at the same
-moment as the difference between the versions. A case's time is beside a floor
-read from it, and a summary's beside an A/A.
+`INSTANCES` times over (`grade.ts`), as module instances with their own
+functions. Two instances of one file don't read the same. On a case here and
+there one settles several percent from another, sometimes more than a tenth,
+and stays there for the life of the process, and the next process draws again.
+So one instance of each version is one draw of each, and their difference can
+be all draw. What the instances of one version differ by is the noise, measured
+in the same process at the same moment as the difference between the versions.
+A case's time is beside a floor read from it, and a summary's beside an A/A.
 
 **Regimes.** A case is timed in up to three programs, and all are real:
 
@@ -104,20 +105,21 @@ read from it, and a summary's beside an A/A.
   that have seen only the `create` group's schemas, not the matrix's, see
   [benchmarks.md](benchmarks.md).
 - **alone**: one process per case, which builds the groups of cases up to the
-  case's own and runs only the case, so the engine specializes the library to that schema and can
-  remove the context and the result object altogether. It answers what a
+  case's own, putting last the group that parses a document as it builds, and
+  runs only the case, so the engine specializes the library to that schema and
+  can remove the context and the result object altogether. It answers what a
   change costs a program with one schema. The realistic cases run alone by
-  default. `--alone <part of a name>` picks others, `--alone` with no value
-  is every case, and `--no-alone` is none.
+  default. `--alone <part of a name>` picks others, `--alone` with no value is
+  every case, and `--no-alone` is none.
 - **apart**: a process holds one version, uses every kind of schema, and
   times one case built as `alone` builds it. It answers what a change costs
   through the state a process shares, [below](#apart). A few cases run apart
   by default. `--apart <part of a name>` picks others, `--apart` with no
   value is every case, and `--no-apart` is none.
 
-A change can win one and lose the other. The bytes differ too, and both are
-right: a case reads less alone than in the matrix by the objects the engine
-removed.
+A change can win one regime and lose another. The bytes of `matrix` and `alone`
+differ too, and both are right: a case reads less alone than in the matrix by
+the objects the engine removed.
 
 `--filter` picks the cases that are measured and reported. The matrix process
 still runs every case first, so a filtered case is timed in the same code as
@@ -136,7 +138,10 @@ left out of the lists.
 **Within a process** the instances of a case are warmed in turns, for a set
 time and a floor of calls, then timed a round at a time, every instance once a
 round, in orders that put each in every position equally often. A round is
-timed first and thrown away. No collection is forced.
+timed first and thrown away. No collection is forced. An instance's time in a
+round is the median batch of its slice, so a collection that falls in one
+batch is mostly in no figure, where `npm run benchmark` keeps the whole of a
+timing on purpose, see [benchmarks.md](benchmarks.md#timing-across-libraries).
 
 ### Apart
 
@@ -150,10 +155,11 @@ its own `run` on first use does this.
 `src/test/schema.shape.test.ts` fails on that cause, and this regime is for
 any other.
 
-- **A process holds one version**, and each version has three processes a
-  run for each case, started in turns. A process is a draw, as an instance
-  is, so the processes of one version are read as the instances are
-  elsewhere: [below](#how-a-difference-is-decided).
+- **A process holds one version**, and each version has `APART_PROCESSES`
+  processes a run for each case, as many as it has instances elsewhere, started
+  in turns. A process is a draw, as an instance is, so the processes of one
+  version are read as the instances are elsewhere:
+  [below](#how-a-difference-is-decided).
 - **The process uses the library before it times.** A change like that
   `lazy`'s costs nothing until a `lazy` has run, so a process that only ran
   its case would show it on a case with a `lazy` and on no other. So it first
@@ -168,13 +174,12 @@ any other.
   in both versions alike, with nothing left of what the `lazy` cost. In its
   own instance it changes what the process shares and leaves the timed
   functions having run one case.
-- **The default cases** are mostly ones the engine folds whole, each of
-  another construction: an array of a hundred strings and one of ten numbers,
-  the same through `optional`, and a flat object. A folded case is where
-  shared state shows, as little else is left of the parse. The `lazy` above
-  nearly doubled the array of strings and left the flat object where it was. The last is a
-  recursive schema, which is not folded: it is the case that runs a `lazy`
-  itself, so a change to `lazy` is read on what it is for.
+- **The default cases**, `APART_CASES` in `grade.ts`, are mostly ones the
+  engine folds whole, each of another construction. A folded case is where
+  shared state shows, as little else is left of the parse: the `lazy` above
+  nearly doubled an array of strings and left a flat object where it was. One
+  is a recursive schema, which is not folded: it is the case that runs a
+  `lazy` itself, so a change to `lazy` is read on what it is for.
 - **Both versions load from one directory.** `grade` copies each version's
   file into `.gro/grade/` and loads it from there, in every regime. The same
   bytes read apart by where their file sat: from a file outside any directory
@@ -190,8 +195,7 @@ functions, to the case's call sites, or to the library's module-level state:
 the program runs in another instance, which has its own of both. `matrix`
 times that, each instance in functions of its own that have run every case.
 
-It adds about ten seconds a case to a default run, of three runs, and the
-estimate printed before the start says what of the timing is apart.
+The estimate printed before the start says what of the timing is apart.
 
 ## How a difference is decided
 
@@ -227,19 +231,19 @@ confirmed, and one that moved by about its floor mostly is not. A case whose
 instances scatter widely has a wide floor, and a small change to it is not
 found by any number of runs worth waiting for.
 
-**A summary line**, a mean over cases, is where a small change shows. Its
-figure is the geometric mean of the cases' ratios, taken a run at a time and
-then at the median of the runs. Its A/A is from the same cases in the same
-processes: each instance's mean over them, the standard deviation of those
-among the instances of one version, pooled over the versions and the runs,
-times 3.3 over the root of the runs. Apart it is of the processes of one
-version in the same runs. That is near three standard errors of
-the figure, and two copies of one file read past it on about one line in a
-hundred. A figure inside its A/A is not a difference, and a shift inside it
-cannot be told from none. The grade prints the A/A it measured, and more runs
-narrow it. At the default run count a shift of a couple of percent on the
-realistic cases can pass unseen, so a series of small accepted changes should
-now and then be graded against an older ref (`--against <ref>`).
+**A summary line**, a mean over cases, is where a small change shows. Its figure
+is the geometric mean of the cases' ratios, taken a run at a time and then at
+the median of the runs. Its A/A is from the same cases in the same processes:
+each instance's mean over them, the standard deviation of those among the
+instances of one version, pooled over the versions and the runs, times 3.3 over
+the root of the runs. Apart it is of the processes of one version in the same
+runs. That is near three standard errors of the figure, and two copies of one
+file read past it on about one line in a hundred at three runs. A figure inside
+its A/A is not a difference, and a shift inside it cannot be told from none. The
+grade prints the A/A it measured, and more runs narrow it. At the default run
+count a shift of a couple of percent on the realistic cases can pass unseen, so
+a series of small accepted changes should now and then be graded against an
+older ref (`--against <ref>`).
 
 ## Rules
 
@@ -283,7 +287,7 @@ more in total, or starts slower. The rest is judgment.
   own A/A. A speedup inside its A/A has not been shown.
 - **Rules 4 and 5**, for correctness, security, and feature, read the bytes
   alone, [below](#bytes). A figure over its price reads `ASK`: the user rules
-  on it, and it is not a failure.
+  on it, and it is not a failure. Core that grows under `feature` reads `FAIL`.
 - **Rule 6** reads parses, and no case of the `create` path. It fails when
   the valid path of the realistic cases reads slower
   past its A/A, whole or as the identity or the copy path, in `matrix` or
@@ -334,8 +338,9 @@ baseline has is priced as correctness.
 Each figure is of one class too:
 
 - **Core** is what every consumer pays: the `strict_nested` scenario's
-  bundle, the one built from `object`, the default object schema, which is
-  the figure rule 4 reads, and `parse` alone.
+  bundle, the one built from `object`, the default object schema, and `parse`
+  alone. Under `speed` rule 4 reads the first, and `parse` is in the export
+  table and not priced. Under the other classes both are priced.
 - **Opt-in** is what a consumer pays who uses it: every other scenario's
   bundle, and each other export's `last in` and its `alone`.
 
@@ -357,7 +362,7 @@ own; where they disagree, this is how its verdict is read.
 
 | change        | core                                   | opt-in                                                       |
 | ------------- | -------------------------------------- | ------------------------------------------------------------ |
-| `speed`       | the return of rule 4                   | listed where it grew, to be weighed by rule 3                |
+| `speed`       | rule 4's return, on `strict_nested`    | listed where it grew, to be weighed by rule 3                |
 | `correctness` | up to +4 with no return, past it `ASK` | up to +50 on any one figure, past it `ASK`                   |
 | `security`    | as `correctness`                       | as `correctness`                                             |
 | `feature`     | +0, past it `FAIL`                     | as `correctness` on what the baseline has, the rest reported |
@@ -383,15 +388,16 @@ schemas, where the backstop is a bound on what one schema costs. Its delta
 is still an opt-in figure.
 
 A scenario the user has ruled may stand over the backstop is pinned, in
-`BACKSTOP_PINS` of `src/benchmarks/grade_bytes.ts`, at its gzipped size
-then and with the reason. A pinned scenario over the backstop fails only
-when it grows past its pin, and the verdict line names it with its pin, as
-the bundle table marks it `p`. A pin whose scenario is back at or under the
-backstop, or that names no scenario, fails as stale under every class, as a
-declared difference of the conformance tables that is gone does: remove it.
-A pin above its scenario's size fails as stale too: lower it to the size, so
-a pin never leaves room for its scenario to grow back unseen.
-`src/test/grade_bytes.test.ts` holds each pin to `sizes.json`, at its size.
+`BACKSTOP_PINS` of `src/benchmarks/grade_bytes.ts`, at its gzipped size then
+and with the reason. A pinned scenario over the backstop fails, or under
+`security` reads `ASK`, only when it grows past its pin, and the verdict line
+names it with its pin, as the bundle table marks it `p`. A pin whose scenario
+is back at or under the backstop, or that names no scenario, fails as stale
+under every class, as a declared difference of the conformance tables that is
+gone does: remove it. A pin above its scenario's size fails as stale too: lower
+it to the size, so a pin never leaves room for its scenario to grow back
+unseen. `src/test/grade_bytes.test.ts` holds each pin to `sizes.json`, at its
+size.
 
 ### Retained heap
 

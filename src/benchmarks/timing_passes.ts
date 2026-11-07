@@ -102,8 +102,9 @@ const run_unit = async (
 };
 
 /**
- * The order a pass starts its units' processes in: one later each second
- * pass, and backward on the passes between, so no unit always follows another.
+ * The order a pass starts its units' processes in: moved on by one every
+ * second pass, and run backward on the passes between, so no unit always
+ * follows another.
  *
  * @returns indexes into the units
  */

@@ -65,8 +65,9 @@ out where that is `undefined`:
 {"kind":"pipe","def":[{"kind":"string"},{"kind":"uuid"},{"kind":"to_lower_case"}]}
 ```
 
-A `lazy` holds a function in TypeScript, so here its `def` is a name, and the
-document is an envelope that says what the names stand for:
+Every document is an envelope, `{"schema": node}`, with `defs` beside
+`schema` when there is a `lazy`: a `lazy` holds a function in TypeScript, so
+here its `def` is a name, and `defs` says what the names stand for:
 
 ```json
 {
@@ -90,12 +91,13 @@ document is an envelope that says what the names stand for:
 `Schema::from_json` loads a document, and `to_schema_json` in
 `src/lib/schema_json.ts` writes one from a TypeScript schema. The writer is a
 module of its own, which the core never reaches. It throws on everything the
-loader refuses, and on what the crate's parser does not read of a document: a string that is not well-formed Unicode, and nesting
-past `MAX_DEPTH`. So a schema that serializes loads. It also refuses a schema
-more than `MAX_DEPTH` schemas deep counting through every `lazy`, which the
-crate would load. It reads a schema by its `kind` and `def` and never its
-`run`, so a hand-written schema with one of the library's kinds and a `run` of
-its own is written as that kind and behaves as the library's in the crate.
+loader refuses, and on what the crate's parser does not read of a document:
+a string that is not well-formed Unicode, and nesting past `MAX_DEPTH`. So a
+schema that serializes loads. It also refuses a schema more than `MAX_DEPTH`
+schemas deep counting through every `lazy`, which the crate would load. It
+reads a schema by its `kind` and `def` and never its `run`, so a hand-written
+schema with one of the library's kinds and a `run` of its own is written as
+that kind and behaves as the library's in the crate.
 
 ## Two evaluators
 
@@ -144,6 +146,22 @@ its own is written as that kind and behaves as the library's in the crate.
   loads as one, so which unions keep their verdicts is this rule's, whichever
   of the two the library was given.
 
+`MAX_NESTING` bounds how far the evaluators recurse per level of the input,
+and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
+input under the most nesting on a small stack. Neither bounds the work. The
+unions that keep their verdicts bound it by the size of the input times its
+depth, and a factor of the schema: without them a `union` with two options
+that reach a cycle tries each at every level, which takes time exponential
+in the depth of the input, as it does in the TypeScript library under a
+`union` and not a `memo_union`, see [design.md](design.md#running). The
+depth is from an option that reads into another cycle, which walks what is
+below the value again wherever the union is asked of it, as in
+`L = lazy(() => union([object({x: array(L), t: literal('a')}), M]))` with
+`M` another recursive schema. The factor of the schema grows with the
+unions that reach no cycle and whose options read the same value: those
+keep nothing, and k levels of them can try 2^k ways, with or without a
+`lazy`.
+
 ## Issues
 
 `validate_json` and `validate_json_bytes` return the issues of a text, and none
@@ -177,8 +195,9 @@ the same order. A `SchemaIssue` owns what it holds:
   as the library does, each part once by its text: a `union` among them by
   its own options, at any depth, a `pipe` by its first schema, a `nullable`
   by its schema's and then `null`, an `optional` or a `with_default` by its
-  schema's, a `literal` or a `one_of` by its values, and any object schema as
-  `object`.
+  schema's, a `literal` or a `one_of` by its values, an object schema, a
+  `record`, or a `variant` as `object`, and any other schema by its kind, a
+  `lazy` as `lazy`.
 - **A `variant` reports at its discriminator** when no option has the value
   there, expecting the options' values, and otherwise leaves the report to
   the option selected.
@@ -193,8 +212,9 @@ the same order. A `SchemaIssue` owns what it holds:
 - **There is no streaming form.** Issues need every failure up to the cap,
   so nothing is skipped, and the walk goes on past it, which costs time
   linear in the input.
-- `unknown`, the wrappers, `lazy`, and `pipe` never fail a value, and have no
-  `SchemaIssueKind` of their name.
+- `unknown`, the wrappers, `lazy`, `pipe`, and `to_lower_case` have no
+  `SchemaIssueKind` of their name: `unknown` fails only a missing key, as a
+  `MissingKey`, and the rest never fail of themselves.
 
 ## Declared divergences
 
@@ -235,7 +255,7 @@ it in the interchange form. Nothing is guessed at.
 | Refused | `SchemaBuildErrorKind` |
 |---|---|
 | `regex`, `check`, `transform` | `UnsupportedKind` |
-| `with_default_fn`, `object_with_rest` until the crate carries it, and a kind that isn't the library's | `UnknownKind` |
+| `with_default_fn`, `object_with_rest`, which the crate doesn't carry yet, and a kind that isn't the library's | `UnknownKind` |
 | an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
 | a literal or bound that isn't finite | `NonFiniteNumber` |
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
@@ -249,6 +269,7 @@ it in the interchange form. Nothing is guessed at.
 | more than `MAX_NESTING` wrappers, lazies, unions, and pipes around one value | `TooNested` |
 | a document that isn't JSON, isn't shaped as the form says, or writes a key twice in one object | `Json`, `Malformed`, `UnexpectedKey`, `RepeatedKey` |
 | any schema, in a build with serde_json's `arbitrary_precision` on | `ArbitraryPrecision` |
+| a schema of more nodes than a `NodeId` can name | `TooManyNodes` |
 
 A pipe's first schema fixes the type when it is `string`, `number`, `array`,
 one of the number tests, or a pipe of one of those. The number tests
@@ -265,22 +286,6 @@ the value: the evaluators give the actions after it the string lowercase, by
 where the two read one version of Unicode's tables, as the pinned toolchain
 and Node do: `contract.json` holds Node's, and a test fails where
 `char::UNICODE_VERSION` is another. It never fails, and has no issue kind.
-
-`MAX_NESTING` bounds how far the evaluators recurse per level of the input,
-and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
-input under the most nesting on a small stack. Neither bounds the work. The
-unions that keep their verdicts, [above](#two-evaluators), bound it by the
-size of the input times its depth, and a factor of the schema: without them a `union` with two options
-that reach a cycle tries each at every level, which takes time exponential
-in the depth of the input, as it does in the TypeScript library under a
-`union` and not a `memo_union`, see [design.md](design.md#running). The depth is from an option that reads into
-another cycle, which walks what is below the value again wherever the union
-is asked of it, as in
-`L = lazy(() => union([object({x: array(L), t: literal('a')}), M]))` with
-`M` another recursive schema. The factor of the schema grows with the
-unions that reach no cycle and whose options read the same value: those
-keep nothing, and k levels of them can try 2^k ways, with or without a
-`lazy`.
 
 ## Fixtures
 
@@ -305,9 +310,11 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   of `validate_json` against the oracle's, each with its `Display`, wherever
   the tree evaluator gives the oracle's verdict. It also fails on an unknown
   flag, a flag no case declares, a kind no fixture schema has, a kind of
-  issue or received type no case reports, a path with no key it quotes, too
-  few groups or cases, and a constant that differs from `contract.json`. It reads the generated files with serde_json's tree and
-  not the crate's.
+  issue or received type no case reports, an issue at the root, and one whose
+  path has a key, an index, or a key its `Display` quotes, that no case
+  reports, too few groups or
+  cases, and a constant that differs from `contract.json`. It reads the
+  generated files with serde_json's tree and not the crate's.
 - The `generated_*` groups are written by `json_generate.ts` from fixed
   seeds: each a random schema the crate carries, drawn from every kind
   `to_schema_json` writes, and texts aimed at it, near and wrong, with edge
@@ -322,7 +329,7 @@ keep nothing, and k levels of them can try 2^k ways, with or without a
   parser, so of the flags only `malformed_tail` is declared. A union has
   the recursion in one option at most: two that reach the same `lazy` make
   the library's time exponential in a text's depth. The format tests are
-  in the pool, rarely drawn by the committed seeds: `npm run fixtures:deep`
+  in the pool, and the committed seeds draw none: `npm run fixtures:deep`
   draws them, and the `format_*` groups hold their edges.
 - `npm run fixtures:deep` runs more of them, outside `gro check` and the repo:
   it writes each group's `expected.json` under `--dir`
@@ -381,8 +388,9 @@ error is `false`.
   of one, which is `lone_surrogate` above.
 - **`wasm-bindgen` is pinned to an exact version**, because the CLI that
   wasm-pack runs must be the version in `Cargo.lock`.
-- **There is no `unsafe`**, and no dependency but wasm-bindgen. The crate
-  compiles natively, so the three cargo commands cover it.
+- **There is no `unsafe`**, and no dependency beyond the Rust side but
+  wasm-bindgen. The crate compiles natively, so `cargo test`, `cargo clippy`,
+  and `cargo fmt` over the workspace cover it.
 - **Its behavior is asserted from JavaScript**, by the pre-checks of
   `npm run benchmark:wasm`: every fixture through every entry point against
   the streaming column of the table above, the lone surrogate, and an

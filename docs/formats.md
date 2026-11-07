@@ -38,8 +38,7 @@ where `<date>` is a date of the Gregorian calendar with a four-digit year:
 
 A date and time of RFC 3339 in UTC: ASCII digits, an uppercase `T` and `Z`,
 seconds always, a fraction of 1 to 9 digits or none, no offset, no leap
-second. Zod's default `iso.datetime()`, with the fraction capped, as of zod
-4.6; earlier zod 4 also took a time without seconds.
+second. Zod's default `iso.datetime()`, with the fraction capped.
 
 ## Not formats
 
@@ -55,9 +54,10 @@ fuz_util's `Url` is a `check` of `URL.canParse`.
 Where zod and valibot disagree, a grammar is chosen by these, in order:
 
 1. **Consumer safety.** Never accept what JS `Date`, Temporal, Postgres, or
-   the Rust parsers refuse or misread. `Date` reads `2024-02-30` as March 1,
-   so an impossible date is refused. Precision a consumer drops, as `Date`
-   keeps milliseconds, is not a misreading.
+   the Rust date crates (`time`, chrono, jiff) misread, or refuse by their
+   grammar. `Date` reads `2024-02-30` as March 1, so an impossible date is
+   refused. Precision a consumer drops, as `Date` keeps milliseconds, is not
+   a misreading, and a store's range is not a grammar, below.
 2. **The standard** as the outer bound: RFC 9562 for a UUID, RFC 3339 for a
    date and time. Nothing outside it is accepted.
 3. **Parity** with the twins that validate the same values, the Rust crate
@@ -83,7 +83,7 @@ valibot both accept it.
 - **The differential**, `npm run differential`, draws strings and near
   misses of them, and holds each disagreement of zod and valibot to the
   `SIDES` rows that recognize it, see
-  [benchmarks.md](benchmarks.md#the-differential).
+  [testing.md](testing.md#the-differential).
 - **The JSON fixtures**, `src/test/fixtures/json/format_*`, hold the edges as
   texts, so the Rust crate's matchers, byte scans in `format.rs`, give the
   library's verdict and issues on each.

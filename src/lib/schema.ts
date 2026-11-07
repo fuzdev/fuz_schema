@@ -321,7 +321,8 @@ export interface SchemaAction<
  * An action whose `run` returns the value it is given or fails, so a `pipe`
  * types the step's output as the output of the step before it:
  * `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` alone is a
- * `number`. Every action the library makes but `transform` is typed as one.
+ * `number`. Every action the library makes but `transform` and
+ * `to_lower_case`, which change the value, is typed as one.
  * `message` and `meta` give one back for one. `brand` and `flavor` give a
  * `SchemaAction` back, so a pipe types a step under them by its own output,
  * branded or flavored.

@@ -7,7 +7,7 @@ Zod Mini, TypeBox, and ArkType.
 |---|---|
 | `npm run benchmark` | parse time per scenario, valid and invalid, a library to a process |
 | `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped, then this library's export by export |
-| `npm run benchmark:allocations` | heap bytes per parse and per schema built |
+| `npm run benchmark:allocations` | heap bytes per parse and per schema built, and the time to build one, every library in one process |
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
 | `npm run benchmark:heap` | memory still held after building and parsing |
 | `npm run benchmark:types` | cost to the TypeScript checker |
@@ -15,8 +15,9 @@ Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
 | `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot and Zod, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
-| `npm run differential` | not a measurement: generated cases against Zod and Valibot ([below](#the-differential)) |
-| `npm run mutate` | not a measurement: the tests against mutants ([below](#mutants)) |
+
+`npm run differential` and `npm run mutate` are tests and not measurements, see
+[testing.md](testing.md).
 
 ## Scenarios and cases
 
@@ -91,7 +92,8 @@ then parse time and allocation over rows that are documents of the set. They
 are the comparisons of a consumer's whole schema set; the scenarios are one
 small schema each. `--set` names the sets to run, and may be given more than
 once. `--passes` and `--duration` are as for `npm run benchmark`,
-[below](#timing-across-libraries), which this is timed like.
+[below](#timing-across-libraries), which this is timed like, but `--duration`
+defaults to 1000.
 
 - **A side of a set is a process.** A side is a column: the consumer's
   library, this library, and each of Zod's two modes. Each is measured in a
@@ -205,10 +207,12 @@ whoever runs it.
 ## Method
 
 - **Parse time**: a process for each library, in passes. See
-  [below](#timing-across-libraries). `grade` times its own way, after that.
+  [below](#timing-across-libraries). `grade` times its own way, see
+  [Grading](#grading).
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped. See
-  [below](#the-whole-library) for this library's own table.
+  [below](#the-whole-library) for this library's own table. `--raw` prints the
+  minified bytes in place of the gzipped.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
   with no collection forced. A forced collection makes the engine throw away
   optimized code, and the calls sampled after it allocate more than the code
@@ -221,19 +225,27 @@ whoever runs it.
   the function only returns is then never allocated. So a process measures
   two functions and throws them away before the first it keeps. The scripts
   need the young generation's node flags, which their npm scripts pass, and
-  refuse to run without them. `grade` and `benchmark:harvest` are the other
+  refuse to run without them. `benchmark:allocations` takes `--scenario` and
+  `--lib`, each repeatable, every one by default. It also times building a
+  schema, every library in one process and under those flags, which no other
+  timing runs under. `grade` and `benchmark:harvest` are the other
   way round: they refuse them, and give them to the processes that measure
   their bytes, and such a process that fails is started once more, announced
   on stderr, which a timing never is.
-- **Cold start**: one fresh Node process per sample, in three stages that
-  build on each other, against a bare process. Bundled and unbundled entries.
-  Compile cache off, rounds interleaved, medians.
+- **Cold start**: one fresh Node process per sample, in three stages that build
+  on each other, against a bare process. Bundled and unbundled entries. Compile
+  cache off, rounds interleaved, medians. `--lib` and `--scenario` pick what
+  runs, every library and `object_flat` and `type_json` by default, `--form` is
+  `bundled`, `unbundled`, or both, `--samples` the rounds kept, 15 by default,
+  and `--discard` the rounds thrown away first, 2 by default.
 - **Retained heap**: a fresh process builds the schema, parses once, and
   collects until the heap settles. Read for one schema and for many. See
-  [below](#retained-heap).
+  [below](#retained-heap). `--lib` and `--scenario` pick what runs, every
+  library and `object_flat` and `type_json` by default.
 - **Type-checking**: `tsc` over one library's scenario module.
 - **wasm**: rows timed a round at a time, each round starting a row later,
-  medians. See [below](#wasm).
+  medians. See [below](#wasm). `--rounds` is the rounds, 15 by default, and
+  `--round-ms` what one timing of a row aims to take, 20 by default.
 - **Args**: the scripts parse their command-line args with this library,
   through instances no measurement uses: the schemas are built with
   `schema.ts` and `meta.ts` imported under `?args` by `args.ts`, and
@@ -260,9 +272,8 @@ them. So
   shares. The table is sorted by it. It is the figure to read before factoring:
   a helper two exports share moves bytes out of both, and into `alone` for
   each.
-- **A module beside `schema.ts`** (`meta.ts`, `standard_schema.ts`,
-  `schema_json.ts`, `introspect.ts`) is one row: what all its exports add to
-  the library.
+- **A module beside `schema.ts`**, each of `LIBRARY_MODULES` in
+  `bundle_size.ts`, is one row: what all its exports add to the library.
 
 Gzip is not additive, so the `last in` figures don't sum to the library, and
 an export can read a few bytes either way from what its source suggests: in a
@@ -275,7 +286,8 @@ diff.
 `src/benchmarks/sizes.json` is a committed snapshot of the gzipped figures:
 each scenario's bundle and all of them together, the latter beside Valibot's,
 each scenario's ratio to Valibot's bundle of it, which the backstop of
-[rule 5](grading.md#bytes) reads, `parse` alone, the library, each export's
+[rule 5](grading.md#bytes) prices and `src/test/grade_bytes.test.ts` holds
+each pin to, `parse` alone, the library, each export's
 `last in` and `alone` side by side, and what each module beside `schema.ts`
 adds. `grade` measures the same figures of both versions, except the modules,
 and prices them by class.
@@ -313,10 +325,15 @@ reads both for both versions on every scenario, and the figure per further
 schema of each export alone too (`measure_export_heap`): a schema of the
 export's entry in `program.ts`, an action inside a `pipe`, since the
 scenarios are built of a few kinds. An export's process imports `PROGRAM`,
-which is harness, and the same at both counts, so it cancels. It prices the
+which is harness, and the same at both counts, so it cancels: the one
+exception to a generated module holding nothing of the harness. It prices the
 figure per further schema, see [grading.md](grading.md#retained-heap). The
 figures depend on Node's version and the machine's architecture, so none is
 committed.
+
+The process benchmarks, cold start and retained heap, follow
+[syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench).
+Their generated modules are under `node_modules/.cache/fuz_schema/`.
 
 ### Timing across libraries
 
@@ -345,12 +362,12 @@ and `survey_rows.ts` are what a process loads its rows through.
   with which row a process ran first: a library can settle differently on
   that alone, the same way every time. Two libraries whose gap is inside
   their spreads have not been told apart.
-- **Order favors nothing.** Which library's process starts a pass moves on by
-  a pass, forward and backward by turns, and which row a process measures
-  first moves on with it. Timed processes run one at a time. The order is
-  rotated and not balanced: at the default count of passes a library does
-  not start a pass in every place. A run of some libraries or scenarios
-  agrees with a full one within spread.
+- **Order favors nothing.** The order a pass starts the libraries' processes in
+  moves on by one every second pass, and runs backward on the passes between,
+  and which row a process measures first moves on by one every pass. Timed
+  processes run one at a time. The order is rotated and not balanced: at the
+  default count of passes a library does not start a pass in every place. A run
+  of some libraries or scenarios agrees with a full one within spread.
 - **Warm by time with a floor of calls**, through the loop that then times,
   and force no collection. The loops have been run over several functions
   first, so the engine doesn't inline a row into them.
@@ -366,13 +383,15 @@ and `survey_rows.ts` are what a process loads its rows through.
   times a function that does nothing through the same loop, and the figure is
   printed under the tables: a row near it is mostly the call, and the ratio of
   two such rows says little.
-- **Time is taken under no flags**, and a timing process refuses any of the
-  ones bytes need.
+- **Time is taken under no flags of its own.** A timing process is started
+  with none, and refuses the ones bytes need, on its command line or in
+  `NODE_OPTIONS`. Any other `NODE_OPTIONS` the run was started under reaches it.
 - **`--duration`** is the milliseconds each row of each library is timed for
   in all, shared out over the passes. More passes at one duration cost the
   warming and the processes again, not the timing.
 
-`npm run benchmark` has two regimes, the first two [`grade`](grading.md) has:
+`npm run benchmark` has two regimes, the counterparts of `grade`'s `matrix` and
+`alone` ([grading.md](grading.md#how-it-measures)):
 
 - **shared**, the default: a library's process holds every scenario, and runs
   each of them on both of its inputs before it times any. A scenario's valid
@@ -402,59 +421,45 @@ version of Node.
 process, `grade_arm.ts` and `timing.ts` are what a process loads once for
 each instance, the case matrix and the loops, `program.ts` is what a process
 of the `apart` regime runs before its case, and `grade_job.ts` is what the
-first two share. [grading.md](grading.md) says what
-is measured and how a difference is decided. What the code has to hold to:
+first two share. [grading.md](grading.md) says what is measured and how a
+difference is decided, and the module comments of `grade_child.ts` and
+`grade_arm.ts` say why each of these holds. What the code has to hold to:
 
 - **An instance is a module instance of everything it is called through**:
-  the library, the case matrix, and the loops that call and time a case. The
-  process loads each under a URL with the instance's own query, and a resolve
-  hook passes the query on to what those modules import. Two instances of one
-  file then share no function, which a process checks before it measures.
-- **Nothing one instance has run is known to another.** A function shared by
-  two versions, a case's or a loop's, is specialized by the engine to the
-  first version's `parse`, and the same library then reads apart from itself
-  in time and in bytes. So each instance has its own.
+  the library, the case matrix, and the loops, each under a URL with the
+  instance's own query, which a resolve hook passes on to what they import.
+  A process checks that two instances of one file share no function before it
+  measures.
+- **Nothing one instance has run is known to another.** A function two
+  versions share is specialized by the engine to the first version's `parse`,
+  so each instance has its own. The byte sampler, `measure_bytes` in
+  `measure.ts`, is one for the process: it measures two functions of its own
+  first, its primers, so that it inlines no case into its loops.
 - **Every instance is treated alike**, down to the calls that check a case
-  before it is measured. An instance that runs a case once more than the rest
-  can settle in other code on it, the same way in every run.
+  before it is measured.
 - **The loops that call a case have seen many functions** before they see
-  one, so the engine never inlines a case into its loop. When it inlines one
-  is a matter of timing, which sets instances of one file far apart.
-- **Both versions load from one directory**, `.gro/grade/`, where `grade.ts`
-  copies each whatever file it came from. The same bytes time differently by
-  where their file sits: [grading.md](grading.md#apart) has what was measured.
-- **Order favors nothing.** Which instance is loaded first, which runs a case
-  first, and which order of a round leads each move on by a case and by a run.
-- **Time is taken under no flags**, and a timing process refuses any of the
-  ones bytes need, on its command line or in `NODE_OPTIONS`. Bytes are taken
-  in processes of their own, which are not timed and so run several at once.
-- **A process of the `apart` regime holds one version**, and runs the
-  program through an instance that is not timed. A process that held both
-  would have each pay for what the other does to the state they share, which
-  is what the regime is there to read. A program run through the timed
-  instance would leave its case no longer folded, in both versions, and the
-  difference with it. Each process does the same whichever version it holds.
-- **The program uses every kind of schema.** `src/test/program.test.ts`
-  holds it to the kinds there are. A kind it left out could change what a
-  process shares on first use and never be seen apart.
+  one, so the engine never inlines a case into its loop.
+- **Both versions load from one directory**, `.gro/grade/`, see
+  [grading.md](grading.md#apart).
+- **Order is rotated.** Which instance is loaded first moves on by a run, so
+  at an odd count of runs one version is loaded first once more than the
+  other. Which instance runs a case first, and which order of a round leads,
+  move on by a case and by a run.
+- **Time is taken under no flags of its own**, as
+  [above](#timing-across-libraries). Bytes are taken in processes of their
+  own, which are not timed and so run several at once.
+- **A process of the `apart` regime holds one version**, runs the program
+  through an instance that is not timed, and does the same whichever version
+  it holds.
+- **The program uses every kind of schema**, which `src/test/program.test.ts`
+  holds it to.
 - **The graded version builds every group of cases**, and a group of its that
   throws fails the grade, by name, as does a case it builds on its own. A
-  baseline with an older API loses the groups and the cases it can't build,
-  and is compared on the rest.
-- **What only some instances have runs after the rest.** The matrix runs a
-  case first only where every instance has it and agrees on it, and measures
-  such cases before any other, so a case only the new version has is no
-  schema its call sites saw before a shared case was timed.
+  baseline with an older API is compared on the groups and cases it can build.
+- **What only some instances have runs after the rest**, see
+  [grading.md](grading.md) on a case the baseline lacks.
 - **The `create` cases call a library instance of their own**, one for each
-  timed instance, which nothing else calls. The engine decides by where an
-  object was allocated whether to allocate there in old space, from how many
-  of them survive a collection: the factories that build the matrix's schemas,
-  which live as long as the process, are decided for or not by when the
-  collections fall in each instance's build, and a creation through them read
-  up to about 2.8x slower in some instances than in others of one file, and
-  alike under `--no-allocation-site-pretenuring`, which a timing can't run
-  under. Through an instance only the creations call, whose schemas die at
-  once, the instances of one file read alike.
+  timed instance, which nothing else calls, see `grade_arm.ts`.
 - **Warm by time with a floor of calls**, never by a count alone, and force no
   collection.
 
@@ -462,10 +467,6 @@ With all of that held, two instances of one file can still settle apart on a
 case for the life of a process, whatever the warmup or the order. So that is
 measured and not removed: several instances of each version, and whole runs
 repeated.
-
-The process benchmarks follow
-[syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench).
-Their generated modules are under `node_modules/.cache/fuz_schema/`.
 
 ## Reading the numbers
 
@@ -551,196 +552,6 @@ and never a table.
 
   A difference under 10% is not a win: nothing here measures its own noise.
 
-## The differential
-
-Not a measurement: a test of conformance over generated cases.
-`src/test/differential_generate.ts` generates schemas from a seed, over every
-kind with a counterpart in Zod and Valibot, and inputs shaped by each schema
-with edges mixed in: inherited and hidden keys, null and class prototypes,
-symbol keys, holes, array subclasses, frozen objects, numbers past `2 ** 53`,
-surrogates, and for a format test, a string Zod and Valibot give one verdict
-on alone. Each case runs through the adapters of the conformance matrix
-and is classified by the tables of `src/test/conformance_tables.ts`:
-
-- **agree**: this library's result is Zod's, and Zod's is Valibot's.
-- **declared**: Zod and Valibot agree, this library doesn't, and the rules
-  explain it. A rule, in `DIFFERENTIAL_RULES`, names a row of a declared
-  difference and allows only what that row says this library does: a
-  rewrite of the input that takes away what triggers it, applied only where
-  this library does the same on the rewritten input apart from the keys it
-  touched, or a relaxation of the comparison. A case is credited to the rules
-  left once each is dropped in turn, the last first, where the case is still
-  explained without it.
-- **UNDECLARED**: nothing explains it. It is minimized and printed as a case
-  to paste into `CONFORMANCE_CASES`, where the conformance test asks for a
-  ruling. A difference that is a combination of recorded behaviors is one
-  of these until it has a row of its own: two `SIDES` rows that cancel, a
-  declared difference with a `SIDES` row, or a `SIDES` row with the copies'
-  drop of a `__proto__` key. Its rule credits only those behaviors: where a
-  rewrite brings out a disagreement of the two, exactly one entry of
-  `SPLIT_RECOGNIZERS` must recognize it as that of its `SIDES` row, and this
-  library's result is the result of the row's side, and where a rule
-  recomputes a result, it is from what Zod or Valibot gives a part of the
-  input. A disagreement no entry recognizes, or more than one, is
-  undeclared, and its finding says which, with the rows of the entries
-  that recognized it.
-- **disagree**: Zod and Valibot disagree, tallied as this library being on
-  Zod's side, Valibot's, both, or neither. Reported, never a failure:
-  `SIDES` is the gate for those.
-- **refused**: Zod or Valibot threw, building the schema or parsing.
-  Reported, with the error.
-- **THROWS**: this library threw. A failure.
-
-The format tests are also run on strings alone, a tenth as many as the cases
-for each: strings both grammars take, and near misses of them, by a
-character, the version or variant of a UUID, the case of the max UUID, the
-length of a fraction, an offset, or a day the month doesn't have. Where Zod
-and Valibot agree on one, this library must too. Where they disagree, the
-entries of `FORMAT_SPLIT_RECOGNIZERS` whose trigger it has, each of a `SIDES`
-row, taken away in turn, must leave a string both take, all of their rows of
-one side, each of whose rows records the verdicts Zod and Valibot gave, and
-this library's result is that side's. Anything else is a
-finding, and the report tallies the strings by row.
-
-Every case also runs through this library's invariants: the input is not
-mutated, every issue is the five fields, `is` agrees with `parse`, a second
-parse gives the same, and the context's count is kept. A case with a `union`
-is run again with every `union` a `memo_union`, which must give the same
-result of `parse`, and of `is`, alone and under a `union` of one option.
-
-It compares the verdict and the paths of the issues, and not their text, so
-the name an issue gives `NaN` and a `union`'s `expected` are held by
-`src/test/schema.issues.test.ts` and `src/test/schema.union.test.ts`, and
-this library moving to the other side of a recorded disagreement is only a change in the tallies, which the conformance
-test's `SIDES` fails on.
-
-`gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a
-fixed count, the same everywhere, and fails on an undeclared difference, a
-throw, a broken invariant, or a finding of the format tests. The seeds may
-reach none of the cases a split of zod and valibot is declared through, so it
-also pins a case for each entry of `SPLIT_RECOGNIZERS` and each rule of a
-split, of the prototype, or of a symbol key: its verdict and the rules it is
-credited to, and that its verdict, or the rules it is credited to, changes
-without its entry. For a review, run it deeper:
-
-```bash
-npm run differential -- --seed 1 --seed 2 --count 200000
-npm run differential -- --focus variant --count 50000 --neither
-```
-
-`--seed` defaults to a random one, printed. `--focus <kind>` generates a kind
-often, and puts it in every root schema it can: a kind of `DIFFERENTIAL_KINDS`,
-where `rest` is `object_with_rest`, `refine` and `map` are a `pipe` to a check
-and to a transform, and `default` and `default_fn` are `with_default` and
-`with_default_fn`. `--limit` caps the findings minimized, and `--neither`
-minimizes the cases where this library goes with neither. It exits nonzero
-when `gro check` would fail. The script runs under a 2 GB V8 heap, and where
-`systemd-run --user` can start a scope, inside one capped at 3 GB of memory
-and no swap, so a runaway case ends the run and not the session: the npm
-script checks for that and runs Node directly otherwise.
-
-Not generated, as no counterpart in Zod and Valibot exists or as they have no
-run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
-`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Each
-declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
-A generated schema holds no union twice and an input no object twice, so the
-memo of a `memo_union` never answers there. The test holds it to `union` on
-a family of its own, from fixed seeds: a recursive union whose options walk
-their children before a `literal` tag, over inputs that reuse nodes.
-
-The JSON Schema differential holds what `to_json_schema` writes to the
-library's verdicts. `src/test/json_schema_check.ts` validates by draft
-2020-12 for exactly the keywords the emitter writes, and throws on any
-other keyword anywhere in a document, so a new one fails the run until the
-checker learns it. `src/test/json_schema_differential.ts` draws schemas from
-this generator and from the JSON fixtures' (`json_generate.ts`, recursive
-`lazy` schemas and defaults of any JSON among them), writes each on both
-sides in `'throw'` mode, counts and skips the refused, and compares JSON
-inputs: on the input side the document takes exactly what `is` takes, on the
-output side it takes what `parse` returns, a one-way check, so a looser output
-document is caught by the unit and conformance tests. A disagreement passes only where
-an entry of `JSON_SCHEMA_DIFFERENCES` explains it, each a sentence of
-`docs/design.md` § JSON Schema, by relaxing the checker, rewriting the
-schema past what triggers it, or checking what the parse gives without it,
-alone or with the fewest others. An entry with a rewrite applies only to a
-schema that holds what triggers it, and its rewritten document may differ
-only by a `default` and keys taken out of the `required` of a schema in it.
-A `transform` that gives `undefined` is explained by the parse of the same
-input with each `transform` giving a value instead: that output must differ
-and the original document take it. Its variants are varied past what the
-generator makes for zod, a discriminator shadowed, `0` beside `-0`, or no
-`literal`. Each schema is written again with `unrepresentable: 'any'`,
-which `{}` loosens past exactness, and held one way: the document takes
-every input `is` takes and every output of `parse`. Anything else is
-minimized, the input and the schema, and printed.
-`gro check` runs three fixed seeds, fails on a finding, on a seed whose
-schemas the emitter refuses too often on a side, and on a pinned case of an
-entry its recognizer no longer explains. For a review:
-
-```bash
-npm run differential -- --json-schema --seed 1 --count 100000
-```
-
-`--count` is the differential generator's schemas, with a tenth as many
-generated JSON groups, and `--focus` and `--limit` apply.
-
-## Mutants
-
-Not a measurement either: a test of the tests. `src/test/mutants.ts` is a
-table of small breaks, each a name, a file (`src/lib/schema.ts` when
-omitted), and edits, each a `find` that occurs exactly once in the file and
-its `replace`, applied in order. Most break the library; some break a table
-the tests read, as a recognizer of the differential or a `SIDES` row.
-`gro check` typechecks and lints the table and never runs it.
-
-```bash
-npm run mutate
-npm run mutate -- --filter record --deep
-```
-
-It copies the working tree's `src` and `docs`, `package.json`, and
-`tsconfig.json`, with `node_modules` linked, to a directory of the run's own
-under `~/.cache/fuz_schema_mutate/`, a copy to a worker, with a vitest config
-of its own, as `vite.config.ts` reads the git HEAD, and a test timeout of
-60 s, as the tests that take seconds alone are slower beside the other
-copies. Each copy's vitest gets an even share of the cores. It runs the tests
-of the unmutated copy first and stops if they fail, then for each mutant
-applies its edits, runs `vitest run` without `sizes.test.ts`, and
-restores the file. Each mutant is:
-
-- **killed**: a test failed, and the test files reported failed before the
-  kill are printed, usually the first. The tests' process group is killed by
-  this script at the first test file it reports failed, as a break can leave
-  another test looping: not by vitest's `--bail`, which can exit before it
-  reports the failure.
-- **hung**: the tests outlived the timeout with none failed, and their whole
-  process group was killed. Counted as killed: a break that makes a test loop
-  forever is found, if slowly.
-- **survived**: the tests passed.
-- **error**: vitest exited nonzero or by a signal with no test failed, so
-  the mutant is neither killed nor survived, and the tail of its output is
-  printed.
-
-The run fails on a stale anchor, a `find` that doesn't occur exactly once,
-or edits that leave the file unparsable to TypeScript, checked of every
-mutant in the table before any runs, whichever are selected; on an error; on
-a survivor whose entry has no `survives`, the reason the suite can't kill it;
-and on an entry with a `survives` that is killed or hung. An edit TypeScript
-parses that the engine still refuses to load, a bad regex literal or a
-duplicate `let`, fails its test file and reads as killed. `--filter <substr>` runs the mutants whose names have it,
-`--workers` sets the copies run at once, 2 by default, `--timeout <s>` the
-timeout, by default 120 s or three times the unmutated run where that is
-longer, and refused under one and a half times the unmutated run, where a
-slow run would read as hung. The copies are removed at the end, or left by
-`--keep` or an interrupt, and the next run removes those of runs no longer
-running. `--deep` also runs `differential.ts` on each survivor, over a few
-seeds, and a survivor it fails is killed. The npm script caps the run at
-6 GB of memory and no swap where `systemd-run --user` can start a scope, as
-for the differential.
-
-A review that finds a break the suite misses adds it as a mutant with the
-test that kills it. One it decides not to test gets a `survives` saying why.
-
 ## Extending
 
 - A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, and a
@@ -759,11 +570,10 @@ test that kills it. One it decides not to test gets a `survives` saying why.
   (`{name, build}`) that makes its schema inside `build`. A group is built
   under one `try`, so a case written into it that the baseline can't build
   drops the whole group from the baseline, and its other cases compare on
-  nothing. `grade` measures a case the baseline lacks for the new version
-  alone, after every case both have, and leaves it out of the matrix's run
-  of every case first, so the new version's call sites see no schema the
-  baseline's don't; it is reported in a table of its own, and no summary,
-  A/A, or rule reads it. Grade the export with `--class feature`, and give
-  it a scenario, which compares it with the other libraries.
-- Never add harness imports or work to a generated process module. The bare
-  baseline is that module with no library.
+  nothing. A case the baseline lacks is measured for the new version alone,
+  see [grading.md](grading.md). Grade the export with `--class feature`, and
+  give it a scenario, which compares it with the other libraries.
+- Add no harness imports or work to a generated process module but what
+  cancels between the readings a figure is taken from, as an export's
+  `PROGRAM` does in [retained heap](#retained-heap). The bare baseline is
+  that module with no library.

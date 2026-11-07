@@ -21,7 +21,8 @@ Every schema and every action is `{kind, def, run}`, keys in that order.
   every schema the library makes, runs each, and then reads from V8, in a
   process under `--allow-natives-syntax`, that they share one map and that
   none of its fields was written to. Neither shows in what a parse returns,
-  or in a grade, whose two versions share a process.
+  and a grade shows it only in its `apart` regime, which holds a version to a
+  process, see [grading.md](grading.md#apart).
 
 ## What `def` holds
 
@@ -45,8 +46,6 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
 
-- **`optional`, `nullable`, `with_default`, and `with_default_fn` hold their
-  schema under `schema`.** Unwrapping any of the four is `kind` and that one key.
 - **`lazy` holds the function it was given**, not a schema. Nothing is held
   until it's called, and it is where a recursive schema comes back to itself,
   so a walk treats it apart whatever its shape.
@@ -82,22 +81,23 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   innermost first, and one that adds a key to them pushes it.
 - **A child is run by a call**, so the input's depth is the engine's stack:
   `parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a
-  `RangeError` on input nested past it, which for a plain recursive object
-  schema on Node's default stack is from about 1400 levels before the engine
-  has optimized it, and about seven times that after. `JSON.parse` reads input
-  far deeper. A throw accepts nothing, and a consumer that takes untrusted
+  `RangeError` on input nested past it. On Node 26.13's default stack a plain
+  recursive object schema threw from about 1300 levels before the engine had
+  optimized it, and from about 10,000 after, figures that move with the
+  schema, the version of Node, and the machine. `JSON.parse` reads input far
+  deeper. A throw accepts nothing, and a consumer that takes untrusted
   JSON nested without bound catches it or bounds the depth first.
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
-- **`ctx.issues` is `undefined` until the first failure** outside probe mode,
-  so a parse that finds nothing allocates no array for them. The first issue
-  is written as the array's one element, where a push onto an empty array
-  would grow it to hold many. From then on, outside probe mode,
-  `ctx.issues.length` is `ctx.fails` up to the hundredth failure, past which
-  `fail` counts and builds nothing, and containers use the count as an index
-  into `issues`: one taken past the hundredth is past every issue, so a
-  prefix or a `message` from it reaches none. A `run` written outside the
-  library that reads `ctx.issues[count]` finds an issue only below the cap.
+- **`ctx.issues` is `undefined` while `ctx.fails` is `0`** outside probe
+  mode, so a parse that finds nothing allocates no array for them. The first
+  issue is written as the array's one element, where a push onto an empty
+  array would grow it to hold many. From then on, outside probe mode,
+  `ctx.issues.length` is `Math.min(ctx.fails, 100)`, the cap of
+  [Issues](#issues), and containers use the count as an index into `issues`:
+  one taken past the cap is past every issue, so a prefix or a `message` from
+  it reaches none. A `run` written outside the library that reads
+  `ctx.issues[count]` finds an issue only below the cap.
 - **An entry's `run` gets three more arguments**: the object schemas call
   `run(value, ctx, parent, key, 1)`, with the object being read, the entry's
   key, and `1`, which says the schema is the entry itself. All three are
@@ -129,10 +129,11 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   against the first of the list by `===`, then by `has`, which matches as
   `includes` does, `NaN` among them, without a walk of the list. The `Set` is
   heap every `one_of` keeps for as long as it lives.
-- **Each of the four is two closures** that differ only in what they pass on.
-  One `run` of four parameters is fewer bytes, and measured slower on valid
-  input for `union`, for `pipe`, and for a `message` around every schema: it
-  hands two arguments to a `run` that doesn't take them. So what passing them
+- **`nullable`, `union`, `pipe`, and `message` each have two closures** that
+  differ only in what they pass on, and a `pipe` a third, below. One `run` of
+  four parameters is fewer bytes, and measured slower on valid input for
+  `pipe` and for `nullable`: it hands two arguments to a `run` that doesn't
+  take them. So what passing them
   on costs is bytes, in the bundles that have the kind. See
   [declined.md](declined.md#passing-the-object-and-the-key-on).
 - **A `pipe` has a third closure**, for one that starts with an `optional`,
@@ -142,9 +143,10 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   `optional` takes two. Past that it runs the steps as the closure of two
   does, which it shares, so a pipe it starts with is handed neither the object
   nor the key. The call costs the path with the key there, and a loop of its
-  own was over the size ceiling rule 5 had then, see
-  [declined.md](declined.md#a-pipe-that-starts-with-an-optional-with-a-loop-of-its-own). The closure that passes them on to an `unknown` or a `lazy`
-  looks for no key: the forms that had one closure for both are in
+  own is an open trade, see
+  [declined.md](declined.md#a-pipe-that-starts-with-an-optional-with-a-loop-of-its-own).
+  The closure that passes them on to an `unknown` or a `lazy` looks for no
+  key: the forms that had one closure for both are in
   [declined.md](declined.md#a-pipe-that-looks-for-the-key-wherever-it-has-the-object).
 - **A `lazy` passes on the object and the key it is given**, which it tells
   on each call by the length of its `arguments`, and not the `1`: what it
@@ -152,60 +154,57 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
   when it is made, so it can't choose a closure then, and a `run` of four
   parameters costs every caller that passes two. So its `run` declares two,
   and the four tell a lazy by its `kind` where its `length` can't say: around
-  one they pass the object and the key on, whatever it defers to. Until the
-  engine's last tier has the call, its `arguments` is an object a call, which
-  a parse of settled code doesn't allocate. The other forms of a lazy are
+  one they pass the object and the key on, whatever it defers to. The other
+  forms of a lazy are
   in [declined.md](declined.md#lazy).
-- **A recursive `union` can take time exponential in the depth of its
-  input.** An option that walks a node's children before the entry that rules
-  it out fails only after the walk, and the next option walks them again, at
-  every level: `lazy(() => union([object({args: array(Node), op: literal('a')}), ...]))`.
-  With two such options the time doubles with each level, so an input of
-  under 500 bytes of JSON took over a second, and on untrusted input of that
-  shape one of the ways out below is needed.
-  Valibot and Zod's mini form do the same, and Zod's classic form is linear
-  on it through the memo its containers turn on by default, as the Rust
-  crate is through the verdicts such a union keeps, see
-  [rust.md](rust.md#two-evaluators). There are three
-  ways out. `variant`, when the options have a `literal` discriminator,
-  finds the option in constant time, so the children are walked once.
-  Otherwise each option puts the entries that rule it out cheaply first, as
-  a `literal`, and a probed option fails before it walks. Where neither
-  fits, `memo_union`, below. A cycle closes through a `lazy` unless a schema
-  of one's own closes it or an array a `union` or `pipe` was made with is
-  changed afterwards, and a union in a cycle closed either way takes the
-  same time. A `parse` or `is` of a `lazy` whose `pipe` runs two containers
-  over the same subtree, as
-  `lazy(() => pipe(object({c: array(L)}), loose_object({c: array(L)})))`, is
-  exponential in depth with no union at all, as in Valibot and Zod: `variant`
-  can't hold the `pipe`, and a `memo_union` of the `pipe` alone makes it
-  linear.
+- **A recursive `union` can take time exponential in the depth of its input.**
+  An option that walks a node's children before the entry that rules it out
+  fails only after the walk, and the next option walks them again, at every
+  level: `lazy(() => union([object({args: array(Node), op: literal('a')}),
+  ...]))`. With two such options the time doubles with each level: on Node
+  26.13 an input of 420 bytes of JSON, 20 levels deep, took 177 ms, and on
+  untrusted input of that shape one of the ways out below is needed. Valibot
+  and Zod's mini form do the same, and Zod's classic form is linear on it
+  through the memo its containers turn on by default, as the Rust crate is
+  through the verdicts such a union keeps, see
+  [rust.md](rust.md#two-evaluators). There are three ways out. `variant`, when
+  the options have a `literal` discriminator, finds the option in constant
+  time, so the children are walked once. Otherwise each option puts the entries
+  that rule it out cheaply first, as a `literal`, and a probed option fails
+  before it walks. Where neither fits, `memo_union`, below. A cycle closes
+  through a `lazy` unless a schema of one's own closes it or the `def` array of
+  a `union` or a `pipe` is changed after it is made (a `union`'s is the array
+  it was given), and a union in a cycle closed either way takes the same time.
+  A `parse` or `is` of a `lazy` whose `pipe` runs two containers over the same
+  subtree, as `lazy(() => pipe(object({c: array(L)}), loose_object({c:
+  array(L)})))`, is exponential in depth with no union at all, as in Valibot
+  and Zod: `variant` can't hold the `pipe`, and a `memo_union` of the `pipe`
+  alone makes it linear.
 - **`memo_union` is a `union` that keeps what it gave while probing.** Its
-  `kind` and `def` are `union`'s, so every reader takes it as one, and its
-  `run` wraps the union's, one closure of two parameters or of four as the
-  union's is. Probed with an object or an array, it looks the value up in a
-  `WeakMap` of the parse, which a `WeakMap` it holds keeps by the context and
-  drops with it, and gives back the output, or for a failure counts one in
-  `fails` and returns, as `fail` does in probe mode. A value it hasn't seen
-  is run, and kept. Unprobed, in a `parse` with no `union` above it, it runs
-  as the union does, and its options are probed. So
-  nothing is written to the schema or the context, and no parse reaches
-  another's memo: a parse inside a `check` has a context of its own. A
-  context is one parse: a context run again keeps its memo. The
-  object and the key it is handed matter only to a missing key, which is
-  `undefined` and never kept, so the verdict on an object is the object's
-  alone, which a getter, a `Proxy`, or a `check` with state can break. Where
-  one does, `is` and `parse` can differ, as only probing reads the memo:
-  `is` probes everything, and `parse` only what a union holds. What
-  comes back from the memo differs, see
-  [below](#behavior-that-differs-from-valibot-and-zod): a `transform` under it
-  is not run again for an object it is probed with again, and an object the input
-  holds twice gets one output object in both places. Issues are the union's,
-  and a cyclic input still runs out of stack. The memo is in the union asked
-  again, so on a chain of such unions each link is one, and so is a union
+  `kind` and `def` are `union`'s, so every reader takes it as one, and its `run`
+  wraps the union's, one closure of two parameters or of four as the union's is.
+  Probed with an object or an array, it looks the value up in a `WeakMap` of the
+  parse, which a `WeakMap` it holds keeps by the context and drops with it, and
+  gives back the output, or for a failure counts one in `fails` and returns, as
+  `fail` does in probe mode. A value it hasn't seen is run, and kept. Unprobed,
+  in a `parse` with no `union` above it, it runs as the union does, and its
+  options are probed. So nothing is written to the schema or the context, and no
+  parse reaches another's memo: a parse inside a `check` has a context of its
+  own. A context is one parse: a context run again keeps its memo. The object
+  and the key it is handed matter only to a missing key, which is `undefined`
+  and never kept, so the verdict on an object is the object's alone, which a
+  getter, a `Proxy`, or a `check` with state can break. Where one does, `is` and
+  `parse` can differ, as only probing reads the memo: `is` probes everything,
+  and `parse` only what a union holds. What comes back from the memo differs,
+  see [below](#behavior-that-differs-from-valibot-and-zod): a `transform` under
+  it is not run again for an object it is probed with again, and an object the
+  input holds twice gets one output object in both places. Issues are the
+  union's, and a cyclic input still runs out of stack. The memo is in the union
+  asked again, so on a chain of such unions each link is one, and so is a union
   another option reads into, as the `M` of the form in
-  [rust.md](rust.md#issues). It is an export of its own, as the memo inside
-  `lazy` cost every `lazy`, see [declined.md](declined.md#a-recursive-union).
+  [rust.md](rust.md#two-evaluators). It is an export of its own, as the memo
+  inside `lazy` cost every `lazy`, see
+  [declined.md](declined.md#a-recursive-union).
 
 ## Copy-on-write output
 
@@ -248,12 +247,12 @@ Kept:
 
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
-- `record` drops a `__proto__` key, after validating its value as any own
-  key's, and so does a copy `loose_object` makes of one the schema doesn't
-  name. `object_with_rest` drops one unread, and copies to drop it. A schema
-  entry named `__proto__` is not guarded in any object schema: a copy writes
-  it, which sets the copy's prototype from the input, and an input that comes
-  back keeps its own `__proto__` key.
+- `record` validates the value of an own `__proto__` key as any other's, then
+  drops the key. A copy `loose_object` makes drops one the schema doesn't name,
+  unread. `object_with_rest` drops one unread, and copies to drop it. A schema
+  entry named `__proto__` is not guarded in any object schema: a copy writes it,
+  which sets the copy's prototype from the input, and an input that comes back
+  keeps its own `__proto__` key.
 - The input is never mutated.
 
 Zod and Valibot build every output. `src/test/schema.conformance.test.ts`
@@ -281,7 +280,7 @@ An array is not an object: each of them rejects one, as do `record` and
 
 `object` is the default name because rejecting is the safe default.
 `loose_object` is the cheapest on input that comes back as it is, and
-`strip_object` is the one that works for its result.
+`strip_object` pays for a copy whenever the input has a key to drop.
 
 `object` and `strip_object` share a loop over the entries:
 
@@ -291,10 +290,12 @@ An array is not an object: each of them rejects one, as do `record` and
 - **A key in the schema's order is known by its position.** Any other key is
   looked up in the entries, so order never changes the result, only the cost.
   The position doesn't resync: after an absent optional key, every later key
-  is looked up.
+  is looked up, see
+  [declined.md](declined.md#a-one-key-lookahead-for-the-position-check).
 - **A copy has the schema's keys, in the schema's order.** They are read
   through the prototype and written as own keys. A key the input lacks stays
-  out, and one that is `undefined` stays in.
+  out unless its entry gives a value for it, and one that is `undefined`
+  stays in.
 - **A copy reads its unchanged keys a second time**, and finding a key to
   drop means enumerating the input's keys. That is what a key to drop, or a
   change late in a wide object, costs over building every output.
@@ -310,11 +311,12 @@ same rule and never looks at the input's keys unless it made a copy:
   key are left out**, and so is a `__proto__` key, which would set the
   prototype if assigned. The input returned as it is keeps them all.
 - **The loop is not the shared one**, though it repeats it. A bundle without
-  `loose_object` carries none of this, and a parse of one loose schema, where
-  the engine inlines the loop and removes the context, measured slower on
-  valid input when the loop was a call to the shared one.
+  `loose_object` carries none of this, and a loose schema's input that comes
+  back as it is measured 1.5 to 1.6x slower alone when the loop was a call to
+  the shared one.
 - **Every key of a copy is a keyed write.** A change in a wide loose object
-  costs in proportion to its width, and more than a spread of it would.
+  costs in proportion to its width: a copy of a parsed input of 20 keys, 14
+  of them unknown, measured 7.7x the time of a spread of it.
 
 `object_with_rest(entries, rest)` runs the shared loop over its entries, then
 a loop of its own over the input's keys, as `loose_object` has one:
@@ -400,7 +402,7 @@ all a missing key costs an object that has no schema asking.
   them.
 - **`void` is the `literal` of `undefined`** to everything but the types,
   which infer `void` from it, so it needs its key as that literal does.
-- **It is handed the object wherever the entry reaches it**: as the entry
+- **`unknown` is handed the object wherever its entry reaches it**: as the entry
   itself, through `flavor`, `brand`, and `meta`, which keep its `run`, and
   through `message`, `nullable`, `lazy`, an option of a `union`, and the first
   schema of a `pipe`, which pass the object on. So `nullable(unknown)`,
@@ -418,12 +420,12 @@ all a missing key costs an object that has no schema asking.
   matches `object({a: pipe(optional(string), check(...))})` whatever the
   check says, and a `transform` there writes no key. With the key there every
   step runs, on `undefined` too.
-- **It starts with an `optional` by that schema's kind**, which `message`,
+- **A `pipe` starts with an `optional` by that schema's kind**, which `message`,
   `flavor`, `brand`, and `meta` keep, and through every pipe it starts with:
-  `pipe(pipe(optional(string), a), b)` runs neither `a` nor `b`. It looks for
-  the key where it is handed the `1`: as the entry itself, and under a
-  `message`, which passes the `1` on. A key that isn't in the object is
-  missing, and its value is then `undefined`.
+  `pipe(pipe(optional(string), a), b)` runs neither `a` nor `b`. The pipe looks
+  for the key where it is handed the `1`: as the entry itself, and under a
+  `message`, which passes the `1` on. A key that isn't in the object is missing,
+  and its value is then `undefined`.
 - **Under a `nullable`, a `lazy`, or a `union` its steps run**, on the
   `undefined` a missing key reads as. Those hand it the object and the key,
   and not the `1`: it is then a step of the schema that is the entry, and
@@ -524,14 +526,15 @@ through the schema the default is of.
 ## Issues
 
 An issue is `{kind, expected, received, path, message}`, built in one place,
-`fail`, so every issue has one hidden class. `format_issue` derives text and
-is only bundled when used. There is no message registry.
+`fail`, so every issue is the same five fields in the same order. `format_issue`
+derives text and is only bundled when used. There is no message registry.
 
-- **An issue holds no value.** `received` is the type of the value that
-  failed: `'null'`, `'array'`, or its `typeof`, but a number that isn't
-  finite is `'NaN'`, `'Infinity'`, or `'-Infinity'`. Nothing reachable from a
-  result or a `SchemaError` is the input or part of it, so issues can be
-  serialized and kept. `fail` is passed the value and names its type.
+- **An issue holds no value.** `received` is the type of the value that failed:
+  `'null'`, `'array'`, or its `typeof`, but a number that isn't finite is
+  `'NaN'`, `'Infinity'`, or `'-Infinity'`. Nothing reachable from an issue, a
+  failed result, or a `SchemaError` is the input or part of it, but the keys in
+  `path`, so issues can be serialized and kept. `fail` is passed the value and
+  names its type.
 - **A number that isn't finite is received as `String` writes it**,
   wherever it fails: `number` refuses `NaN` as `{kind: 'number', expected:
   'number', received: 'NaN'}`, which `format_issue` writes `expected number,
@@ -731,8 +734,7 @@ wrapped schema's and nothing is stored at runtime.
   a flavored type is the same refinement, which a plain value still assigns
   to, and a brand and a flavor compose either way. A union of names marks with
   every one. Each key holds its own name, so a wide name (`string`) is an
-  index signature that no specific brand satisfies. A marker holding the one
-  name as its value made a brand of a brand `never`.
+  index signature that no specific brand satisfies.
 - **Of a type parameter neither is known to lack `null` and `undefined`**, as
   `Extract` waits for the parameter. `Branded<T, 'N'>` with `T extends string`
   doesn't assign to `Branded<string, 'N'>`, one with an unconstrained `T` is
@@ -749,7 +751,7 @@ wrapped schema's and nothing is stored at runtime.
 `meta(schema, data)` is in `src/lib/meta.ts`, a module of its own that holds a
 `WeakMap` from schema object to metadata. A fourth field would give schemas a
 second hidden class and put bytes in every bundle. A registry costs a bundle
-nothing until it imports the module.
+nothing until it calls `meta` or `get_meta`.
 
 - **`meta` copies the schema.** One with no options is a shared constant, so
   the copy, not the original, is what gets registered. The copy is
@@ -763,21 +765,21 @@ nothing until it imports the module.
 - **`SchemaMeta` is an interface**, with `description`, that consumers extend
   by declaration merging. The library names no application's keys.
 - The registry holds its keys weakly: metadata lives as long as its schema.
-- **The registry is shared by every copy of the module**, on `globalThis`
-  under `Symbol.for('@fuzdev/fuz_schema/meta')`, as Zod 4 keeps its global
-  registry on `globalThis`. A second install, a bundler's duplicate, or
-  another version that keeps it there reads what
-  any other attached, where a registry of each copy's own drops it silently.
-  So its shape is a contract between versions: a `WeakMap` from schema to
-  metadata object, which attaching replaces with a merged copy and never
-  mutates. A change to it takes a new key. `message` reads it by that key
-  in `schema.ts`, where importing `meta.ts` would need an export for the read
-  alone, and makes none when no copy of `meta.ts` has run, as then there is
-  no metadata to carry. The registry is made in a call
-  marked pure, so a bundle of the source that never calls `meta` or
-  `get_meta` drops it. A minifier that inlines the call drops the mark, so a
-  library that ships `meta.ts` in a minified bundle writes the registry for
-  its consumers whether they call it or not.
+- **The registry is shared by every copy of the module**, on `globalThis` under
+  `Symbol.for('@fuzdev/fuz_schema/meta')`, as Zod 4 keeps its global registry on
+  `globalThis`. A second install, a bundler's duplicate, or another version that
+  keeps it there reads what any other attached, where a registry of each copy's
+  own drops it silently. So its shape is a contract between versions: a
+  `WeakMap` from schema to metadata object, which attaching replaces with a
+  merged copy and never mutates. A change to it takes a new key. `message` reads
+  it by that key in `schema.ts`, where importing `meta.ts` would need an export
+  for the read alone, and makes none when no copy of `meta.ts` has run, as then
+  there is no metadata to carry. The registry is made in a call marked pure, so
+  a bundle of the source that never calls `meta` or `get_meta` drops it. One
+  whose only call of `meta` is unused keeps it, while the schema it was given is
+  dropped. A minifier that inlines the call drops the mark, so a library that
+  ships `meta.ts` in a minified bundle writes the registry for its consumers
+  whether they call it or not.
 
 ## Reading a schema
 
@@ -854,30 +856,30 @@ each.
   it, in a `pipe` or not, the key is optional, and a `transform` and a
   `with_default_fn` are taken to fill it in, as zod takes a `transform`.
 - **Refuse, don't guess.** What JSON Schema can't say throws, naming the kind
-  and the place in the document as a JSON Pointer, or with
-  `unrepresentable: 'any'` is `{}`, or a keyword left out of a `pipe`'s node:
-  a `bigint`, a `literal` of `undefined` or a `bigint`, a `transform` on the
-  output side, a step after a `transform` on the input side, which reads what
-  it gave, a step but a `uuid` after a `to_lower_case` on the input side and
-  before one on the output side, which read another string than the
-  document's, an action outside a `pipe` or after a schema of another type, a
-  `regex` whose source is no pattern under the flag `u`, or means something
-  else there, a bound that isn't finite or a length that isn't whole, a
-  default that isn't JSON, a `variant` option whose discriminator is no
-  `literal` entry, as the variant picks it by a value its node doesn't say,
-  and a kind defined outside the library. Refused
-  in both modes, as mistakes of the schema's author: an entry named like a
-  member of `Object.prototype`, a schema that comes back to itself without
-  reading into the value, which a validator would follow forever, as
-  `to_schema_json` refuses it, metadata that isn't JSON, and a metadata key
-  that is a keyword of JSON Schema: one that asserts, applies a subschema,
-  or is the document's structure, from `type` and `pattern` to `$ref`,
-  `$defs`, and `$schema`, and those of older drafts and OpenAPI's `nullable`
-  that some validators still apply in a 2020-12 document, as each changes what
-  the document accepts. An annotation (`title`, `description`, `examples`,
-  `default`, `deprecated`, `readOnly`, `writeOnly`, `$comment`,
-  `contentMediaType`, `contentEncoding`) and every key of no keyword are
-  copied.
+  and the place in the document as a JSON Pointer, or with `unrepresentable:
+  'any'` is `{}`, or a keyword left out of a `pipe`'s node: a `bigint`, a
+  `literal` of `undefined` or a `bigint`, a `literal` or a `one_of` value past
+  the finite numbers, a `check`, a `transform` on the output side, a step after
+  a `transform` on the input side, which reads what it gave, a step but a
+  `uuid` after a `to_lower_case` on the input side and before one on the output
+  side, which read another string than the document's, an action outside a
+  `pipe` or after a schema of another type, a `regex` with flags beyond `d` and
+  `u`, or whose source is no pattern under the flag `u`, or means something
+  else there, a bound that isn't finite or a length that isn't whole, a default
+  that isn't JSON, a `variant` option whose discriminator is no `literal`
+  entry, as the variant picks it by a value its node doesn't say, and a kind
+  defined outside the library. Refused in both modes, as mistakes of the
+  schema's author: an entry named like a member of `Object.prototype`, a schema
+  that comes back to itself without reading into the value, which a validator
+  would follow forever, as `to_schema_json` refuses it, metadata that isn't
+  JSON, and a metadata key that is a keyword of JSON Schema: one that asserts,
+  applies a subschema, or is the document's structure, from `type` and
+  `pattern` to `$ref`, `$defs`, and `$schema`, and those of older drafts and
+  OpenAPI's `nullable` that some validators still apply in a 2020-12 document,
+  as each changes what the document accepts. An annotation (`title`,
+  `description`, `examples`, `default`, `deprecated`, `readOnly`, `writeOnly`,
+  `$comment`, `contentMediaType`, `contentEncoding`) and every key of no
+  keyword are copied.
 - **The output side can refuse real output.** A `with_default` and a
   `with_default_fn` fill in their value as it is, so where the value doesn't
   match its schema the document refuses what the parse returns, and a
@@ -968,10 +970,11 @@ Where zod writes something else, this library:
 
 ## Costs are opt-in
 
-A feature not every consumer needs is a separate export or module the core
-never reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
-`to_standard_schema`, `introspect.ts`, `json_schema.ts`. Factories are marked
-`// @__NO_SIDE_EFFECTS__` so an unused definition is dropped.
+A feature not every consumer needs is a separate export or module the core never
+reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
+`to_standard_schema`, `introspect.ts`, `schema_json.ts`, `json_schema.ts`.
+Factories are marked `// @__NO_SIDE_EFFECTS__` so an unused definition is
+dropped.
 
 `to_standard_schema` is an adapter for this reason: schemas don't each carry
 a `~standard` property.
@@ -990,7 +993,7 @@ and inputs through the three and fails on a difference that its table, in
 is no longer there. Where the two disagree, the table records which this
 library goes with. This list is that table in words. The differential,
 `src/test/schema.differential.test.ts`, holds generated schemas and inputs to
-the same table, see [benchmarks.md](benchmarks.md#the-differential).
+the same table, see [testing.md](testing.md#the-differential).
 
 Each entry that has a reason on record says it, as one of three:
 
@@ -1034,33 +1037,40 @@ issues. These it holds:
 
   Cost declined: looking for the key takes a `run` of four parameters, on a
   kind whose `run` is called with two nearly everywhere, which measured
-  slower on valid input for `literal` and for `lazy`, see
-  [declined.md](declined.md#passing-the-object-and-the-key-on). A `check`
-  can't choose its closure when it is made, as a `literal` does: what its
-  function accepts isn't known until it is called.
+  slower on valid input for
+  [`literal`](declined.md#literal-with-four-parameters) and for
+  [`lazy`](declined.md#a-lazy-of-four-parameters-or-of-a-rest-parameter),
+  and was not measured for `check`. A `check` can't choose its closure when
+  it is made, as a `literal` does: what its function accepts isn't known
+  until it is called.
 
   Where both refuse the missing key, their refusal can hide a disagreement
   of theirs that the key would bring out, so this library's result is a row
-  of its own, that of the side it is on there: a `loose_object` with an
-  unknown key named `constructor` or `prototype`, or one it inherits, comes
-  back, and so does an `object_with_rest` with an own key named `constructor`
-  or `prototype`, or one it inherits, and a `record` beside the check keeps
-  its own key named `constructor`. A `with_default` under an `optional`, and
-  a `with_default` of `undefined`, leave a missing key out, the second also
-  beside one that doesn't match its schema, which is filled in, a
-  `with_default` whose schema gives `undefined` fills its value in, and keeps the
-  `undefined` for a value given, a `pipe` that starts with a `with_default` of
-  `undefined` runs its steps for a missing key, a `loose_object` keeps an
-  own key named `constructor` beside a `with_default` it fills in as it is,
-  and beside a `with_default` of `undefined` whose missing key it leaves out,
-  a `pipe` that starts with an `optional` runs no step for a missing key, a
-  check after a `strict_object` with an unknown key is not run, and neither
-  is one after an object whose `unknown` then a check that fails has its key
-  missing, or whose `pipe` that starts with a `transform` and then fails
-  does, the object alone or in an array, and a `union` matches an object of
-  a bare `check` and a `transform` whose keys are missing, bare or under a
-  `union`, a `nullable`, or a `lazy`, as Zod's `transform` lets its key be
-  missing.
+  of its own, that of the side it is on there, each beside a `check` entry
+  whose key is missing:
+
+  - a `loose_object` with an unknown key named `constructor` or `prototype`,
+    or one it inherits, comes back, and so does an `object_with_rest` with an
+    own key named `constructor` or `prototype`, or one it inherits
+  - a `record` keeps its own key named `constructor`
+  - a `with_default` under an `optional`, and a `with_default` of
+    `undefined`, leave a missing key out, the second also beside one that
+    doesn't match its schema, which is filled in
+  - a `with_default` whose schema gives `undefined` fills its value in, and
+    keeps the `undefined` for a value given
+  - a `pipe` that starts with a `with_default` of `undefined` runs its steps
+    for a missing key
+  - a `loose_object` keeps an own key named `constructor` beside a
+    `with_default` it fills in as it is, and beside a `with_default` of
+    `undefined` whose missing key it leaves out
+  - a `pipe` that starts with an `optional` runs no step for a missing key
+  - a check after an `object` with an unknown key is not run, and neither is
+    one after an object whose `unknown` then a check that fails has its key
+    missing, or whose `pipe` that starts with a `transform` and then fails
+    does, the object alone or in an array
+  - a `union` matches an object of a bare `check` and a `transform` whose
+    keys are missing, bare or under a `union`, a `nullable`, or a `lazy`, as
+    Zod's `transform` lets its key be missing
 - a `pipe` that starts with a `with_default` or a `with_default_fn` and whose
   steps give `undefined` leaves a missing key out, where both write the key as
   `undefined`: as the entry itself, under a `message`, and as the first schema
@@ -1244,6 +1254,9 @@ Where the two disagree, this library goes with:
   the length of an array too long before its items and reports only that,
   and of one too short after them and reports both. Valibot reports the
   item, as here, where a `pipe` stops at its first failing step.
+- **Valibot on a check after an object with an unknown key.** Valibot stops
+  at the unknown key, as here, where a `pipe` stops at its first failing
+  step. Zod runs the check and reports it beside the key.
 - **Valibot on a check after an object whose `unknown` then a check that
   fails has its key missing.** Valibot refuses the key and stops, as here,
   where a `pipe` stops at its first failing step. Zod runs the entry's check
@@ -1292,8 +1305,9 @@ API, or in the names:
   compares each with the other libraries' schema that does the same. By
   design: rejecting is the safe default, so it has the default name.
 - `variant` dispatches by map; its options need a `literal` discriminator.
-  What it does with an input is in the matrix, and is what both do but for
-  an array.
+  What it does with an input is in the matrix: what both do, but Zod's on an
+  array and on the entries of an option whose discriminator is missing, see
+  above.
   By design: the option is found in constant time.
 - `memo_union` gives back what it kept for an object it is probed with
   again, so a `transform` under it runs fewer times than under Valibot's

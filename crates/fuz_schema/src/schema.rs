@@ -1,8 +1,9 @@
 //! The schema model: an arena of nodes, one per schema or action.
 //!
 //! The kinds are those of the TypeScript library's `SchemaDefs` contract that
-//! can be carried across: everything but `regex`, `check`, and `transform`,
-//! which hold JavaScript values.
+//! can be carried across: everything but `regex`, `check`, `transform`, and
+//! `with_default_fn`, which hold JavaScript values, and `object_with_rest`,
+//! which the crate doesn't carry yet.
 
 use std::fmt;
 

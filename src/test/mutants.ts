@@ -2,7 +2,7 @@
  * The mutants of `npm run mutate`: each a small break of the library, or of a
  * table the tests read, that the suite should fail on. `mutate.ts` applies
  * each to a copy of the working tree and runs the tests, see
- * `docs/benchmarks.md`. Typechecked and linted by `gro check`, never run by it.
+ * `docs/testing.md`. Typechecked and linted by `gro check`, never run by it.
  *
  * A mutant's `file` is `src/lib/schema.ts` when omitted. Its `edits` apply in
  * order, and each `find` occurs exactly once in the file as the edits before

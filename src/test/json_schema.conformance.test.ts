@@ -165,6 +165,23 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			message: /^cannot express `(literal|one_of)` .*: a literal of -?(NaN|Infinity)/
 		}
 	},
+	non_finite_bound: {
+		reason:
+			'a bound that is not finite is refused, or dropped, where zod writes it, which JSON text writes as `null`',
+		docs: 'a bound that is not finite is refused',
+		rewrite: (node, side) => {
+			// a document is compared as JSON text reads it back, where the bound is `null`
+			if (side !== 'zod') return;
+			for (const key of ['minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum']) {
+				if (node[key] === null) delete node[key];
+			}
+		}
+	},
+	non_finite_bound_refused: {
+		reason: 'a bound that is not finite is refused',
+		docs: 'a bound that is not finite is refused',
+		refusal: { side: 'ours', message: /: the bound is not a finite number$/ }
+	},
 	check: {
 		reason: 'a `check` is refused, where zod leaves out a refinement',
 		docs: 'a `check` is refused',
@@ -451,6 +468,14 @@ const CASES: Array<JsonSchemaCase> = [
 	},
 	{ name: 'array, lengths', schema: (l) => l.max_length(l.min_length(l.array(l.number), 1), 3) },
 	{ name: 'number, bounds', schema: (l) => l.max_value(l.min_value(l.number, -1.5), 7) },
+	{
+		name: 'number, bounds that are not finite',
+		schema: (l) => l.max_value(l.min_value(l.number, -Infinity), Infinity)
+	},
+	{
+		name: 'number, a bound that is not finite and one that is',
+		schema: (l) => l.max_value(l.min_value(l.number, NaN), 7)
+	},
 	{ name: 'safe_integer, a bound', schema: (l) => l.min_value(l.safe_integer, 3) },
 	{ name: 'safe_integer, a bound past it', schema: (l) => l.min_value(l.safe_integer, -1e20) },
 	{ name: 'regex', schema: (l) => l.regex(l.string, /^a+$/u) },

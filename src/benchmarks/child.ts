@@ -96,7 +96,7 @@ export const prepare_entry = async (
 		variant?.lib_path ?? fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url))
 	);
 	if (source.includes('#lib/schema.ts')) {
-		// this repo's own library has no built output, so its stripped source stands in for one
+		// this repo's own library is loaded from its stripped source, not a built output
 		const schema_name = variant ? `schema.lib.${variant.id}.mjs` : 'schema.lib.mjs';
 		write_if_changed(
 			join(CHILD_DIR, 'unbundled', schema_name),
