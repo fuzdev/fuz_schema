@@ -23,12 +23,10 @@ if (result.ok) result.value;
 else result.issues; // [{kind, expected, received, path, message}]
 ```
 
-**It's an experiment, and "use Valibot" is a valid outcome.**
-The question is whether the gap is worth owning a validation library for.
-So far, on this repo's benchmarks, it is smaller than Valibot gzipped on every scenario,
-faster on every scenario measured, and allocates nothing for a valid value it returns as it came
-beyond a fixed cost per parse.
-Those numbers come from one shared workstation and a small set of scenarios,
+On this repo's benchmarks it is smaller than Valibot gzipped on every scenario,
+faster on every scenario measured,
+and allocates nothing for a valid value it returns as it came beyond a fixed cost per parse.
+Those numbers come from one workstation and a small set of scenarios,
 and Valibot's bytes pay for features this doesn't have.
 See [Measurements](#measurements) for what backs each claim and how to rerun it.
 
@@ -531,7 +529,7 @@ Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema
 
 ## Status
 
-> **status**: early experiment — unstable, incomplete
+> **status**: early — the API is unstable and incomplete
 
 - [x] the schemas and actions in the table above, with output and input type inference
 - [x] custom messages, as an opt-in wrapper
