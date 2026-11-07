@@ -21,6 +21,9 @@ import { create_seeded_rng } from './seeded_rng.ts';
 
 const log = Math.log;
 
+// the trial loops run thousands of simulated grades, past the default 5s on a loaded machine
+const TRIALS_TIMEOUT = 30_000;
+
 // one run of a case: each instance's time, in ns, by version
 const to_run = (base: Array<number>, next: Array<number>): Reading => ({
 	base: base.map(log),
@@ -206,43 +209,51 @@ describe('grade_stats', () => {
 		to_summary(grade.all)
 	];
 
-	test('two copies read past the A/A of each line rule 6 fails on about once in a few hundred', () => {
-		const normal = create_normal(5);
-		const trials = 1500;
-		let outside = 0;
-		let lines = 0;
-		for (let i = 0; i < trials; i++) {
-			for (const s of to_lines(to_both(normal))) {
-				lines++;
-				if (is_outside(s)) outside++;
+	test(
+		'two copies read past the A/A of each line rule 6 fails on about once in a few hundred',
+		{ timeout: TRIALS_TIMEOUT },
+		() => {
+			const normal = create_normal(5);
+			const trials = 1500;
+			let outside = 0;
+			let lines = 0;
+			for (let i = 0; i < trials; i++) {
+				for (const s of to_lines(to_both(normal))) {
+					lines++;
+					if (is_outside(s)) outside++;
+				}
 			}
+			// either way, at the default four runs: a band too narrow reads past far more,
+			// and one too wide never
+			assert.isAbove(outside / lines, 0.0005);
+			assert.isBelow(outside / lines, 0.01);
 		}
-		// either way, at the default four runs: a band too narrow reads past far more,
-		// and one too wide never
-		assert.isAbove(outside / lines, 0.0005);
-		assert.isBelow(outside / lines, 0.01);
-	});
+	);
 
-	test('two copies fail rule 6 in few grades, and its lines find a realistic slowdown of 3%', () => {
-		const normal = create_normal(11);
-		const trials = 800;
-		let false_fails = 0;
-		let flagged = 0;
-		let read = 0;
-		let found = 0;
-		for (let i = 0; i < trials; i++) {
-			const grade = to_both(normal);
-			const cases = [...grade.all, ...grade.alone];
-			const flags = cases.filter((t) => t.flag === 'slower').length;
-			flagged += flags;
-			read += cases.length;
-			if (flags || to_lines(grade).some((s) => is_outside(s) && s.ratio > 0)) false_fails++;
-			// by the lines alone, which the cases would otherwise stand in for
-			if (to_lines(to_both(normal, 1.03)).some((s) => is_outside(s) && s.ratio > 0)) found++;
+	test(
+		'two copies fail rule 6 in few grades, and its lines find a realistic slowdown of 3%',
+		{ timeout: TRIALS_TIMEOUT },
+		() => {
+			const normal = create_normal(11);
+			const trials = 800;
+			let false_fails = 0;
+			let flagged = 0;
+			let read = 0;
+			let found = 0;
+			for (let i = 0; i < trials; i++) {
+				const grade = to_both(normal);
+				const cases = [...grade.all, ...grade.alone];
+				const flags = cases.filter((t) => t.flag === 'slower').length;
+				flagged += flags;
+				read += cases.length;
+				if (flags || to_lines(grade).some((s) => is_outside(s) && s.ratio > 0)) false_fails++;
+				// by the lines alone, which the cases would otherwise stand in for
+				if (to_lines(to_both(normal, 1.03)).some((s) => is_outside(s) && s.ratio > 0)) found++;
+			}
+			// the family's rate, every line and case it fails on, at the default four runs
+			assert.isBelow(false_fails / trials, 0.02);
+			assert.isBelow(flagged / read, 0.001);
+			assert.isAbove(found / trials, 0.9);
 		}
-		// the family's rate, every line and case it fails on, at the default four runs
-		assert.isBelow(false_fails / trials, 0.02);
-		assert.isBelow(flagged / read, 0.001);
-		assert.isAbove(found / trials, 0.9);
-	});
+	);
 });
