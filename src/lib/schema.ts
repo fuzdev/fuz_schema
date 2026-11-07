@@ -1238,16 +1238,26 @@ declare const BrandedSymbol: unique symbol;
 // `Flavored` and `Branded` are an intersection of the value with a union: the
 // marker, and the `null` and `undefined` of the value, which the marker alone
 // would drop. With the union on the outside they resolve to the same types
-// and print as what they resolve to, not by name
+// and print as what they resolve to, not by name. A marker holds its names as
+// the keys of an object, so two of them intersect to an object with both keys,
+// and a value marked twice is assignable to either mark
 
-/** The marker `Flavored` adds: an optional property, so unmarked values still fit. */
-export interface Flavor<T> {
-	readonly [FlavoredSymbol]?: T;
+/**
+ * The marker `Flavored` adds: an optional property, so unmarked values still fit.
+ * Its names are keys, each holding itself, so a flavor of a flavor holds both
+ * and a wide name like `string` matches no particular one.
+ */
+export interface Flavor<T extends PropertyKey> {
+	readonly [FlavoredSymbol]?: { readonly [K in T]: K };
 }
 
-/** The marker `Branded` adds: a required property, so unmarked values don't fit. */
-export interface Brand<T> {
-	readonly [BrandedSymbol]: T;
+/**
+ * The marker `Branded` adds: a required property, so unmarked values don't fit.
+ * Its names are keys, each holding itself, so a brand of a brand holds both
+ * and a wide name like `string` matches no particular one.
+ */
+export interface Brand<T extends PropertyKey> {
+	readonly [BrandedSymbol]: { readonly [K in T]: K };
 }
 
 /**
@@ -1261,6 +1271,16 @@ export interface Brand<T> {
  * type Address = Flavored<string, 'Address'>;
  * const email: Email = 'a@b.c'; // ok
  * const address: Address = email; // error!
+ * ```
+ *
+ * Flavors compose: a flavor of a flavored type is a narrower flavor, assignable to the one
+ * it flavors and not the reverse, as a brand of a brand is.
+ *
+ * ```ts
+ * type WorkEmail = Flavored<Email, 'WorkEmail'>;
+ * const work: WorkEmail = 'a@b.c'; // ok
+ * const e: Email = work; // ok
+ * const w: WorkEmail = email; // error!
  * ```
  *
  * `null` and `undefined` pass through unmarked: `Flavored<string | null, 'Email'>`
@@ -1280,7 +1300,8 @@ export interface Brand<T> {
  * ): T & Flavored<string, 'PostId'> => x;
  * ```
  */
-export type Flavored<TValue, TName> = TValue & (Flavor<TName> | Extract<TValue, null | undefined>);
+export type Flavored<TValue, TName extends PropertyKey> = TValue &
+	(Flavor<TName> | Extract<TValue, null | undefined>);
 
 /**
  * Strict nominal typing. A plain value of the base type is not assignable to the branded type,
@@ -1293,10 +1314,23 @@ export type Flavored<TValue, TName> = TValue & (Flavor<TName> | Extract<TValue, 
  * const b: Uuid = 'abc' as Uuid; // ok
  * ```
  *
+ * Brands compose: a brand of a branded type carries both, so it is assignable to the
+ * brand it refines and not the reverse.
+ *
+ * ```ts
+ * type Path = Branded<string, 'Path'>;
+ * type DirPath = Branded<Path, 'DirPath'>;
+ * const p: Path = 'a/' as DirPath; // ok
+ * const d: DirPath = 'a' as Path; // error!
+ * ```
+ *
+ * A union of names marks with every one of them, as a brand of a brand does.
+ *
  * `null` and `undefined` pass through unmarked: `Branded<string | null, 'Uuid'>`
  * is the branded string or `null`, and a plain `null` is assignable to it.
  */
-export type Branded<TValue, TName> = TValue & (Brand<TName> | Extract<TValue, null | undefined>);
+export type Branded<TValue, TName extends PropertyKey> = TValue &
+	(Brand<TName> | Extract<TValue, null | undefined>);
 
 // the type-only first schema of a `pipe`, which a `flavor` or a `brand` of one keeps for the
 // object schemas to read, and nothing of any other schema

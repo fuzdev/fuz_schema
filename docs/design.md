@@ -724,6 +724,15 @@ wrapped schema's and nothing is stored at runtime.
   to a branded type that has one.
 - **Every other type is marked as an intersection**, `TValue & Flavor<TName>`,
   and prints by the name `Flavored` or `Branded`.
+- **Marks compose.** A marker holds its names as the keys of an object,
+  `{[BrandedSymbol]: {N: 'N'}}`, so a brand of a branded type intersects to
+  an object with both keys: `Branded<Branded<string, 'A'>, 'B'>` assigns to
+  `Branded<string, 'A'>` and not the reverse, as zod's brands do. A flavor of
+  a flavored type is the same refinement, which a plain value still assigns
+  to, and a brand and a flavor compose either way. A union of names marks with
+  every one. Each key holds its own name, so a wide name (`string`) is an
+  index signature that no specific brand satisfies. A marker holding the one
+  name as its value made a brand of a brand `never`.
 - **Of a type parameter neither is known to lack `null` and `undefined`**, as
   `Extract` waits for the parameter. `Branded<T, 'N'>` with `T extends string`
   doesn't assign to `Branded<string, 'N'>`, one with an unconstrained `T` is

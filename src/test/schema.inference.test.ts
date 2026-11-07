@@ -3007,3 +3007,50 @@ describe('empty object schemas', () => {
 		expectTypeOf<s.Infer<typeof _ToEmpty>>().toEqualTypeOf<Record<string, never>>();
 	});
 });
+
+describe('brand and flavor of a branded or flavored schema', () => {
+	type A = s.Branded<string, 'A'>;
+	type FA = s.Flavored<string, 'A'>;
+
+	test('compose, at top level and in an object entry', () => {
+		const PathA = s.brand(s.pipe(s.string, s.min_length(1)), 'A');
+		const _AB = s.brand(PathA, 'B');
+		expectTypeOf<s.Infer<typeof _AB>>().not.toBeNever();
+		expectTypeOf<s.Infer<typeof _AB>>().toEqualTypeOf<s.Branded<A, 'B'>>();
+		expectTypeOf<s.InferInput<typeof _AB>>().toEqualTypeOf<string>();
+		const _nested = s.brand(s.brand(s.pipe(s.string, s.min_length(1)), 'A'), 'B');
+		expectTypeOf<s.Infer<typeof _nested>>().toEqualTypeOf<s.Branded<A, 'B'>>();
+		const _ab: s.Infer<typeof _AB> = s.parse_or_throw(_AB, 'x');
+		const _a: A = _ab;
+		assert.strictEqual(_a, 'x');
+		const FlavorA = s.flavor(s.string, 'A');
+		const _FB = s.flavor(FlavorA, 'B');
+		expectTypeOf<s.Infer<typeof _FB>>().toEqualTypeOf<s.Flavored<FA, 'B'>>();
+		const _fa: FA = s.parse_or_throw(_FB, 'x');
+		assert.strictEqual(_fa, 'x');
+		const _BF = s.brand(FlavorA, 'B');
+		expectTypeOf<s.Infer<typeof _BF>>().toEqualTypeOf<s.Branded<FA, 'B'>>();
+		const _FBr = s.flavor(PathA, 'F');
+		expectTypeOf<s.Infer<typeof _FBr>>().toEqualTypeOf<s.Flavored<A, 'F'>>();
+		const _O = s.object({ ab: _AB, nullable: s.nullable(_AB), opt: s.optional(_FB) });
+		expectTypeOf<s.Infer<typeof _O>>().toEqualTypeOf<{
+			ab: s.Branded<A, 'B'>;
+			nullable: s.Branded<A, 'B'> | null;
+			opt?: s.Flavored<FA, 'B'> | undefined;
+		}>();
+		const _from_object: { ab: A; nullable: A | null } = s.parse_or_throw(_O, {
+			ab: 'x',
+			nullable: null
+		});
+		assert.deepEqual<unknown>(_from_object, { ab: 'x', nullable: null });
+	});
+
+	test('compose as a step of a pipe', () => {
+		const _Step = s.pipe(s.brand(s.string, 'A'), s.brand(s.min_length(1), 'B'));
+		expectTypeOf<s.Infer<typeof _Step>>().toEqualTypeOf<s.Branded<A, 'B'>>();
+		const _Flavors = s.pipe(s.flavor(s.string, 'A'), s.flavor(s.min_length(1), 'B'));
+		expectTypeOf<s.Infer<typeof _Flavors>>().toEqualTypeOf<s.Flavored<FA, 'B'>>();
+		const _out: unknown = s.parse_or_throw(_Step, 'x');
+		assert.strictEqual(_out, 'x');
+	});
+});

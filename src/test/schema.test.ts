@@ -902,6 +902,78 @@ describe('types', () => {
 		expectTypeOf<s.Infer<typeof Uuid>>().toEqualTypeOf<s.Branded<string, 'Uuid'>>();
 	});
 
+	test('a brand of a brand is a narrower brand', () => {
+		type A = s.Branded<string, 'A'>;
+		type AB = s.Branded<A, 'B'>;
+		expectTypeOf<AB>().not.toBeNever();
+		expectTypeOf<AB>().toExtend<A>();
+		expectTypeOf<AB>().toExtend<s.Branded<string, 'B'>>();
+		expectTypeOf<AB>().toExtend<string>();
+		expectTypeOf<A>().not.toExtend<AB>();
+		expectTypeOf<string>().not.toExtend<A>();
+		expectTypeOf<s.Branded<string, 'B'>>().not.toExtend<A>();
+		expectTypeOf<A>().not.toExtend<s.Branded<string, 'B'>>();
+		// the order of the two doesn't matter
+		expectTypeOf<s.Branded<s.Branded<string, 'B'>, 'A'>>().toExtend<AB>();
+		expectTypeOf<AB>().toExtend<s.Branded<s.Branded<string, 'B'>, 'A'>>();
+		// a union of names is both
+		expectTypeOf<s.Branded<string, 'A' | 'B'>>().toExtend<AB>();
+		// `null` passes through each
+		type N = s.Branded<s.Branded<string | null, 'A'>, 'B'>;
+		expectTypeOf<null>().toExtend<N>();
+		expectTypeOf<N>().toExtend<s.Branded<string | null, 'A'>>();
+		expectTypeOf<undefined>().not.toExtend<N>();
+		// a wide name is no brand in particular: it takes every brand and assigns to none
+		expectTypeOf<A>().toExtend<s.Branded<string, string>>();
+		expectTypeOf<s.Branded<string, string>>().not.toExtend<A>();
+		expectTypeOf<s.Branded<string, `x${string}`>>().not.toExtend<s.Branded<string, 'xy'>>();
+		// one name is not a union of them
+		expectTypeOf<A>().not.toExtend<s.Branded<string, 'A' | 'B'>>();
+	});
+
+	test('a flavor of a flavor is a narrower flavor', () => {
+		type A = s.Flavored<string, 'A'>;
+		type AB = s.Flavored<A, 'B'>;
+		expectTypeOf<AB>().not.toBeNever();
+		expectTypeOf<AB>().toExtend<A>();
+		expectTypeOf<AB>().toExtend<s.Flavored<string, 'B'>>();
+		expectTypeOf<A>().not.toExtend<AB>();
+		expectTypeOf<s.Flavored<string, 'B'>>().not.toExtend<A>();
+		expectTypeOf<A>().not.toExtend<s.Flavored<string, 'B'>>();
+		// a plain value still fits each
+		expectTypeOf<string>().toExtend<A>();
+		expectTypeOf<string>().toExtend<AB>();
+		const _ab: AB = 'x';
+		const _up = (x: AB): A => x;
+		const _down = (x: A): AB =>
+			// @ts-expect-error a flavor is not the flavor of it
+			x;
+		assert.strictEqual(_down(_up(_ab)), 'x');
+		expectTypeOf<null>().toExtend<s.Flavored<s.Flavored<string | null, 'A'>, 'B'>>();
+		expectTypeOf<s.Flavored<string, string>>().not.toExtend<A>();
+	});
+
+	test('a brand and a flavor compose either way', () => {
+		type B = s.Branded<string, 'B'>;
+		type F = s.Flavored<string, 'F'>;
+		type BF = s.Flavored<B, 'F'>;
+		type FB = s.Branded<F, 'B'>;
+		expectTypeOf<BF>().not.toBeNever();
+		expectTypeOf<FB>().not.toBeNever();
+		expectTypeOf<BF>().toExtend<B>();
+		expectTypeOf<BF>().toExtend<F>();
+		expectTypeOf<FB>().toExtend<B>();
+		expectTypeOf<FB>().toExtend<F>();
+		expectTypeOf<BF>().toExtend<FB>();
+		expectTypeOf<FB>().toExtend<BF>();
+		// a flavor of a brand still takes any value of the brand, and not a plain one
+		expectTypeOf<B>().toExtend<BF>();
+		expectTypeOf<string>().not.toExtend<BF>();
+		// a brand of a flavor needs the brand, and not the flavor
+		expectTypeOf<F>().not.toExtend<FB>();
+		expectTypeOf<s.Branded<s.Flavored<string, 'G'>, 'B'>>().not.toExtend<FB>();
+	});
+
 	test('two flavors of one type parameter mix where its constraint rules out null', () => {
 		// what the TSDoc of `Flavored` says: these compile
 		const _mix = <T extends string>(x: s.Flavored<T, 'A'>): s.Flavored<T, 'B'> => x;
