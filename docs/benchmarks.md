@@ -51,9 +51,10 @@ Zod Mini, TypeBox, and ArkType.
     of a parse, which `fixed` measures alone.
   - `scale` repeats a shape at the sizes where a different cost takes over.
   - `create` builds schemas and parses nothing: an optional, a pipe, a flat
-    and a nested object, a union, and a variant. An app pays it once a
-    schema as its modules load, and a change that moves work from the parse
-    to the factory shows here and in no parse.
+    and a nested object, a union, a variant, and fuz_app's wire schemas. An
+    app pays it once a schema as
+    its modules load, and a change that moves work from the parse to the
+    factory shows here and in no parse.
 
   Every case names its path: `identity` returns the input itself, `copy`
   returns another value, `issues` fails through `parse`, `probe` goes
@@ -62,7 +63,8 @@ Zod Mini, TypeBox, and ArkType.
   6, which reads parses. A creation case confirmed slower is listed with the
   rest. Schemas are written as literals and inputs come from
   `JSON.parse`, as a consumer's do: an object built key by key can be a
-  different kind of object to the engine, and cost differently.
+  different kind of object to the engine, and cost differently, which one
+  case of `fuz_app` is.
 
 Every timed function, a case, a scenario's row, a harvested set's, or a
 survey's, cycles through copies of its input (`inputs.ts`), a copy a call: 16,
@@ -89,11 +91,26 @@ snapshot is not kept in step with it.
 | `repos_status/` | [fuz_repos](https://github.com/fuzdev/fuz_repos), in Zod (its last Zod schemas, carried forward) | a status report: strict objects and discriminated unions nested several deep, under a plain union; its test goldens |
 | `package_json/` | [fuz_util](https://github.com/fuzdev/fuz_util), in Zod | a `package.json`: a loose object, records, unions with no discriminator; manifests of this ecosystem's repos and of published packages |
 | `bench_results/` | [syntax-highlighter-bench](https://github.com/ryanatkn/syntax-highlighter-bench), in Zod | a results document, its structure without its refinements: records keyed by id, numbers each with its checks; a test fixture |
+| `fuz_app/` | [fuz_app](https://github.com/fuzdev/fuz_app), in this library, and one schema of [zzz](https://github.com/fuzdev/zzz) | the wire schemas its server and every frontend parse a request and its response through: strict objects of branded UUIDs and timestamps, a loose object of a cell's data, a list page of 50 cells; the frames and bodies its in-memory app wrote, and zzz's streamed token written by hand in the shape its server sends |
 
 `src/test/docinfo.test.ts` and `src/test/harvest.test.ts` hold each pair to the
 same verdict and output on the data, and on that data changed in one place at
 a time. Where a rewrite had to stand something in for what the consumer's
 library has built in, the header of the rewritten file says what.
+
+`fuz_app` is written in this library already, so it has one side: its module
+is fuz_app's code with the library taken as a parameter, less its `meta`
+calls, whose registry every instance in a process shares. It is not in
+`npm run benchmark:harvest`. Its documents' `source` says how they were
+captured: a script kept outside both repos booted fuz_app's test app on
+PGlite and made the cells through its RPC, so its rows are as the server
+writes them, timestamps to the second and each cell's `data` with its keys in
+the order Postgres's `jsonb` keeps them. Its cases outside `real` are what a
+request costs beside its parses: the envelope through `is`, a token's scope,
+a page from a newer server with an unknown key a row, one with a timestamp in
+Postgres's own text form, and a query as Hono gives one, an object of no
+prototype built key by key. A `create` case builds every schema of the
+module.
 
 ### Head to head
 

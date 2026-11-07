@@ -12,8 +12,10 @@
  *   object, a list, a config, a form, an event stream, a union of shapes.
  *   The rest are harvested from consumers, their schemas rewritten for this
  *   library and run over their own data: svelte-docinfo's analysis output,
- *   fuz_repos's status report, fuz_util's `package.json`, and
- *   syntax-highlighter-bench's results. Speed is judged on these, so they
+ *   fuz_repos's status report, fuz_util's `package.json`,
+ *   syntax-highlighter-bench's results, and the requests and responses of
+ *   fuz_app's cell and account surface, with zzz's streamed token. Speed is
+ *   judged on these, so they
  *   are chosen as a set: each differs from the rest in the schema kinds it
  *   leans on or in the path it takes.
  * - The other groups hold one case per code path, at one medium size. `each`
@@ -32,7 +34,8 @@
  *
  * Schemas are written as literals and inputs come from `JSON.parse`, as a
  * consumer's do: an object built key by key can be a different kind of object
- * to the engine, and cost differently.
+ * to the engine, and cost differently. The one exception is a case of such an
+ * object, a query as Hono gives one.
  *
  * Naming is `group/shape/outcome`. A case's `run` returns the parse result so
  * the caller can check it and see whether the output is the input itself.
@@ -43,11 +46,12 @@
 import { readFileSync } from 'node:fs';
 
 import type * as schema_lib from '#lib/schema.ts';
-import { to_input_copies } from './inputs.ts';
+import { INPUT_COPIES_MAX, to_input_copies } from './inputs.ts';
 import { create_docinfo } from './docinfo/docinfo_fuz_schema.ts';
 import { create_repos_status } from './repos_status/repos_status_fuz_schema.ts';
 import { create_package_json } from './package_json/package_json_fuz_schema.ts';
 import { create_bench_results } from './bench_results/bench_results_fuz_schema.ts';
+import { create_fuz_app } from './fuz_app/fuz_app_fuz_schema.ts';
 
 export type SchemaLib = typeof schema_lib;
 
@@ -148,16 +152,17 @@ const is_case_build = (entry: CaseEntry): entry is CaseBuild => 'build' in entry
 
 const to_group = (name: string): string => name.slice(0, name.indexOf('/'));
 
-// a case through `parse`, whose name ends in its outcome
+// a case through `parse`, whose name ends in its outcome, cycling through the
+// copies of its input `to_input_copies` makes, or through the ones it is given
 const to_case = (
 	s: SchemaLib,
 	name: string,
 	schema: schema_lib.AnySchema,
 	input: unknown,
-	path: Exclude<CasePath, 'probe'>
+	path: Exclude<CasePath, 'probe'>,
+	inputs: Array<unknown> = to_input_copies(input)
 ): Case => {
 	const group = to_group(name);
-	const inputs = to_input_copies(input);
 	const mask = inputs.length - 1;
 	let at = 0;
 	return {
@@ -656,6 +661,119 @@ const real_bench_results: CaseGroup = (s) => {
 	];
 };
 
+// What fuz_app's server and every frontend over it parse on the way of a request
+// (`fuz_app/`), over frames and bodies its in-memory app wrote: the inputs a
+// server parses a request's params through, and a client before it sends them,
+// and the outputs a client reads a response through, the large ones being a
+// page of a list. The rows are as the server writes them: timestamps to the
+// second, each cell's `data` with its keys in the order Postgres's `jsonb` keeps
+// them. And zzz's streamed token, a notification parsed once a token.
+const real_fuz_app: CaseGroup = (s) => {
+	const app = create_fuz_app(s);
+	const documents = read_harvest('fuz_app/fuz_app_documents.json', 'documents');
+	const list_request = to_document(documents, 'cell_list_request') as any;
+	const create_request = to_document(documents, 'cell_create_request') as any;
+	const list_response = to_document(documents, 'cell_list_response') as any;
+	const notification = to_document(documents, 'completion_progress_notification') as any;
+	// a create a client got wrong: a parent id cut short, and a visibility the
+	// server doesn't have
+	const create_bad = to_json(create_request.params);
+	create_bad.parent_id = create_bad.parent_id.slice(0, -1);
+	create_bad.visibility = 'unlisted';
+	// the page from a newer server, whose rows each have a field this client
+	// doesn't name: an issue a row, which fuz_app's reader strips and parses again
+	const drifted = to_json(list_response.result);
+	for (const cell of drifted.cells) cell.comment_count = 0;
+	// and from a reader whose last row has its timestamp in Postgres's own text form
+	const pg_timestamp = to_json(list_response.result);
+	const last = pg_timestamp.cells.at(-1);
+	last.created_at = last.created_at.replace('T', ' ').replace('Z', '+00');
+	// a query as Hono gives one, an object of no prototype its keys are set on one
+	// by one, here with the one key fuz_app's one query schema names
+	const query = (): unknown => {
+		const q = Object.create(null);
+		q.acting = list_request.params.root_id;
+		return q;
+	};
+	return [
+		to_case(
+			s,
+			'real/fuz_app_cell_list_input/valid',
+			app.CellListInput,
+			list_request.params,
+			'identity'
+		),
+		to_case(
+			s,
+			'real/fuz_app_cell_create_input/valid',
+			app.CellCreateInput,
+			create_request.params,
+			'identity'
+		),
+		to_case(
+			s,
+			'real/fuz_app_cell_create_input_bad/invalid',
+			app.CellCreateInput,
+			create_bad,
+			'issues'
+		),
+		to_case(
+			s,
+			'real/fuz_app_cell_list_output_50/valid',
+			app.CellListOutput,
+			list_response.result,
+			'identity'
+		),
+		to_case(
+			s,
+			'real/fuz_app_cell_get_output/valid',
+			app.CellGetOutput,
+			(to_document(documents, 'cell_get_response') as any).result,
+			'identity'
+		),
+		to_case(
+			s,
+			'real/fuz_app_account_status/valid',
+			app.AccountStatusOutput,
+			to_document(documents, 'account_status_response'),
+			'identity'
+		),
+		to_case(
+			s,
+			'real/fuz_app_completion_progress/valid',
+			app.CompletionProgressInput,
+			notification.params,
+			'identity'
+		),
+		// what a server asks of every frame before it reads one, through `is`
+		to_probe_case(s, 'fixed/fuz_app_jsonrpc_is/valid', app.JsonrpcRequest, list_request, true),
+		// a bearer token's scope as its row holds it, read on every request it makes
+		to_case(
+			s,
+			'fixed/fuz_app_token_scope/valid',
+			app.TokenScope,
+			to_document(documents, 'token_scope_row'),
+			'identity'
+		),
+		to_case(s, 'object/fuz_app_cells_50_drifted/invalid', app.CellListOutput, drifted, 'issues'),
+		to_case(
+			s,
+			'object/fuz_app_cells_50_pg_timestamp/invalid',
+			app.CellListOutput,
+			pg_timestamp,
+			'issues'
+		),
+		to_case(
+			s,
+			'object/fuz_app_query_null_proto/valid',
+			app.AuditStreamQuery,
+			query(),
+			'identity',
+			Array.from({ length: INPUT_COPIES_MAX }, query)
+		)
+	];
+};
+
 //
 // Creation
 //
@@ -738,7 +856,14 @@ const create: CaseGroup = (s) => [
 			to_object(s)({ type: s.literal('key'), key: s.string }),
 			to_object(s)({ type: s.literal('scroll'), dy: s.number })
 		])
-	)
+	),
+	// the harvested fuz_app schemas, every one, as its modules build them as
+	// they load: built on their own, as a baseline may lack a name they use
+	{
+		name: 'create/fuz_app_specs/valid',
+		build: () =>
+			to_create_case(s, 'create/fuz_app_specs/valid', () => create_fuz_app(s).CellListOutput)
+	}
 ];
 
 //
@@ -1574,6 +1699,7 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	real_repos_status,
 	real_package_json,
 	real_bench_results,
+	real_fuz_app,
 	fixed,
 	each,
 	object,

@@ -217,10 +217,12 @@ dev server.
     grader and its processes share
   - `program.ts` - one schema of every kind, built and run: what a process of
     the grader's `apart` regime runs before it times a case
-  - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/` - the
-    harvested sets: a consumer's schemas as it writes them (valibot or zod),
-    the same in this library, and its data, for the cases. Snapshots, not
-    kept in step, see `docs/benchmarks.md`
+  - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/`,
+    `fuz_app/` - the harvested sets: a consumer's schemas as it writes them
+    (valibot or zod), the same in this library, and its data, for the cases.
+    `fuz_app/` is written in this library already and has the one side, with
+    frames and bodies its in-memory app wrote. Snapshots, not kept in step,
+    see `docs/benchmarks.md`
   - `wasm.ts` - the wasm build against the library, which also runs the JSON
     fixtures through the wasm
   - `harvest.ts` - each harvested set's own library against this one on its
