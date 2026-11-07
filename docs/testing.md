@@ -21,6 +21,11 @@ each module, these hold the library to more than its own examples:
   so a cache keyed by the input or a fast path for the last one fails a test
   where a timing would read it as a win: the benchmarks cycle through a few
   copies of an input, which defeats only a cache smaller than that.
+- **The engine's state**: `src/test/engine_state.test.ts` asks the engine, in
+  processes of its own, that every protector is intact after the program of
+  `src/benchmarks/program.ts` has used every kind of schema, which the
+  grader's versions would both pay and read as no difference, and that the
+  heap does not grow with the count of distinct inputs parsed.
 
 ## The differential
 

@@ -5,7 +5,7 @@
  * @module
  */
 
-import { gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants as zlib_constants, gzipSync } from 'node:zlib';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
@@ -51,6 +51,16 @@ export const to_bundle_size = (code: string): BundleSize => ({
 	minified: Buffer.byteLength(code),
 	gzip: gzipSync(code, { level: 9 }).length
 });
+
+/**
+ * The brotli bytes of a bundle's code at the highest quality, what a server that
+ * compresses ahead of time sends. Reported beside gzip by `bundle.ts`, and read
+ * by no rule and kept in no snapshot.
+ */
+export const to_brotli_size = (code: string): number =>
+	brotliCompressSync(code, {
+		params: { [zlib_constants.BROTLI_PARAM_QUALITY]: zlib_constants.BROTLI_MAX_QUALITY }
+	}).length;
 
 /**
  * Bundles and minifies the module `entry` is the source of.

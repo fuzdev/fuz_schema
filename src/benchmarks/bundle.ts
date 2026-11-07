@@ -8,16 +8,25 @@
  *
  * Then this library alone, whole and export by export, see `LibrarySizes`.
  *
+ * The scenario table is printed in gzipped bytes, then again in brotli's, which
+ * no rule reads and `sizes.json` doesn't keep.
+ *
  * Usage:
  *   gro run src/benchmarks/bundle.ts
- *   gro run src/benchmarks/bundle.ts --raw   # minified bytes instead of gzip
+ *   gro run src/benchmarks/bundle.ts --raw   # minified bytes instead of gzip, and no brotli
  *
  * @module
  */
 
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
-import { measure_bundle_size, measure_library_sizes, type BundleSize } from './bundle_size.ts';
+import {
+	build_scenario_bundle,
+	measure_library_sizes,
+	to_brotli_size,
+	to_bundle_size,
+	type BundleSize
+} from './bundle_size.ts';
 import { format_table } from './measure.ts';
 
 const raw = process.argv.includes('--raw');
@@ -26,13 +35,16 @@ const metric: keyof BundleSize = raw ? 'minified' : 'gzip';
 const columns = [...SCENARIOS.map((s) => [s.name]), SCENARIOS.map((s) => s.name)];
 const headers = [...SCENARIOS.map((s) => s.name), 'all'];
 
-const rows: Array<{ lib: string; sizes: Array<number> }> = [];
+const rows: Array<{ lib: string; sizes: Array<number>; brotli: Array<number> }> = [];
 for (const lib of LIBS) {
 	const sizes: Array<number> = [];
+	const brotli: Array<number> = [];
 	for (const column of columns) {
-		sizes.push((await measure_bundle_size(lib.name, column))[metric]);
+		const code = await build_scenario_bundle(lib.name, column);
+		sizes.push(to_bundle_size(code)[metric]);
+		if (!raw) brotli.push(to_brotli_size(code));
 	}
-	rows.push({ lib: lib.name, sizes });
+	rows.push({ lib: lib.name, sizes, brotli });
 }
 
 const baseline = rows.find((r) => r.lib === BASELINE_LIB)!;
@@ -47,6 +59,17 @@ console.log(
 		...rows.map((r) => [r.lib, ...r.sizes.map((s, i) => format_cell(s, baseline.sizes[i]!))])
 	])
 );
+if (!raw) {
+	console.log(
+		`\nthe same, minified + brotli at its highest quality, reported beside gzip (vs ${BASELINE_LIB})\n`
+	);
+	console.log(
+		format_table([
+			['lib', ...headers],
+			...rows.map((r) => [r.lib, ...r.brotli.map((s, i) => format_cell(s, baseline.brotli[i]!))])
+		])
+	);
+}
 
 const format_signed = (bytes: number): string => `${bytes >= 0 ? '+' : ''}${bytes}`;
 

@@ -223,7 +223,9 @@ whoever runs it.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped. See
   [below](#the-whole-library) for this library's own table. `--raw` prints the
-  minified bytes in place of the gzipped.
+  minified bytes in place of the gzipped. The scenario table is printed again in
+  brotli's bytes at its highest quality, which no rule reads and `sizes.json`
+  doesn't keep.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
   with no collection forced. A forced collection makes the engine throw away
   optimized code, and the calls sampled after it allocate more than the code

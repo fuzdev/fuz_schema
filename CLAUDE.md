@@ -21,7 +21,7 @@ gro test      # run tests with vitest
 gro build     # build for production (static adapter)
 gro sync      # regenerate files and run svelte-kit sync
 npm run benchmark             # parse time, every library on every scenario, a library to a process
-npm run benchmark:bundle      # bundle size, gzip bytes, per scenario and per export (add -- --raw for minified)
+npm run benchmark:bundle      # bundle size, gzip bytes, per scenario (and brotli) and per export (add -- --raw for minified)
 npm run benchmark:allocations # heap bytes per parse and per schema creation
 npm run benchmark:types       # tsc instantiations and check time per library
 npm run benchmark:coldstart   # time and peak memory of a fresh process, per stage, to the 100th parse (gro build first)
@@ -102,6 +102,9 @@ dev server.
 - `src/test/schema.fresh_input.test.ts` - an input changed in place after a
   parse gives the next parse's answer, through every kind of container, so a
   cache keyed by the input fails a test and not only a benchmark
+- `src/test/engine_state.test.ts` - every protector of the engine intact
+  after the grader's program, and a heap that doesn't grow with the count of
+  distinct inputs, asked in processes of their own, `engine_state_test_child.ts`
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, so the benchmarks compare like with like
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
