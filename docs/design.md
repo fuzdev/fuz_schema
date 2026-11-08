@@ -291,7 +291,8 @@ An array is not an object: each of them rejects one, as do `record` and
   looked up in the entries, so order never changes the result, only the cost.
   The position doesn't resync: after an absent optional key, every later key
   is looked up, see
-  [declined.md](declined.md#a-one-key-lookahead-for-the-position-check).
+  [declined.md](declined.md#a-one-key-lookahead-for-the-position-check) and
+  [the position found by `indexOf`](declined.md#the-position-found-by-indexof).
 - **A copy has the schema's keys, in the schema's order.** They are read
   through the prototype and written as own keys. A key the input lacks stays
   out unless its entry gives a value for it, and one that is `undefined`

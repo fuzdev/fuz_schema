@@ -157,20 +157,105 @@ the entries present, in place of asking `Object.hasOwn` of the keys.
 - **Reopens**: nothing known.
 - **Measured**: before v0.2.0.
 
+### The unknown-key check skipped when the counts agree
+
+The entries loop counting the entries present, as those whose value reads as
+anything but `undefined`, as it reads each value anyway, and the check
+skipped when the input's key count is the same.
+
+- **Gave**: nothing measured: it was refused on soundness before it was
+  built. The input's keys still have to be enumerated to be counted, which is
+  most of what the check costs input in the schema's order.
+- **Cost**: unknown keys let through. A value read through the prototype
+  counts as present: `object({constructor: optional(unknown)})` given the
+  JSON `{"z": 1}` reads `Object` at `constructor`, counts one entry and one
+  key, and would accept `z`. A non-enumerable own key that an entry names
+  does the same, as in the entry above. A missing optional key is not itself
+  a hole: it reads as `undefined` and is not counted. A sound count tests
+  each entry for an own enumerable key, which costs more than the check.
+- **Why**: a hole in strictness is worse than the time.
+- **Reopens**: nothing known.
+- **Measured**: before v0.5.7, on Node 26.13.
+
 ### A one-key lookahead for the position check
 
 A key in the schema's order is known by its position, and after an absent
 optional key every later key is looked up. The lookahead tries the next
 position too.
 
-- **Gave**: the case it is for, an absent optional key early in a wide
-  object, back to the cost before the position check, which had made it 5 to
-  10% slower.
-- **Cost**: +7 gzip on the core, and reversed and rotated inputs slower.
-- **Why**: core bytes, for one shape, paid for by others.
-- **Reopens**: a form that costs input out of the schema's order nothing.
-  `object/21_keys_first_optional_absent` watches the case.
-- **Measured**: before v0.2.0.
+- **Gave**: the cases it is for back to the cost of input in the schema's
+  order: an absent optional key first and in the middle of 21 keys, and three
+  absent among 23, 0.70 to 0.82x in the matrix and 0.68 to 0.81x alone and
+  apart. The realistic valid path 0.3% faster in the matrix, inside its A/A
+  of ±1.5%.
+- **Cost**: +10 gzip on the core. Input out of the schema's order slower:
+  `object/6_keys_reversed` 1.142x and `scale/object_100_keys_reversed`
+  1.060x in the matrix, both confirmed, and `object/21_keys_reversed` 1.013x
+  and an unknown key after each of 20 known ones 1.053x alone, both
+  confirmed.
+- **Why**: core bytes, for shapes the realistic cases barely have, paid for
+  by input out of order.
+- **Reopens**: a form that costs input out of the schema's order nothing, or
+  realistic input where a key absent ahead of present ones is common. The
+  `object/*_optional_absent`, `object/*_reversed`, `object/6_keys_rotated`,
+  and `object/20_keys_*` cases watch both sides.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### The position found by `indexOf`
+
+The lookup of a key out of the schema's order done by `keys.indexOf`, which
+also puts the position after the key found, so after an absent optional key
+the keys that follow are in place again. An unknown key is one it doesn't
+find.
+
+- **Gave**: the absent-key cases 0.71 to 0.85x in the matrix, 0.68 to 0.83x
+  alone, and 0.68 and 0.83x apart, `object/6_keys_rotated` 0.90x in the
+  matrix, and `real/docinfo_module_full` 0.958x in the matrix and 0.949x alone,
+  all confirmed. The realistic valid path 0.4% faster in the matrix, inside its
+  A/A of ±1.8%, and 0.6% faster alone, inside its A/A of ±1.0%.
+- **Cost**: +3 gzip on the core, +1 in the shortest spelling found. A
+  search that grows with the schema's width, which the input's order
+  chooses: a wide object reversed searches about half its keys for each key,
+  `scale/object_100_keys_reversed` 1.755x in the matrix, and
+  `object/21_keys_reversed` 1.063x in the matrix, 1.113x alone, and 1.115x apart.
+  Pairs of keys swapped 1.053x in the matrix and 1.123x alone, and an
+  unknown key after each of 20 known ones 1.277x in the matrix and 1.385x
+  alone: each unknown key searched to the end, and the known key after it
+  searched for again. All confirmed.
+- **Why**: core bytes the realistic cases return nothing for, and input out
+  of order slowed by a factor the input chooses.
+- **Reopens**: a search whose cost doesn't grow with the schema's width.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### The search only after a key in place
+
+The same search, only for a key out of order that follows one in place, and
+`Object.hasOwn` for the rest, so a run of keys out of order searches once.
+
+- **Gave**, in a process of one schema timing the check alone: an absent
+  first key of 21 0.21x and a rotated 7 0.70x.
+- **Cost**: +25 gzip on the core, and still slower out of order there: 6 keys
+  reversed 1.34x, one swapped pair 1.52x, and 100 keys in an order that puts
+  a key out of place after each in place 2.81x, as the search still grows
+  with the width.
+- **Why**: more core bytes than the plain search, and the same cost the
+  input can choose.
+- **Reopens**: as the plain search.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### A `Map` from each key to its position
+
+The lookup and the position from one `Map` made with the schema.
+
+- **Gave**, in a process of one schema timing the check alone: an absent
+  first key of 21 0.23x, 21 keys reversed 0.77x, and 100 reversed 0.51x.
+- **Cost**: the `Map` each object schema holds: 296 bytes at 7 keys and 968
+  at 21, past rule 9's allowance of 16 per schema many times over. And one
+  swapped pair 1.26x. Its core bytes were not measured.
+- **Why**: rule 9, for a return the realistic cases don't have.
+- **Reopens**: realistic input mostly out of the schema's order, with a
+  ruling on what each schema may hold.
+- **Measured**: before v0.5.7, on Node 26.13.
 
 ### A copy that leaves out a key whose value is `undefined`
 
