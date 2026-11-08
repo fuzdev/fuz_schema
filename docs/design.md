@@ -298,7 +298,10 @@ An array is not an object: each of them rejects one, as do `record` and
   stays in.
 - **A copy reads its unchanged keys a second time**, and finding a key to
   drop means enumerating the input's keys. That is what a key to drop, or a
-  change late in a wide object, costs over building every output.
+  change late in a wide object, costs over building every output. The ways
+  tried to fill the copy as the entries run are in
+  [declined.md](declined.md#dropping-keys), and for a default,
+  [the copy filled from the start](declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default).
 
 `loose_object` has a loop of its own, which copies the schema's keys by the
 same rule and never looks at the input's keys unless it made a copy:

@@ -229,6 +229,35 @@ keys.
 - **Reopens**: nothing known.
 - **Measured**: before v0.2.0.
 
+### A copy filled from the start when an entry has a default
+
+`object` and `strip_object` noting when made whether an entry is a
+`with_default` or a `with_default_fn`, and for such a schema writing every
+entry's output to a copy as the entries run, so a default that applies late
+reads no key twice. Filling the copy from the first such entry, in place of
+the start, saves nothing for one late default: the keys before it are read
+again either way.
+
+- **Gave**: a default that applies at the end of seven or twenty-one keys
+  0.79x to 0.88x in the matrix and 0.76x to 0.83x alone. A chain of eight
+  objects whose last has the default, `nested/depth_8_leaf_defaulted/valid`,
+  read 0.369x alone and 1.017x in the matrix, not explained.
+- **Cost**: +116 gzip on the core, which puts `strict_nested` at 0.758 of
+  Valibot's, `pipe` at 0.781, and `type_json` at 0.760, over the backstop. The
+  realistic valid path, here `real/config_defaults` alone, 5.5% slower in the
+  matrix and 10.7% alone. Retained heap per further schema +127 bytes on `app`
+  and +88 on `type_json`, over rule 9's allowance, which the grader reads as
+  `ASK`. An input that has the defaulted key fills a copy it throws away:
+  twenty-one keys 1.69x to 1.79x, and 8.5x the allocation in the matrix and
+  14.7x alone. Alone, a default that applies first 1.10x, and six
+  defaults that all apply 1.15x to 1.17x. A default inside a `pipe` is not
+  seen, nor one in a nested object, which leaves the object around it copying
+  as before.
+- **Why**: core bytes, rule 4, and the backstop, the valid path slower, rule
+  6, and retained heap over rule 9's allowance, an `ASK`.
+- **Reopens**: nothing known.
+- **Measured**: before v0.5.7, on Node 26.13.
+
 ## Dropping keys
 
 What was taken, in `strip_object`: the entries run as `object`'s do, and only
@@ -323,6 +352,72 @@ every strip case but one whose first optional key is absent: a geometric mean of
 to 12x on a probe that fails. The eager form's realistic valid path was 26%
 slower in the matrix and 36% alone. The current loop itself, on an input with
 nothing to drop, moved from 111 to 121 ns.
+
+### A copy filled as the entries run after a parse that dropped a key
+
+A flag in `strip_object`'s closure, set when a parse dropped a key and cleared
+when one fails or has nothing to drop, under which the next parse runs a loop
+of its own that writes each entry's output to a copy as it goes, so no key is
+read twice and the copy is ready when the enumeration finds a key to drop. The
+flag is closure state, not a field of the schema, and the shape test passes
+against it.
+Output is the same as without it; only time and allocation depend on what the
+schema parsed before.
+
+- **Gave**: an input with a key to drop, at six keys and at twenty to forty,
+  0.79x to 0.85x and 0.76x to 0.80x in the matrix, 0.74x to 0.80x and 0.70x to
+  0.79x alone, and at twenty 0.74x to 0.78x apart, near what a version that
+  always copies takes. The realistic valid path 0.4% faster in the matrix,
+  inside its A/A of ±1.8%.
+- **Cost**: `strip_object` +71 gzip last in and +91 alone, the scenarios
+  built with it +88 to +94, which puts `pipe` at 0.762 of Valibot's, over the
+  backstop. Alone, inputs with nothing to drop 1.03x to 1.04x, confirmed, and
+  `strip/7_of_8_keys_last_defaulted/valid` 1.10x, which fails rule 6. A probe
+  1.04x for the branch. Allocation depends on history: the first parse after
+  the input changes kind fills a copy it throws away. And a late default is
+  not helped, nor a key dropped in a nested `strip_object`, which makes the
+  outer copy one of a change: `strip/accounts_100_extra_fields/valid` 1.01x.
+- **Why**: the backstop and rule 6, for one of the two costs of copy-on-write,
+  and allocation that depends on what a schema parsed before.
+- **Reopens**: an eager loop that costs a bundle no more than the backstop
+  allows and the path with nothing to drop nothing alone.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+Three forms of it were built beside it:
+
+- The flag set by any copy, a change's too, filled by a helper of its own:
+  a flat object with a key to drop or a late default 0.72x to 0.83x, and
+  0.84x to 0.91x through a `union`, in a nested object, or with an optional
+  key absent, in the matrix. But the scenarios built with
+  `strip_object` +102 to +105, over the backstop, an env file whose second
+  entry always changes 1.16x alone, which fails rule 6, and, before the flag
+  was cleared by a failure, failures 1.55x to 1.57x in the matrix.
+- `strip_object` with a loop of its own for both ways, in place of
+  `run_entries`: 8 gzip fewer alone, under the backstop, and +104 in a bundle
+  that has `object` too. Inputs with nothing to drop 1.06x to 1.11x in the matrix, and the
+  realistic valid path 0.7% slower alone, past its A/A of ±0.6%, which fails
+  rule 6.
+- The entries run again on the first parse that finds a key to drop, the copy
+  filled as they go, in place of the copy loop: the scenarios 5 to 7 gzip
+  fewer than the flag above and `strip_object` alone 8 fewer, though last in
+  it is +90 against +71, `pipe` still over the backstop at 0.758, and an entry runs twice on
+  that parse, which a test refuses.
+
+Two more were weighed and not built:
+
+- **A key to drop known from a count**: an input with more own enumerable
+  keys than the schema has entries must have one to drop, which is sound in
+  that one direction, unlike the count of
+  [the unknown-key check](#the-unknown-key-check-by-counting-the-keys). But a
+  count of an object's keys costs an enumeration or an array, the cost it is
+  meant to save. Reopens: a count the engine gives for less than enumerating.
+- **The outputs kept in an array of the schema's**, reused from parse to parse,
+  so a copy reads them in place of the input's keys: a write for every entry
+  on the path with nothing to drop, the input's values held between parses,
+  and a guard against a `lazy` reaching the same schema inside its own parse.
+  The reads are less than half of what a copy costs, 43 ns of 93 at six keys
+  and 169 of 389 at twenty in a microbenchmark; most is its writes.
+  Reopens: a copy whose writes cost less than its reads.
 
 ## `record`
 
