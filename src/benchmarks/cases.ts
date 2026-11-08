@@ -1682,6 +1682,60 @@ const scale: CaseGroup = (s) => {
 			to_record(40),
 			'copy'
 		),
+		// a wide `strip_object` with one key to drop, after the keys it keeps and
+		// ahead of them, and with nothing to drop, the identity they are read against
+		to_case(
+			s,
+			'scale/strip_20_of_20_keys/valid',
+			to_strip_object(s)(to_entries(20, s.string)),
+			to_record(20),
+			'identity'
+		),
+		to_case(
+			s,
+			'scale/strip_20_of_21_keys_unknown_last/valid',
+			to_strip_object(s)(to_entries(20, s.string)),
+			to_json({ ...to_record(20), z: 1 }),
+			'copy'
+		),
+		to_case(
+			s,
+			'scale/strip_20_of_21_keys_unknown_first/valid',
+			to_strip_object(s)(to_entries(20, s.string)),
+			to_json({ z: 1, ...to_record(20) }),
+			'copy'
+		),
+		// a copy of a wide `strip_object` begun at its last key, with no key to drop
+		// and with one
+		to_case(
+			s,
+			'scale/strip_21_of_21_keys_last_defaulted/valid',
+			to_strip_object(s)({ ...to_entries(20, s.string), last: s.with_default(s.string, 'd') }),
+			to_record(20),
+			'copy'
+		),
+		to_case(
+			s,
+			'scale/strip_21_of_22_keys_last_defaulted/valid',
+			to_strip_object(s)({ ...to_entries(20, s.string), last: s.with_default(s.string, 'd') }),
+			to_json({ ...to_record(20), z: 1 }),
+			'copy'
+		),
+		// the same wide schemas given the key their default is for, so nothing is copied
+		to_case(
+			s,
+			'scale/object_21_keys_last_default_present/valid',
+			to_object(s)({ ...to_entries(20, s.string), last: s.with_default(s.string, 'd') }),
+			to_json({ ...to_record(20), last: 'v' }),
+			'identity'
+		),
+		to_case(
+			s,
+			'scale/strip_21_of_21_keys_last_default_present/valid',
+			to_strip_object(s)({ ...to_entries(20, s.string), last: s.with_default(s.string, 'd') }),
+			to_json({ ...to_record(20), last: 'v' }),
+			'identity'
+		),
 		to_case(s, 'scale/record_1000_keys/valid', s.record(s.string), to_record(1000), 'identity'),
 		// length
 		to_case(s, 'scale/array_10_numbers/valid', s.array(s.number), to_json(range(10)), 'identity'),
