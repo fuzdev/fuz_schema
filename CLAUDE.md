@@ -78,8 +78,9 @@ dev server.
   `format_schema_type`, reading a schema as data, separate so the core never
   carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
-  behavior and type inference: `schema.test.ts` holds the primitives, the
-  wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
+  behavior and type inference: `schema.test.ts` holds the primitives, `uuid`
+  against its grammar in `docs/formats.md`, the wrappers, the context, `def`,
+  `is_schema`, flavor and brand, and the types
 - `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
   are not objects, copy on write, object keys, `loose_object`'s copy,
   `object_with_rest`, and composing them by spreading `def`

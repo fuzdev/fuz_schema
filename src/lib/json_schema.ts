@@ -88,8 +88,8 @@ export interface JsonSchemaOptions {
 	unrepresentable?: 'throw' | 'any';
 }
 
-// `uuid` and `iso_datetime` as `schema.ts` tests them, which a test holds to
-// that module's source
+// the grammars of `uuid` and `iso_datetime`, which a test holds to
+// `docs/formats.md` and to the source of `schema.ts`
 const UUID_PATTERN =
 	/^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|[fF]{8}-[fF]{4}-[fF]{4}-[fF]{4}-[fF]{12})$/
 		.source;

@@ -2260,9 +2260,30 @@ export const regex = <T extends string>(
 	run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
 });
 
-// the grammars are in `docs/formats.md`, which says why each is the one it is
-const UUID =
-	/^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|[fF]{8}-[fF]{4}-[fF]{4}-[fF]{4}-[fF]{12})$/;
+// the grammars are in `docs/formats.md`, which says why each is the one it is.
+// A UUID is read by its char codes, which takes less time than a `RegExp` of
+// its grammar: one loop over the 36 chars, a `-` where the mask of the dash
+// positions 8, 13, 18, and 23 has a bit and a hex digit of either case
+// elsewhere, as a shift takes its count modulo 32. Then the version, from 1 to
+// 8, and the variant, 8, 9, a, or b of either case, each by a bit of a mask the
+// same way: of the hex digits only those take a bit that is set. On a version
+// or a variant outside the RFC's, the nil and the max UUID.
+const NIL_OR_MAX = /^[-0]+$|^[-f]+$/i;
+
+const is_uuid = (value: string): boolean => {
+	if (value.length !== 36) return false;
+	for (let i = 0; i < 36; i++) {
+		const c = value.charCodeAt(i);
+		if ((0x842100 >>> i) & 1 ? c !== 45 : (c - 48) >>> 0 > 9 && ((c | 32) - 97) >>> 0 > 5) {
+			return false;
+		}
+	}
+	return (
+		((0x1fe0000 >>> value.charCodeAt(14)) & (0x3000006 >>> value.charCodeAt(19)) & 1) === 1 ||
+		NIL_OR_MAX.test(value)
+	);
+};
+
 const ISO_DATETIME =
 	/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?Z$/;
 
@@ -2278,7 +2299,7 @@ export const uuid: SchemaRefinement<string, string, 'uuid', undefined> = {
 	kind: 'uuid',
 	def: undefined,
 	run: (value, ctx) =>
-		typeof value === 'string' && UUID.test(value) ? value : fail(ctx, 'uuid', value)
+		typeof value === 'string' && is_uuid(value) ? value : fail(ctx, 'uuid', value)
 };
 
 /**

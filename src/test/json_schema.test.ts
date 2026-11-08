@@ -704,15 +704,14 @@ describe('to_json_schema', () => {
 			});
 		});
 
-		test('the patterns are the grammars of schema.ts', () => {
+		test('the patterns are the grammars of schema.ts and docs/formats.md', () => {
 			const source = readFileSync(new URL('../lib/schema.ts', import.meta.url), 'utf8');
-			for (const [name, schema] of [
-				['UUID', s.uuid],
-				['ISO_DATETIME', s.iso_datetime]
-			] as const) {
-				const literal = new RegExp(`const ${name} =\\s*/(.*)/;`).exec(source)?.[1];
-				assert.strictEqual(write(schema).pattern, literal, name);
-			}
+			const literal = /const ISO_DATETIME =\s*\/(.*)\/;/.exec(source)?.[1];
+			assert.strictEqual(write(s.iso_datetime).pattern, literal);
+			// `uuid` reads char codes, held to this grammar by schema.test.ts
+			const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
+			const grammar = /### `uuid`\n\n```\n(.*)\n```/.exec(formats)?.[1];
+			assert.strictEqual(write(s.uuid).pattern, grammar);
 		});
 
 		test('a regex with flags past d and u is unrepresentable', () => {

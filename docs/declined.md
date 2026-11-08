@@ -791,6 +791,109 @@ it refused the infinities.
   doubles without slowing whole numbers.
 - **Measured**: before v0.2.0.
 
+## The format tests
+
+What was taken: `uuid` reads its 36 chars by char codes in one loop, a `-`
+at the positions a mask of the dashes names and a hex digit elsewhere, then
+its version and its variant each by a bit of a mask, and the nil and the max
+UUID by a small `RegExp` only when those fail. Against the `RegExp` it
+replaced, over 6 runs: the realistic valid path 1.6% faster alone, past its
+A/A of 0.6%, and 0.8% in the matrix, inside its A/A of 1.7%,
+`real/fuz_app_cell_list_output_50/valid` 0.951x in the matrix, confirmed, and
+0.934x alone, `each/pipe_uuid_distinct/valid` 0.972x, for `uuid` +79
+gzip last in and +63 alone, and `json_schema.ts` +52, whose copy of the
+grammar no longer compresses against the `RegExp`. `iso_datetime`'s code
+is as it was, +9 gzip last in, and `to_lower_case` as it was.
+
+The microbenchmarks below are of the test alone over 223 distinct strings
+from `JSON.parse`, under Node 26 with no flags, in a process each, beside
+`UUID.test(value)` at 63 ns valid and 114 ns invalid, and the scan taken at
+56 and 54. Bytes are `uuid`'s gzip last in and alone, against 89 and 261 for
+the `RegExp`.
+
+### The five groups by a call each
+
+A function that reads a group of hex digits and the `-` after it, called
+once for each of the five groups.
+
+- **Gave**: 49 ns valid and 46 invalid. In the grader, 6 runs, faster on the
+  UUID cases than the scan taken: `each/pipe_uuid_distinct/valid` 0.850x in the
+  matrix and 0.867x apart, `each/pipe_uuid/valid` 0.865x and 0.886x.
+- **Cost**: 192 and 349, +103 and +88. And on the realistic cases no gain
+  past the A/A: the valid path +0.2% in the matrix and +0.1% alone,
+  `real/fuz_app_cell_list_output_50/valid` 0.965x and 0.962x, not confirmed.
+- **Why**: 24 and 25 bytes more than the scan taken, for a win on cases of
+  nothing but UUIDs and none on the realistic ones, where the scan taken reads
+  faster.
+- **Reopens**: a consumer whose parses are mostly UUIDs.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### Other forms of the `uuid` test
+
+- **Gave**: no other `RegExp` was faster: a length test first 64 ns, the `i`
+  flag 65, the common shape alone with the nil and the max in a second
+  `RegExp` 63 to 65, and no `$` with the length tested 63. Of scans, a table
+  of 64K bytes 46 ns, of 128 bytes 49, the five groups by a loop over their
+  ends 59 (186 and 345), the five groups with the shorter fallback of the
+  scan taken 192 and 343, the dashes by a branch on their positions 87 (171
+  and 334), the hex test allowing a `-` and the dashes summed after 54 (176
+  and 335, and wrong: it takes a `-` in place of a hex digit), the version
+  and variant by string comparison 60 (166 and 327) or by char-code
+  comparison 54 (175 and 332), the version, the variant, the nil, and the max
+  in one `RegExp` after the loop 99 (148 and 308), the hex tests branchless
+  57, and the 36 tests unrolled 67.
+- **Why**: each was slower than the scan taken, or larger, or both, but the
+  one `RegExp` after the loop, which is 20 bytes smaller and nearly twice as
+  slow, and the table of 64K bytes, which is that much heap.
+- **Reopens**: a way to read a string's chars that costs less than
+  `charCodeAt`, which is most of the scan: 36 of them summed took 39 ns.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### `iso_datetime` by its char codes
+
+The date and time read by char codes: each digit's value, the fields as
+numbers, the day against its month's length and the year's leap, and a loop
+over the fraction.
+
+- **Gave**: 31 ns a test against the `RegExp`'s 36 in the microbenchmark. In
+  the grader, 4 runs: `each/pipe_iso_datetime_distinct/valid` 0.978x in the
+  matrix, 0.863x alone, and 0.802x apart, and on the invalid cases 0.50x to
+  0.84x.
+- **Cost**: `iso_datetime` +94 gzip last in, +103 alone. And
+  `each/pipe_iso_datetime/valid`, a hundred copies of one string, 1.220x in
+  the matrix, 1.244x alone, confirmed slower, and 1.096x apart, which fails
+  rule 6.
+- **Why**: the `RegExp` spends about 18 ns of its 36 being called and reads
+  the 24 chars in about as many again, which a scan by `charCodeAt` doesn't
+  beat by much, and the bytes and the slower case are not paid for by it.
+- **Reopens**: a cheaper way to read chars, as above.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### `to_lower_case` returning an input already lowercase
+
+`typeof value === 'string' && is_lower_ascii(value) ? value : value.toLowerCase()`,
+where `is_lower_ascii` is a loop over the char codes that stops at an
+uppercase ASCII letter or a code past 127, and the same with
+`/^[^A-Z\u0080-\uffff]*$/` for the loop. Either gives the same string as
+`toLowerCase`, and it saves allocating a copy.
+
+- **Gave**: no allocation for a string already lowercase:
+  `each/pipe_to_lower_case/valid`, a hundred lowercase UUIDs, from 5689 to 88
+  bytes a parse.
+- **Cost**: time. `toLowerCase` reads a string many chars at a time: 15 ns on
+  a lowercase string of 36 chars and 37 ns on one of 400, with the copy, where
+  the loop took 46 and 506, and the `RegExp` 32 and 188. In the grader, 4
+  runs, the loop 1.945x on `each/pipe_to_lower_case/valid` in the matrix,
+  2.427x alone, 2.330x apart, and 1.046x to 1.104x on an uppercase input,
+  `each/pipe_to_lower_case_upper/valid`; the `RegExp` 1.291x to 1.491x on the
+  first and 1.353x to 1.552x on the second, all confirmed. `to_lower_case`
+  +33 gzip last in and +75 alone for the loop, +32 and +49 for the `RegExp`.
+- **Why**: rule 6, and allocation breaks ties only when time is within noise.
+  The loop is faster only under about 8 chars.
+- **Reopens**: a test of a string's case as fast as `toLowerCase`'s own, or
+  a consumer whose strings are mostly a few chars.
+- **Measured**: before v0.5.7, on Node 26.13.
+
 ## The parse context
 
 ### One context kept between parses

@@ -312,27 +312,89 @@ export const MUTANTS: Array<Mutant> = [
 	},
 	{
 		name: 'uuid_variant_c',
-		edits: [{ find: `-[89abAB][0-9a-fA-F]{3}-`, replace: `-[89abcAB][0-9a-fA-F]{3}-` }]
-	},
-	{
-		name: 'uuid_no_max',
 		edits: [
 			{
-				find: `|00000000-0000-0000-0000-000000000000|[fF]{8}-[fF]{4}-[fF]{4}-[fF]{4}-[fF]{12})$/`,
-				replace: `|00000000-0000-0000-0000-000000000000)$/`
+				find: `(0x3000006 >>> value.charCodeAt(19))`,
+				replace: `(0x300000e >>> value.charCodeAt(19))`
 			}
 		]
 	},
 	{
-		name: 'uuid_leading_brace',
-		edits: [{ find: `/^(?:[0-9a-fA-F]{8}-`, replace: `/^\\{?(?:[0-9a-fA-F]{8}-` }]
+		name: 'uuid_version_9',
+		edits: [
+			{
+				find: `(0x1fe0000 >>> value.charCodeAt(14))`,
+				replace: `(0x3fe0000 >>> value.charCodeAt(14))`
+			}
+		]
+	},
+	{
+		name: 'uuid_no_max',
+		edits: [{ find: `/^[-0]+$|^[-f]+$/i`, replace: `/^[-0]+$/i` }]
+	},
+	{
+		name: 'uuid_trailing_char',
+		edits: [
+			{
+				find: `if (value.length !== 36) return false;`,
+				replace: `if (value.length < 36) return false;`
+			}
+		]
+	},
+	{
+		name: 'uuid_no_last_dash',
+		edits: [{ find: `(0x842100 >>> i) & 1`, replace: `(0x042100 >>> i) & 1` }]
+	},
+	{
+		name: 'uuid_last_char_unread',
+		edits: [{ find: `for (let i = 0; i < 36; i++) {`, replace: `for (let i = 0; i < 35; i++) {` }]
+	},
+	{
+		name: 'uuid_hex_to_g',
+		edits: [
+			{
+				find: `(c - 48) >>> 0 > 9 && ((c | 32) - 97) >>> 0 > 5`,
+				replace: `(c - 48) >>> 0 > 9 && ((c | 32) - 97) >>> 0 > 6`
+			}
+		]
+	},
+	{
+		name: 'uuid_dash_masked',
+		edits: [
+			{
+				find: `(0x842100 >>> i) & 1 ? c !== 45 :`,
+				replace: `(0x842100 >>> i) & 1 ? (c & 0x3ff) !== 45 :`
+			}
+		]
+	},
+	{
+		name: 'uuid_hex_to_colon',
+		edits: [
+			{
+				find: `(c - 48) >>> 0 > 9 && ((c | 32) - 97) >>> 0 > 5`,
+				replace: `(c - 48) >>> 0 > 10 && ((c | 32) - 97) >>> 0 > 5`
+			}
+		]
+	},
+	{
+		name: 'uuid_hex_lowercase_only',
+		edits: [
+			{
+				find: `(c - 48) >>> 0 > 9 && ((c | 32) - 97) >>> 0 > 5`,
+				replace: `(c - 48) >>> 0 > 9 && (c - 97) >>> 0 > 5`
+			}
+		]
+	},
+	{
+		name: 'uuid_dash_anywhere',
+		edits: [{ find: `? c !== 45 :`, replace: `? c !== 45 : c !== 45 &&` }]
 	},
 	{
 		name: 'uuid_no_type_guard',
 		edits: [
 			{
-				find: `typeof value === 'string' && UUID.test(value)`,
-				replace: `UUID.test(value)`
+				find: `typeof value === 'string' && is_uuid(value)`,
+				replace: `is_uuid(value)`
 			}
 		]
 	},
