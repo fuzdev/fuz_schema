@@ -912,7 +912,12 @@ const to_default_undefined = (s: SchemaLib): schema_lib.AnySchema =>
 // read, and a date refused for its day, a February 29 of a year not leap
 const format_entries = (
 	s: SchemaLib,
-	of: (name: string, schema: schema_lib.AnySchema, item: unknown, path?: 'issues') => Case
+	of: (
+		name: string,
+		schema: schema_lib.AnySchema,
+		item: unknown,
+		path?: Exclude<CasePath, 'probe'>
+	) => Case
 ): Array<CaseBuild> => {
 	const entry = (name: string, to: () => Case): CaseBuild => ({ name: `each/${name}`, build: to });
 	// a `pipe` given a step this version lacks is made without a throw, so the lack throws here
@@ -951,8 +956,58 @@ const format_entries = (
 				'2023-02-29T23:59:59.123Z',
 				'issues'
 			)
+		),
+		entry('pipe_uuid_distinct/valid', () =>
+			to_case(
+				s,
+				'each/pipe_uuid_distinct/valid',
+				s.array(pipe_to('uuid')),
+				to_json(range(100).map(to_uuid)),
+				'identity'
+			)
+		),
+		entry('pipe_iso_datetime_distinct/valid', () =>
+			to_case(
+				s,
+				'each/pipe_iso_datetime_distinct/valid',
+				s.array(pipe_to('iso_datetime')),
+				to_json(range(100).map(to_datetime)),
+				'identity'
+			)
+		),
+		// a lowercase string is given back as it is, and one with an uppercase
+		// letter is lowercased, which copies the array
+		entry('pipe_to_lower_case/valid', () =>
+			of('pipe_to_lower_case/valid', s.pipe(s.string, s.to_lower_case), to_uuid(1))
+		),
+		entry('pipe_to_lower_case_upper/valid', () =>
+			of(
+				'pipe_to_lower_case_upper/valid',
+				s.pipe(s.string, s.to_lower_case),
+				to_uuid(1).toUpperCase(),
+				'copy'
+			)
 		)
 	];
+};
+
+// `n` hex digits drawn from `seed`, the same on every call
+const to_hex = (seed: number, n: number): string => {
+	let hex = '';
+	for (let i = 0; i < n; i++) hex += (Math.imul(seed + i, 2654435761) >>> 28).toString(16);
+	return hex;
+};
+
+// a UUID of its own for each `i`, of version 4 or 7 and each variant, as an app's ids are
+const to_uuid = (i: number): string => {
+	const at = i * 32;
+	return `${to_hex(at, 8)}-${to_hex(at + 8, 4)}-${i % 2 ? '7' : '4'}${to_hex(at + 12, 3)}-${'89ab'[i % 4]}${to_hex(at + 15, 3)}-${to_hex(at + 18, 12)}`;
+};
+
+// a date and time of its own for each `i`, with a fraction of 3 digits
+const to_datetime = (i: number): string => {
+	const two = (n: number): string => String(n).padStart(2, '0');
+	return `${2000 + (i % 30)}-${two((i % 12) + 1)}-${two((i % 28) + 1)}T${two(i % 24)}:${two((i * 7) % 60)}:${two((i * 13) % 60)}.${String((i * 37) % 1000).padStart(3, '0')}Z`;
 };
 
 // a hundred items through one schema, so the schema's cost shows over a parse's
