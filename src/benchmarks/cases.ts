@@ -1234,6 +1234,71 @@ const object: CaseGroup = (s) => {
 			to_json(input),
 			'identity'
 		),
+		// the same at width, and with the absent key in the middle, and with three of
+		// them spread out, so the keys after each come one place early
+		to_case(
+			s,
+			'object/21_keys_first_optional_absent/valid',
+			to_object(s)({ first: s.optional(s.string), ...to_entries(20, s.string) }),
+			to_record(20),
+			'identity'
+		),
+		to_case(
+			s,
+			'object/21_keys_mid_optional_absent/valid',
+			to_object(s)({
+				...to_entries(10, s.string),
+				mid: s.optional(s.string),
+				...Object.fromEntries(range(10).map((i) => [`k${i + 10}`, s.string]))
+			}),
+			to_record(20),
+			'identity'
+		),
+		to_case(
+			s,
+			'object/23_keys_3_optional_absent/valid',
+			to_object(s)({
+				a: s.optional(s.string),
+				...to_entries(7, s.string),
+				b: s.optional(s.string),
+				...Object.fromEntries(range(7).map((i) => [`k${i + 7}`, s.string])),
+				c: s.optional(s.string),
+				...Object.fromEntries(range(6).map((i) => [`k${i + 14}`, s.string]))
+			}),
+			to_record(20),
+			'identity'
+		),
+		// out of the schema's order: wide and reversed, rotated, and swapped in pairs
+		to_case(
+			s,
+			'object/21_keys_reversed/valid',
+			to_object(s)(to_entries(21, s.string)),
+			to_json(Object.fromEntries(Object.entries(to_record(21)).reverse())),
+			'identity'
+		),
+		to_case(s, 'object/6_keys_rotated/valid', O, to_rotated(input, 3), 'identity'),
+		to_case(
+			s,
+			'object/20_keys_pairs_swapped/valid',
+			to_object(s)(to_entries(20, s.string)),
+			to_json(Object.fromEntries(range(20).map((i) => [`k${i ^ 1}`, 'v']))),
+			'identity'
+		),
+		// an unknown key after each the schema names
+		to_case(
+			s,
+			'object/20_keys_unknown_interleaved/invalid',
+			to_object(s)(to_entries(20, s.string)),
+			to_json(
+				Object.fromEntries(
+					range(20).flatMap((i) => [
+						[`k${i}`, 'v'],
+						[`z${i}`, 'v']
+					])
+				)
+			),
+			'issues'
+		),
 		to_case(
 			s,
 			'object/6_optional_absent/valid',
