@@ -61,7 +61,7 @@ import {
 	type JsonFixtureExpected
 } from '../test/fixtures/json/json_test_helpers.ts';
 import { SCENARIOS } from './scenarios.ts';
-import { format_table, hold_benchmark_lock, median } from './measure.ts';
+import { format_table, median } from './measure.ts';
 
 const Args = args_s.object({
 	_: args_s.with_default_fn(args_s.array(args_s.string), () => []),
@@ -614,8 +614,6 @@ check_input_ptr_refusal();
 console.log(
 	`pre-checks pass: ${checked.cases} cases of ${checked.groups} fixture groups through every wasm entry point, the lone surrogate, and a refused input_ptr`
 );
-
-hold_benchmark_lock('fuz_schema wasm');
 
 const LARGE = '4 MB';
 const LARGE_NON_ASCII = `${LARGE} non-ASCII`;

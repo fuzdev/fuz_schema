@@ -52,7 +52,7 @@ import {
 	type HarvestRowsOf,
 	type HarvestSet
 } from './harvest_sets.ts';
-import { format_table, hold_benchmark_lock, refuse_timing_node_flags } from './measure.ts';
+import { format_table, refuse_timing_node_flags } from './measure.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
 	format_spread,
@@ -110,8 +110,6 @@ if (!sets.length || unknown?.length) {
 	process.exit(1);
 }
 refuse_timing_node_flags('harvest', true);
-
-hold_benchmark_lock('fuz_schema harvest');
 
 //
 // Bundle size

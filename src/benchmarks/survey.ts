@@ -29,12 +29,7 @@
 import { fileURLToPath } from 'node:url';
 
 import { meta, parse_args, s } from './args.ts';
-import {
-	format_table,
-	geometric_mean,
-	hold_benchmark_lock,
-	refuse_timing_node_flags
-} from './measure.ts';
+import { format_table, geometric_mean, refuse_timing_node_flags } from './measure.ts';
 import {
 	find_survey_disagreements,
 	is_survey_row_of,
@@ -125,8 +120,6 @@ if (!rows.length) {
 	console.error('no rows matched');
 	process.exit(1);
 }
-
-hold_benchmark_lock('fuz_schema survey');
 
 // a survey only compares like with like if every library gives the verdict a
 // row names, or the row says which doesn't

@@ -154,7 +154,6 @@ import {
 	ALLOCATION_NODE_FLAGS,
 	format_table,
 	geometric_mean,
-	hold_benchmark_lock,
 	refuse_timing_node_flags,
 	to_balanced_orders
 } from './measure.ts';
@@ -230,8 +229,6 @@ if (args['against-libs-file'] && !args['against-file']) {
 	process.exit(1);
 }
 refuse_timing_node_flags('grade', true);
-
-hold_benchmark_lock('fuz_schema grade');
 
 /** How many module instances of each version a timing process holds. */
 const INSTANCES = 3;

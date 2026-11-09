@@ -24,10 +24,6 @@
  */
 
 import { getHeapSpaceStatistics, getHeapStatistics } from 'node:v8';
-import {
-	benchmark_lock_acquire,
-	benchmark_lock_format_refusal
-} from '@fuzdev/fuz_util/benchmark_lock.ts';
 
 /** The node flags scripts that measure allocation must run under. */
 export const ALLOCATION_NODE_FLAGS = '--min-semi-space-size=64 --max-semi-space-size=64';
@@ -290,21 +286,4 @@ export const format_table = (rows: Array<Array<string>>, left = 1): string => {
 				.trimEnd()
 		)
 		.join('\n');
-};
-
-/**
- * Takes the machine-wide benchmark lock for the life of the process, so a
- * timed benchmark never overlaps another that takes it. Exits with 2, saying
- * who holds it, when it is held.
- *
- * @param label - names this process to whoever is refused next
- */
-export const hold_benchmark_lock = (label: string): void => {
-	const acquired = benchmark_lock_acquire(label);
-	if (!acquired.ok) {
-		console.error(benchmark_lock_format_refusal(acquired));
-		process.exit(2);
-	}
-	const { lock } = acquired;
-	process.on('exit', () => lock.release());
 };

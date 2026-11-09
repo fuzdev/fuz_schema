@@ -20,7 +20,7 @@ import {
 	summarize_coldstart,
 	to_bare_band_ms
 } from './coldstart.ts';
-import { format_table, hold_benchmark_lock } from './measure.ts';
+import { format_table } from './measure.ts';
 
 const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
 
@@ -60,8 +60,6 @@ const Args = s.object({
 });
 
 const args = parse_args(Args);
-
-hold_benchmark_lock('fuz_schema coldstart');
 
 const plan = await plan_coldstart(
 	args.lib.map((lib) => ({ id: lib, lib })),

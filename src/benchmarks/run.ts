@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 import { meta, parse_args, s } from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
-import { format_table, hold_benchmark_lock, refuse_timing_node_flags } from './measure.ts';
+import { format_table, refuse_timing_node_flags } from './measure.ts';
 import { RUN_VALIDITIES, to_run_row_name, type RunRowsOf, type RunValidity } from './run_rows.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
@@ -96,8 +96,6 @@ if (!scenarios.length || !libs.length) {
 	process.exit(1);
 }
 refuse_timing_node_flags('the benchmark', false);
-
-hold_benchmark_lock('fuz_schema benchmark');
 
 // a benchmark only compares like with like if every library agrees on which
 // inputs match

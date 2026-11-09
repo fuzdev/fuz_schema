@@ -188,8 +188,8 @@ let is_watching_exit = false;
 
 // A process started here is killed when this one exits, whether it ends, throws
 // with others still running, or is told to stop. A signal with a listener no
-// longer ends the process, so the listener exits, which also runs the `exit`
-// listeners that release a benchmark lock.
+// longer ends the process, so the listener exits, which runs the `exit`
+// listeners.
 const kill_children_on_exit = (): void => {
 	if (is_watching_exit) return;
 	is_watching_exit = true;
