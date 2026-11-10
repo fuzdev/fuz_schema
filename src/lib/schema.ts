@@ -737,6 +737,48 @@ export const get_issue_value = (
 };
 
 /**
+ * Formats an issue as `format_issue` does, with the value that failed in place
+ * of its type where `get_issue_value(issue, input)` finds it and it is a
+ * string, a number, or a boolean:
+ * `kind: expected "function" | "variable", received "funtion"`.
+ *
+ * - A string is quoted as JSON, so a `\n` or `\r` can't add a line, and only
+ *   its first 32 code units are written, with `…` after the closing quote when
+ *   it has more. JSON's escapes can make those longer: a lone surrogate, as a
+ *   cut can leave, is six characters. As in a key, U+2028, U+2029, and U+0085
+ *   are written as they are.
+ * - A number is written as `String` writes it, but `-0` as `-0`.
+ * - An `unknown_key` or a `missing_key` issue is written as `format_issue`
+ *   writes it: what failed there is whether the key is present, and an
+ *   unknown key's value is the field least meant to be sent.
+ * - Any other value, an issue `get_issue_value` refuses, and an issue with
+ *   text set by `message` read as `format_issue` writes them.
+ *
+ * The text holds part of the input, which no issue and no `SchemaError` does,
+ * so it is built where the input is still held, as at the catch site of
+ * `parse_or_throw`: `error.issues.map((issue) => format_issue_with_value(issue, input))`.
+ * Keep it where the input itself could go.
+ *
+ * @param input - the value given to `parse`, unchanged since
+ * @throws TypeError where `get_issue_value` does, on a revoked `Proxy` on the path, and whatever a trap or a getter there throws
+ */
+export const format_issue_with_value = (issue: SchemaIssue, input: unknown): string => {
+	// a key's issue is about the key, and its value is not looked up
+	const found =
+		issue.kind !== 'unknown_key' && issue.kind !== 'missing_key' && get_issue_value(issue, input);
+	const value = found && found.ok ? found.value : undefined;
+	const text =
+		typeof value === 'string'
+			? JSON.stringify(value.slice(0, 32)) + (value.length > 32 ? '…' : '')
+			: typeof value === 'number' || typeof value === 'boolean'
+				? Object.is(value, -0)
+					? '-0'
+					: '' + value
+				: '';
+	return format_issue(text ? { ...issue, received: text } : issue);
+};
+
+/**
  * Thrown by `parse_or_throw`. The message lists the first ten issues, one per
  * line, as `format_issue` writes it, and then how many more failures there
  * were, so its length is bounded by ten of its lines however many issues there

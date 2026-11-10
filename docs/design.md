@@ -648,6 +648,28 @@ through the input, and refuses instead of guessing:
   container in a `pipe` that applied a default or dropped a key, the issue
   is about the new value and the walk returns the input's.
 
+`format_issue_with_value(issue, input)` is `format_issue` with the value that
+walk finds in place of `received`, for a string, a number, or a boolean, an
+opt-in export so the text that holds input is built only by a caller that
+asks for it, and never held by an issue or a `SchemaError`:
+
+- **A string is quoted as JSON**, so a `\n` or `\r` can't add a line, and
+  cut at 32 code units with `…` outside the quotes. JSON escapes a lone
+  surrogate, as a cut through a pair leaves, as six characters, so the text
+  stays one line, of at most six characters for each of the 32. U+2028, U+2029, and
+  U+0085 are written as they are, as they are in a quoted key.
+- **A number is written as `String` writes it**, which `received` already is
+  for one that isn't finite, but `-0` as `-0`.
+- **A key's issue has no value**: an `unknown_key` or a `missing_key` is
+  `format_issue`'s line, and the input isn't read for it. What failed is
+  whether the key is there, and an unknown key's value is the field most
+  likely sent by mistake, as `"pass word"`.
+- **It throws where `get_issue_value` does**: a revoked `Proxy` on the path,
+  or a trap or a getter there that throws.
+- **Anything else is `format_issue`'s line**: an object, an array, a
+  `bigint`, a value the walk refuses, and an issue with a `message`, whose
+  text replaces the whole `expected X, received Y`.
+
 ## Actions in a pipe
 
 A `pipe` takes one to four actions, an overload each, which is what its
@@ -1020,7 +1042,7 @@ Where zod writes something else, this library:
 ## Costs are opt-in
 
 A feature not every consumer needs is a separate export or module the core never
-reaches: `message`, `format_issue`, `get_issue_value`, `meta`,
+reaches: `message`, `format_issue`, `format_issue_with_value`, `get_issue_value`, `meta`,
 `to_standard_schema`, `introspect.ts`, `schema_json.ts`, `json_schema.ts`.
 Factories are marked `// @__NO_SIDE_EFFECTS__` so an unused definition is
 dropped.

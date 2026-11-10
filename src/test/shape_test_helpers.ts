@@ -34,6 +34,7 @@ export const SHAPE_NOT_SCHEMAS: ReadonlyArray<string> = [
 	'is_schema',
 	'format_issue',
 	'get_issue_value',
+	'format_issue_with_value',
 	'SchemaError'
 ];
 

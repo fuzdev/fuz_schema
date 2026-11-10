@@ -89,7 +89,7 @@ dev server.
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
 - `src/test/schema.pipe.test.ts` - `pipe` and actions, `check_at`, and `message`
 - `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
-  issues, `format_issue`, and `get_issue_value`
+  issues, `format_issue`, `get_issue_value`, and `format_issue_with_value`
 - `src/test/schema_test_helpers.ts` - `issues_of`, which the `schema.*`
   test files above share
 - `src/test/schema.inference.test.ts` - what every schema and action infers

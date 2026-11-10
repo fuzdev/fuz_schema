@@ -1160,6 +1160,51 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
+		name: 'issue_value_of_a_key',
+		edits: [
+			{
+				find: `issue.kind !== 'unknown_key' && issue.kind !== 'missing_key' && `,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'issue_value_uncut',
+		edits: [
+			{
+				find: `JSON.stringify(value.slice(0, 32))`,
+				replace: `JSON.stringify(value)`
+			}
+		]
+	},
+	{
+		name: 'issue_value_raw_string',
+		edits: [
+			{
+				find: `JSON.stringify(value.slice(0, 32))`,
+				replace: `'"' + value.slice(0, 32) + '"'`
+			}
+		]
+	},
+	{
+		name: 'issue_value_minus_zero_as_zero',
+		edits: [
+			{
+				find: `				? Object.is(value, -0)`,
+				replace: `				? false`
+			}
+		]
+	},
+	{
+		name: 'issue_value_over_message',
+		edits: [
+			{
+				find: `	return format_issue(text ? { ...issue, received: text } : issue);`,
+				replace: `	return format_issue(text ? { ...issue, received: text, message: undefined } : issue);`
+			}
+		]
+	},
+	{
 		name: 'message_drops_meta',
 		edits: [
 			{

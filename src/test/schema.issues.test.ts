@@ -1096,3 +1096,141 @@ describe('get_issue_value', () => {
 		assert.strictEqual(reads, 2);
 	});
 });
+
+describe('format_issue_with_value', () => {
+	const format = (schema: s.AnySchema, input: unknown): Array<string> =>
+		issues_of(schema, input).map((issue) => s.format_issue_with_value(issue, input));
+
+	test('writes a string that failed in place of its type, as JSON', () => {
+		const Kind = s.object({ kind: s.one_of(['function', 'variable']) });
+		assert.deepEqual(format(Kind, { kind: 'funtion' }), [
+			'kind: expected "function" | "variable", received "funtion"'
+		]);
+		assert.deepEqual(format(s.literal('a'), ''), ['expected "a", received ""']);
+		// a forged line is escaped, and so is a quote
+		assert.deepEqual(format(s.array(s.number), ['x\nkind: expected y, received "z"']), [
+			'0: expected number, received "x\\nkind: expected y, received \\"z\\""'
+		]);
+		assert.strictEqual(format(s.number, 'a\r\n\u0000b')[0]!.split('\n').length, 1);
+	});
+
+	test('cuts a long string at 32 code units, with the ellipsis outside the quotes', () => {
+		assert.deepEqual(format(s.number, 'a'.repeat(32)), [
+			`expected number, received "${'a'.repeat(32)}"`
+		]);
+		assert.deepEqual(format(s.number, 'a'.repeat(33)), [
+			`expected number, received "${'a'.repeat(32)}"…`
+		]);
+		const long = 'b'.repeat(100_000);
+		assert.isBelow(format(s.object({ a: s.number }), { a: long })[0]!.length, 80);
+		// a cut through a surrogate pair leaves its first half, which JSON escapes
+		const pair = 'a'.repeat(31) + '😀' + 'z';
+		assert.deepEqual(format(s.number, pair), [
+			`expected number, received "${'a'.repeat(31)}\\ud83d"…`
+		]);
+		// and a string of lone halves is longer once escaped, and still one line
+		const halves = format(s.number, '\ud800'.repeat(40))[0]!;
+		assert.strictEqual(halves, `expected number, received "${'\\ud800'.repeat(32)}"…`);
+	});
+
+	test('writes U+2028, U+2029, and U+0085 as they are, as in a key', () => {
+		for (const separator of [' ', ' ', '\u0085']) {
+			assert.deepEqual(format(s.number, `a${separator}b`), [
+				`expected number, received "a${separator}b"`
+			]);
+		}
+	});
+
+	test('writes a number or a boolean as String does, and -0 as -0', () => {
+		assert.deepEqual(format(s.string, 5), ['expected string, received 5']);
+		assert.deepEqual(format(s.string, 1e21), ['expected string, received 1e+21']);
+		assert.deepEqual(format(s.string, -0), ['expected string, received -0']);
+		assert.deepEqual(format(s.literal(1), 0), ['expected 1, received 0']);
+		assert.deepEqual(format(s.string, true), ['expected string, received true']);
+		assert.deepEqual(format(s.literal(true), false), ['expected true, received false']);
+		// a number that isn't finite is already its own value
+		assert.deepEqual(format(s.number, NaN), ['expected number, received NaN']);
+		assert.deepEqual(format(s.string, -Infinity), ['expected string, received -Infinity']);
+	});
+
+	test('keeps the type of any other value', () => {
+		const Entry = s.object({ a: s.string });
+		const cases: Array<[unknown, string]> = [
+			[{ a: {} }, 'a: expected string, received object'],
+			[{ a: [1] }, 'a: expected string, received array'],
+			[{ a: null }, 'a: expected string, received null'],
+			[{ a: 1n }, 'a: expected string, received bigint'],
+			[{ a: Symbol('s') }, 'a: expected string, received symbol'],
+			[{ a: () => 'x' }, 'a: expected string, received function']
+		];
+		for (const [input, text] of cases) assert.deepEqual(format(Entry, input), [text]);
+	});
+
+	test('an unknown key and a missing key are written as format_issue writes them, with no value', () => {
+		const unknown_keys = { 'pass word': 'hunter2', n: 5, ok: true, more: [1] };
+		const issues = issues_of(s.object({}), unknown_keys);
+		assert.deepEqual(
+			issues.map((issue) => s.format_issue_with_value(issue, unknown_keys)),
+			issues.map(s.format_issue)
+		);
+		assert.notInclude(
+			issues.map((issue) => s.format_issue_with_value(issue, unknown_keys)).join('\n'),
+			'hunter2'
+		);
+		assert.deepEqual(format(s.object({ a: s.unknown }), {}), [
+			'a: expected a required key, received undefined'
+		]);
+		// a key's issue reads nothing of the input, so a getter on it doesn't run
+		let reads = 0;
+		const watched = Object.defineProperty({}, 'x', {
+			get: () => (reads++, 'v'),
+			enumerable: true
+		});
+		const watched_issue = issues_of(s.object({}), watched)[0]!;
+		reads = 0;
+		assert.strictEqual(
+			s.format_issue_with_value(watched_issue, watched),
+			'x: expected no unknown keys, received string'
+		);
+		assert.strictEqual(reads, 0);
+		// an entry whose schema refuses the missing key's `undefined` is that schema's issue
+		assert.deepEqual(format(s.object({ a: s.string }), {}), [
+			'a: expected string, received undefined'
+		]);
+	});
+
+	test('a lookup get_issue_value refuses is written as format_issue writes it', () => {
+		const issue = issues_of(s.object({ a: s.string }), { a: 1 })[0]!;
+		// another input, of another type at the path, or none there
+		for (const input of [{ a: {} }, {}, null, 'a']) {
+			assert.strictEqual(s.format_issue_with_value(issue, input), s.format_issue(issue));
+		}
+		// a value a step before replaced with one of another type is refused at the path
+		const Replaced = s.pipe(
+			s.object({ a: s.string }),
+			s.transform((v): unknown => ({ a: v.a.length })),
+			s.object({ a: s.string })
+		);
+		assert.deepEqual(format(Replaced, { a: 'abc' }), ['a: expected string, received number']);
+		// and one of the same type is the input's, as `get_issue_value` finds it
+		const Scaled = s.pipe(
+			s.object({ a: s.number }),
+			s.transform((v) => ({ a: v.a * 10 })),
+			s.object({ a: s.pipe(s.number, s.max_value(5)) })
+		);
+		assert.deepEqual(format(Scaled, { a: 1 }), ['a: expected <= 5, received 1']);
+	});
+
+	test('text set by message is used as it is, with no value', () => {
+		const Port = s.object({ port: s.message(s.number, 'not a port') });
+		assert.deepEqual(format(Port, { port: 'http' }), ['port: not a port']);
+	});
+
+	test('the issue is left as it was', () => {
+		const input = { a: 'x' };
+		const issue = issues_of(s.object({ a: s.number }), input)[0]!;
+		const before = structuredClone(issue);
+		s.format_issue_with_value(issue, input);
+		assert.deepEqual(issue, before);
+	});
+});

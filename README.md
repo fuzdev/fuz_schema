@@ -169,7 +169,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
-| issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
+| issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
 | types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
@@ -415,6 +415,26 @@ when the path leads through something that isn't an object or array,
 and when what it finds isn't of the type in `issue.received`.
 It reads own keys only, so it never returns an inherited value,
 and a missing key is found as `undefined`, which is what the schema saw.
+
+`format_issue_with_value(issue, input)` writes an issue as `format_issue` does,
+with the value `get_issue_value` finds in place of its type when it is a string, a number, or a boolean:
+`kind: expected "function" | "variable", received "funtion"`.
+A string is quoted as JSON and cut at 32 code units, with `…` after the quote when it is longer.
+An `unknown_key` or a `missing_key` issue is written as `format_issue` writes it, with no value:
+what failed is the key, and an unknown key's value is the field most likely sent by mistake.
+Anything else, and an issue with a `message`, is written as `format_issue` writes it too.
+A `SchemaError` never holds the input, so the caller that does builds this text:
+
+```ts
+try {
+	s.parse_or_throw(Config, input);
+} catch (error) {
+	if (error instanceof s.SchemaError) {
+		console.error(error.issues.map((issue) => s.format_issue_with_value(issue, input)).join('\n'));
+	}
+	throw error;
+}
+```
 
 A check of an object that is about one of its fields reports at that field with `check_at`,
 which takes a key or the keys from the value in, as Zod's `refine` takes a `path`:
