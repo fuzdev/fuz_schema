@@ -96,7 +96,9 @@ dev server.
   in each position that has lost a type before, and what an object schema
   composed by spreading `def` infers
 - `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
-  generic helpers over the library compile where they are read
+  generic helpers over the library compile where they are read, those of its
+  exported schemas write every factory's type by its name, and every export
+  of `schema.ts` that is or makes a schema declares a named type
 - `src/test/schema.docs.test.ts` - a property of a type inferred from an
   object schema has its entry's doc comment and the entry as its definition,
   asked of TypeScript's language service
@@ -251,8 +253,8 @@ dev server.
 
 - `README.md` - what the library is, its API, status, and what's been measured
 - `docs/design.md` - the internals and why: the one shape, the context and
-  probe mode, copy-on-write and what it gives up, issues and messages,
-  metadata, JSON Schema
+  probe mode, copy-on-write and what it gives up, issues and messages, the
+  types of the schemas, metadata, JSON Schema
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
@@ -292,6 +294,16 @@ Things that are easy to break without a test noticing:
   a row for it in the kind tables of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
   definition is dropped by the bundler.
+- **Every schema's factory or constant but `pipe` returns an interface named
+  for it**, `ObjectSchema<T>` and the rest, whose type arguments are only what
+  it was given, extending `Schema` with the output and input it computes. A
+  plain `Schema<…>` would have every declaration a consumer emits that holds
+  it write that output and input out, again at each level. `pipe` returns a
+  `PipeSchema` of the output its steps compute, which a declaration writes
+  out, and an action a `SchemaAction` or `SchemaRefinement`.
+  `src/test/schema.emit.test.ts` reads the declared type of every export of
+  `schema.ts` and `meta.ts` that is or returns a schema, and fails on one
+  outside those.
 - **Outside probe mode `ctx.issues.length` is `Math.min(ctx.fails, 100)`.**
   Past the hundredth failure `fail` counts and builds no issue, a cap that is
   fixed and silent, and `MAX_ISSUES` in the Rust crate. `issues` is

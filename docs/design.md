@@ -722,6 +722,39 @@ included, where a test of their grammar alone would convert it.
 and throws on `undefined`, a missing key included, and on any value that has
 no such method.
 
+## The types of the schemas
+
+Every schema the library makes but a `pipe` is typed by an interface named
+for its factory, `ObjectSchema<T>`, `ArraySchema<T>`, `StringSchema`, whose
+type arguments are only what the factory was given. Each extends `Schema` with the
+output and input it computes and adds nothing, but for `BrandSchema` and
+`FlavorSchema`, which keep the first schema of a `pipe` they mark, for an
+object schema to read. `memo_union` has `union`'s, and a
+`pipe`'s `def` is `SchemaPipeDef`. An action is a `SchemaRefinement` or a
+`SchemaAction`, typed by what it takes and gives.
+
+- **A declaration names them.** One emitted for an exported schema writes
+  each schema it holds as its name and arguments. A plain instantiation of
+  `Schema` would be written with its computed output and input, and a schema
+  holding it would write them again, at every level, and a `pipe`'s `def` as
+  the union of every kind. What a declaration still writes out is the entries
+  of an object schema, so a library names each exported one by extending
+  `ObjectSchema` with them.
+- **A `pipe` is `PipeSchema<TOutput, T>`**, a type of the output and the
+  first schema, and its output is what its steps compute, not what it was
+  given: a declaration writes it out wherever the pipe is held, unless the
+  consumer names it, `interface StampedSchema extends PipeSchema<Stamped,
+  UserSchema> {}`. Of a pipe that keeps its first schema's output, that is
+  the output's type, `PipeSchema<string, StringSchema>`.
+- **`with_default` and `with_default_fn` have one for each overload**, as
+  TypeScript writes a type's default type arguments out: the second, for a
+  value that may be `undefined`, is `WithUndefinedDefaultSchema`.
+- `src/test/schema.emit.test.ts` emits a module of nested exported schemas
+  and fails on an output or an input written out as `Schema`'s type
+  arguments, or on a factory's type not written by its name, and pins the
+  output a `pipe` writes out. It also asks the checker for the declared
+  return type of every exported schema and factory of `schema.ts`.
+
 ## Nominal types
 
 `flavor` and `brand` change only the output type and return the schema object

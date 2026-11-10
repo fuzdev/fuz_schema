@@ -764,7 +764,26 @@ export class SchemaError extends Error {
 // Primitives
 //
 
-export const string: Schema<string, string, 'string', undefined> = {
+// Each factory and constant is typed by an interface of its own whose type
+// arguments are only what it was given, so a declaration emitted for a schema
+// that holds it names it, and doesn't write out an output and an input
+
+/** The type of `string`. */
+export interface StringSchema extends Schema<string, string, 'string', undefined> {}
+
+/** The type of `number`. */
+export interface NumberSchema extends Schema<number, number, 'number', undefined> {}
+
+/** The type of `boolean`. */
+export interface BooleanSchema extends Schema<boolean, boolean, 'boolean', undefined> {}
+
+/** The type of `bigint`. */
+export interface BigintSchema extends Schema<bigint, bigint, 'bigint', undefined> {}
+
+/** The type of `unknown`. */
+export interface UnknownSchema extends Schema<unknown, unknown, 'unknown', undefined> {}
+
+export const string: StringSchema = {
 	kind: 'string',
 	def: undefined,
 	run: (value, ctx) => (typeof value === 'string' ? value : fail(ctx, 'string', value))
@@ -782,20 +801,20 @@ export const string: Schema<string, string, 'string', undefined> = {
  * infinity still matches it, and a bound of `min_value` or `max_value` may
  * be one.
  */
-export const number: Schema<number, number, 'number', undefined> = {
+export const number: NumberSchema = {
 	kind: 'number',
 	def: undefined,
 	// true of a finite number and of nothing else, so the type is not asked first
 	run: (value, ctx) => (Number.isFinite(value) ? value : fail(ctx, 'number', value))
 };
 
-export const boolean: Schema<boolean, boolean, 'boolean', undefined> = {
+export const boolean: BooleanSchema = {
 	kind: 'boolean',
 	def: undefined,
 	run: (value, ctx) => (typeof value === 'boolean' ? value : fail(ctx, 'boolean', value))
 };
 
-export const bigint: Schema<bigint, bigint, 'bigint', undefined> = {
+export const bigint: BigintSchema = {
 	kind: 'bigint',
 	def: undefined,
 	run: (value, ctx) => (typeof value === 'bigint' ? value : fail(ctx, 'bigint', value))
@@ -817,7 +836,7 @@ export const bigint: Schema<bigint, bigint, 'bigint', undefined> = {
  * missing key after it fills the key in, as a `with_default` does, the key
  * is optional, and it accepts the `undefined`, see `union`.
  */
-export const unknown: Schema<unknown, unknown, 'unknown', undefined> = {
+export const unknown: UnknownSchema = {
 	kind: 'unknown',
 	def: undefined,
 	run: (value, ctx, parent, key) =>
@@ -860,6 +879,9 @@ const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
 const format_literals = (values: Iterable<unknown>): string =>
 	Array.from(values, (v) => (typeof v === 'string' ? JSON.stringify(v) : String(v))).join(' | ');
 
+/** The type of `literal(value)`, where `T` is the type of `value`. */
+export interface LiteralSchema<T extends SchemaLiteral> extends Schema<T, T, 'literal', T> {}
+
 /**
  * Matches a single value by `===`, so `0` and `-0` match each other, and
  * matches `NaN` when the value is `NaN`, which `===` alone never would.
@@ -871,7 +893,7 @@ const format_literals = (values: Iterable<unknown>): string =>
  * key be missing.
  */
 // @__NO_SIDE_EFFECTS__
-export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, 'literal', T> => {
+export const literal = <const T extends SchemaLiteral>(value: T): LiteralSchema<T> => {
 	// built on first failure and kept, so a miss costs no allocation after that
 	let expected: string | undefined;
 	return {
@@ -898,6 +920,9 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
 	};
 };
 
+/** The type of `void`: a `literal` of `undefined`, typed `void` in and out. */
+export interface VoidSchema extends Schema<void, void, 'literal', undefined> {}
+
 /**
  * Matches `undefined`, typed `void` in and out, so a function whose parameter
  * is typed from it can be called with no argument:
@@ -912,7 +937,7 @@ export const literal = <const T extends SchemaLiteral>(value: T): Schema<T, T, '
  * Exported as `void`, a reserved word, so it is read as `s.void` through a
  * namespace import.
  */
-const void_: Schema<void, void, 'literal', undefined> = {
+const void_: VoidSchema = {
 	kind: 'literal',
 	def: undefined,
 	// the closure `literal(undefined)` has, with its `expected` written out
@@ -926,6 +951,14 @@ const void_: Schema<void, void, 'literal', undefined> = {
 };
 export { void_ as void };
 
+/** The type of `one_of(values)`, where `T` is the type of `values`. */
+export interface OneOfSchema<T extends ReadonlyArray<SchemaLiteral>> extends Schema<
+	T[number],
+	T[number],
+	'one_of',
+	T
+> {}
+
 /**
  * Matches any of `values` as `literal` matches one: by `===`, so `0` and `-0`
  * match each other, and `NaN` when it is among them.
@@ -935,9 +968,7 @@ export { void_ as void };
  * changing the array afterwards changes `def` and not what the schema matches.
  */
 // @__NO_SIDE_EFFECTS__
-export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(
-	values: T
-): Schema<T[number], T[number], 'one_of', T> => {
+export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(values: T): OneOfSchema<T> => {
 	let expected: string | undefined;
 	// built once here and kept in the closure, so `def` stays the array. `has`
 	// matches as `includes` does, `NaN` included, in a time the length doesn't
@@ -1016,14 +1047,28 @@ export type SchemaDefaultOutput<T extends Schema> = T extends {
 		? Exclude<Infer<T>, undefined> | Extract<Infer<U>, undefined>
 		: Infer<T>;
 
+/** The type of `optional(schema)`, where `T` is the type of `schema`. */
+export interface OptionalSchema<T extends Schema> extends Schema<
+	Infer<T> | undefined,
+	InferInput<T> | undefined,
+	'optional',
+	SchemaWrapperDef<T>
+> {}
+
+/** The type of `nullable(schema)`, where `T` is the type of `schema`. */
+export interface NullableSchema<T extends Schema> extends Schema<
+	Infer<T> | null,
+	InferInput<T> | null,
+	'nullable',
+	SchemaWrapperDef<T>
+> {}
+
 /**
  * Accepts `undefined`. As an object entry it makes the key optional: the
  * input may leave it out, and a key left out stays out of the output.
  */
 // @__NO_SIDE_EFFECTS__
-export const optional = <T extends Schema>(
-	schema: T
-): Schema<Infer<T> | undefined, InferInput<T> | undefined, 'optional', SchemaWrapperDef<T>> => ({
+export const optional = <T extends Schema>(schema: T): OptionalSchema<T> => ({
 	kind: 'optional',
 	def: { schema },
 	run: (value, ctx) => (value === undefined ? undefined : (schema.run(value, ctx) as Infer<T>))
@@ -1036,9 +1081,7 @@ export const optional = <T extends Schema>(
  * accepts one.
  */
 // @__NO_SIDE_EFFECTS__
-export const nullable = <T extends Schema>(
-	schema: T
-): Schema<Infer<T> | null, InferInput<T> | null, 'nullable', SchemaWrapperDef<T>> => ({
+export const nullable = <T extends Schema>(schema: T): NullableSchema<T> => ({
 	kind: 'nullable',
 	def: { schema },
 	// two closures chosen once here, as in `message`
@@ -1048,6 +1091,29 @@ export const nullable = <T extends Schema>(
 					value === null ? null : (schema.run(value, ctx, parent, key) as Infer<T>)
 			: (value, ctx) => (value === null ? null : (schema.run(value, ctx) as Infer<T>))
 });
+
+/**
+ * The type of `with_default(schema, value)`, where `T` is the type of
+ * `schema`: its output without the `undefined` of an `optional`, see
+ * `SchemaDefaultOutput`.
+ */
+export interface WithDefaultSchema<T extends Schema> extends Schema<
+	SchemaDefaultOutput<T>,
+	InferInput<T> | undefined,
+	'with_default',
+	SchemaDefaultDef<T>
+> {}
+
+/**
+ * The type of `with_default(schema, value)` where `value` may be `undefined`,
+ * as one typed by a generic schema's output may: the output of `T` as it is.
+ */
+export interface WithUndefinedDefaultSchema<T extends Schema> extends Schema<
+	Infer<T>,
+	InferInput<T> | undefined,
+	'with_default',
+	SchemaDefaultDef<T>
+> {}
 
 /**
  * Replaces `undefined` with `value`. As an object entry it makes the key
@@ -1071,19 +1137,32 @@ export const with_default: {
 	// a value of the output without the `undefined` of an `optional` first, which the output then
 	// is. A value of a type that may be `undefined`, as one of a generic schema's output is,
 	// fails it and takes the second
-	<T extends Schema>(
-		schema: T,
-		value: SchemaDefaultOutput<T>
-	): Schema<SchemaDefaultOutput<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>>;
-	<T extends Schema>(
-		schema: T,
-		value: Infer<T>
-	): Schema<Infer<T>, InferInput<T> | undefined, 'with_default', SchemaDefaultDef<T>>;
+	<T extends Schema>(schema: T, value: SchemaDefaultOutput<T>): WithDefaultSchema<T>;
+	<T extends Schema>(schema: T, value: Infer<T>): WithUndefinedDefaultSchema<T>;
 } = (schema: AnySchema, value: unknown): Schema<any, any, 'with_default', any> => ({
 	kind: 'with_default',
 	def: { schema, value },
 	run: (v, ctx) => (v === undefined ? value : schema.run(v, ctx))
 });
+
+/** The type of `with_default_fn(schema, make)`, as `WithDefaultSchema` is of `with_default`. */
+export interface WithDefaultFnSchema<T extends Schema> extends Schema<
+	SchemaDefaultOutput<T>,
+	InferInput<T> | undefined,
+	'with_default_fn',
+	SchemaDefaultFnDef<T>
+> {}
+
+/**
+ * The type of `with_default_fn(schema, make)` where `make` may return
+ * `undefined`, as `WithUndefinedDefaultSchema` is of `with_default`.
+ */
+export interface WithUndefinedDefaultFnSchema<T extends Schema> extends Schema<
+	Infer<T>,
+	InferInput<T> | undefined,
+	'with_default_fn',
+	SchemaDefaultFnDef<T>
+> {}
 
 /**
  * Replaces `undefined` with what `make` returns, called with no arguments once
@@ -1106,24 +1185,21 @@ export const with_default: {
 export const with_default_fn: {
 	// a `make` that returns what the output is without the `undefined` of an `optional` first,
 	// as `with_default` takes a value
-	<T extends Schema>(
-		schema: T,
-		make: () => SchemaDefaultOutput<T>
-	): Schema<
-		SchemaDefaultOutput<T>,
-		InferInput<T> | undefined,
-		'with_default_fn',
-		SchemaDefaultFnDef<T>
-	>;
-	<T extends Schema>(
-		schema: T,
-		make: () => Infer<T>
-	): Schema<Infer<T>, InferInput<T> | undefined, 'with_default_fn', SchemaDefaultFnDef<T>>;
+	<T extends Schema>(schema: T, make: () => SchemaDefaultOutput<T>): WithDefaultFnSchema<T>;
+	<T extends Schema>(schema: T, make: () => Infer<T>): WithUndefinedDefaultFnSchema<T>;
 } = (schema: AnySchema, make: () => unknown): Schema<any, any, 'with_default_fn', any> => ({
 	kind: 'with_default_fn',
 	def: { schema, make },
 	run: (v, ctx) => (v === undefined ? make() : schema.run(v, ctx))
 });
+
+/** The type of `lazy(get)`, where `get` returns a `T`. */
+export interface LazySchema<T extends Schema> extends Schema<
+	Infer<T>,
+	InferInput<T>,
+	'lazy',
+	() => T
+> {}
 
 /**
  * Defers to the schema returned by `get`, for recursive schemas.
@@ -1135,9 +1211,7 @@ export const with_default_fn: {
  * `lazy(() => optional(string))` accepts one.
  */
 // @__NO_SIDE_EFFECTS__
-export const lazy = <T extends Schema>(
-	get: () => T
-): Schema<Infer<T>, InferInput<T>, 'lazy', () => T> => {
+export const lazy = <T extends Schema>(get: () => T): LazySchema<T> => {
 	let schema: T | undefined;
 	return {
 		kind: 'lazy',
@@ -1367,12 +1441,38 @@ export type Branded<TValue, TName extends PropertyKey> = TValue &
 
 // the type-only first schema of a `pipe`, which a `flavor` or a `brand` of one keeps for the
 // object schemas to read, and nothing of any other schema
-type PipeFirstOf<T extends Schema> = T extends {
+type PipeFirstTypes<T extends Schema> = T extends {
 	readonly kind: 'pipe';
 	readonly '~types'?: { readonly first: infer U };
 }
-	? { readonly '~types'?: { readonly input: InferInput<T>; readonly first: U } }
+	? { readonly first: U }
 	: unknown;
+
+/**
+ * The type of `brand(schema, name)` where `schema`, of type `T`, is not an
+ * action: `T` with its output branded `TName`, and its `kind` and `def`.
+ */
+export interface BrandSchema<T extends Schema, TName extends string> extends Schema<
+	Branded<Infer<T>, TName>,
+	InferInput<T>,
+	T['kind'],
+	T['def']
+> {
+	readonly '~types'?: { readonly input: InferInput<T> } & PipeFirstTypes<T>;
+}
+
+/**
+ * The type of `flavor(schema, name)` where `schema`, of type `T`, is not an
+ * action: `T` with its output flavored `TName`, and its `kind` and `def`.
+ */
+export interface FlavorSchema<T extends Schema, TName extends string> extends Schema<
+	Flavored<Infer<T>, TName>,
+	InferInput<T>,
+	T['kind'],
+	T['def']
+> {
+	readonly '~types'?: { readonly input: InferInput<T> } & PipeFirstTypes<T>;
+}
 
 /**
  * Flavors the output type of `schema` with `name`, see `Flavored`.
@@ -1396,10 +1496,7 @@ export const flavor: {
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		name: TName
 	): SchemaAction<TInput, Flavored<TOutput, TName>, TKind, TDef>;
-	<T extends Schema, const TName extends string>(
-		schema: T,
-		name: TName
-	): Schema<Flavored<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> & PipeFirstOf<T>;
+	<T extends Schema, const TName extends string>(schema: T, name: TName): FlavorSchema<T, TName>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
 /**
@@ -1424,15 +1521,26 @@ export const brand: {
 		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
 		name: TName
 	): SchemaAction<TInput, Branded<TOutput, TName>, TKind, TDef>;
-	<T extends Schema, const TName extends string>(
-		schema: T,
-		name: TName
-	): Schema<Branded<Infer<T>, TName>, InferInput<T>, T['kind'], T['def']> & PipeFirstOf<T>;
+	<T extends Schema, const TName extends string>(schema: T, name: TName): BrandSchema<T, TName>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
 //
 // Containers
 //
+
+/**
+ * The type of `object(entries)`, where `T` is the type of `entries`.
+ *
+ * A library that exports an object schema names its type by extending this
+ * with its entries, `interface UserSchema extends ObjectSchema<typeof UserEntries> {}`,
+ * so the declaration of a schema that holds it refers to it by that name.
+ */
+export interface ObjectSchema<T extends SchemaEntries> extends Schema<
+	SchemaStrictObjectOutput<T>,
+	SchemaStrictObjectInput<T>,
+	'object',
+	T
+> {}
 
 /**
  * Matches an object with `entries`, failing on unknown keys.
@@ -1445,9 +1553,7 @@ export const brand: {
  * other object schemas too.
  */
 // @__NO_SIDE_EFFECTS__
-export const object = <T extends SchemaEntries>(
-	entries: T
-): Schema<SchemaStrictObjectOutput<T>, SchemaStrictObjectInput<T>, 'object', T> => {
+export const object = <T extends SchemaEntries>(entries: T): ObjectSchema<T> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
@@ -1474,6 +1580,17 @@ export const object = <T extends SchemaEntries>(
 };
 
 /**
+ * The type of `loose_object(entries)`, where `T` is the type of `entries`,
+ * extended to name an exported schema as `ObjectSchema` is.
+ */
+export interface LooseObjectSchema<T extends SchemaEntries> extends Schema<
+	SchemaObjectOutput<T> & Record<string, unknown>,
+	SchemaObjectInput<T> & Record<string, unknown>,
+	'loose_object',
+	T
+> {}
+
+/**
  * Matches an object with `entries`, keeping unknown keys as they are.
  * The cheapest of the object schemas on input that comes back as it is:
  * unknown keys are never looked at, and the output is the input itself when no
@@ -1485,14 +1602,7 @@ export const object = <T extends SchemaEntries>(
  * inherited key, a non-enumerable key, and a `__proto__` key are left out of it.
  */
 // @__NO_SIDE_EFFECTS__
-export const loose_object = <T extends SchemaEntries>(
-	entries: T
-): Schema<
-	SchemaObjectOutput<T> & Record<string, unknown>,
-	SchemaObjectInput<T> & Record<string, unknown>,
-	'loose_object',
-	T
-> => {
+export const loose_object = <T extends SchemaEntries>(entries: T): LooseObjectSchema<T> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
@@ -1557,6 +1667,18 @@ export interface SchemaObjectWithRestDef<T extends SchemaEntries, R extends Sche
 }
 
 /**
+ * The type of `object_with_rest(entries, rest)`, where `T` is the type of
+ * `entries` and `R` of `rest`, extended to name an exported schema as
+ * `ObjectSchema` is.
+ */
+export interface ObjectWithRestSchema<T extends SchemaEntries, R extends Schema> extends Schema<
+	SchemaObjectOutput<T> & Record<string, Infer<R>>,
+	SchemaObjectInput<T> & Record<string, InferInput<R>>,
+	'object_with_rest',
+	SchemaObjectWithRestDef<T, R>
+> {}
+
+/**
  * Matches an object with `entries`, and every other own enumerable string key
  * of it with `rest`: `object_with_rest({_: array(string)}, number)`
  * matches `{_: [], a: 1}` and refuses `{_: [], a: 'x'}`, at the key `a`.
@@ -1585,12 +1707,7 @@ export interface SchemaObjectWithRestDef<T extends SchemaEntries, R extends Sche
 export const object_with_rest = <T extends SchemaEntries, R extends Schema>(
 	entries: T,
 	rest: R
-): Schema<
-	SchemaObjectOutput<T> & Record<string, Infer<R>>,
-	SchemaObjectInput<T> & Record<string, InferInput<R>>,
-	'object_with_rest',
-	SchemaObjectWithRestDef<T, R>
-> => {
+): ObjectWithRestSchema<T, R> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
@@ -1643,15 +1760,24 @@ export const object_with_rest = <T extends SchemaEntries, R extends Schema>(
 };
 
 /**
+ * The type of `strip_object(entries)`, where `T` is the type of `entries`,
+ * extended to name an exported schema as `ObjectSchema` is.
+ */
+export interface StripObjectSchema<T extends SchemaEntries> extends Schema<
+	SchemaStrictObjectOutput<T>,
+	SchemaStripObjectInput<T>,
+	'strip_object',
+	T
+> {}
+
+/**
  * Matches an object with `entries`, dropping unknown keys from the output.
  * Dropping means copying, so where no entry changed this costs more than
  * `object` or `loose_object` whenever there is a key to drop. The output is
  * the input itself when no entry changed and there was nothing to drop.
  */
 // @__NO_SIDE_EFFECTS__
-export const strip_object = <T extends SchemaEntries>(
-	entries: T
-): Schema<SchemaStrictObjectOutput<T>, SchemaStripObjectInput<T>, 'strip_object', T> => {
+export const strip_object = <T extends SchemaEntries>(entries: T): StripObjectSchema<T> => {
 	const keys = Object.keys(entries);
 	const schemas = Object.values(entries);
 	return {
@@ -1682,14 +1808,20 @@ export const strip_object = <T extends SchemaEntries>(
 	};
 };
 
+/** The type of `record(schema)`, where `T` is the type of `schema`. */
+export interface RecordSchema<T extends Schema> extends Schema<
+	Record<string, Infer<T>>,
+	Record<string, InferInput<T>>,
+	'record',
+	T
+> {}
+
 /**
  * Matches an object with string keys whose values all match `schema`.
  * The output is the input itself when no value changed.
  */
 // @__NO_SIDE_EFFECTS__
-export const record = <T extends Schema>(
-	schema: T
-): Schema<Record<string, Infer<T>>, Record<string, InferInput<T>>, 'record', T> => ({
+export const record = <T extends Schema>(schema: T): RecordSchema<T> => ({
 	kind: 'record',
 	def: schema,
 	run: (value, ctx): any => {
@@ -1721,14 +1853,20 @@ export const record = <T extends Schema>(
 	}
 });
 
+/** The type of `array(schema)`, where `T` is the type of `schema`. */
+export interface ArraySchema<T extends Schema> extends Schema<
+	Array<Infer<T>>,
+	Array<InferInput<T>>,
+	'array',
+	T
+> {}
+
 /**
  * Matches an array whose items all match `schema`.
  * The output is the input itself when no item changed.
  */
 // @__NO_SIDE_EFFECTS__
-export const array = <T extends Schema>(
-	schema: T
-): Schema<Array<Infer<T>>, Array<InferInput<T>>, 'array', T> => ({
+export const array = <T extends Schema>(schema: T): ArraySchema<T> => ({
 	kind: 'array',
 	def: schema,
 	run: (value, ctx): any => {
@@ -1755,6 +1893,17 @@ export const array = <T extends Schema>(
 		return output ?? value;
 	}
 });
+
+/**
+ * The type of `union(options)` and of `memo_union(options)`, where `T` is the
+ * type of `options`.
+ */
+export interface UnionSchema<T extends ReadonlyArray<Schema>> extends Schema<
+	Infer<T[number]>,
+	InferInput<T[number]>,
+	'union',
+	T
+> {}
 
 /**
  * Matches the first of `options` that accepts the value.
@@ -1797,9 +1946,7 @@ export const array = <T extends Schema>(
  * entries first, or use `memo_union`.
  */
 // @__NO_SIDE_EFFECTS__
-export const union = <const T extends ReadonlyArray<Schema>>(
-	options: T
-): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
+export const union = <const T extends ReadonlyArray<Schema>>(options: T): UnionSchema<T> => {
 	// built on first failure and kept, as in `literal`: a union that misses
 	// inside another that matches describes itself once. Each part is named
 	// once, where it first appears
@@ -1921,9 +2068,7 @@ export const union = <const T extends ReadonlyArray<Schema>>(
  * one allocates the map.
  */
 // @__NO_SIDE_EFFECTS__
-export const memo_union = <const T extends ReadonlyArray<Schema>>(
-	options: T
-): Schema<Infer<T[number]>, InferInput<T[number]>, 'union', T> => {
+export const memo_union = <const T extends ReadonlyArray<Schema>>(options: T): UnionSchema<T> => {
 	const { run } = union(options);
 	// a memo for each parse, by its context, so none outlives it. The map of
 	// memos is the mark of a failure, which no output can be
@@ -1965,6 +2110,22 @@ export const memo_union = <const T extends ReadonlyArray<Schema>>(
 };
 
 /**
+ * The type of `variant(key, options)`, where `TKey` is the type of `key` and
+ * `T` of `options`. A `variant` over exported object schemas whose types have
+ * names, as `ObjectSchema` gives them, needs no annotation of its own: its
+ * declaration names its options.
+ */
+export interface VariantSchema<
+	TKey extends string,
+	T extends ReadonlyArray<Schema<any, any, string, SchemaEntries>>
+> extends Schema<
+	Infer<T[number]>,
+	InferInput<T[number]>,
+	'variant',
+	{ readonly key: TKey; readonly options: T }
+> {}
+
+/**
  * Matches the object schema in `options` whose `key` literal equals the value's,
  * a discriminated union with constant-time dispatch.
  *
@@ -1981,12 +2142,7 @@ export const variant = <
 >(
 	key: TKey,
 	options: T
-): Schema<
-	Infer<T[number]>,
-	InferInput<T[number]>,
-	'variant',
-	{ readonly key: TKey; readonly options: T }
-> => {
+): VariantSchema<TKey, T> => {
 	const by_value: Map<unknown, AnySchema> = new Map();
 	for (const option of options) by_value.set(option.def[key]!.def, option);
 	let expected: string | undefined;
@@ -2008,6 +2164,13 @@ export const variant = <
 //
 
 /**
+ * The `def` of a `pipe`: its schema, then its actions. An interface, so a
+ * declaration that holds one names it and doesn't write out `SchemaNode`, the
+ * union of every kind.
+ */
+export interface SchemaPipeDef extends ReadonlyArray<SchemaNode> {}
+
+/**
  * A `pipe` that starts with `T`. Its type-only `~types` holds as `first` what
  * a value reaches first, `T` or, where `T` is a pipe, the first of that, as
  * the runtime reads it, which an object schema reads to tell whether a missing
@@ -2018,7 +2181,7 @@ export type PipeSchema<TOutput, T extends Schema> = Schema<
 	TOutput,
 	InferInput<T>,
 	'pipe',
-	ReadonlyArray<SchemaNode>
+	SchemaPipeDef
 > & { readonly '~types'?: { readonly input: InferInput<T>; readonly first: PipeHead<T> } };
 
 // what a value reaches first in a pipe that starts with `T`: the `first` of a

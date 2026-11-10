@@ -2166,5 +2166,15 @@ export const MUTANTS: Array<Mutant> = [
 				replace: `	'record, array': { side: 'neither',`
 			}
 		]
+	},
+	{
+		// the inferred types are the same, so only the walk of the declared types tells
+		name: 'array_returns_structural_schema',
+		edits: [
+			{
+				find: `): ArraySchema<T> => ({`,
+				replace: `): Schema<Array<Infer<T>>, Array<InferInput<T>>, 'array', T> => ({`
+			}
+		]
 	}
 ];

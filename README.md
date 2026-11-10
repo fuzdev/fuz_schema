@@ -172,6 +172,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
+| types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
 | types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput` |
 
 `Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
@@ -302,36 +303,53 @@ since a spread of generic entries types as `T & U` and an overridden key's type 
 
 ### Exporting schemas from a library
 
-An object schema's type holds its output and its input, worked out from its entries,
-so the declaration emitted for an exported one writes out all three,
-and the declaration of a schema that holds it writes them out again.
-A library of nested exported schemas can emit declarations many times the size of its source.
-Naming each schema's types keeps a declaration to references:
+Every schema the library makes but a `pipe` has a type named for its factory,
+whose type arguments are only what the factory was given: `s.object(entries)` is an `s.ObjectSchema<typeof entries>`,
+`s.array(schema)` an `s.ArraySchema<typeof schema>`, and `s.string` an `s.StringSchema`.
+So the declaration emitted for an exported schema writes each schema it holds by its name,
+and doesn't write out its output or its input, with two exceptions.
+A `pipe` is an `s.PipeSchema<TOutput, typeof first>`, whose output its steps compute,
+so a declaration writes that output out wherever the pipe is held.
+An action is a `SchemaRefinement` or a `SchemaAction`, typed by what it takes and gives.
+A declaration also writes out an object schema's entries, wherever the schema is held.
+Naming each exported object schema's type, and each exported `pipe` whose output is an object,
+keeps a declaration to references:
 
 ```ts
 const UserEntries = {kind: s.literal('user'), name: s.string, age: s.optional(s.number)};
-export interface UserOutput extends s.SchemaStrictObjectOutput<typeof UserEntries> {}
-export interface UserInput extends s.SchemaStrictObjectInput<typeof UserEntries> {}
-export interface UserSchema extends s.Schema<UserOutput, UserInput, 'object', typeof UserEntries> {}
+export interface UserSchema extends s.ObjectSchema<typeof UserEntries> {}
 export const User: UserSchema = s.object(UserEntries);
 
-// a variant is annotated with its options' names
-export const Actor: s.Schema<
-	UserOutput | BotOutput,
-	UserInput | BotInput,
-	'variant',
-	{readonly key: 'kind'; readonly options: readonly [UserSchema, BotSchema]}
-> = s.variant('kind', [User, Bot]);
+// a variant of named options needs no annotation: its declaration is
+// `s.VariantSchema<"kind", readonly [UserSchema, BotSchema]>`
+export const Actor = s.variant('kind', [User, Bot]);
+
+// a pipe's output is written out wherever it is held, even one its steps leave as it was:
+// name the output, then the pipe
+export interface Stamped extends s.Infer<typeof User> {at: number}
+export interface StampedSchema extends s.PipeSchema<Stamped, UserSchema> {}
+export const Stamped: StampedSchema = s.pipe(User, s.transform((user) => ({...user, at: Date.now()})));
+```
+
+`strip_object`, `loose_object`, and `object_with_rest` have `s.StripObjectSchema`,
+`s.LooseObjectSchema`, and `s.ObjectWithRestSchema`, extended the same way.
+A type of entries shared between schemas is a type alias:
+an interface has no index signature, so it is not a `SchemaEntries`.
+
+The output's name is the consumer's to write.
+`Infer` is a conditional type, so a tool that prints types names an output by what it resolves to,
+and writes out one that has no name:
+
+```ts
+export interface User extends s.Infer<typeof User> {}
+// or from the entries, and the input too
+export interface UserInput extends s.SchemaStrictObjectInput<typeof UserEntries> {}
 ```
 
 A doc comment on an entry is its property's in the output and input types, the named ones included,
 so the entries are where a field is documented.
 `strip_object` has `SchemaStripObjectInput` for its input, and `loose_object` has
 `SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`.
-A type of entries shared between schemas is a type alias:
-an interface has no index signature, so it is not a `SchemaEntries`.
-`Infer` is a conditional type, so a tool that prints types names an output by what it resolves to,
-`UserOutput` above, and writes out one that has no name.
 
 ### Issues
 
