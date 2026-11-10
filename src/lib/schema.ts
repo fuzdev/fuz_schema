@@ -2357,15 +2357,16 @@ export const pipe: SchemaPipeFactory = (
 		def: schemas as Array<SchemaNode>,
 		// three closures chosen once here, as in `message`. The first is of a
 		// pipe that starts with an `optional`: as the entry itself, a key that
-		// isn't in the object is missing, and its value `undefined`, so it stays
-		// out and nothing runs. A key not `in` the object reads as `undefined`
-		// for every object but a Proxy that answers otherwise, whose value then
-		// passes unchecked. It shares the steps with the third, which a pipe it
-		// starts with is called with
+		// isn't in the object is missing, so it gives `undefined`, which keeps
+		// the key out, and nothing runs. Not the value it was handed, which is
+		// `undefined` for every object but a `Proxy` that says the key is
+		// missing and gives a value for it, and which would reach the output
+		// unchecked. It shares the steps with the third, which a pipe it starts
+		// with is called with
 		run:
 			first.kind === 'optional'
 				? (value, ctx, parent, key, entry) =>
-						entry && !((key as string) in parent!) ? value : run(value, ctx)
+						entry && !((key as string) in parent!) ? undefined : run(value, ctx)
 				: schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
 					? (value, ctx, parent, key) => {
 							const count = ctx.fails;

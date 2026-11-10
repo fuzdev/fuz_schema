@@ -533,7 +533,7 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'pipe_optional_runs_steps',
 		edits: [
 			{
-				find: `						entry && !((key as string) in parent!) ? value : run(value, ctx)`,
+				find: `						entry && !((key as string) in parent!) ? undefined : run(value, ctx)`,
 				replace: `						run(value, ctx)`
 			}
 		]
@@ -1201,6 +1201,15 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `	return format_issue(text ? { ...issue, received: text } : issue);`,
 				replace: `	return format_issue(text ? { ...issue, received: text, message: undefined } : issue);`
+			}
+		]
+	},
+	{
+		name: 'pipe_optional_missing_gives_value',
+		edits: [
+			{
+				find: `entry && !((key as string) in parent!) ? undefined : run(value, ctx)`,
+				replace: `entry && !((key as string) in parent!) ? value : run(value, ctx)`
 			}
 		]
 	},

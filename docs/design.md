@@ -437,7 +437,11 @@ all a missing key costs an object that has no schema asking.
   `pipe(pipe(optional(string), a), b)` runs neither `a` nor `b`. The pipe looks
   for the key where it is handed the `1`: as the entry itself, and under a
   `message`, which passes the `1` on. A key that isn't in the object is missing,
-  and its value is then `undefined`.
+  and the pipe gives `undefined` for it, not the value it was handed. A
+  `Proxy` that says the key is missing and gives a value for it puts nothing
+  of that value in the output: in a copy started before the entry the key
+  stays out, and where the entry's `undefined` is what starts the copy, as
+  that value differs from it, the copy holds the key as `undefined`.
 - **Under a `nullable`, a `lazy`, or a `union` its steps run**, on the
   `undefined` a missing key reads as. Those hand it the object and the key,
   and not the `1`: it is then a step of the schema that is the entry, and

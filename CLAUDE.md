@@ -335,7 +335,11 @@ Things that are easy to break without a test noticing:
   to its first schema don't pass it, so what they hold is a step of the entry
   and not the entry.
 - **A `pipe` that starts with an `optional` runs no step for a key that is
-  missing**, where it is handed the `1`, and the key stays out. It is a third
+  missing**, where it is handed the `1`, and the key stays out of a copy
+  started before it: it gives `undefined`, never the value it was handed.
+  Where it starts the copy, which only a `Proxy` that says the key is missing
+  and gives a value for it makes it do, the copy holds the key as
+  `undefined`. It is a third
   closure, chosen when the pipe is made by the kind of the schema it starts
   with, through every pipe that is its first schema, and it shares the steps
   with the closure of two. Without the `1`, under a `nullable`, a `lazy`, or a

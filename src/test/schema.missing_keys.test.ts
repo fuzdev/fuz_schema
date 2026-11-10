@@ -1189,6 +1189,53 @@ describe('missing keys', () => {
 			}
 		});
 
+		test('puts no value it read for a missing key in the output, and the key as `undefined` where it starts the copy', () => {
+			// a `Proxy` that says the key is missing and gives a value for it
+			const UNCHECKED = { unchecked: true };
+			const lying = (): object =>
+				new Proxy(
+					{},
+					{
+						has: () => false,
+						get: (_target, key) => (key === 'a' ? UNCHECKED : undefined),
+						ownKeys: () => [],
+						getOwnPropertyDescriptor: () => undefined
+					}
+				);
+			for (const factory of factories) {
+				for (const [name, make] of stopping) {
+					for (const step of [refuses, mapped, counted]) {
+						// alone and before an entry that copies, where its `undefined` differs from
+						// the value read and so starts the copy, which then holds the key as
+						// `undefined`, and after one, where the copy has begun and the key stays out
+						const layouts: Array<[entries: s.SchemaEntries, keys: Array<string>]> = [
+							[{ a: s.pipe(make(), step) }, ['a']],
+							[{ a: s.pipe(make(), step), e: s.with_default(s.string, 'E') }, ['a', 'e']],
+							[{ d: s.with_default(s.string, 'D'), a: s.pipe(make(), step) }, ['d']]
+						];
+						for (const [entries, keys] of layouts) {
+							const O = factory(entries);
+							const at = `${factory({}).kind}: ${name}, ${step.kind}, ${Object.keys(entries).join()}`;
+							calls = 0;
+							const result = s.parse(O, lying());
+							assert(result.ok, at);
+							assert.deepEqual(Object.keys(result.value), keys, at);
+							assert.strictEqual((result.value as Record<string, unknown>).a, undefined, at);
+							assert.notInclude(Object.values(result.value), UNCHECKED, at);
+							assert.strictEqual(calls, 0, at);
+						}
+						// and a plain object without the key comes back as it was
+						const input = {};
+						assert.strictEqual(s.parse_or_throw(factory(layouts[0]![0]), input), input, name);
+						// and so stays out of a copy, wherever the copy starts
+						for (const [entries] of layouts.slice(1)) {
+							assert.notProperty(s.parse_or_throw(factory(entries), {}), 'a', name);
+						}
+					}
+				}
+			}
+		});
+
 		test('runs every step when the key is there, on `undefined` too', () => {
 			for (const factory of factories) {
 				for (const [name, make] of stopping) {
