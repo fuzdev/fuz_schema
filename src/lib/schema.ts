@@ -641,7 +641,7 @@ export const parse_or_throw = <T extends Schema>(schema: T, value: unknown): Inf
 	const output = schema.run(value, ctx) as Infer<T>;
 	if (ctx.fails) {
 		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
-		throw new SchemaError(ctx.issues!);
+		throw new SchemaError(ctx.issues!, ctx.fails);
 	}
 	return output;
 };
@@ -738,22 +738,29 @@ export const get_issue_value = (
 
 /**
  * Thrown by `parse_or_throw`. The message lists the first ten issues, one per
- * line, as `format_issue` writes it, and then how many more of `issues` there
- * are, so its length is bounded by ten of its lines however many issues there
- * are. A parse builds at most a hundred issues, so the count is of those, and
- * an input that failed more often reads `and 90 more`. Like its issues, it
- * holds nothing of the input but the keys in their paths.
+ * line, as `format_issue` writes it, and then how many more failures there
+ * were, so its length is bounded by ten of its lines however many issues there
+ * are. A parse builds at most a hundred issues and counts every failure, and
+ * one thrown by `parse_or_throw` is given that count: an input that failed
+ * five hundred times reads `and 490 more`, with the hundred issues on
+ * `issues`. Like its issues, it holds nothing of the input but the keys in
+ * their paths.
  *
  * It can be made from the issues of a failed `parse`, and its `message` set
- * after, for other text.
+ * after, for other text. Made so, it counts the issues it is given, as a
+ * failed result carries no count of its own.
  */
 export class SchemaError extends Error {
 	issues: Array<SchemaIssue>;
 
-	constructor(issues: Array<SchemaIssue>) {
+	/**
+	 * @param issues - the issues, the first ten of which the message lists
+	 * @param fails - how many failures there were, at least `issues.length`, which it defaults to. A smaller count, or one that isn't a number, is not guarded against: the message counts what it is given
+	 */
+	constructor(issues: Array<SchemaIssue>, fails: number = issues.length) {
 		super(
 			issues.slice(0, 10).map(format_issue).join('\n') +
-				(issues.length > 10 ? `\nand ${issues.length - 10} more` : '')
+				(fails > 10 ? `\nand ${fails - 10} more` : '')
 		);
 		this.name = 'SchemaError';
 		this.issues = issues;

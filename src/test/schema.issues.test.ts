@@ -230,8 +230,8 @@ describe('issues', () => {
 		assert.deepEqual(message_of(9).split('\n'), lines(9));
 		assert.deepEqual(message_of(10).split('\n'), lines(10));
 		assert.deepEqual(message_of(11).split('\n'), [...lines(10), 'and 1 more']);
-		// the count is of the issues built
-		assert.deepEqual(message_of(150).split('\n'), [...lines(10), 'and 90 more']);
+		// the count is of every failure, past the hundred issues built
+		assert.deepEqual(message_of(150).split('\n'), [...lines(10), 'and 140 more']);
 		// a long key many issues share is in ten lines, not one per issue
 		const key = 'k'.repeat(10_000);
 		try {
@@ -248,6 +248,42 @@ describe('issues', () => {
 			new s.SchemaError(issues_of(s.string, 1)).message,
 			'expected string, received number'
 		);
+	});
+
+	test('a SchemaError thrown by parse_or_throw counts every failure, and holds the hundred issues', () => {
+		try {
+			s.parse_or_throw(s.array(s.string), Array(500).fill(1));
+			assert.fail('expected a throw');
+		} catch (error) {
+			assert(error instanceof s.SchemaError);
+			assert.strictEqual(error.issues.length, 100);
+			assert.strictEqual(error.message.split('\n').at(-1), 'and 490 more');
+			// the count is in the message alone
+			assert.deepEqual(
+				Reflect.ownKeys(error)
+					.map(String)
+					.sort((a, b) => a.localeCompare(b)),
+				['issues', 'message', 'name', 'stack']
+			);
+		}
+		// `parse` is as it was: the hundred issues, and no count
+		const result = s.parse(s.array(s.string), Array(500).fill(1));
+		assert(!result.ok);
+		assert.deepEqual(Object.keys(result), ['ok', 'issues']);
+		assert.strictEqual(result.issues.length, 100);
+	});
+
+	test('a SchemaError made by hand counts the issues it is given, or the count given', () => {
+		const issues = issues_of(s.array(s.string), Array(150).fill(1));
+		assert.strictEqual(issues.length, 100);
+		const last_line = (error: s.SchemaError): string | undefined =>
+			error.message.split('\n').at(-1);
+		assert.strictEqual(last_line(new s.SchemaError(issues)), 'and 90 more');
+		assert.strictEqual(last_line(new s.SchemaError(issues, 150)), 'and 140 more');
+		// fewer issues than failures, past ten and not
+		assert.strictEqual(last_line(new s.SchemaError(issues.slice(0, 4), 12)), 'and 2 more');
+		assert.strictEqual(new s.SchemaError(issues.slice(0, 4), 10).message.split('\n').length, 4);
+		assert.strictEqual(new s.SchemaError([], 0).message, '');
 	});
 
 	test('a path is outermost first at any depth, from parse and parse_or_throw', () => {

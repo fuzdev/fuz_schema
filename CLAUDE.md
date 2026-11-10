@@ -306,7 +306,9 @@ Things that are easy to break without a test noticing:
   outside those.
 - **Outside probe mode `ctx.issues.length` is `Math.min(ctx.fails, 100)`.**
   Past the hundredth failure `fail` counts and builds no issue, a cap that is
-  fixed and silent, and `MAX_ISSUES` in the Rust crate. `issues` is
+  fixed and silent in `parse`'s result, and `MAX_ISSUES` in the Rust crate.
+  `parse_or_throw` passes `fails` to the `SchemaError`, whose message alone
+  counts it. `issues` is
   `undefined` while `fails` is `0`. Containers use
   the count as an index into `issues`, so one taken past the cap reaches no
   issue. Report failure only through `fail`, and restore `fails` after

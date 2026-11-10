@@ -229,7 +229,7 @@ see [`docs/design.md`](docs/design.md#running), and `JSON.parse` reads far deepe
 On untrusted JSON that can nest without bound, catch it or bound the depth first.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
-`parse_or_throw` returns the value or throws a `SchemaError` listing the first ten of its issues and how many more it holds.
+`parse_or_throw` returns the value or throws a `SchemaError` listing the first ten of its issues and how many more failures there were.
 `is` answers yes or no without building issues.
 
 ```ts
@@ -354,8 +354,10 @@ so the entries are where a field is documented.
 ### Issues
 
 A failing parse reports its first hundred issues, and builds no issue for the rest.
-Nothing on the result says the hundred was reached, so a result of a hundred issues may be of an input that failed more often,
-and the `and N more` of a `SchemaError`'s message counts the issues it holds.
+Nothing on the result says the hundred was reached, so a result of a hundred issues may be of an input that failed more often.
+The `and N more` of a `SchemaError`'s message counts every failure past the ten it lists when `parse_or_throw` throws it,
+so an input that failed five hundred times reads `and 490 more`, with the hundred issues on `error.issues`.
+One made by hand, `new s.SchemaError(result.issues)`, counts the issues it is given, unless it is given the count too.
 An issue is `{kind, expected, received, path, message}`:
 
 - `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`

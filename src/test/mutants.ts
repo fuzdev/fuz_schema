@@ -102,7 +102,7 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'error_message_no_more_line',
 		edits: [
 			{
-				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
+				find: `				(fails > 10 ? \`\\nand \${fails - 10} more\` : '')`,
 				replace: `				''`
 			}
 		]
@@ -111,8 +111,8 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'error_message_more_miscounted',
 		edits: [
 			{
-				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
-				replace: `				(issues.length > 10 ? \`\\nand \${issues.length - 9} more\` : '')`
+				find: `\`\\nand \${fails - 10} more\``,
+				replace: `\`\\nand \${fails - 9} more\``
 			}
 		]
 	},
@@ -120,8 +120,8 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'error_message_more_at_ten',
 		edits: [
 			{
-				find: `				(issues.length > 10 ? \`\\nand \${issues.length - 10} more\` : '')`,
-				replace: `				(issues.length >= 10 ? \`\\nand \${issues.length - 10} more\` : '')`
+				find: `(fails > 10 ?`,
+				replace: `(fails >= 10 ?`
 			}
 		]
 	},
@@ -1133,8 +1133,8 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
-		throw new SchemaError(ctx.issues!);`,
-				replace: `		throw new SchemaError(ctx.issues!);`
+		throw new SchemaError(ctx.issues!, ctx.fails);`,
+				replace: `		throw new SchemaError(ctx.issues!, ctx.fails);`
 			}
 		]
 	},
@@ -1143,10 +1143,19 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
-		throw new SchemaError(ctx.issues!);`,
-				replace: `		const error = new SchemaError(ctx.issues!);
+		throw new SchemaError(ctx.issues!, ctx.fails);`,
+				replace: `		const error = new SchemaError(ctx.issues!, ctx.fails);
 		for (const issue of ctx.issues!) if (issue.path.length > 1) issue.path.reverse();
 		throw error;`
+			}
+		]
+	},
+	{
+		name: 'parse_or_throw_counts_issues_held',
+		edits: [
+			{
+				find: `		throw new SchemaError(ctx.issues!, ctx.fails);`,
+				replace: `		throw new SchemaError(ctx.issues!);`
 			}
 		]
 	},

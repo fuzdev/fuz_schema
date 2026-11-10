@@ -569,18 +569,25 @@ derives text and is only bundled when used. There is no message registry.
   only `union` reaches.
 - **A parse reports at most a hundred issues.** Past them a failure is
   counted, so the verdict is the same, and builds no issue. The cap is fixed,
-  with nothing on the result to say it was reached, so a result of a hundred
-  issues may be of an input that failed more often. A path is as
+  with nothing on `parse`'s result to say it was reached, so a result of a
+  hundred issues may be of an input that failed more often. `parse_or_throw`
+  gives the count to the `SchemaError` it throws. A path is as
   long as the failing value is deep, so without the cap a deep input with many
   failures at the bottom holds memory in the product of the two: 206 KB of
   JSON a thousand deep held 1075 MB, and holds 1.1 MB under it. The Rust
   crate's `validate_json` keeps the same hundred.
 - **A `SchemaError`'s message is its first ten issues**, a line each, and a
-  line `and N more` when there are more. A long key many issues share is
-  then in ten lines, not in one for every issue: a 100 KB key over a
+  line `and N more` when there were more failures. A long key many issues
+  share is then in ten lines, not in one for every issue: a 100 KB key over a
   thousand failing items made a message of 100 MB with every issue a line,
   10 MB at a hundred issues, and 1 MB in ten. Its issues, the hundred a
-  parse reports at most, are on `error.issues`.
+  parse reports at most, are on `error.issues`. The count is its
+  constructor's second argument, which `parse_or_throw` gives as the parse's
+  count of failures, so the line counts those past the hundred too. Made
+  from a failed `parse`'s issues alone, it counts them, as the result
+  carries no count. A count given is taken as it is: one below the issues
+  is malformed use, and not guarded against. The error gains no field for
+  it.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
