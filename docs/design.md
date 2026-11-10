@@ -221,6 +221,11 @@ Given up:
 - Output may alias input. Mutating one mutates the other.
 - Validation is not a snapshot: a getter, a proxy, or an object someone else
   holds can pass and then differ. Parsed JSON can't.
+- A copy is not one either. It is made after entries have run and reads
+  keys from the input again, see [Object schemas](#object-schemas): every
+  key where `strip_object` copies to drop one, and the keys before the first
+  entry that changed where one did. A key whose value differs on the second
+  read is in the output as it was read then, and no schema was given it.
 - A class instance that matches comes back as that instance. An input that
   comes back keeps its prototype, whatever that is.
 - Non-enumerable and symbol keys survive, and the keys are in the input's

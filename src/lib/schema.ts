@@ -337,6 +337,12 @@ export interface SchemaRefinement<
 	readonly '~refines'?: true;
 }
 
+/**
+ * The entries of an object schema: a schema for each key.
+ *
+ * A type written out for entries is a type alias and not an interface: an
+ * interface has no implicit index signature, so it is not assignable to this.
+ */
 export type SchemaEntries = Record<string, Schema>;
 
 type Flatten<T> = { [K in keyof T]: T[K] } & {};
@@ -423,12 +429,27 @@ type OptionalInputKeys<T extends SchemaEntries> = {
 	[K in keyof T]: [EntryTakesMissing<T[K]>] extends [true] ? K : never;
 }[keyof T];
 
+/**
+ * The output of an object schema with the entries `T`, each key optional
+ * where its entry can leave a missing key out. `loose_object` outputs this
+ * and `Record<string, unknown>`.
+ *
+ * Exported with `SchemaObjectInput` and the three types below so a consumer
+ * can name the output and input of a schema it exports, as an interface that
+ * extends one, which keeps the declaration emitted for the schema to
+ * references.
+ */
 export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
 	{ [K in Exclude<keyof T, OptionalOutputKeys<T>>]: Infer<T[K]> } & {
 		[K in OptionalOutputKeys<T>]?: Infer<T[K]>;
 	}
 >;
 
+/**
+ * The input of an object schema with the entries `T`, each key optional
+ * where a missing key can match its entry. `loose_object` takes this and
+ * `Record<string, unknown>`.
+ */
 export type SchemaObjectInput<T extends SchemaEntries> = Flatten<
 	{ [K in Exclude<keyof T, OptionalInputKeys<T>>]: InferInput<T[K]> } & {
 		[K in OptionalInputKeys<T>]?: InferInput<T[K]>;
@@ -711,9 +732,14 @@ export const get_issue_value = (
 
 /**
  * Thrown by `parse_or_throw`. The message lists the first ten issues, one per
- * line, as `format_issue` writes it, and then how many more there are, so its
- * length is bounded by ten of its lines however many issues there are. Like
- * its issues, it holds nothing of the input but the keys in their paths.
+ * line, as `format_issue` writes it, and then how many more of `issues` there
+ * are, so its length is bounded by ten of its lines however many issues there
+ * are. A parse builds at most a hundred issues, so the count is of those, and
+ * an input that failed more often reads `and 90 more`. Like its issues, it
+ * holds nothing of the input but the keys in their paths.
+ *
+ * It can be made from the issues of a failed `parse`, and its `message` set
+ * after, for other text.
  */
 export class SchemaError extends Error {
 	issues: Array<SchemaIssue>;

@@ -76,10 +76,15 @@ This is deliberate, for speed, and it's the main thing to know before using it.
 - Validation is not a snapshot. A value that can change between reads
   (a getter, a proxy, an object someone else holds) can pass and then differ.
   Parsed JSON can't do this; objects from untrusted in-process code can.
+  A copy is not a snapshot either: it is made after the entries have run and reads the keys
+  it keeps a second time, so a getter that gives another value then puts one in the output
+  that no schema was given, from `strip_object` too.
   A revoked `Proxy` makes `parse` throw a `TypeError` rather than return issues,
   and `is` too on a schema of objects or arrays,
   see [`docs/declined.md`](docs/declined.md#a-guard-for-a-revoked-proxy-in-fail).
 - A class instance that matches comes back as that instance, not a plain object.
+- An object that comes back has its keys in the input's order, and a copy in the schema's,
+  so two inputs that are equal as data can parse to outputs `JSON.stringify` writes differently.
 
 What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
 and the input is never mutated.
@@ -124,8 +129,33 @@ and the input is never mutated.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.
 
+### Names, coming from Valibot or Zod
+
+| Valibot | Zod | here |
+|---|---|---|
+| `strictObject` | `strictObject` | `object` |
+| `object` | `object` | `strip_object` |
+| `looseObject` | `looseObject` | `loose_object` |
+| `objectWithRest` | `.catchall()` | `object_with_rest` |
+| `picklist` | `enum` | `one_of` |
+| `variant` | `discriminatedUnion` | `variant` |
+| `optional(schema, value)` | `.default(value)` | `with_default`, and `with_default_fn` for an array or object |
+| `record(key, value)` | `record(key, value)` | `record(value)`, keys not checked |
+| `finite` | | nothing: `number` refuses what isn't finite |
+| `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
+| `description`, `metadata` | `.describe()`, `.meta()` | `meta`, in `meta.ts` |
+| `parse` | `.parse()` | `parse_or_throw` |
+| `safeParse` | `.safeParse()` | `parse` |
+| `ValiError` | `ZodError` | `SchemaError` |
+| `InferOutput`, `InferInput` | `z.infer`, `z.input` | `Infer`, `InferInput` |
+| `GenericSchema` | `ZodType` | `Schema` |
+| `schema.entries` | `schema.shape` | `schema.def` |
+| `schema['~standard']` | `schema['~standard']` | `to_standard_schema(schema)`, in `standard_schema.ts` |
+
 ## API
 
+The package has no root entry: a module is imported by its path,
+`@fuzdev/fuz_schema/schema.js`, or `schema.ts`, which names the same file.
 Everything here is a named export of `schema.ts`, used through a namespace import.
 [Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, the [serializer](#serializing),
 [JSON Schema](#json-schema) output, and the [readers of a schema](#introspection) are modules of their own.
@@ -141,7 +171,8 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
-| types | `Infer`, `InferInput`, `Schema`, `SchemaIssue`, `Flavored`, `Branded` |
+| types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
+| types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput` |
 
 `Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
 A helper generic over this library's schemas and another's reads the output behind a test,
@@ -221,6 +252,9 @@ const email: s.Infer<typeof Email> = 'a@b.c'; // ok
 const uuid: s.Infer<typeof Uuid> = 'abc'; // error, parse it instead
 ```
 
+A recursive schema needs its type written, and annotated as `s.Schema<Tree>` it has no `kind` or `def` in its type,
+and its input type is its output's: where it holds a default, give the input too, `s.Schema<Tree, TreeInput>`.
+
 `flavor` and `brand` change only the output type.
 A plain value assigns to a flavored type but not to a branded one,
 and a branded value comes from parsing or a cast.
@@ -266,9 +300,42 @@ A `message`, `brand`, or `meta` on the base is not carried over.
 A generic function that overrides a key types its entries as `Omit<T, keyof U> & U`,
 since a spread of generic entries types as `T & U` and an overridden key's type collapses.
 
+### Exporting schemas from a library
+
+An object schema's type holds its output and its input, worked out from its entries,
+so the declaration emitted for an exported one writes out all three,
+and the declaration of a schema that holds it writes them out again.
+A library of nested exported schemas can emit declarations many times the size of its source.
+Naming each schema's types keeps a declaration to references:
+
+```ts
+const UserEntries = {kind: s.literal('user'), name: s.string, age: s.optional(s.number)};
+export interface UserOutput extends s.SchemaStrictObjectOutput<typeof UserEntries> {}
+export interface UserInput extends s.SchemaStrictObjectInput<typeof UserEntries> {}
+export interface UserSchema extends s.Schema<UserOutput, UserInput, 'object', typeof UserEntries> {}
+export const User: UserSchema = s.object(UserEntries);
+
+// a variant is annotated with its options' names
+export const Actor: s.Schema<
+	UserOutput | BotOutput,
+	UserInput | BotInput,
+	'variant',
+	{readonly key: 'kind'; readonly options: readonly [UserSchema, BotSchema]}
+> = s.variant('kind', [User, Bot]);
+```
+
+`strip_object` has `SchemaStripObjectInput` for its input, and `loose_object` has
+`SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`.
+A type of entries shared between schemas is a type alias:
+an interface has no index signature, so it is not a `SchemaEntries`.
+`Infer` is a conditional type, so a tool that prints types names an output by what it resolves to,
+`UserOutput` above, and writes out one that has no name.
+
 ### Issues
 
 A failing parse reports its first hundred issues, and builds no issue for the rest.
+Nothing on the result says the hundred was reached, so a result of a hundred issues may be of an input that failed more often,
+and the `and N more` of a `SchemaError`'s message counts the issues it holds.
 An issue is `{kind, expected, received, path, message}`:
 
 - `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`
