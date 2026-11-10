@@ -1,6 +1,6 @@
 [package]
 name = "fuz_schema"
-description = "the Rust side of fuz_schema, a performance-focused Standard Schema library"
+description = "the Rust side of fuz_schema, a performance-focused schema library"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

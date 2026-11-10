@@ -1,6 +1,6 @@
 # fuz_schema
 
-> a performance-focused Standard Schema library for JS
+> a performance-focused schema library for JS
 
 fuz_schema (`@fuzdev/fuz_schema`, [schema.fuz.dev](https://schema.fuz.dev/))
 is a schema validation library. It asks

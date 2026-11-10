@@ -1,12 +1,13 @@
 # fuz_schema
 
-> a performance-focused Standard Schema library for JS - [schema.fuz.dev](https://schema.fuz.dev/)
+> a performance-focused schema library for JS - [schema.fuz.dev](https://schema.fuz.dev/)
 
 fuz_schema is a schema validation library for TypeScript and JS.
 It takes [Valibot](https://valibot.dev/)'s strategy —
 one tree-shakeable function per schema, schemas as plain data, `pipe` for refinement —
 and asks how far that can be pushed on bundle size, speed, and memory
 with simpler internals.
+[Standard Schema](#standard-schema) comes through an opt-in adapter.
 
 ```ts
 import * as s from '@fuzdev/fuz_schema/schema.ts';
