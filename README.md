@@ -79,6 +79,10 @@ This is deliberate, for speed, and it's the main thing to know before using it.
   A copy is not a snapshot either: it is made after the entries have run and reads the keys
   it keeps a second time, so a getter that gives another value then puts one in the output
   that no schema was given, from `strip_object` too.
+  A caller who needs a snapshot parses a clone, `s.parse(schema, structuredClone(input))`:
+  it reads each getter once, throws a `DataCloneError` on a `Proxy` or a function rather than returning issues,
+  and drops prototypes, so a class instance arrives as a plain object.
+  Making a copy that reads nothing twice was declined, see [`docs/declined.md`](docs/declined.md#the-copys-second-read).
   A revoked `Proxy` makes `parse` throw a `TypeError` rather than return issues,
   and `is` too on a schema of objects or arrays,
   see [`docs/declined.md`](docs/declined.md#a-guard-for-a-revoked-proxy-in-fail).
@@ -358,6 +362,8 @@ Nothing on the result says the hundred was reached, so a result of a hundred iss
 The `and N more` of a `SchemaError`'s message counts every failure past the ten it lists when `parse_or_throw` throws it,
 so an input that failed five hundred times reads `and 490 more`, with the hundred issues on `error.issues`.
 One made by hand, `new s.SchemaError(result.issues)`, counts the issues it is given, unless it is given the count too.
+`instanceof s.SchemaError` is true only of an error from the same copy of the library:
+across two installed copies, `error.name === 'SchemaError'` and `error.issues` are what hold.
 An issue is `{kind, expected, received, path, message}`:
 
 - `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`
@@ -639,6 +645,12 @@ Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema
 ## Status
 
 > **status**: early — the API is unstable and incomplete
+
+Before 1.0 a breaking change is a minor release.
+A change to an inferred type that can stop a consumer's code compiling,
+or that makes a type it exports accept or give other values, is a break.
+A type that only prints under a new name is not, though declarations emitted against it then need that version,
+which its changeset says. An added export is not.
 
 - [x] the schemas and actions in the table above, with output and input type inference
 - [x] custom messages, as an opt-in wrapper

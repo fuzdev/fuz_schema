@@ -19,7 +19,11 @@ and what they do about it.
   published version, not since a commit that never shipped: one that a later
   change makes untrue is rewritten.
 - **Bump `minor` for a break** while the version is below 1.0, and `patch`
-  otherwise.
+  otherwise. A change to an inferred type that can stop a consumer's code
+  compiling, or that makes a type it exports accept or give other values, is
+  a break. A type that only prints under a new name is not, though
+  declarations emitted against it then need that version, which its
+  changeset says. An added export is not.
 
 ```md
 ---

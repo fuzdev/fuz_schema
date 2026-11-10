@@ -73,6 +73,55 @@ length first, since a path of one key or none is its own reverse.
 - **Reopens**: nothing: the length check is cheaper than the call it skips.
 - **Measured**: before v0.5.1.
 
+## The issue cap
+
+What was taken: a parse builds a hundred issues and counts every failure,
+`parse`'s result carries the issues alone, and `parse_or_throw` gives the
+count to the `SchemaError` it throws, for its `and N more`.
+
+### A count of failures on `parse`'s result
+
+`{ok: false, issues, fails}`, the true count beside the hundred issues.
+
+- **Gave**: a caller of `parse` knows how many failures there were.
+- **Cost**: +4 gzip on the core and +3 on `parse` alone. A change to the
+  `SchemaResult` type, which code that builds a failed result by hand has
+  to follow, to the Rust side's return type, and to every fixture.
+- **Why**: the one place a wrong count was printed is `SchemaError`'s
+  message, which takes the count through `parse_or_throw` for no core byte.
+  No consumer has asked for it on `parse`.
+- **Reopens**: a consumer that needs the count from `parse`, in a release
+  that breaks anyway.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### A flag on `parse`'s result that the cap was reached
+
+`{ok: false, issues, truncated}`.
+
+- **Gave**: a caller of `parse` knows the issues are not all of them.
+- **Cost**: +12 gzip on the core and +11 on `parse` alone, and the same
+  changes to the type, the Rust side, and the fixtures as the count.
+- **Why**: costs more than the count, and says less.
+- **Reopens**: what reopens the count.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### The walk stopped at the cap
+
+The containers returning at the hundredth failure, as in probe mode, with the
+flag above.
+
+- **Gave**: an input that fails more than a hundred times stops being read
+  there.
+- **Cost**: +43 gzip on the core and +11 on `parse` alone, and a count of
+  failures is then impossible: the walk no longer sees them. The tests that
+  hold the count fail.
+- **Why**: the work it saves is linear in the input, not a denial of
+  service, and it costs the most core bytes of any form, for nothing a
+  consumer asked.
+- **Reopens**: a shape of data-shaped input whose failures past the cap cost
+  more than linear time.
+- **Measured**: before v0.5.7, on Node 26.13.
+
 ## Object loops
 
 ### A shared helper for the key copy
@@ -503,6 +552,103 @@ Two more were weighed and not built:
   The reads are less than half of what a copy costs, 43 ns of 93 at six keys
   and 169 of 389 at twenty in a microbenchmark; most is its writes.
   Reopens: a copy whose writes cost less than its reads.
+
+## The copy's second read
+
+What was taken: a copy is made after the entries have run, and reads the
+keys it keeps a second time, see [design.md](design.md#copy-on-write-output).
+A getter or a `Proxy` that gives another value then puts one in the output
+that no schema was given. Parsed JSON can't, and the library never writes to
+its input. A caller that needs a snapshot makes one,
+`s.parse(schema, structuredClone(input))`, see the README.
+
+### The entries run again when a copy starts
+
+At the first entry whose output differs, the entries run again from the
+first, each written to the copy from the read it ran on, in `run_entries`,
+`loose_object`, `array`, `record`, and `object_with_rest`.
+
+- **Gave**: −13 gzip on the core, and a copy holds only values a schema was
+  given.
+- **Cost**: exponential on plain JSON. Each level that copies runs its
+  children again, and each of them again: nested objects with a late default
+  at every level, 327 bytes of JSON 21 levels deep, ran a leaf check
+  4,194,302 times, where it runs 21, and nested arrays the same. A
+  `transform` runs twice, which the tests refuse.
+- **Why**: denial of service on data-shaped input, and not a snapshot, see
+  below.
+- **Reopens**: nothing that runs an entry more than once.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### The first reads kept
+
+Each entry's input kept as it is read, so a copy is filled from the reads
+the entries ran on and reads the input no second time.
+
+- **Gave**: a copy holds only values a schema was given.
+- **Cost**: +11 gzip on the core, and the path that returns the input as it
+  came allocates: the realistic cases that come back as they came, together,
+  went from 27,833 to 857,475 bytes a parse, a figure of the run that built
+  it, not measured again.
+- **Why**: it puts a cost on every input that comes back, the path
+  copy-on-write is for, and is not a snapshot.
+- **Reopens**: a way to keep the reads that allocates nothing for an input
+  that comes back.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+Neither gives a snapshot. A nested object that needed no copy comes back as
+the input's own object inside the fresh outer copy, so what reads it later
+reads the input, and a `transform` after a container is handed the input
+itself where nothing changed, and reads it again. The whole guarantee is a
+clone, which is opt-in by the library's own rule: as an export,
+`parse_snapshot`, it measured 27 gzip last in, and is left to the caller as
+the `structuredClone` above until a consumer asks for it.
+
+## The unknown-key text
+
+What was taken: an `unknown_key` issue is `{kind: 'unknown_key', expected: 'no
+unknown keys', received}`, with `received` the type of the key's value, which
+`format_issue` writes as `props: expected no unknown keys, received array`. It
+reads as though the object were an array.
+
+### `expected: 'never'`
+
+- **Gave**: `props: expected never, received array`, and −4 gzip on the
+  core.
+- **Cost**: a change to the issue's data, which the Rust side, every
+  fixture's issues, and a consumer that pins `expected` on the wire move
+  with.
+- **Why**: a break in documented data for a papercut, and the text still
+  names the value's type.
+- **Reopens**: a release that breaks issue data anyway.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### `received: 'key'`
+
+- **Gave**: `props: expected no unknown keys, received key`, and −5 gzip on
+  the core.
+- **Cost**: +25 gzip on the `type_json` scenario and +28 on `app`, the
+  scenarios with a `variant`. `get_issue_value` can no longer find the value
+  of such an issue, and `received` would stop being the type of the value.
+- **Why**: it breaks what `received` means.
+- **Reopens**: nothing that keeps `received` the value's type.
+- **Measured**: before v0.5.7, on Node 26.13.
+
+### A format of its own in `format_issue`
+
+The issue as it is, written by `format_issue` as `props: unknown key`.
+
+- **Gave**: the text reads right, the issue's data is untouched, and the
+  core +0.
+- **Cost**: +22 gzip on `format_issue` alone, +23 on `SchemaError` and
+  `parse_or_throw` alone. A change to documented text, which the Rust side's
+  `Display`, the fixtures' formatted text, and a consumer's message lines
+  move with.
+- **Why**: a breaking change to documented text for a papercut. Kept as it
+  is.
+- **Reopens**: a release that changes issue text anyway, or a consumer
+  misled by it.
+- **Measured**: before v0.5.7, on Node 26.13.
 
 ## `record`
 
@@ -1111,6 +1257,26 @@ an object whose keys are the names.
 - **Why**: marks must compose.
 - **Reopens**: nothing known.
 - **Measured**: before v0.5.6.
+
+### Entries constrained by a mapped type
+
+The object schemas constraining their entries as `{[K in keyof T]: Schema}`
+in place of `SchemaEntries`, so an interface of entries is taken, which has
+no index signature.
+
+- **Gave**: an interface of entries typechecks.
+- **Cost**: the plain form breaks the declarations a consumer emits for its
+  generic helpers over the library, which then don't compile where they are
+  read, and takes `object([string])`, an array of schemas. With a guard
+  against an array and a constraint of `variant`'s options in kind the tests
+  pass, at about 0.4% more type instantiations, a figure of the run that
+  built it, not measured again, and the restriction still
+  holds at `SchemaNode` and at every consumer helper constrained by
+  `SchemaEntries`.
+- **Why**: writing `type` for `interface` costs a consumer less than all of
+  it, and the `SchemaEntries` TSDoc says so.
+- **Reopens**: TypeScript giving an interface an implicit index signature.
+- **Measured**: before v0.5.7, on Node 26.13.
 
 ## Metadata
 

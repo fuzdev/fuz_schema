@@ -226,6 +226,9 @@ Given up:
   key where `strip_object` copies to drop one, and the keys before the first
   entry that changed where one did. A key whose value differs on the second
   read is in the output as it was read then, and no schema was given it.
+  A snapshot is a clone the caller makes, `parse(schema, structuredClone(input))`:
+  the two ways to a copy that reads nothing twice were declined, see
+  [declined.md](declined.md#the-copys-second-read).
 - A class instance that matches comes back as that instance. An input that
   comes back keeps its prototype, whatever that is.
 - Non-enumerable and symbol keys survive, and the keys are in the input's
@@ -588,6 +591,10 @@ derives text and is only bundled when used. There is no message registry.
   carries no count. A count given is taken as it is: one below the issues
   is malformed use, and not guarded against. The error gains no field for
   it.
+- **A `SchemaError` is told by its `name` across copies of the library.**
+  It is a class, so `instanceof` holds only for the copy that threw it. An
+  error from another installed copy has the same `name`, `'SchemaError'`,
+  and the same `issues`, which are plain data.
 - **`path` is the input's.** An unknown key and a `record` key are whatever
   the input named them. An `unknown_key` issue's last path element is the key.
 - **`path` is each issue's own array**, shared with no other issue. While the
