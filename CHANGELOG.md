@@ -1,5 +1,46 @@
 # @fuzdev/fuz_schema
 
+## 0.5.7
+
+### Patch Changes
+
+- fix: declaration maps resolve to the shipped source, so go-to-definition lands in `src/lib` ([682a2eb](https://github.com/fuzdev/fuz_schema/commit/682a2eb))
+- fix: a doc comment on an object schema's entry reaches the inferred output and input types ([8517cb2](https://github.com/fuzdev/fuz_schema/commit/8517cb2))
+  
+  - an editor shows the comment written on an entry for the property of `Infer<typeof Schema>` and `InferInput<typeof Schema>`, and goes to the entry as its definition
+  - for `object`, `strip_object`, `loose_object`, and `object_with_rest`, and for an interface that extends `SchemaStrictObjectOutput` or another of the object output and input types
+  - the types themselves are as before, and so is a declaration emitted from them
+- feat: add `format_issue_with_value(issue, input)`, which writes the value that failed in place of its type ([a0cc50c](https://github.com/fuzdev/fuz_schema/commit/a0cc50c))
+  
+  - `kind: expected "function" | "variable", received "funtion"`, for a string, a number, or a boolean that `get_issue_value` finds in `input`
+  - a string is quoted as JSON, so a `\n` or `\r` can't add a line, and cut at 32 code units with `…` after the quote
+  - an `unknown_key` or a `missing_key` issue, any other value, an issue `get_issue_value` can't find the value of, and an issue with a `message` read as `format_issue` writes them
+  - a `SchemaError` never holds the input, so the text is built where the input is held: `error.issues.map((issue) => s.format_issue_with_value(issue, input))`
+- feat: every schema's type is named for its factory, so declarations and hovers print it by name ([ea0da18](https://github.com/fuzdev/fuz_schema/commit/ea0da18))
+  
+  - `s.object(entries)` is an `ObjectSchema<typeof entries>`, `s.array(schema)` an `ArraySchema<typeof schema>`, `s.string` a `StringSchema`, and so on for every schema but `pipe`, with `BrandSchema`, `FlavorSchema`, and `SchemaPipeDef` for a `pipe`'s `def`: a declaration emitted for an exported schema no longer writes out the output and input of each schema it holds
+  - a `pipe` is still a `PipeSchema` of the output its steps compute, which a declaration writes out: name it as `interface StampedSchema extends s.PipeSchema<Stamped, UserSchema> {}`
+  - the inferred output and input types are as before, and code that names a schema's type as `Schema<…>` still compiles
+  - to name an exported object schema's type, `interface UserSchema extends s.ObjectSchema<typeof UserEntries> {}`, and a `variant` of named options needs no annotation, see the README's § Exporting schemas from a library
+  - a package that emits declarations against this version prints these names, so its consumers need this version or later: raise the floor of its range on fuz_schema when it rebuilds, as under `skipLibCheck` an older install reads the missing names as `any`, with no error
+- fix: declare no `engines`, so an install on a Node older than 24.14 no longer warns `EBADENGINE` ([682a2eb](https://github.com/fuzdev/fuz_schema/commit/682a2eb))
+  
+  - the library calls no built-in newer than Node 20 has: `Array.prototype.toReversed` when `message` is given a function, and `String.prototype.isWellFormed` in `to_schema_json`
+  - an install under `--engine-strict` on such a Node no longer fails
+- fix: a `pipe` that starts with an `optional` gives `undefined` for a missing key, never the value it read ([dd2a2ae](https://github.com/fuzdev/fuz_schema/commit/dd2a2ae))
+  
+  - as an object entry, a `Proxy` that says the key is missing and gives a value for it no longer puts that value, which no schema ran on, in the output: the key reads `undefined`
+  - every other input parses as before
+- perf: `uuid` checks a string in less time, with the same grammar ([242ff16](https://github.com/fuzdev/fuz_schema/commit/242ff16))
+  
+  - it accepts and refuses the same strings, and `to_json_schema` writes the same `pattern`
+  - a bundle that uses `uuid` is larger by about 60 to 80 gzipped bytes
+- fix: a `SchemaError` thrown by `parse_or_throw` counts every failure, not only the issues built ([431ac8f](https://github.com/fuzdev/fuz_schema/commit/431ac8f))
+  
+  - an input that failed five hundred times reads `and 490 more`, where it read `and 90 more`; `error.issues` still holds the first hundred
+  - `new SchemaError(issues, fails)` takes the count as an optional second argument; without it the message counts the issues given, as before
+  - `parse`'s result is unchanged, and the error has no new field
+
 ## 0.5.6
 
 ### Patch Changes
