@@ -439,9 +439,14 @@ type OptionalInputKeys<T extends SchemaEntries> = {
  * extends one, which keeps the declaration emitted for the schema to
  * references.
  */
+// Both halves map over `keyof T` and remap the key, and not over a set of
+// keys worked out beside it: a property of a mapped type over `keyof T` is
+// the entry's, so an entry's doc comment and its definition reach the output's
+// property, where one over `Exclude<keyof T, ...>` has neither.
+// `src/test/schema.docs.test.ts` asks the language service for both
 export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
-	{ [K in Exclude<keyof T, OptionalOutputKeys<T>>]: Infer<T[K]> } & {
-		[K in OptionalOutputKeys<T>]?: Infer<T[K]>;
+	{ [K in keyof T as K extends OptionalOutputKeys<T> ? never : K]: Infer<T[K]> } & {
+		[K in keyof T as K extends OptionalOutputKeys<T> ? K : never]?: Infer<T[K]>;
 	}
 >;
 
@@ -450,9 +455,10 @@ export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
  * where a missing key can match its entry. `loose_object` takes this and
  * `Record<string, unknown>`.
  */
+// mapped over `keyof T` for the reason `SchemaObjectOutput` is
 export type SchemaObjectInput<T extends SchemaEntries> = Flatten<
-	{ [K in Exclude<keyof T, OptionalInputKeys<T>>]: InferInput<T[K]> } & {
-		[K in OptionalInputKeys<T>]?: InferInput<T[K]>;
+	{ [K in keyof T as K extends OptionalInputKeys<T> ? never : K]: InferInput<T[K]> } & {
+		[K in keyof T as K extends OptionalInputKeys<T> ? K : never]?: InferInput<T[K]>;
 	}
 >;
 

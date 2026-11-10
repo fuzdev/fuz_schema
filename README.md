@@ -324,6 +324,8 @@ export const Actor: s.Schema<
 > = s.variant('kind', [User, Bot]);
 ```
 
+A doc comment on an entry is its property's in the output and input types, the named ones included,
+so the entries are where a field is documented.
 `strip_object` has `SchemaStripObjectInput` for its input, and `loose_object` has
 `SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`.
 A type of entries shared between schemas is a type alias:

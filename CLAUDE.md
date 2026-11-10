@@ -97,6 +97,9 @@ dev server.
   composed by spreading `def` infers
 - `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
   generic helpers over the library compile where they are read
+- `src/test/schema.docs.test.ts` - a property of a type inferred from an
+  object schema has its entry's doc comment and the entry as its definition,
+  asked of TypeScript's language service
 - `src/test/schema.shape.test.ts` - every schema the library makes has one
   hidden class and no field written to, asked of the engine in a process of
   its own, `shape_test_child.ts`, over the samples in `shape_test_helpers.ts`
