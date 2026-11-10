@@ -571,5 +571,6 @@ Things that are easy to break without a test noticing:
 - TypeScript strict mode
 - Svelte 5 with runes API
 - tsv (`gro format`) with tabs, 100 char width
-- Node >= 24.14
+- Node >= 24.14 for the repo's own scripts, in `devEngines`; the package
+  declares no `engines`, as the library needs no Node that new
 - Tests in `src/test/`, vitest with `assert`

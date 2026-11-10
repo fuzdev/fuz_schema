@@ -45,8 +45,12 @@
     "#lib/*": "./src/lib/*",
     "#routes/*": "./src/routes/*"
   },
-  "engines": {
-    "node": ">=24.14"
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=24.14",
+      "onFail": "warn"
+    }
   },
   "keywords": [
     "schema",

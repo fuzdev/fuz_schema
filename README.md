@@ -657,6 +657,10 @@ Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema
 
 Not designed yet: async validation, i18n.
 
+The package declares no `engines`. The newest built-ins the library calls are
+`Array.prototype.toReversed`, only when `message` is given a function, and `String.prototype.isWellFormed`, only in `to_schema_json`,
+both in Node 20. The repo's own tests and benchmarks need Node 24.14, for its type stripping, as `devEngines` says.
+
 What copy-on-write costs: the copy is made after the fact, so the keys it keeps are read a second time, and finding a key to drop means enumerating the input's keys.
 Against a version that always copies, re-measured roughly on the current loops and not by the grader (the earlier graded study is [Always a copy](docs/declined.md#always-a-copy)), `strip_object` dropping a key takes about 1.2 to 1.6x as long as there, and a default applied late in a wide object about 1.2 to 1.3x.
 In exchange, an input that comes back as it is parses about 1.3 to 1.4x faster at six keys, and nearly three times at twenty.
