@@ -26,12 +26,21 @@ else result.issues; // [{kind, expected, received, path, message}]
 
 On this repo's benchmarks it is smaller than Valibot gzipped on every scenario,
 faster on every scenario measured,
-and allocates nothing for a valid value it returns as it came beyond a fixed cost per parse.
+and a valid parse that returns its input allocates a fixed amount, whatever the input's size.
 Those numbers come from one workstation and a small set of scenarios,
 and Valibot's bytes pay for features this doesn't have.
 See [Measurements](#measurements) for what backs each claim and how to rerun it.
 
 fuz_schema is published as `@fuzdev/fuz_schema`, has no stable API, and is missing a lot.
+
+```bash
+npm i @fuzdev/fuz_schema
+```
+
+Every export and type is in the API docs at [schema.fuz.dev/docs](https://schema.fuz.dev/docs).
+The package declares no `engines`. The newest built-ins the library calls are
+`Array.prototype.toReversed`, only when `message` is given a function, and `String.prototype.isWellFormed`, only in `to_schema_json`,
+both in Node 20. The repo's own tests and benchmarks need Node 24.14, for its type stripping, as `devEngines` says.
 
 AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code)
 using Claude Opus 5.5, with a human steering the design.
@@ -221,7 +230,7 @@ and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schem
 
 A recursive `union` whose options walk a node's children before an entry tells them apart
 takes time exponential in the input's depth, as each option walks them again:
-with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#running).
+with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#unions-and-recursion).
 On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
 Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
 and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
@@ -422,6 +431,10 @@ when the path leads through something that isn't an object or array,
 and when what it finds isn't of the type in `issue.received`.
 It reads own keys only, so it never returns an inherited value,
 and a missing key is found as `undefined`, which is what the schema saw.
+`get_issue_value` compares types, not values.
+When an earlier step of a `pipe` replaced the value with another of the same type —
+a `transform`, or a container that applied a default or dropped a key —
+the issue is about the replacement, and `get_issue_value` returns the input's value at that path.
 
 `format_issue_with_value(issue, input)` writes an issue as `format_issue` does,
 with the value `get_issue_value` finds in place of its type when it is a string, a number, or a boolean:
@@ -463,15 +476,10 @@ A key an `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` needs
 `a: expected a required key, received undefined`, except under a `union`, whose own issue it is.
 A missing key whose schema refuses `undefined` has that schema's issue.
 
-Its limit: it compares types, not values.
-When an earlier step of a `pipe` replaced the value with another of the same type —
-a `transform`, or a container that applied a default or dropped a key —
-the issue is about the replacement, and `get_issue_value` returns the input's value at that path.
-
 ### Introspection
 
 A schema is data: `kind` names what it is and `def` holds what it was built from.
-Not everything given is in `def`: the `expected` text of `regex` and `check`, the text given to `message`, and the names given to `flavor` and `brand` are not.
+Not everything given is in `def`: the `expected` text of `regex` and `check`, the path of `check_at`, the text given to `message`, and the names given to `flavor` and `brand` are not.
 `SchemaDefs` says what `def` is for every kind, and `SchemaNode` is the union over it,
 so checking `kind` narrows `def`:
 
@@ -615,7 +623,12 @@ It throws on a schema the form can't hold, saying where:
 (`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`);
 `object_with_rest`, which the crate doesn't carry yet;
 a `bigint` or `undefined` literal; a default that isn't a JSON value;
-an entry named like a member of `Object.prototype`.
+an entry named like a member of `Object.prototype`;
+a length, bound, or format action, or `to_lower_case`, outside a `pipe`;
+a `pipe` that doesn't start with a schema that fixes its value's type, or a step that isn't an action for that type;
+a `variant` option without a `literal` entry at its key;
+a schema that comes back to itself without reading into the value;
+a schema nested past the crate's limits; a string that isn't well-formed Unicode.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
 [`docs/rust.md`](docs/rust.md) has the form and everything refused.
 
@@ -634,8 +647,8 @@ to_json_schema(s.object({name: s.string, port: s.optional(s.number)}));
 //  required: ['name'], additionalProperties: false}
 ```
 
-It throws on what JSON Schema can't say, saying where: a `bigint`, a `check`, a `transform` on the output side,
-a `regex` with flags other than `d` and `u`, a literal of `undefined`.
+It throws on what JSON Schema can't say, saying where, among them: a `bigint`, a `check`, a `transform` on the output side,
+a `regex` with flags other than `d` and `u` or whose source isn't a pattern under `u`, a literal of `undefined`.
 With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
 `to_lower_case` writes nothing, as Zod writes nothing for its `toLowerCase`,
 and a step that reads another string than the document's is refused, as Zod's is not:
@@ -670,12 +683,8 @@ which its changeset says. An added export is not.
 
 Not designed yet: async validation, i18n.
 
-The package declares no `engines`. The newest built-ins the library calls are
-`Array.prototype.toReversed`, only when `message` is given a function, and `String.prototype.isWellFormed`, only in `to_schema_json`,
-both in Node 20. The repo's own tests and benchmarks need Node 24.14, for its type stripping, as `devEngines` says.
-
 What copy-on-write costs: the copy is made after the fact, so the keys it keeps are read a second time, and finding a key to drop means enumerating the input's keys.
-Against a version that always copies, re-measured roughly on the current loops and not by the grader (the earlier graded study is [Always a copy](docs/declined.md#always-a-copy)), `strip_object` dropping a key takes about 1.2 to 1.6x as long as there, and a default applied late in a wide object about 1.2 to 1.3x.
+Against a version that always copies, measured roughly and not by the grader (a graded study is [Always a copy](docs/declined.md#always-a-copy)), `strip_object` dropping a key takes about 1.2 to 1.6x as long as there, and a default applied late in a wide object about 1.2 to 1.3x.
 In exchange, an input that comes back as it is parses about 1.3 to 1.4x faster at six keys, and nearly three times at twenty.
 The ways tried to recover the rest were declined, see [`docs/declined.md`](docs/declined.md#dropping-keys) and [the copy filled from the start](docs/declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default).
 
@@ -781,8 +790,8 @@ npm run benchmark:wasm
 ## Docs
 
 - [`docs/design.md`](docs/design.md) — the internals and why: the one shape,
-  probe mode, copy-on-write and what it gives up, issues and messages, metadata,
-  JSON Schema
+  probe mode, copy-on-write and what it gives up, issues and messages, the
+  types of the schemas, metadata, JSON Schema
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and how to extend them
 - [`docs/testing.md`](docs/testing.md) — what holds the library to more than its own examples:
@@ -794,7 +803,7 @@ npm run benchmark:wasm
   and what decides a grammar where Zod and Valibot disagree
 - [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the interchange form,
   the two evaluators, the issues, where they differ from this library, what is
-  refused, and the wasm build
+  refused, the fixtures, and the wasm build
 - `CLAUDE.md` — layout, commands, and invariants (also the context file for AI agents)
 - [fuz-stack skill](https://docs.fuz.dev/skills/fuz-stack) — coding conventions shared across the Fuz stack
 

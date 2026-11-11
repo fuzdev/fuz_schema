@@ -7,9 +7,10 @@ turns up. What was taken instead is in [design.md](design.md).
 An entry says what it was, what it **gave**, what it **cost**, **why** it was
 declined, what **reopens** it, and the release it was **measured** before: the
 library as it was then, which later changes can have moved. The figures were
-measured on this repo's benchmarks, on Node 24.14.1: time by [`npm run
-grade`](grading.md) or in processes of their own, bytes as gzipped bundles where
-they say "gzip" and as heap allocated where they don't. "Core" is the
+measured on this repo's benchmarks, on Node 24.14.1 unless the entry names
+another: time by [`npm run grade`](grading.md) or in processes of their own,
+bytes as gzipped bundles where they say "gzip" and as heap allocated where
+they don't. "Core" is the
 `strict_nested` scenario's bundle, the bytes every consumer of an object schema
 pays, which with `parse` alone is core in [grading.md](grading.md#bytes), where
 every class but `speed` prices both, and the rules are
@@ -17,10 +18,21 @@ every class but `speed` prices both, and the rules are
 without it, as the library was when it was measured, so under 1 is faster. A
 part with nothing to say is left out.
 
-Some entries were declined under an earlier rule 5: a ceiling on the bundle
-of every scenario together, as a share of Valibot's, raised from two thirds
-through 0.70 and 0.72 to 0.75, and since replaced by a price per class and a
-backstop per scenario. Such an entry names the ceiling it was over.
+Some entries were declined under a former rule 5: a ceiling on the bundle of
+every scenario together, as a share of Valibot's, where the rules have a
+price per class and a backstop per scenario. Such an entry names the ceiling
+it was over.
+
+The parts, by what they change:
+
+- Issues: [Issue paths](#issue-paths), [The issue cap](#the-issue-cap), [The unknown-key text](#the-unknown-key-text)
+- Object schemas: [Object loops](#object-loops), [Dropping keys](#dropping-keys), [The copy's second read](#the-copys-second-read), [`record`](#record), [Object operations](#object-operations), [`variant`](#variant)
+- Missing keys: [Passing the object and the key on](#passing-the-object-and-the-key-on), [Writing a missing key](#writing-a-missing-key)
+- Recursion: [`lazy`](#lazy), [A recursive `union`](#a-recursive-union)
+- Primitives and formats: [`number`](#number), [The format tests](#the-format-tests)
+- The engine: [The parse context](#the-parse-context)
+- Types and opt-in modules: [Types](#types), [Metadata](#metadata), [Standard Schema](#standard-schema)
+- Not guarded: [Degenerate schemas](#degenerate-schemas), [Values that throw when read](#values-that-throw-when-read)
 
 Add an entry when a trade is declined, under the part of the library it
 changes, with its numbers. Entries are kept current, not in order of when
@@ -344,6 +356,19 @@ if the input has such a key.
 - **Cost**: an inherited key that is `undefined` is dropped from a copy,
   which a test holds.
 - **Why**: a change of behavior, for a speedup not shown.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### `loose_object` through the shared loop
+
+`loose_object` as a call to the loop `object` and `strip_object` share, in
+place of a loop of its own that repeats it.
+
+- **Cost**: +18 gzip in every bundle with an object schema, and a loose
+  schema's input that comes back as it is slower alone, see
+  [design.md](design.md#object-schemas).
+- **Why**: slower on the path `loose_object` is the cheapest on, and bytes
+  for the bundles without one.
 - **Reopens**: nothing known.
 - **Measured**: before v0.2.0.
 
@@ -770,7 +795,7 @@ In place of reading the length of `arguments` on each call.
 
 A `union` whose options walk a node's children before an entry rules them
 out takes time exponential in the input's depth, see
-[design.md](design.md#running). These were built to make it linear in the
+[design.md](design.md#unions-and-recursion). These were built to make it linear in the
 core, and declined. `memo_union`, an export of its own, is the opt-in form.
 
 ### A memo of probes inside `lazy`
@@ -906,7 +931,8 @@ key, and the retry over `options.slice(0, i)`.
   that take the key. Nor can the two closures be written to minify to the
   same names: locals are named by slot after the parameters, and default
   parameters break the forwarding of `lazy` and `message`. The scenario
-  stays over the backstop, on a pin in the grader.
+  stays over the backstop, on the grader's pin for the issue cap, which put
+  it there.
 - **Reopens**: a form that keeps the two closures and finds the bytes
   elsewhere.
 - **Measured**: before v0.5.1.
@@ -966,9 +992,10 @@ closure of two parameters, which it shares them with.
   closure allocates none.
 - **Why**: over the ceiling of 0.75 rule 5 had then. The present-key path
   keeps the cost of the call.
-- **Reopens**: now, as rule 5 prices it by class: its +11 on the `pipe`
-  scenario, weighed by rule 3 against its speed, and its 1.16x without the
-  key. Not yet graded again.
+- **Reopens**: a grade under the rules as they are, which price its +11 on
+  the `pipe` scenario by class, against its speed with the key and its 1.16x
+  without. The ceiling it was declined under is gone, so what is left of the
+  ruling is those figures, taken again on the library as it is.
 - **Measured**: before v0.2.0.
 
 ### The steps of a `pipe` in one loop from its first schema

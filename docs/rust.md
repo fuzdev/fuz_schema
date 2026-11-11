@@ -153,7 +153,7 @@ unions that keep their verdicts bound it by the size of the input times its
 depth, and a factor of the schema: without them a `union` with two options
 that reach a cycle tries each at every level, which takes time exponential
 in the depth of the input, as it does in the TypeScript library under a
-`union` and not a `memo_union`, see [design.md](design.md#running). The
+`union` and not a `memo_union`, see [design.md](design.md#unions-and-recursion). The
 depth is from an option that reads into another cycle, which walks what is
 below the value again wherever the union is asked of it, as in
 `L = lazy(() => union([object({x: array(L), t: literal('a')}), M]))` with

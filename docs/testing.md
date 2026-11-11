@@ -21,15 +21,28 @@ each module, these hold the library to more than its own examples:
   so a cache keyed by the input or a fast path for the last one fails a test
   where a timing would read it as a win: the benchmarks cycle through a few
   copies of an input, which defeats only a cache smaller than that.
+- **The types, from a consumer's side**: `src/test/schema.inference.test.ts`
+  holds what every schema and action infers in each position that has lost a
+  type before, and `src/test/schema.emit.test.ts` emits the declarations of a
+  consumer's exported schemas and generic helpers, which must compile where
+  they are read and write each factory's type by its name.
 - **What an editor shows**: `src/test/schema.docs.test.ts` asks TypeScript's
   language service for the doc comment and the definition of each property
   of a type inferred from an object schema, which must be its entry's. The
   types that lose them compile and parse the same, so nothing else tells.
+- **The schemas' shape**: `src/test/schema.shape.test.ts` asks the engine, in
+  a process of its own, that every schema the library makes has one hidden
+  class and no field written to. A second class makes every `schema.run`
+  load polymorphic, and a write slows the parses the engine had folded:
+  neither fails another test.
 - **The engine's state**: `src/test/engine_state.test.ts` asks the engine, in
   processes of its own, that every protector is intact after the program of
   `src/benchmarks/program.ts` has used every kind of schema, which the
   grader's versions would both pay and read as no difference, and that the
   heap does not grow with the count of distinct inputs parsed.
+- **The benchmarks' parity**: `src/test/benchmarks.test.ts` and
+  `src/test/survey.test.ts` hold every library to the same verdict on each
+  input a benchmark times, so the timings compare like with like.
 
 ## The differential
 
