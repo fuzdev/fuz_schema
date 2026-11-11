@@ -61,13 +61,14 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { availableParallelism, hostname, loadavg } from 'node:os';
+import { availableParallelism, hostname } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
 
 import { meta, parse_args, s } from './args.ts';
 import { CASE_PATHS, create_cases, type Case, type SchemaLib } from './cases.ts';
+import { format_machine_state, read_machine_state, read_text } from './machine.ts';
 import { PROGRAM } from './program.ts';
 import { SCENARIOS } from './scenarios.ts';
 import {
@@ -447,41 +448,6 @@ const estimate_apart =
 const estimate_timing =
 	args.runs * (ESTIMATE.matrix_run + alone_cases.length * ESTIMATE.alone_case) + estimate_apart;
 
-/** What the machine was doing, where it can be read: a timing taken under load reads wider. */
-interface MachineState {
-	node: string;
-	/** The load average over 1, 5, and 15 minutes. */
-	load: Array<number>;
-	/** Each CPU's clock in MHz, from `/proc/cpuinfo`, where there is one. */
-	cpu_mhz?: Array<number>;
-	/** The first CPU's frequency governor, from `/sys`, where there is one. */
-	governor?: string;
-	/** Whether the CPUs may boost past their base clock, from `/sys`, where it says. */
-	boost?: boolean;
-}
-
-// a file's text, trimmed, or `undefined` where it can't be read
-const read_text = (path: string): string | undefined => {
-	try {
-		return readFileSync(path, 'utf8').trim();
-	} catch {
-		return undefined;
-	}
-};
-
-const read_machine_state = (): MachineState => {
-	const state: MachineState = { node: process.version, load: loadavg() };
-	const mhz = [...(read_text('/proc/cpuinfo') ?? '').matchAll(/^cpu MHz\s*:\s*([\d.]+)/gm)].map(
-		(m) => Number(m[1])
-	);
-	if (mhz.length) state.cpu_mhz = mhz;
-	const governor = read_text('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor');
-	if (governor) state.governor = governor;
-	const boost = read_text('/sys/devices/system/cpu/cpufreq/boost');
-	if (boost) state.boost = boost === '1';
-	return state;
-};
-
 /** What a grade ran on and with, which is the same at its end, for the JSON report. */
 interface GradeSetup {
 	hostname: string;
@@ -540,15 +506,6 @@ const read_grade_setup = (): GradeSetup => {
 		new_hash: to_file_hash(new_path)
 	};
 };
-
-const format_machine_state = (state: MachineState): string =>
-	`node ${state.node}, load ${state.load.map((l) => l.toFixed(2)).join(' ')}` +
-	(state.cpu_mhz
-		? `, cpu ${Math.round(Math.min(...state.cpu_mhz))} to ${Math.round(Math.max(...state.cpu_mhz))} MHz, ` +
-			`mean ${Math.round(state.cpu_mhz.reduce((sum, m) => sum + m, 0) / state.cpu_mhz.length)}`
-		: '') +
-	(state.governor ? `, governor ${state.governor}` : '') +
-	(state.boost === undefined ? '' : `, boost ${state.boost ? 'on' : 'off'}`);
 
 const machine_start = read_machine_state();
 const setup = read_grade_setup();

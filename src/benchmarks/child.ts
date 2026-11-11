@@ -52,7 +52,22 @@ export const write_if_changed = (path: string, content: string): void => {
 	renameSync(temp_path, path);
 };
 
-const strip_types = (path: string): string => stripTypeScriptTypes(readFileSync(path, 'utf8'));
+// Node warns once a process that `stripTypeScriptTypes` is experimental, on
+// stderr between a script's tables. That one warning is dropped, by its type and
+// its text, and every other goes on as it would.
+const strip_types = (path: string): string => {
+	const emit_warning = process.emitWarning;
+	process.emitWarning = function (this: unknown, warning: string | Error, ...rest: Array<any>) {
+		const type = typeof rest[0] === 'string' ? rest[0] : rest[0]?.type;
+		if (type === 'ExperimentalWarning' && String(warning).includes('stripTypeScriptTypes')) return;
+		(emit_warning as (...args: Array<any>) => void).call(this, warning, ...rest);
+	} as typeof process.emitWarning;
+	try {
+		return stripTypeScriptTypes(readFileSync(path, 'utf8'));
+	} finally {
+		process.emitWarning = emit_warning;
+	}
+};
 
 const SCHEMA_SOURCE_PATH = fileURLToPath(new URL('../lib/schema.ts', import.meta.url));
 const SCHEMA_BUILT_PATH = fileURLToPath(new URL('../../dist/schema.js', import.meta.url));

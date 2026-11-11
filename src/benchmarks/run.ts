@@ -29,10 +29,24 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { meta, parse_args, s } from './args.ts';
+import {
+	LibNamesArg,
+	ScenarioNamesArg,
+	meta,
+	parse_args,
+	s,
+	to_count_arg,
+	to_duration_arg
+} from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
-import { format_table, refuse_timing_node_flags } from './measure.ts';
+import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
+import {
+	format_number,
+	format_seconds,
+	format_table,
+	refuse_timing_node_flags
+} from './measure.ts';
 import { RUN_VALIDITIES, to_run_row_name, type RunRowsOf, type RunValidity } from './run_rows.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
@@ -45,30 +59,18 @@ import {
 	type TimingUnit
 } from './timing_passes.ts';
 
-const Names = s.pipe(
-	s.union([s.string, s.array(s.string)]),
-	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
-);
-
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
-	scenario: meta(s.optional(Names), {
+	scenario: meta(s.optional(ScenarioNamesArg), {
 		description: 'scenario names to run, defaulting to all'
 	}),
-	lib: meta(s.optional(Names), { description: 'library names to run, defaulting to all' }),
+	lib: meta(s.optional(LibNamesArg), { description: 'library names to run, defaulting to all' }),
 	invalid: meta(s.with_default(s.boolean, true), { description: 'also time invalid input' }),
 	'no-invalid': meta(s.with_default(s.boolean, false), { description: 'opt out of invalid' }),
-	duration: meta(
-		s.with_default(
-			s.pipe(
-				s.number,
-				s.check((n: number) => n > 0, '> 0')
-			),
-			500
-		),
-		{ description: 'measurement ms per task, shared out over the passes' }
-	),
-	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 5), {
+	duration: meta(to_duration_arg(500), {
+		description: 'measurement ms per row of each library, shared out over the passes'
+	}),
+	passes: meta(to_count_arg(5), {
 		description: 'how many times the whole is repeated, in fresh processes'
 	}),
 	alone: meta(s.with_default(s.boolean, false), {
@@ -78,24 +80,11 @@ const Args = s.object({
 
 const args = parse_args(Args);
 
-const unknown = [
-	...(args.scenario ?? []).filter((name) => !SCENARIOS.some((s) => s.name === name)),
-	...(args.lib ?? []).filter((name) => !LIBS.some((l) => l.name === name))
-];
-if (unknown.length) {
-	console.error(
-		`no scenario or library ${unknown.join(', ')}: the scenarios are ` +
-			`${SCENARIOS.map((s) => s.name).join(', ')}, the libraries ${LIBS.map((l) => l.name).join(', ')}`
-	);
-	process.exit(1);
-}
 const scenarios = SCENARIOS.filter((s) => !args.scenario || args.scenario.includes(s.name));
 const libs = LIBS.filter((l) => !args.lib || args.lib.includes(l.name));
-if (!scenarios.length || !libs.length) {
-	console.error('no scenarios or libs matched');
-	process.exit(1);
-}
 refuse_timing_node_flags('the benchmark', false);
+
+console.log(format_benchmark_header(COMPARED_LIB_PACKAGES));
 
 // a benchmark only compares like with like if every library agrees on which
 // inputs match
@@ -141,9 +130,6 @@ const units: Array<TimingUnit> = libs.flatMap((lib): Array<TimingUnit> => {
 	});
 });
 
-const format_seconds = (seconds: number): string =>
-	seconds < 90 ? `${Math.round(seconds)}s` : `${(seconds / 60).toFixed(1)} min`;
-
 // what a process takes to start and load a library, fitted to runs of this
 const PROCESS_SECONDS = 0.25;
 const row_seconds = (plan.warm_ms + plan.duration_ms) / 1000;
@@ -156,7 +142,7 @@ const pass_seconds = args.alone
 			(row_names.length + 1) * row_seconds);
 
 console.log(
-	`runtime: ${libs.length} ${libs.length === 1 ? 'library' : 'libraries'} on ${row_names.length} ` +
+	`\nruntime: ${libs.length} ${libs.length === 1 ? 'library' : 'libraries'} on ${row_names.length} ` +
 		`${row_names.length === 1 ? 'row' : 'rows'}, ` +
 		(args.alone ? 'a process for each row of each library' : 'a process for each library') +
 		`, ${args.passes} ${args.passes === 1 ? 'pass' : 'passes'}, ` +
@@ -167,16 +153,16 @@ const readings = await time_units(units, plan, args.passes, (pass, ms) => {
 	console.log(`pass ${pass + 1} of ${args.passes}: ${format_seconds(ms / 1000)}`);
 });
 
-const format_ns = (ns: number): string =>
-	ns >= 100 ? ns.toFixed(0) : ns >= 10 ? ns.toFixed(1) : ns.toFixed(2);
-
 const has_baseline = libs.some((l) => l.name === BASELINE_LIB);
 
 console.log(
 	'\nruntime: nanoseconds per parse, the median of the passes, with the fastest and slowest ' +
 		'pass\nand the spread, which is half of what the passes range over. `ns` is the whole of a ' +
 		'timing over\nits calls and `median` its median batch, pooled the same way: a wide gap between them ' +
-		'is collection time'
+		'is collection time' +
+		(has_baseline
+			? `.\n\`vs ${BASELINE_LIB}\` is a library's \`ns\` over ${BASELINE_LIB}'s: under 1 it is faster`
+			: '')
 );
 for (const scenario of scenarios) {
 	for (const validity of validities) {
@@ -185,27 +171,17 @@ for (const scenario of scenarios) {
 			readings.get(to_unit_id(lib, row))!.get(row)!;
 		const baseline = has_baseline ? to_pooled_timing(to_passes(BASELINE_LIB).ns).median : undefined;
 		const table = [
-			[
-				'Task Name',
-				'ops/sec',
-				'ns',
-				'median',
-				'min',
-				'max',
-				'spread',
-				has_baseline ? `vs ${BASELINE_LIB}` : ''
-			]
+			['lib', 'ns', 'median', 'min', 'max', 'spread', has_baseline ? `vs ${BASELINE_LIB}` : '']
 		];
 		for (const lib of libs) {
 			const { ns: passes, median_ns } = to_passes(lib.name);
 			const { median, spread } = to_pooled_timing(passes);
 			table.push([
-				`${row}/${lib.name}`,
-				Math.round(1e9 / median).toLocaleString('en-US'),
-				format_ns(median),
-				format_ns(to_pooled_timing(median_ns).median),
-				format_ns(Math.min(...passes)),
-				format_ns(Math.max(...passes)),
+				lib.name,
+				format_number(median),
+				format_number(to_pooled_timing(median_ns).median),
+				format_number(Math.min(...passes)),
+				format_number(Math.max(...passes)),
 				format_spread(spread),
 				baseline === undefined
 					? ''
@@ -214,7 +190,7 @@ for (const scenario of scenarios) {
 						: (median / baseline).toFixed(2) + 'x'
 			]);
 		}
-		console.log(`\n${scenario.name} (${validity})\n`);
+		console.log(`\n${row}\n`);
 		console.log(format_table(table));
 	}
 }
@@ -223,8 +199,8 @@ const call_ns = units.map(
 	(unit) => to_pooled_timing(readings.get(unit.id)!.get(TIMING_CALL_ROW)!.ns).median
 );
 console.log(
-	`\nEvery figure has a call in it: a function that does nothing takes ${format_ns(Math.min(...call_ns))} to ` +
-		`${format_ns(Math.max(...call_ns))} ns\nthrough the loop the rows are timed in, across the processes. ` +
+	`\nEvery figure has a call in it: a function that does nothing takes ${format_number(Math.min(...call_ns))} to ` +
+		`${format_number(Math.max(...call_ns))} ns\nthrough the loop the rows are timed in, across the processes. ` +
 		'A row near that is mostly the call.'
 );
 console.log(

@@ -28,8 +28,15 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { meta, parse_args, s } from './args.ts';
-import { format_table, geometric_mean, refuse_timing_node_flags } from './measure.ts';
+import { meta, parse_args, s, to_count_arg, to_duration_arg, to_names_arg } from './args.ts';
+import { format_benchmark_header } from './machine.ts';
+import {
+	format_number,
+	format_seconds,
+	format_table,
+	geometric_mean,
+	refuse_timing_node_flags
+} from './measure.ts';
 import {
 	find_survey_disagreements,
 	is_survey_row_of,
@@ -58,30 +65,18 @@ import {
 const SUBJECT_LIB: SurveyLibName = 'fuz_schema';
 const OTHER_LIBS = SURVEY_LIBS.filter((lib) => lib !== SUBJECT_LIB);
 
-const Names = s.pipe(
-	s.union([s.string, s.array(s.string)]),
-	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
-);
-
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
 	filter: meta(s.optional(s.string), {
 		description: 'only time rows whose name includes this'
 	}),
-	lib: meta(s.optional(Names), {
+	lib: meta(s.optional(to_names_arg('library', 'libraries to compare with', OTHER_LIBS)), {
 		description: `the libraries to compare this one with, defaulting to ${OTHER_LIBS.join(' and ')}`
 	}),
-	duration: meta(
-		s.with_default(
-			s.pipe(
-				s.number,
-				s.check((n: number) => n > 0, '> 0')
-			),
-			150
-		),
-		{ description: 'measurement ms per row of each library, shared out over the passes' }
-	),
-	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 3), {
+	duration: meta(to_duration_arg(150), {
+		description: 'measurement ms per row of each library, shared out over the passes'
+	}),
+	passes: meta(to_count_arg(3), {
 		description: 'how many times the whole is repeated, in fresh processes'
 	}),
 	alone: meta(s.with_default(s.boolean, false), {
@@ -91,16 +86,11 @@ const Args = s.object({
 
 const args = parse_args(Args);
 
-const unknown = (args.lib ?? []).filter((name) => !OTHER_LIBS.some((lib) => lib === name));
-if (unknown.length) {
-	console.error(
-		`no library ${unknown.join(', ')} to compare with: there are ${OTHER_LIBS.join(' and ')}`
-	);
-	process.exit(1);
-}
 const others = OTHER_LIBS.filter((lib) => !args.lib || args.lib.includes(lib));
 const libs: Array<SurveyLibName> = [SUBJECT_LIB, ...others];
 refuse_timing_node_flags('the survey', false);
+
+console.log(format_benchmark_header(OTHER_LIBS));
 
 interface Row {
 	name: string;
@@ -159,9 +149,6 @@ const units: Array<TimingUnit> = libs.flatMap((lib): Array<TimingUnit> => {
 	});
 });
 
-const format_seconds = (seconds: number): string =>
-	seconds < 90 ? `${Math.round(seconds)}s` : `${(seconds / 60).toFixed(1)} min`;
-
 // what a process takes to start and load a library, fitted to runs of this
 const PROCESS_SECONDS = 0.25;
 const row_seconds = (plan.warm_ms + plan.duration_ms) / 1000;
@@ -177,7 +164,7 @@ const pass_seconds = units.reduce(
 );
 
 console.log(
-	`survey: ${SUBJECT_LIB} against ${others.join(' and ')} on ${rows.length} ` +
+	`\nsurvey: ${SUBJECT_LIB} against ${others.join(' and ')} on ${rows.length} ` +
 		`${rows.length === 1 ? 'row' : 'rows'}, ` +
 		(args.alone ? 'a process for each row of each library' : 'a process for each library') +
 		`, ${args.passes} ${args.passes === 1 ? 'pass' : 'passes'}, ` +
@@ -187,9 +174,6 @@ console.log(
 const readings = await time_units(units, plan, args.passes, (pass, ms) => {
 	console.log(`pass ${pass + 1} of ${args.passes}: ${format_seconds(ms / 1000)}`);
 });
-
-const format_ns = (ns: number): string =>
-	ns >= 100 ? ns.toFixed(0) : ns >= 10 ? ns.toFixed(1) : ns.toFixed(2);
 
 /** What the passes read of one row in one library. */
 interface Timed {
@@ -254,14 +238,14 @@ console.log(
 			...compared_rows.map(({ row, subject, timed, compared }) => [
 				row.name,
 				row.does,
-				format_ns(subject.ns),
+				format_number(subject.ns),
 				format_spread(subject.spread),
 				...others.flatMap((_, i) => {
 					const t = timed[i];
 					const c = compared[i];
 					return t && c
 						? [
-								format_ns(t.ns),
+								format_number(t.ns),
 								format_spread(t.spread),
 								c.ratio.toFixed(2) + (c.ahead ? '<' : c.floor ? '~' : ' ')
 							]
@@ -275,7 +259,8 @@ console.log(
 
 console.log(
 	'\nby what a row does: the geometric mean of the ratios, the rows at the call floor left out, ' +
-		'and how\nmany of the rows the other library is ahead on\n'
+		'and how\nmany of the rows the other library is ahead on, of those it has: `rows` counts them in ' +
+		'this library,\nand a library with no equivalent of a row is compared on fewer\n'
 );
 console.log(
 	format_table([
@@ -296,7 +281,7 @@ console.log(
 									past_floor.length
 										? geometric_mean(past_floor.map((c) => c.ratio)).toFixed(2)
 										: '-',
-									String(compared.filter((c) => c.ahead).length)
+									`${compared.filter((c) => c.ahead).length} of ${compared.length}`
 								]
 							: ['-', '-'];
 					})
@@ -317,9 +302,9 @@ for (const [i, lib] of others.entries()) {
 }
 
 console.log(
-	`\nEvery figure has a call in it: a function that does nothing takes ${format_ns(Math.min(...call_ns))} to ` +
-		`${format_ns(Math.max(...call_ns))} ns\nthrough the loop the rows are timed in, across the processes. ` +
-		`A row where either library takes\n${format_ns(call_floor_ns)} ns or less, twice that, is at the call floor: ` +
+	`\nEvery figure has a call in it: a function that does nothing takes ${format_number(Math.min(...call_ns))} to ` +
+		`${format_number(Math.max(...call_ns))} ns\nthrough the loop the rows are timed in, across the processes. ` +
+		`A row where either library takes\n${format_number(call_floor_ns)} ns or less, twice that, is at the call floor: ` +
 		'it is marked `~`, its ratio is mostly of\ntwo calls, it is in no mean of the summary, and it is never marked `<`.'
 );
 console.log(

@@ -11,7 +11,7 @@
 
 import { stats_median } from '@fuzdev/fuz_util/stats.ts';
 
-import { meta, parse_args, s } from './args.ts';
+import { LibNamesArg, ScenarioNamesArg, meta, parse_args, s, to_count_arg } from './args.ts';
 import { ENTRY_FORMS, type EntryForm } from './child.ts';
 import {
 	COLDSTART_STAGES,
@@ -20,23 +20,19 @@ import {
 	summarize_coldstart,
 	to_bare_band_ms
 } from './coldstart.ts';
+import { LIB_NAMES } from './lib_names.ts';
+import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table } from './measure.ts';
-
-const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
-
-const Names = s.pipe(
-	s.union([s.string, s.array(s.string)]),
-	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
-);
+import type { ScenarioName } from './scenarios.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
 	lib: meta(
-		s.with_default_fn(Names, () => [...LIB_NAMES]),
+		s.with_default_fn(LibNamesArg, () => [...LIB_NAMES]),
 		{ description: 'library names to run' }
 	),
 	scenario: meta(
-		s.with_default_fn(Names, () => ['object_flat', 'type_json']),
+		s.with_default_fn(ScenarioNamesArg, (): Array<ScenarioName> => ['object_flat', 'type_json']),
 		{ description: 'scenario names to run' }
 	),
 	form: meta(
@@ -51,15 +47,13 @@ const Args = s.object({
 		),
 		{ description: 'bundled, unbundled, or both' }
 	),
-	samples: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 15), {
-		description: 'kept rounds'
-	}),
-	discard: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(0)), 2), {
-		description: 'rounds thrown away first'
-	})
+	samples: meta(to_count_arg(15), { description: 'kept rounds' }),
+	discard: meta(to_count_arg(2, 0), { description: 'rounds thrown away first' })
 });
 
 const args = parse_args(Args);
+
+console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'rolldown']));
 
 const plan = await plan_coldstart(
 	args.lib.map((lib) => ({ id: lib, lib })),
@@ -67,7 +61,7 @@ const plan = await plan_coldstart(
 	args.form
 );
 console.log(
-	`cold start: ${plan.processes.length} processes a round, ${args.discard} rounds discarded then ${args.samples} kept...`
+	`\ncold start: ${plan.processes.length} processes a round, ${args.discard} rounds discarded then ${args.samples} kept...`
 );
 sample_coldstart(plan, args.samples, args.discard);
 
@@ -86,7 +80,9 @@ console.log(
 		'a copy of the input; 2 to 100 is parse 100 from its clock after the first parse, in the same\n' +
 		'process; process is what first parse added to the whole process over bare, where an\n' +
 		`addition inside the bare band reads <${bare_band_ms.toFixed(1)}; ` +
-		'peak is MB of resident memory first parse added over bare'
+		'peak is MB of resident memory first parse added over bare. Each stage is processes of its own,\n' +
+		'so a stage can read under the one before it where the work between them is less than the\n' +
+		"spread of a stage's samples"
 );
 
 for (const scenario of args.scenario) {

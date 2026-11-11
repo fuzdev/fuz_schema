@@ -9,6 +9,7 @@
  *
  * Usage:
  *   gro run src/benchmarks/types.ts
+ *   gro run src/benchmarks/types.ts --lib fuz_schema --lib valibot
  *
  * @module
  */
@@ -17,10 +18,22 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { LibNamesArg, meta, parse_args, s } from './args.ts';
+import { LIB_NAMES } from './lib_names.ts';
+import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table } from './measure.ts';
 
-// not imported from `libs.ts`, which would load every library just to list them
-const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	lib: meta(
+		s.with_default_fn(LibNamesArg, () => [...LIB_NAMES]),
+		{ description: 'library names to check' }
+	)
+});
+
+const args = parse_args(Args);
+
+console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'typescript']));
 
 const METRICS = ['Instantiations', 'Types', 'Memory used', 'Check time'];
 
@@ -61,7 +74,7 @@ const measure = (name: string, file: string): Array<string> => {
 const rows = [
 	['lib', ...METRICS.map((m) => m.toLowerCase())],
 	[EMPTY, ...measure(EMPTY, resolve(dir, 'empty.ts'))],
-	...LIB_NAMES.map((name) => [name, ...measure(name, resolve(`src/benchmarks/libs/${name}.ts`))])
+	...args.lib.map((name) => [name, ...measure(name, resolve(`src/benchmarks/libs/${name}.ts`))])
 ];
 
 console.log('\ntype-checking cost of each scenario module\n');

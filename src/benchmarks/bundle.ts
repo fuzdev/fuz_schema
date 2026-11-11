@@ -18,8 +18,10 @@
  * @module
  */
 
+import { meta, parse_args, s } from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
+import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import {
 	build_scenario_bundle,
 	measure_library_sizes,
@@ -29,7 +31,17 @@ import {
 } from './bundle_size.ts';
 import { format_table } from './measure.ts';
 
-const raw = process.argv.includes('--raw');
+const Args = s.object({
+	_: s.with_default_fn(s.array(s.string), () => []),
+	raw: meta(s.with_default(s.boolean, false), {
+		description: 'minified bytes in place of gzip, and no brotli table'
+	})
+});
+
+const { raw } = parse_args(Args);
+
+console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'rolldown']));
+
 const metric: keyof BundleSize = raw ? 'minified' : 'gzip';
 
 const columns = [...SCENARIOS.map((s) => [s.name]), SCENARIOS.map((s) => s.name)];

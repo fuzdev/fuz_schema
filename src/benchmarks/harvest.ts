@@ -39,10 +39,9 @@
 import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { rolldown } from 'rolldown';
 
-import { meta, parse_args, s } from './args.ts';
-import { to_bundle_size, type BundleSize } from './bundle_size.ts';
+import { meta, parse_args, s, to_count_arg, to_duration_arg, to_names_arg } from './args.ts';
+import { build_bundle, to_bundle_size, type BundleSize } from './bundle_size.ts';
 import {
 	HARVEST_ASIDES,
 	HARVEST_OURS,
@@ -52,7 +51,13 @@ import {
 	type HarvestRowsOf,
 	type HarvestSet
 } from './harvest_sets.ts';
-import { format_table, refuse_timing_node_flags } from './measure.ts';
+import { format_benchmark_header } from './machine.ts';
+import {
+	format_number,
+	format_seconds,
+	format_table,
+	refuse_timing_node_flags
+} from './measure.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
 	format_spread,
@@ -77,24 +82,18 @@ const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
 	set: meta(
 		s.optional(
-			s.pipe(
-				s.union([s.string, s.array(s.string)]),
-				s.transform((value: string | Array<string>) => (Array.isArray(value) ? value : [value]))
+			to_names_arg(
+				'set',
+				'sets',
+				HARVEST_SETS.map((set) => set.name)
 			)
 		),
 		{ description: 'set names to run, defaulting to all' }
 	),
-	duration: meta(
-		s.with_default(
-			s.pipe(
-				s.number,
-				s.check((n: number) => n > 0, '> 0')
-			),
-			1000
-		),
-		{ description: 'measurement ms per row of a side, shared out over the passes' }
-	),
-	passes: meta(s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(1)), 5), {
+	duration: meta(to_duration_arg(1000), {
+		description: 'measurement ms per row of a side, shared out over the passes'
+	}),
+	passes: meta(to_count_arg(5), {
 		description: 'how many times the timing is repeated, in fresh processes'
 	})
 });
@@ -102,20 +101,14 @@ const Args = s.object({
 const args = parse_args(Args);
 
 const sets = HARVEST_SETS.filter((set) => !args.set || args.set.includes(set.name));
-const unknown = args.set?.filter((name) => !HARVEST_SETS.some((set) => set.name === name));
-if (!sets.length || unknown?.length) {
-	console.error(
-		`no set ${(unknown ?? []).join(', ')}: the sets are ${HARVEST_SETS.map((set) => set.name).join(', ')}`
-	);
-	process.exit(1);
-}
 refuse_timing_node_flags('harvest', true);
+
+console.log(format_benchmark_header(['valibot', 'zod', 'rolldown']) + '\n');
 
 //
 // Bundle size
 //
 
-const ENTRY_ID = 'virtual:harvest_entry.ts';
 const PORT_ID = 'virtual:harvest_port.ts';
 
 // The port takes the library as a parameter, which a bundler can't see
@@ -137,24 +130,8 @@ const to_port_module = (set: HarvestSet): string => {
 	);
 };
 
-const measure_bundle = async (entry: string, port: string): Promise<BundleSize> => {
-	const bundle = await rolldown({
-		input: ENTRY_ID,
-		platform: 'browser',
-		logLevel: 'silent',
-		plugins: [
-			{
-				name: 'virtual_entry',
-				resolveId: (id) => (id === ENTRY_ID || id === PORT_ID ? id : null),
-				load: (id) => (id === ENTRY_ID ? entry : id === PORT_ID ? port : null)
-			}
-		]
-	});
-	const { output } = await bundle.generate({ format: 'esm', minify: true });
-	await bundle.close();
-	if (output.length !== 1) throw new Error(`expected one chunk, got ${output.length}`);
-	return to_bundle_size(output[0].code);
-};
+const measure_bundle = async (entry: string, port: string): Promise<BundleSize> =>
+	to_bundle_size(await build_bundle(entry, SCHEMA_PATH, 'a harvested set', { [PORT_ID]: port }));
 
 const format_bundles = async (set: HarvestSet): Promise<string> => {
 	const { reference, root } = set;
@@ -211,14 +188,8 @@ const assert_agreement = (set: HarvestSet, row: HarvestRow): void => {
 	}
 };
 
-const format_number = (n: number): string =>
-	n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
-
 const format_ratio = (ours: number, theirs: number): string =>
 	theirs > 0 ? (ours / theirs).toFixed(2) + 'x' : '-';
-
-const format_seconds = (seconds: number): string =>
-	seconds < 90 ? `${Math.round(seconds)}s` : `${(seconds / 60).toFixed(1)} min`;
 
 // A row is run this long before it is timed, after the process has run every
 // row of its side. A count alone leaves the first row of a new process timed
@@ -238,7 +209,7 @@ const plan: TimingPlan = {
 // what a process takes to start and load a set, fitted to runs of this
 const PROCESS_SECONDS = 0.5;
 
-// said under every set's tables, before its library's notes and its own
+// said once, after every set's tables
 const METHOD_NOTES = [
 	`Time is the median of ${args.passes} ${args.passes === 1 ? 'pass' : 'passes'}, beside half of what the passes range over. In a pass every\n` +
 		'column is a fresh process of its own, which runs every row before it times any, under the\n' +
@@ -287,6 +258,9 @@ const time_set = async (set: HarvestSet): Promise<TimedSet> => {
 	const times = await time_units(units, plan, args.passes);
 	return { set, bundles, rows, asides, sides, units, times };
 };
+
+// the libraries whose notes have been said, under the first of their sets
+const noted_references: Set<string> = new Set();
 
 const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 	const { set, rows, asides, sides, times } = timed;
@@ -351,7 +325,11 @@ const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 		console.log(format_table(aside_table));
 	}
 
-	for (const note of [...METHOD_NOTES, ...reference.notes, ...set.notes]) console.log(`\n${note}`);
+	const notes = noted_references.has(reference.name)
+		? set.notes
+		: [...reference.notes, ...set.notes];
+	noted_references.add(reference.name);
+	for (const note of notes) console.log(`\n${note}`);
 };
 
 const timed_sets: Array<TimedSet> = [];
@@ -373,3 +351,6 @@ for (const timed of timed_sets) {
 	if (timed !== timed_sets[0]) console.log('\n');
 	print_set(timed, bytes);
 }
+
+console.log('\n\nhow every set above was measured');
+for (const note of METHOD_NOTES) console.log(`\n${note}`);

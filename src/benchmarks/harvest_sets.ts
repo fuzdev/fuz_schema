@@ -60,7 +60,7 @@ export interface HarvestReference {
 	 * the first thing to, and throws when the mode is not what its column says.
 	 */
 	assert_mode?: (mode: number, run_rows: () => void) => void;
-	/** Said under every set of this library's, before the set's own notes. */
+	/** Said under the first set of this library's, before the set's own notes. */
 	notes: Array<string>;
 }
 
@@ -283,8 +283,10 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 					{
 						name: 'the library, full, as a guard',
 						valid: true,
-						theirs: [() => (valibot.is(their_modules, full) ? full : undefined)],
-						ours: () => (s.is(our_modules, full) ? full : undefined)
+						theirs: [
+							to_cycled(full, (value) => (valibot.is(their_modules, value) ? value : undefined))
+						],
+						ours: to_cycled(full, (value) => (s.is(our_modules, value) ? value : undefined))
 					}
 				]
 			};

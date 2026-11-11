@@ -42,8 +42,10 @@ gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes
 `--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
 `npm run benchmark:allocations` and `npm run benchmark:heap` take `--scenario`
 and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
-`--samples`, and `--discard`, and `npm run benchmark:wasm` takes `--rounds`
-and `--round-ms`, see `docs/benchmarks.md`.
+`--samples`, and `--discard`, `npm run benchmark:types` takes `--lib`,
+`npm run benchmark:bundle` takes `--raw`, and `npm run benchmark:wasm` takes
+`--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every script takes
+`--help`.
 `npm run grade` takes `--against`, `--against-file`, `--against-libs-file`,
 `--new-file`, `--filter`, `--runs`, `--alone`, `--no-alone`, `--apart`,
 `--no-apart`, `--slice`, `--bundle`, `--no-bundle`, `--process`,
@@ -191,9 +193,12 @@ dev server.
   under noise of the shape a grade reads
 - `src/test/measure.test.ts` - a median of the byte measurement starts with
   the young generation free, by allocating until it is collected
+- `src/test/coldstart.test.ts` - the order cold start runs a round's
+  processes in moves on each round, in who leads and who follows whom
 - `src/benchmarks/` - the benchmarks; never imported by the library or the site
-  - `scenarios.ts`, `libs/`, `libs.ts` - the cross-library scenarios, one
-    module per library
+  - `scenarios.ts`, `libs/`, `libs.ts`, `lib_names.ts` - the cross-library
+    scenarios, one module per library, and the libraries' names, which import
+    none of them
   - `run.ts`, `bundle.ts`, `allocations.ts`, `types.ts` - parse time, bundle
     size, allocation, type-checking cost
   - `timing_passes.ts`, `timing_child.ts`, `timing_job.ts`, `timing.ts` -
@@ -210,7 +215,10 @@ dev server.
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
   - `args.ts` - what the scripts parse their args through: the library
-    imported under `?args`, an instance no measurement uses
+    imported under `?args`, an instance no measurement uses, the arg schemas
+    the scripts share, and `--help`
+  - `machine.ts` - what the machine is and was doing, the header every
+    script prints first
   - `inputs.ts` - the copies of an input every timed function cycles
     through, a copy a call
   - `cases.ts`, `grade.ts` - the case matrix and the A/B grader

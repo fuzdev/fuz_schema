@@ -240,16 +240,42 @@ export const measure_bytes = (fn: () => unknown, settle_ms = SETTLE_MS): number 
 	throw new Error(`the bytes did not settle within ${SETTLE_TRIES} tries`);
 };
 
+// what `measure_ms` writes each call's result to, so that no compiler drops the call
+const measure_ms_sink: Array<unknown> = [undefined];
+
+// The timing loop is the engine's code too, as the sampling loops are: while it
+// has been given one function the engine inlines it, and can remove what the
+// function only returns. So it times two functions and throws them away first.
+const MEASURE_MS_PRIMERS: Array<() => unknown> = [() => ({ primer: 1 }), () => [1]];
+let measure_ms_primed = false;
+
 /**
- * Returns the median milliseconds per call of `fn`.
+ * Returns the median milliseconds per call of `fn`, over `rounds` batches of
+ * calls, each batch as many calls as last `batch_ms` or more, so a cheap call
+ * is timed far above the timer's resolution. Each call's result is kept until
+ * the next, so none is dropped as unused.
+ *
+ * @param batch_ms - the least a batch lasts, in milliseconds
  */
-export const measure_ms = (fn: () => unknown, batch: number, rounds = 7): number => {
+export const measure_ms = (fn: () => unknown, batch_ms = 2, rounds = 7): number => {
+	if (!measure_ms_primed) {
+		measure_ms_primed = true;
+		for (const primer of MEASURE_MS_PRIMERS) measure_ms(primer, batch_ms, 1);
+	}
+	let batch = 1;
+	for (;;) {
+		const start = performance.now();
+		for (let i = 0; i < batch; i++) measure_ms_sink[0] = fn();
+		if (performance.now() - start >= batch_ms) break;
+		batch *= 2;
+	}
 	const results: Array<number> = [];
 	for (let r = 0; r < rounds; r++) {
 		const start = performance.now();
-		for (let i = 0; i < batch; i++) fn();
+		for (let i = 0; i < batch; i++) measure_ms_sink[0] = fn();
 		results.push((performance.now() - start) / batch);
 	}
+	measure_ms_sink[0] = undefined;
 	return median(results);
 };
 
@@ -272,6 +298,25 @@ export const to_balanced_orders = (count: number): Array<Array<number>> => {
 	}
 	return orders;
 };
+
+/**
+ * Formats a figure to about three significant digits: whole from 100, one
+ * decimal from 10, two under that. What the timing tables print a time in.
+ */
+export const format_number = (n: number): string =>
+	n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
+
+/**
+ * Formats heap bytes per call: whole from 10, and zero as `0`, one decimal
+ * under 10, and `?` for `NaN`. A median of bytes over calls is a fraction
+ * only where the calls of a sample didn't all allocate alike.
+ */
+export const format_bytes = (n: number): string =>
+	Number.isNaN(n) ? '?' : n >= 10 || n === 0 ? n.toFixed(0) : n.toFixed(1);
+
+/** Formats a duration in seconds as `12s`, or in minutes past 90 seconds. */
+export const format_seconds = (seconds: number): string =>
+	seconds < 90 ? `${Math.round(seconds)}s` : `${(seconds / 60).toFixed(1)} min`;
 
 /**
  * Prints rows as a padded table, the first `left` columns left-aligned.

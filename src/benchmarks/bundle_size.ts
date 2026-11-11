@@ -68,12 +68,14 @@ export const to_brotli_size = (code: string): number =>
  * @param entry - the source of the entry module
  * @param schema_path - a file to resolve `#lib/schema.ts` to, by default the working tree's
  * @param label - names the bundle in the error when it isn't one chunk
+ * @param modules - the sources of other modules the entry imports, by the specifier it imports each by
  * @returns the code of the one chunk
  */
 export const build_bundle = async (
 	entry: string,
 	schema_path: string = SCHEMA_PATH,
-	label = 'the entry'
+	label = 'the entry',
+	modules: Record<string, string> = {}
 ): Promise<string> => {
 	const bundle = await rolldown({
 		input: ENTRY_ID,
@@ -82,8 +84,13 @@ export const build_bundle = async (
 		plugins: [
 			{
 				name: 'virtual_entry',
-				resolveId: (id) => (id === ENTRY_ID ? id : id === SCHEMA_ID ? schema_path : null),
-				load: (id) => (id === ENTRY_ID ? entry : null)
+				resolveId: (id) =>
+					id === ENTRY_ID || Object.hasOwn(modules, id)
+						? id
+						: id === SCHEMA_ID
+							? schema_path
+							: null,
+				load: (id) => (id === ENTRY_ID ? entry : Object.hasOwn(modules, id) ? modules[id] : null)
 			}
 		]
 	});

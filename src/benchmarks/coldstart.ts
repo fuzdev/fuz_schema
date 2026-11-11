@@ -40,8 +40,9 @@
  * **The process is a consumer's**: no flags, and V8's compile cache off, which
  * every sample reports.
  *
- * **Rounds.** Every planned process runs once a round, starting from a
- * different one each round so none always follows the same neighbor. The first
+ * **Rounds.** Every planned process runs once a round, in an order that moves
+ * on each round (`to_coldstart_order`): another process leads, and each is
+ * run after another neighbor, so none always follows the same one. The first
  * rounds are thrown away. Everything reported is a median or a percentile: a
  * process start has a floor and a long slow tail, which a mean would follow.
  * There are no retries; a disturbance lands on one sample and the median sets
@@ -229,6 +230,25 @@ export const plan_coldstart = async (
 	return { bare, processes };
 };
 
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+
+/**
+ * The order a round of cold start runs its processes in: from the process the
+ * round's index names, stepping through the rest by a stride that shares no
+ * factor with the count, the next such stride each round. So the leads move
+ * on by one a round, and a process is run after another neighbor from one
+ * round to the next, until the strides come round again.
+ *
+ * @returns every index under `count` once
+ */
+export const to_coldstart_order = (count: number, round: number): Array<number> => {
+	const strides: Array<number> = [];
+	for (let stride = 1; stride < count; stride++) if (gcd(stride, count) === 1) strides.push(stride);
+	const stride = strides.length ? strides[round % strides.length]! : 0;
+	const lead = round % count;
+	return Array.from({ length: count }, (_, i) => (lead + i * stride) % count);
+};
+
 /**
  * Runs the plan's rounds, filling each process's samples.
  *
@@ -240,9 +260,8 @@ export const plan_coldstart = async (
 export const sample_coldstart = (plan: ColdstartPlan, samples: number, discard: number): void => {
 	const { processes } = plan;
 	for (let round = 0; round < discard + samples; round++) {
-		for (let i = 0; i < processes.length; i++) {
-			// a different process leads each round
-			const p = processes[(i + round * 7) % processes.length]!;
+		for (const index of to_coldstart_order(processes.length, round)) {
+			const p = processes[index]!;
 			const output = ColdstartOutput.parse(run_child(p.path));
 			if (output.compile_cache_dir !== null) {
 				throw new Error(`${p.path}: a compile cache is in use, so the process was not cold`);

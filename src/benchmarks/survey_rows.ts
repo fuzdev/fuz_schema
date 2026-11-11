@@ -27,7 +27,7 @@ import type { LoadTimingRows, TimingRow } from './timing_job.ts';
 /** What a process of `survey.ts` holds. */
 export interface SurveyRowsOf {
 	lib: SurveyLibName;
-	/** The rows to build, with the rest of their shapes' rows, every shape's when left out. */
+	/** The rows to build, and no other row of their shapes, every shape's when left out. */
 	rows?: Array<string>;
 }
 

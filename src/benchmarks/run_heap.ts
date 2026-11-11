@@ -8,30 +8,28 @@
  * @module
  */
 
-import { meta, parse_args, s } from './args.ts';
+import { LibNamesArg, ScenarioNamesArg, meta, parse_args, s } from './args.ts';
 import { HEAP_COUNTS, measure_retained_heap } from './heap.ts';
+import { LIB_NAMES } from './lib_names.ts';
+import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table } from './measure.ts';
-
-const LIB_NAMES = ['fuz_schema', 'valibot', 'zod', 'zod_mini', 'typebox', 'arktype'];
-
-const Names = s.pipe(
-	s.union([s.string, s.array(s.string)]),
-	s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v]))
-);
+import type { ScenarioName } from './scenarios.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
 	lib: meta(
-		s.with_default_fn(Names, () => [...LIB_NAMES]),
+		s.with_default_fn(LibNamesArg, () => [...LIB_NAMES]),
 		{ description: 'library names to run' }
 	),
 	scenario: meta(
-		s.with_default_fn(Names, () => ['object_flat', 'type_json']),
+		s.with_default_fn(ScenarioNamesArg, (): Array<ScenarioName> => ['object_flat', 'type_json']),
 		{ description: 'scenario names to run' }
 	)
 });
 
 const args = parse_args(Args);
+
+console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'rolldown']));
 
 const to_kb = (bytes: number): string => (bytes / 1024).toFixed(1);
 

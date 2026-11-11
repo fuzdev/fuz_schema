@@ -1,9 +1,10 @@
 /**
- * The libraries under comparison, in display order.
+ * The libraries under comparison, in the order of `LIB_NAMES`.
  *
  * @module
  */
 
+import type { LibName } from './lib_names.ts';
 import type { ScenarioModule } from './scenarios.ts';
 import * as fuz_schema from './libs/fuz_schema.ts';
 import * as valibot from './libs/valibot.ts';
@@ -14,7 +15,7 @@ import * as arktype from './libs/arktype.ts';
 
 export interface Lib {
 	/** Also the basename of the module in `libs/`. */
-	name: string;
+	name: LibName;
 	scenarios: ScenarioModule;
 }
 

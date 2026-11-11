@@ -51,7 +51,7 @@ import { gzipSync } from 'node:zlib';
 
 import * as s from '#lib/schema.ts';
 import { to_schema_json } from '#lib/schema_json.ts';
-import { s as args_s, meta, parse_args } from './args.ts';
+import { s as args_s, meta, parse_args, to_count_arg, to_duration_arg } from './args.ts';
 import {
 	load_json_fixture,
 	load_json_fixture_names,
@@ -61,29 +61,19 @@ import {
 	type JsonFixtureExpected
 } from '../test/fixtures/json/json_test_helpers.ts';
 import { SCENARIOS } from './scenarios.ts';
-import { format_table, median } from './measure.ts';
+import { format_benchmark_header } from './machine.ts';
+import { format_table, median, refuse_timing_node_flags } from './measure.ts';
 
 const Args = args_s.object({
 	_: args_s.with_default_fn(args_s.array(args_s.string), () => []),
-	rounds: meta(
-		args_s.with_default(args_s.pipe(args_s.number, args_s.safe_integer, args_s.min_value(1)), 15),
-		{
-			description: 'timings per row, the median is reported'
-		}
-	),
-	'round-ms': meta(
-		args_s.with_default(
-			args_s.pipe(
-				args_s.number,
-				args_s.check((n: number) => n > 0, '> 0')
-			),
-			20
-		),
-		{ description: 'ms one timing of a row aims to take' }
-	)
+	rounds: meta(to_count_arg(15), { description: 'timings per row, the median is reported' }),
+	'round-ms': meta(to_duration_arg(20), { description: 'ms one timing of a row aims to take' })
 });
 
 const args = parse_args(Args);
+refuse_timing_node_flags('the wasm benchmark', false);
+
+console.log(format_benchmark_header([]) + '\n');
 
 const ROOT_DIR = join(import.meta.dirname, '../..');
 const WASM_DIR = join(ROOT_DIR, 'target/fuz_schema_wasm');
@@ -625,7 +615,7 @@ const payloads = [
 ];
 
 console.log(
-	`\nwasm against the library, node ${process.version}, median of ${args.rounds} rounds\n` +
+	`\nwasm against the library, median of ${args.rounds} rounds\n` +
 		'"vs JS" is a wasm row over the fastest JS row of the same holding, under 1 is faster'
 );
 
@@ -638,7 +628,8 @@ for (const payload of payloads) {
 	}
 }
 
-console.log(`\nsink: ${sink}`);
+// printed so that no compiler can drop a call whose verdict nothing else reads
+console.log(`\nverdicts that matched, counted so no call is dropped: ${sink}`);
 
 const format_large_ratio = (size: string, outcome: Outcome, label: string): string => {
 	const ratio = large_ratios.get(`${size}, ${outcome}`)?.get(label);

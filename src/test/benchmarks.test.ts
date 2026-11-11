@@ -4,6 +4,7 @@ import * as s from '#lib/schema.ts';
 
 import { APP_KEYS, SCENARIOS, to_app_payload } from '../benchmarks/scenarios.ts';
 import { LIBS } from '../benchmarks/libs.ts';
+import { LIB_NAMES } from '../benchmarks/lib_names.ts';
 import * as fuz_schema_scenarios from '../benchmarks/libs/fuz_schema.ts';
 
 // A scenario's runner answers yes or no, and its schema is in no export: a
@@ -18,6 +19,14 @@ vi.mock('#lib/schema.ts', async (import_original) => {
 		return result;
 	};
 	return { ...original, parse };
+});
+
+// the scripts that start a process for each library name them from `LIB_NAMES`
+test('the libraries are the ones named, in that order', () => {
+	assert.deepEqual(
+		LIBS.map((lib) => lib.name),
+		[...LIB_NAMES]
+	);
 });
 
 // a benchmark only compares like with like if every library

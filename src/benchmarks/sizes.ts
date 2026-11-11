@@ -18,7 +18,10 @@ import { measure_bundle_size, measure_library_sizes, type ExportSize } from './b
 
 const SIZES_PATH = fileURLToPath(new URL('./sizes.json', import.meta.url));
 
-/** The contents of `sizes.json`, every figure in minified and gzipped bytes. */
+/**
+ * The contents of `sizes.json`: every count of bytes is of a minified bundle
+ * gzipped, and `vs_valibot` holds ratios of two of them.
+ */
 export interface Sizes {
 	/** Each scenario's bundle. */
 	scenarios: Record<string, number>;

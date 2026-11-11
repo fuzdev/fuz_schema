@@ -19,6 +19,12 @@ Zod Mini, TypeBox, and ArkType.
 `npm run differential` and `npm run mutate` are tests and not measurements, see
 [testing.md](testing.md).
 
+Every script prints first what its figures are of: Node's and V8's versions,
+the CPU, the installed version of each library and tool it measures or
+measures with, and the machine's load, governor, frequency driver,
+energy-performance preference, and boost, as `grade` does at its start and its
+end (`machine.ts`), so a saved output can be read on its own.
+
 ## Scenarios and cases
 
 - **Scenarios** (`scenarios.ts`, `libs/`) are written for every library: a
@@ -218,13 +224,16 @@ whoever runs it.
   together, this library's and its own, and neither time is at the call
   floor. One pass has no spread, so it marks nothing. The summary is by what
   a row does: the geometric mean of the ratios, without the rows at the call
-  floor, and how many rows the other library is ahead on.
-- **The smallest rows are mostly a call.** A primitive's row is a few
-  nanoseconds, of which the call through the timing loop is most, in every
-  library alike. The run prints what that call takes. A row where either
-  library takes twice that or less is at the call floor: it is marked `~`
-  and never `<`, as a ratio of two such rows says little, and alone the
-  engine can remove what is left of the parse.
+  floor, and how many rows the other library is ahead on of those it is
+  compared on, which are fewer than this library's where it leaves a shape
+  out.
+- **A call is in every row.** A primitive's row is a few times the call
+  through the timing loop, which is in every library's row alike, so the
+  ratios of the smallest rows are narrower than those of the parses alone.
+  The run prints what that call takes. A row where either library takes twice
+  that or less is at the call floor: it is marked `~` and never `<`, as a
+  ratio of two such rows says little, and alone the engine can remove what is
+  left of the parse.
 - **Outputs are held as well as verdicts.** On an input that matches, the
   libraries that match it must return what this one does, so a shape that
   drops a key in one library and keeps it in another fails. A guard returns a
@@ -239,10 +248,10 @@ whoever runs it.
   [Grading](#grading).
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped. See
-  [below](#the-whole-library) for this library's own table. `--raw` prints the
-  minified bytes in place of the gzipped. The scenario table is printed again in
-  brotli's bytes at its highest quality, which no rule reads and `sizes.json`
-  doesn't keep.
+  [below](#the-whole-library) for this library's own table. The scenario table
+  is printed again in brotli's bytes at its highest quality, which no rule
+  reads and `sizes.json` doesn't keep. `--raw` prints the minified bytes in
+  place of the gzipped, and leaves the brotli table out.
 - **Allocation**: growth of V8's used heap across a sample of calls, per call,
   with no collection forced. A forced collection makes the engine throw away
   optimized code, and the calls sampled after it allocate more than the code
@@ -264,7 +273,12 @@ whoever runs it.
   refuse to run without them. `benchmark:allocations` takes `--scenario` and
   `--lib`, each repeatable, every one by default. It also times building a
   schema, every library in one process and under those flags, which no other
-  timing runs under. `grade` and `benchmark:harvest` are the other
+  timing runs under, once every row's bytes are read, in batches of calls
+  sized to last a few milliseconds. Every row's bytes are read in that one
+  process, in order, so a row's library code has seen the scenarios before it
+  and no others: a parse among many schemas can allocate more than the same
+  parse alone, see below, and a row measured with `--scenario` can read less
+  than in a full run. `grade` and `benchmark:harvest` are the other
   way round: they refuse them, and give them to the processes that measure
   their bytes, and such a process that fails is started once more, announced
   on stderr, which a timing never is.
@@ -277,11 +291,15 @@ whoever runs it.
   not as a difference of two stages' medians. Bundled and unbundled entries:
   the unbundled one of this library loads its build, `dist/schema.js`, what
   the package publishes, and refuses to run when that is missing or older
-  than `src/lib/schema.ts`, so run `gro build` first. Compile cache off, rounds
-  interleaved, medians. `--lib` and `--scenario` pick what runs, every library
-  and `object_flat` and `type_json` by default, `--form` is `bundled`,
-  `unbundled`, or both, `--samples` the rounds kept, 15 by default, and
-  `--discard` the rounds thrown away first, 2 by default.
+  than `src/lib/schema.ts`, so run `gro build` first. The build syncs the
+  dependencies first, and when that updated Gro or a package Gro had loaded,
+  as it does when `node_modules` is behind the lockfile, it stops and asks to
+  be run again. Compile cache off, rounds interleaved, medians: every process
+  runs once a round, another leading each round and each after another
+  neighbor (`to_coldstart_order`). `--lib` and `--scenario` pick what runs,
+  every library and `object_flat` and `type_json` by default, `--form` is
+  `bundled`, `unbundled`, or both, `--samples` the rounds kept, 15 by default,
+  and `--discard` the rounds thrown away first, 2 by default.
 - **Retained heap**: a fresh process builds the schema, parses once, and
   collects until the heap settles. Read for one schema and for many. See
   [below](#retained-heap). `--lib` and `--scenario` pick what runs, every
@@ -290,7 +308,10 @@ whoever runs it.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm). `--rounds` is the rounds, 15 by default, and
   `--round-ms` what one timing of a row aims to take, 20 by default.
-- **Args**: the scripts parse their command-line args with this library,
+- **Args**: every script takes `--help`, which prints its args with their
+  defaults and descriptions, and refuses an arg it doesn't have and a name of
+  a library, scenario, or set it doesn't know, saying which there are. The
+  scripts parse their command-line args with this library,
   through instances no measurement uses: the schemas are built with
   `schema.ts` and `meta.ts` imported under `?args` by `args.ts`, and
   `args_parse` runs them through the published `@fuzdev/fuz_schema` that
@@ -432,6 +453,7 @@ and `survey_rows.ts` are what a process loads its rows through.
   `survey.ts`, `harvest.ts`, and `grade.ts` refuse to start under any
   `NODE_OPTIONS`, which every process they start would inherit; the
   processes that measure bytes are given their flags on their command line.
+  `wasm.ts`, which times in its own process, refuses both.
 - **`--duration`** is the milliseconds each row of each library is timed for
   in all, shared out over the passes. More passes at one duration cost the
   warming and the processes again, not the timing.
@@ -550,7 +572,11 @@ repeated.
   those two drop nothing, which is the work the scenario is of.
 - Cold start reports work inside the process, which resolves sub-millisecond
   gaps. The whole process over bare is also reported, but can't be told from
-  zero inside the bare process's own spread. The tenth and hundredth parses
+  zero inside the bare process's own spread. Each stage is processes of its
+  own, and its figure the median of those, so a stage can read a little under
+  the one before it where the work between them is less than how far the
+  samples of a stage spread: a stage is above the one before it only by more
+  than that. The tenth and hundredth parses
   are of code the engine is still compiling, so they move with when it
   decides to optimize, and a process's first hundred parses are a figure of
   their own, not a hundred of the warmed timings.
@@ -605,8 +631,9 @@ and never a table.
 
 - A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, and a
   `scenario_<name>` export in every module under `libs/`.
-- A library: a module in `libs/`, an entry in `LIBS`, and its name in the
-  lists the process and type benchmarks keep.
+- A library: a module in `libs/`, an entry in `LIBS`, and its name in
+  `LIB_NAMES` (`lib_names.ts`), which the process and type benchmarks read and
+  `src/test/benchmarks.test.ts` holds `LIBS` to.
 - A survey shape: an entry in `SURVEY_SHAPES`, with a builder for each
   library or a reason one has none, and for every input its verdict and what
   the parse of it does.
