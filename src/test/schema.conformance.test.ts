@@ -18,6 +18,7 @@ import {
 	DIFFERENCES,
 	INFORMATIONAL,
 	SIDES,
+	SIDES_LEADS,
 	expand_conformance_table
 } from './conformance_tables.ts';
 
@@ -162,6 +163,25 @@ describe('conformance with zod and valibot', () => {
 				assert.include(docs, difference.docs, difference.reason);
 			}
 		}
+	});
+
+	test('the list of where zod and valibot disagree in docs/design.md is SIDES_LEADS', () => {
+		const docs = readFileSync(new URL('../../docs/design.md', import.meta.url), 'utf8');
+		const start = docs.indexOf('Where the two disagree, this library goes with:\n');
+		assert.isAbove(start, -1, 'the list is in docs/design.md');
+		// the bullets, to the first line that is neither a bullet nor in one
+		const lines = docs.slice(start).split('\n').slice(2);
+		const end = lines.findIndex((line) => line !== '' && !/^(?:- | {2})/.test(line));
+		const leads = lines
+			.slice(0, end)
+			.join('\n')
+			.split(/\n(?=- )/)
+			.map((item) => /^- \*\*(.+?)\*\*/.exec(item.replace(/\s+/g, ' '))?.[1] ?? item);
+		assert.deepEqual(
+			leads,
+			[...SIDES_LEADS],
+			'the list in docs/design.md and `SIDES_LEADS` in conformance_tables.ts name the same leads in the same order: edit both together'
+		);
 	});
 
 	// tolerated, and printed so that each is ruled on

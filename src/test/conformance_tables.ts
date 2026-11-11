@@ -1376,6 +1376,41 @@ export type ConformanceSidesRow = keyof typeof sides;
 export const SIDES: Record<ConformanceSidesRow, ConformanceSide> = sides;
 
 /**
+ * The bold leads of the list in `docs/design.md` of where zod and valibot
+ * disagree, in its order: which of them this library goes with, on what. The
+ * conformance test holds the list to these both ways, so a bullet is added to
+ * or dropped from both.
+ */
+export const SIDES_LEADS: ReadonlyArray<string> = [
+	"Zod on a default that doesn't match its schema.",
+	'Zod on an optional key under another schema.',
+	'Zod or neither on the options of a `union` before one that fills the key in.',
+	'Valibot on the steps after an `optional`.',
+	'Zod or Valibot on the steps after another schema that let the key through.',
+	'Zod or Valibot on a `pipe` that starts with an `optional` under a `nullable`, a `lazy`, or a `union`.',
+	'Zod on the entries of a `variant` option whose discriminator is missing.',
+	'Valibot on a default under an `optional`.',
+	'Zod on an own key named `constructor` or `prototype`',
+	'Valibot on a key the input inherits',
+	'Valibot on an unknown key the input inherits',
+	'Neither on that key in a `loose_object` input that comes back.',
+	'Zod on an unknown key named `constructor` or `prototype`',
+	'Valibot on an entry named `__proto__`.',
+	'Zod on an array.',
+	'Valibot on what a `record` is given.',
+	'Valibot on a length check after an array whose item fails.',
+	'Valibot on a check after an object with an unknown key.',
+	'Valibot on a check after an object whose `unknown` then a check that fails has its key missing.',
+	'Valibot on the length of a string.',
+	'Zod on an own key of a `record` named `constructor` or `prototype`.',
+	'Zod on the infinities.',
+	"Zod on a UUID's version and variant.",
+	'Valibot on the max UUID in uppercase.',
+	'Valibot on a fraction of a second past 9 digits.',
+	"Zod on an offset, a space for the `T`, and a day the month doesn't have."
+];
+
+/**
  * What arktype and typebox did with the cases that name them in `also`.
  * They are not part of the rule: nothing here is right or wrong, and the
  * results are pinned so that an upgrade which changes one shows. Of a refusal

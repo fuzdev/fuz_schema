@@ -193,9 +193,9 @@ npm run mutate -- --filter record --deep
 It copies the working tree's `src` and `docs`, `package.json`, and
 `tsconfig.json`, with `node_modules` linked, to a directory of the run's own
 under `~/.cache/fuz_schema_mutate/`, a copy to a worker, with a vitest config
-of its own, as `vite.config.ts` reads the git HEAD, and a test timeout of
-60 s, as the tests that take seconds alone are slower beside the other
-copies. Each copy's vitest gets an even share of the cores. It runs the tests
+of its own, without the site's plugins, which no test needs, and a test
+timeout of 60 s, as the tests that take seconds alone are slower beside the
+other copies. Each copy's vitest gets an even share of the cores. It runs the tests
 of the unmutated copy first and stops if they fail, then for each mutant
 applies its edits, runs `vitest run` without `sizes.test.ts`, and
 restores the file. Each mutant is:

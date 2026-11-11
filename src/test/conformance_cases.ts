@@ -346,6 +346,7 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	...missing_and_undefined('unknown then a check entry', (l) => l.refine(l.unknown, () => true)),
 	...missing_and_undefined('unknown then a transform entry', (l) => l.map(l.unknown, (x) => x)),
 	...missing_and_undefined('message(unknown) entry', (l) => l.message(l.unknown)),
+	...missing_and_undefined('message of a function(unknown) entry', (l) => l.message_fn(l.unknown)),
 	// an `unknown` under schemas that are one in another
 	...missing_and_undefined('nullable(lazy(unknown)) entry', (l) =>
 		l.nullable(l.lazy(() => l.unknown))
@@ -1245,6 +1246,13 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	// records
 	{ name: 'record', schema: (l) => l.record(l.number), input: () => ({ a: 1, b: 2 }) },
 	{ name: 'record, a value wrong', schema: (l) => l.record(l.number), input: () => ({ a: 'x' }) },
+	{ name: 'record, null', schema: (l) => l.record(l.number), input: () => null },
+	{
+		name: 'message of a function around a record, a value wrong',
+		schema: (l) => l.message_fn(l.record(l.number)),
+		input: () => ({ a: 1, b: 'x' })
+	},
+	{ name: 'record, a string', schema: (l) => l.record(l.number), input: () => 'x' },
 	{
 		name: 'record, own __proto__ key',
 		schema: (l) => l.record(l.unknown),
@@ -1491,6 +1499,8 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => ({ 0: 'x', length: 1 })
 	},
 	{ name: 'array, an item wrong', schema: (l) => l.array(l.string), input: () => ['x', 1] },
+	{ name: 'array, a string', schema: (l) => l.array(l.string), input: () => 'x' },
+	{ name: 'array, null', schema: (l) => l.array(l.string), input: () => null },
 
 	// a transform between the two zeros, and a `NaN` that passes, in each container
 	{ name: 'entry negated, 0', entries: NEGATED, input: () => ({ a: 0 }) },
@@ -2330,6 +2340,11 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		input: () => [1, 2]
 	},
 	{ name: 'min_value, a bigint below', schema: (l) => l.min_value(l.bigint, 1n), input: () => 0n },
+	{ name: 'min_value, a number below', schema: (l) => l.min_value(l.number, 1), input: () => 0.5 },
+	{ name: 'min_value, a number at it', schema: (l) => l.min_value(l.number, 1), input: () => 1 },
+	{ name: 'max_value, a number above', schema: (l) => l.max_value(l.number, 1), input: () => 1.5 },
+	{ name: 'max_value, a number at it', schema: (l) => l.max_value(l.number, 1), input: () => 1 },
+	{ name: 'max_value, a bigint above', schema: (l) => l.max_value(l.bigint, 1n), input: () => 2n },
 	{ name: 'max_value, -0 at 0', schema: (l) => l.max_value(l.number, 0), input: () => -0 },
 	{
 		name: 'min_value, past the safe integers',

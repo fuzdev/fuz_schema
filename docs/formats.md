@@ -76,9 +76,9 @@ valibot both accept it.
 ## How a grammar is held
 
 - **`uuid` reads char codes**, which takes less time than a `RegExp` of its
-  grammar, and `src/test/schema.test.ts` holds it to the grammar above with
-  every char at every position of a set of UUIDs, every version and variant,
-  and every length around 36. `to_json_schema` writes the grammar as its
+  grammar, and `src/test/schema.formats.test.ts` holds it to the grammar
+  above with every char at every position of a set of UUIDs, every version
+  and variant, and every length around 36. `to_json_schema` writes the grammar as its
   `pattern`.
 - **The conformance matrix**, `src/test/conformance_cases.ts`, runs each edge
   through zod and valibot. Where they disagree, a `SIDES` row of

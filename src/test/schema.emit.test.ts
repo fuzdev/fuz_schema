@@ -3,6 +3,8 @@ import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
+import { SCHEMA_EXPORT_PATHS, get_schema_exports } from './schema_exports_test_helpers.ts';
+
 // The declarations a consumer emits for its own generic helpers over the
 // library: each must name what it infers through, or the emitted file
 // refers to a type parameter it doesn't declare and fails to compile where
@@ -284,16 +286,11 @@ const NAMED_SCHEMA_TYPES = new Set([
 test(
 	'every export of schema.ts and meta.ts that is or makes a schema declares a named type',
 	() => {
-		const lib_path = join(dir, '../lib/schema.ts');
-		const meta_path = join(dir, '../lib/meta.ts');
-		const program = ts.createProgram([lib_path, meta_path], { ...OPTIONS, noEmit: true });
+		const [lib_path] = SCHEMA_EXPORT_PATHS;
+		const program = ts.createProgram([...SCHEMA_EXPORT_PATHS], { ...OPTIONS, noEmit: true });
 		const checker = program.getTypeChecker();
-		const source = program.getSourceFile(lib_path)!;
+		const source = program.getSourceFile(lib_path!)!;
 		const module_symbol = checker.getSymbolAtLocation(source)!;
-		const is_schema_type = (type: ts.Type): boolean => {
-			const apparent = checker.getApparentType(type);
-			return ['kind', 'def', 'run'].every((p) => apparent.getProperty(p) !== undefined);
-		};
 		// the reason `node`, a declared type, isn't one of the allowed, or `undefined`
 		const refuse = (node: ts.TypeNode | undefined): string | undefined => {
 			if (!node) return 'no declared type';
@@ -310,42 +307,10 @@ test(
 		};
 		const found: Array<string> = [];
 		const failures: Array<string> = [];
-		const check = (name: string, node: ts.TypeNode | undefined, type: ts.Type): void => {
-			if (!is_schema_type(type)) return;
+		for (const { name, node } of get_schema_exports(program)) {
 			found.push(name);
 			const reason = refuse(node);
 			if (reason) failures.push(`${name}: ${reason}`);
-		};
-		// each call signature of a factory, by the return type it declares
-		const check_signatures = (name: string, type: ts.Type): void => {
-			for (const signature of type.getCallSignatures()) {
-				const declaration = signature.getDeclaration() as ts.SignatureDeclaration | undefined;
-				check(name, declaration?.type, signature.getReturnType());
-			}
-		};
-		const meta_symbol = checker.getSymbolAtLocation(program.getSourceFile(meta_path)!)!;
-		for (const exported of [
-			...checker.getExportsOfModule(module_symbol),
-			...checker.getExportsOfModule(meta_symbol)
-		]) {
-			// `void` is exported as an alias of `void_`
-			const symbol =
-				exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
-			const declaration = symbol.valueDeclaration;
-			if (!declaration) continue;
-			const { name } = exported;
-			const type = checker.getTypeOfSymbolAtLocation(symbol, declaration);
-			if (ts.isFunctionDeclaration(declaration)) check_signatures(name, type);
-			else if (!ts.isVariableDeclaration(declaration)) continue;
-			else if (type.getCallSignatures().length) {
-				if (declaration.type) check_signatures(name, type);
-				else {
-					// an arrow function, typed by its own return annotation
-					const init = declaration.initializer;
-					assert(init && ts.isArrowFunction(init), `${name}: no declared type`);
-					check(name, init.type, type.getCallSignatures()[0]!.getReturnType());
-				}
-			} else check(name, declaration.type, type);
 		}
 		assert.deepEqual(failures, [], failures.join('\n'));
 		// the walk saw the kinds of export there are: constants, arrows, overloads, a pipe, actions

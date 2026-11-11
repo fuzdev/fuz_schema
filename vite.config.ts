@@ -9,6 +9,18 @@ import { vite_plugin_fuz_css } from '@fuzdev/fuz_css/vite_plugin_fuz_css.ts';
 import svelte_docinfo from 'svelte-docinfo/vite.js';
 import { vite_plugin_pkg_json } from '@fuzdev/fuz_ui/vite_plugin_pkg_json.ts';
 
+// the commit, the version by which a loaded page tells a newer deploy, and
+// outside a repository, as in a copy of the tree, SvelteKit's default
+const git_head = (): string | undefined => {
+	try {
+		return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+			.toString()
+			.trim();
+	} catch {
+		return undefined;
+	}
+};
+
 export default defineConfig({
 	plugins: [
 		sveltekit({
@@ -17,7 +29,7 @@ export default defineConfig({
 			inspector: true,
 			adapter: adapter(),
 			paths: { relative: false }, // use root-absolute paths for SSR path comparison: https://svelte.dev/docs/kit/configuration#paths
-			version: { name: execSync('git rev-parse HEAD').toString().trim() }
+			version: { name: git_head() }
 
 			// Example CSP using https://ui.fuz.dev/docs/csp
 			//

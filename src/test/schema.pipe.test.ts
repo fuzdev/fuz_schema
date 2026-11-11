@@ -55,6 +55,12 @@ describe('pipe and actions', () => {
 	test('regex, check, transform', () => {
 		assert(s.is(s.pipe(s.string, s.regex(/^a/)), 'ab'));
 		assert(!s.is(s.pipe(s.string, s.regex(/^a/)), 'ba'));
+		// the pattern as `String` writes it, unless one is given
+		assert.strictEqual(issues_of(s.pipe(s.string, s.regex(/^a/i)), 'b')[0]!.expected, '/^a/i');
+		assert.strictEqual(
+			issues_of(s.pipe(s.string, s.regex(/^a/, 'an a')), 'b')[0]!.expected,
+			'an a'
+		);
 		const Even = s.pipe(
 			s.number,
 			s.check((v) => v % 2 === 0, 'an even number')
@@ -99,97 +105,6 @@ describe('pipe and actions', () => {
 		assert(!s.is(s.uuid, ['123e4567-e89b-12d3-a456-426614174000']));
 		assert(!s.is(s.iso_datetime, ['2024-01-01T00:00:00Z']));
 		assert(!s.is(s.object({ a: s.uuid }), {}));
-	});
-
-	test('uuid', () => {
-		const Uuid = s.pipe(s.string, s.uuid);
-		for (const [value, ok] of [
-			['123e4567-e89b-12d3-a456-426614174000', true],
-			['123E4567-E89B-42D3-A456-426614174000', true],
-			['00000000-0000-8000-bfff-000000000000', true],
-			['00000000-0000-0000-0000-000000000000', true],
-			['ffffffff-ffff-ffff-ffff-ffffffffffff', true],
-			['FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', true],
-			['ffffffff-FFFF-ffff-FFFF-ffffffffffff', true],
-			// version 0 and 9, variant 7 and c
-			['123e4567-e89b-02d3-a456-426614174000', false],
-			['123e4567-e89b-92d3-a456-426614174000', false],
-			['123e4567-e89b-12d3-7456-426614174000', false],
-			['123e4567-e89b-12d3-c456-426614174000', false],
-			['{123e4567-e89b-12d3-a456-426614174000}', false],
-			['123e4567e89b12d3a456426614174000', false],
-			['urn:uuid:123e4567-e89b-12d3-a456-426614174000', false],
-			['123e4567-e89b-12d3-a456-426614174000\n', false],
-			['123e4567-e89b-12d3-a456-42661417400', false],
-			['123e4567-e89b-12d3-a456-4266141740000', false],
-			// a fullwidth digit
-			['123e4567-e89b-12d3-a456-42661417400０', false]
-		] as const) {
-			assert.strictEqual(s.is(Uuid, value), ok, value);
-		}
-		// a refinement: the output is the string given, uppercase kept
-		const upper = '123E4567-E89B-42D3-A456-426614174000';
-		assert.strictEqual(s.parse_or_throw(Uuid, upper), upper);
-		assert.deepEqual(issues_of(Uuid, 'x'), [
-			{ kind: 'uuid', expected: 'uuid', received: 'string', path: [], message: undefined }
-		]);
-		assert.deepEqual(issues_of(s.uuid, 1), [
-			{ kind: 'uuid', expected: 'uuid', received: 'number', path: [], message: undefined }
-		]);
-	});
-
-	test('iso_datetime', () => {
-		const Datetime = s.pipe(s.string, s.iso_datetime);
-		for (const [value, ok] of [
-			['2024-01-01T00:00:00Z', true],
-			['2024-01-01T00:00:00.1Z', true],
-			['2024-01-01T23:59:59.123456789Z', true],
-			['2024-02-29T00:00:00Z', true],
-			['2000-02-29T00:00:00Z', true],
-			['0000-02-29T00:00:00Z', true],
-			['2024-01-01T00:00:00.1234567890Z', false],
-			['2024-01-01T00:00:00.Z', false],
-			['2024-01-01T00:00:00,5Z', false],
-			['2024-01-01T00:00:00+01:00', false],
-			['2024-01-01T00:00:00', false],
-			['2024-01-01T00:00Z', false],
-			['2024-01-01t00:00:00Z', false],
-			['2024-01-01T00:00:00z', false],
-			['2024-01-01 00:00:00Z', false],
-			['2023-02-29T00:00:00Z', false],
-			['1900-02-29T00:00:00Z', false],
-			['2024-02-30T00:00:00Z', false],
-			['2024-04-31T00:00:00Z', false],
-			['2024-13-01T00:00:00Z', false],
-			['2024-00-01T00:00:00Z', false],
-			['2024-01-00T00:00:00Z', false],
-			['2024-01-01T24:00:00Z', false],
-			['2024-01-01T23:60:00Z', false],
-			['2024-01-01T23:59:60Z', false],
-			['+002024-01-01T00:00:00Z', false],
-			['2024-01-01T00:00:00Z\n', false],
-			['２024-01-01T00:00:00Z', false]
-		] as const) {
-			assert.strictEqual(s.is(Datetime, value), ok, value);
-		}
-		assert.deepEqual(issues_of(Datetime, '2024-02-30T00:00:00Z'), [
-			{
-				kind: 'iso_datetime',
-				expected: 'iso_datetime',
-				received: 'string',
-				path: [],
-				message: undefined
-			}
-		]);
-		assert.deepEqual(issues_of(s.iso_datetime, null), [
-			{
-				kind: 'iso_datetime',
-				expected: 'iso_datetime',
-				received: 'null',
-				path: [],
-				message: undefined
-			}
-		]);
 	});
 
 	describe('to_lower_case', () => {

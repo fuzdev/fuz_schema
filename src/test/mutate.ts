@@ -10,8 +10,8 @@
  * The copy is the working tree's `src` and `docs`, its `package.json` and
  * `tsconfig.json`, and its `node_modules` linked, under a directory of this
  * run's own in `~/.cache/fuz_schema_mutate/`, one copy to a worker. It has a
- * vitest config of its own, as `vite.config.ts` reads the git HEAD, which a
- * copy has none of. The unmutated copy runs first, and the run stops if it
+ * vitest config of its own, without `vite.config.ts` and the site's plugins,
+ * which no test needs. The unmutated copy runs first, and the run stops if it
  * fails. Each run of the tests is a process group of its own, killed whole at
  * the first test file it reports failed or the timeout, and when this process
  * exits.

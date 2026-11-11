@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { inspect } from 'node:util';
 
 import { describe, test, assert, expectTypeOf } from 'vitest';
@@ -279,100 +278,6 @@ describe('primitives', () => {
 		assert.deepEqual(issues_of(V, { t: 1 }), [
 			{ kind: 'variant', expected: 'NaN | 0', received: 'number', path: ['t'], message: undefined }
 		]);
-	});
-});
-
-describe('uuid', () => {
-	// the grammar of `docs/formats.md`, which `uuid` reads by char codes
-	const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
-	const GRAMMAR = RegExp(/### `uuid`\n\n```\n(.*)\n```/.exec(formats)![1]!);
-	const BASES = [
-		'123e4567-e89b-42d3-a456-426614174000',
-		'ABCDEF01-2345-1789-BABC-DEF012345678',
-		'01890a5d-ac96-774b-bcce-b302099a8057',
-		'00000000-0000-0000-0000-000000000000',
-		'ffffffff-ffff-ffff-ffff-ffffffffffff',
-		'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF',
-		'fFfFfFfF-FfFf-fFfF-FFff-ffffFFFFffff'
-	];
-	// every char of ASCII and Latin-1 and past, so either side of each range
-	// the scan reads, and the codes below `0` that setting bit 5 makes digits,
-	// and past them the lone surrogates and digits and letters of other scripts
-	const CHARS = [
-		...Array.from({ length: 0x180 }, (_, c) => String.fromCharCode(c)),
-		...['\u0130', '\u212a', '\uff10', '\uff21', '\uff41', '\u0660', '\ud800', '\udc00', '\uffff'],
-		String.fromCodePoint(0x1d7ce)
-	];
-	const assert_as_grammar = (value: string): void => {
-		assert.strictEqual(s.is(s.uuid, value), GRAMMAR.test(value), JSON.stringify(value));
-	};
-
-	test('matches as its grammar with any char at any position', () => {
-		for (const base of BASES) {
-			assert(s.is(s.uuid, base), base);
-			for (let i = 0; i <= base.length; i++) {
-				for (const c of CHARS) {
-					assert_as_grammar(base.slice(0, i) + c + base.slice(i + 1));
-					assert_as_grammar(base.slice(0, i) + c + base.slice(i));
-				}
-				assert_as_grammar(base.slice(0, i) + base.slice(i + 1));
-			}
-		}
-	});
-
-	test('matches as its grammar with every UTF-16 code unit at any position', () => {
-		const base = BASES[0]!;
-		const wrong: Array<string> = [];
-		for (let i = 0; i < 36; i++) {
-			for (let c = 0; c <= 0xffff; c++) {
-				const value = base.slice(0, i) + String.fromCharCode(c) + base.slice(i + 1);
-				if (s.is(s.uuid, value) !== GRAMMAR.test(value)) wrong.push(JSON.stringify(value));
-			}
-		}
-		assert.deepEqual(wrong, []);
-	});
-
-	test('matches as its grammar on every version and variant', () => {
-		const hex = '0123456789abcdefABCDEF';
-		for (const base of BASES) {
-			for (const version of hex) {
-				for (const variant of hex) {
-					assert_as_grammar(
-						base.slice(0, 14) + version + base.slice(15, 19) + variant + base.slice(20)
-					);
-				}
-			}
-		}
-	});
-
-	test('fails a length but 36, and a value that is not a string', () => {
-		const base = BASES[0]!;
-		for (const value of [
-			base.slice(1),
-			base + '0',
-			'0' + base,
-			base.slice(0, 35),
-			'',
-			base.repeat(2)
-		]) {
-			assert(!s.is(s.uuid, value), value);
-		}
-		for (const value of [1, null, undefined, {}, [base], { length: 36 }, Object(base)]) {
-			assert(!s.is(s.uuid, value));
-		}
-	});
-
-	test('the nil and the max UUID only whole', () => {
-		const nil = BASES[3]!;
-		for (let i = 0; i < 36; i++) {
-			if (nil[i] === '-') continue;
-			for (const c of ['1', 'f', 'F']) {
-				const value = nil.slice(0, i) + c + nil.slice(i + 1);
-				assert_as_grammar(value);
-				assert_as_grammar(value.replaceAll('0', 'f'));
-				assert_as_grammar(value.replaceAll('0', 'F'));
-			}
-		}
 	});
 });
 

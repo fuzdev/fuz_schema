@@ -78,6 +78,8 @@ export interface ConformanceLib {
 	transform: (fn: (value: any) => any) => any;
 	/** `schema` with the text of its issues set, which changes no verdict. */
 	message: (schema: any) => any;
+	/** `schema` with the text of its issues built by a function, which changes no verdict either. */
+	message_fn: (schema: any) => any;
 	/** `schema`, then a check that the output's `length` is at least `min`. */
 	min_length: (schema: any, min: number) => any;
 	/** `schema`, then a check that the output's `length` is at most `max`. */
@@ -133,6 +135,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		transform: (fn) => z.transform(fn),
 		// the text is an option of each factory, and nothing wraps a schema to set it
 		message: (schema) => schema,
+		message_fn: (schema) => schema,
 		min_length: (schema, min) => schema.check(z.minLength(min)),
 		max_length: (schema, max) => schema.check(z.maxLength(max)),
 		min_value: (schema, min) => schema.check(z.gte(min)),
@@ -184,6 +187,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		// an action, which needs a schema before it: the nearest is one that takes anything
 		transform: (fn) => v.pipe(v.unknown(), v.transform(fn)),
 		message: (schema) => schema,
+		message_fn: (schema) => schema,
 		min_length: (schema, min) => v.pipe(schema, v.minLength(min)),
 		max_length: (schema, max) => v.pipe(schema, v.maxLength(max)),
 		min_value: (schema, min) => v.pipe(schema, v.minValue(min)),
@@ -240,6 +244,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		check: (fn) => s.check(fn),
 		transform: (fn) => s.transform(fn),
 		message: (schema) => s.message(schema, 'text'),
+		message_fn: (schema) => s.message(schema, (issue) => `text of ${issue.kind}`),
 		min_length: (schema, min) => s.pipe(schema, s.min_length(min)),
 		max_length: (schema, max) => s.pipe(schema, s.max_length(max)),
 		min_value: (schema, min) => s.pipe(schema, s.min_value(min)),

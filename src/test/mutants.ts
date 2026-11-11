@@ -2239,5 +2239,428 @@ export const MUTANTS: Array<Mutant> = [
 				replace: `): Schema<Array<Infer<T>>, Array<InferInput<T>>, 'array', T> => ({`
 			}
 		]
+	},
+	{
+		name: 'min_value_exclusive',
+		edits: [
+			{
+				find: `value >= min ? value : fail(ctx, 'min_value'`,
+				replace: `value > min ? value : fail(ctx, 'min_value'`
+			}
+		]
+	},
+	{
+		name: 'min_value_inverted',
+		edits: [
+			{
+				find: `value >= min ? value : fail(ctx, 'min_value'`,
+				replace: `value < min ? value : fail(ctx, 'min_value'`
+			}
+		]
+	},
+	{
+		name: 'max_value_exclusive',
+		edits: [
+			{
+				find: `value <= max ? value : fail(ctx, 'max_value'`,
+				replace: `value < max ? value : fail(ctx, 'max_value'`
+			}
+		]
+	},
+	{
+		name: 'max_value_inverted',
+		edits: [
+			{
+				find: `value <= max ? value : fail(ctx, 'max_value'`,
+				replace: `value > max ? value : fail(ctx, 'max_value'`
+			}
+		]
+	},
+	{
+		name: 'literal_nan_unmatched',
+		edits: [
+			{
+				find: `v === value || (v !== v && value !== value)`,
+				replace: `v === value`
+			}
+		]
+	},
+	{
+		name: 'literal_nan_matches_any',
+		edits: [
+			{
+				find: `v === value || (v !== v && value !== value)`,
+				replace: `v === value || v !== v`
+			}
+		]
+	},
+	{
+		name: 'lazy_drops_key',
+		edits: [
+			{
+				find: `(schema.run(value, ctx, arguments[2], arguments[3]) as Infer<T>)`,
+				replace: `(schema.run(value, ctx) as Infer<T>)`
+			}
+		]
+	},
+	{
+		name: 'lazy_no_retry_after_throw',
+		edits: [
+			{
+				find: `	let schema: T | undefined;
+	return {
+		kind: 'lazy',`,
+				// typed as the schema, so only a test of a throw kills it and not the types
+				replace: `	let schema = undefined as unknown as T;
+	let called = false;
+	return {
+		kind: 'lazy',`
+			},
+			{
+				find: `			schema ??= get();`,
+				replace: `			if (!called) {
+				called = true;
+				schema = get();
+			}`
+			}
+		]
+	},
+	{
+		name: 'is_schema_no_def',
+		edits: [
+			{
+				find: `	typeof (value as AnySchema).run === 'function' &&
+	'def' in value;`,
+				replace: `	typeof (value as AnySchema).run === 'function';`
+			}
+		]
+	},
+	{
+		name: 'is_schema_kind_any',
+		edits: [
+			{
+				find: `	typeof (value as AnySchema).kind === 'string' &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'is_not_probing',
+		edits: [
+			{
+				find: `const ctx: SchemaContext = { issues: undefined, fails: 0, probe: true };`,
+				replace: `const ctx: SchemaContext = { issues: undefined, fails: 0, probe: false };`
+			}
+		]
+	},
+	{
+		name: 'format_issue_key_unquoted',
+		edits: [
+			{
+				find: `.map((key) => (/^\\w+$/.test(key) ? key : JSON.stringify(key)))`,
+				replace: `.map((key) => key)`
+			}
+		]
+	},
+	{
+		name: 'format_issue_key_always_quoted',
+		edits: [
+			{
+				find: `.map((key) => (/^\\w+$/.test(key) ? key : JSON.stringify(key)))`,
+				replace: `.map((key) => JSON.stringify(key))`
+			}
+		]
+	},
+	{
+		name: 'regex_accepts_all',
+		edits: [
+			{
+				find: `run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))`,
+				replace: `run: (value) => value`
+			}
+		]
+	},
+	{
+		name: 'regex_expected_kind',
+		edits: [
+			{
+				find: `	expected: string = String(pattern)
+`,
+				replace: `	expected: string = 'regex'
+`
+			}
+		]
+	},
+	{
+		name: 'one_of_undefined_closure_dropped',
+		edits: [
+			{
+				find: `run: set.has(undefined)`,
+				replace: `run: false`
+			}
+		]
+	},
+	{
+		name: 'with_default_fn_made_once',
+		edits: [
+			{
+				find: `(v, ctx) => (v === undefined ? make() : schema.run(v, ctx))`,
+				replace: `(v, ctx) => (v === undefined ? ((make as any).kept ??= make()) : schema.run(v, ctx))`
+			}
+		]
+	},
+	{
+		name: 'union_probe_left_set',
+		edits: [
+			{
+				find: `const output = options[i]!.run(value, ctx);
+						if (ctx.fails === count) {
+							ctx.probe = probe;
+`,
+				replace: `const output = options[i]!.run(value, ctx);
+						if (ctx.fails === count) {
+`
+			}
+		]
+	},
+	{
+		name: 'union_probe_left_set_on_retry',
+		edits: [
+			{
+				find: `										if (ctx.fails === count) {
+											ctx.probe = probe;
+											return v;`,
+				replace: `										if (ctx.fails === count) {
+											return v;`
+			}
+		]
+	},
+	{
+		name: 'describe_option_no_null',
+		edits: [
+			{
+				find: `kind === 'nullable' ? 'null' : []`,
+				replace: `[]`
+			}
+		]
+	},
+	{
+		name: 'describe_option_record_by_kind',
+		edits: [
+			{
+				find: `	kind === 'object_with_rest' ||
+	kind === 'record'
+		? 'object'`,
+				replace: `	kind === 'object_with_rest'
+		? 'object'`
+			}
+		]
+	},
+	{
+		name: 'describe_option_pipe_by_kind',
+		edits: [
+			{
+				find: `				: kind === 'pipe'
+`,
+				replace: `				: kind === 'pipe_'
+`
+			}
+		]
+	},
+	{
+		name: 'schema_json_pointer_tilde_unescaped',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `key.replaceAll('~', '~0').replaceAll('/', '~1')`,
+				replace: `key.replaceAll('/', '~1')`
+			}
+		]
+	},
+	{
+		name: 'schema_json_literal_minus_zero_kept',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `			// \`-0\` is \`0\` in JSON, and equal to it
+			return value === 0 ? 0 : value;`,
+				replace: `			return value;`
+			}
+		]
+	},
+	{
+		name: 'schema_json_bound_minus_zero_kept',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `				return { kind, def: def === 0 ? 0 : def };`,
+				replace: `				return { kind, def };`
+			}
+		]
+	},
+	{
+		name: 'schema_json_action_in_child_kept',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `		if (is_schema(value) && PIPE_ONLY_ACTIONS.has(value.kind)) {
+			refuse(value.kind, path, 'it means something only in a pipe');
+		}
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'schema_json_nesting_limit_one_short',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `		if (depth > SCHEMA_JSON_MAX_NESTING) {`,
+				replace: `		if (depth >= SCHEMA_JSON_MAX_NESTING) {`
+			}
+		]
+	},
+	{
+		name: 'schema_json_nesting_not_counted_through_lazy',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `				return [[json.defs![def]!, \`/defs/\${pointer_token(def)}\`]];`,
+				replace: `				return [];`
+			}
+		]
+	},
+	{
+		name: 'schema_json_lazy_named_at_parent',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `				return [[json.defs![def]!, \`/defs/\${pointer_token(def)}\`]];`,
+				replace: `				return [[json.defs![def]!, path]];`
+			}
+		]
+	},
+	{
+		name: 'schema_json_member_named_at_parent',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `Object.entries(value).map(([key, v]) => [v, \`\${path}/\${pointer_token(key)}\`]);`,
+				replace: `Object.entries(value).map(([, v]) => [v, path]);`
+			}
+		]
+	},
+	{
+		name: 'schema_json_default_infinity_kept',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `			if (!Number.isFinite(v)) return 'the default is not a JSON value';`,
+				replace: `			if (Number.isNaN(v)) return 'the default is not a JSON value';`
+			}
+		]
+	},
+	{
+		name: 'schema_json_lazy_function_called_again',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `					} else {
+						lazies.set(def, name);
+					}`,
+				replace: `					}`
+			}
+		]
+	},
+	{
+		name: 'schema_json_refused_key_allowed',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `			if (SCHEMA_JSON_REFUSED_KEYS.includes(key)) {
+				refuse(
+`,
+				replace: `			if (false) {
+				refuse(
+`
+			}
+		]
+	},
+	{
+		name: 'introspect_pipe_no_layer',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `			case 'pipe':
+				s = s.def[0]!;
+				break;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'introspect_find_always_structural',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `				if (structural) for (const k in s.def) visit(s.def[k]!);`,
+				replace: `				for (const k in s.def) visit(s.def[k]!);`
+			}
+		]
+	},
+	{
+		name: 'introspect_optional_has_default',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `has_default: first !== undefined && first.kind !== 'optional',`,
+				replace: `has_default: first !== undefined,`
+			}
+		]
+	},
+	{
+		name: 'introspect_fields_innermost_default',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `				first ??= layer;`,
+				replace: `				first = layer;`
+			}
+		]
+	},
+	{
+		name: 'introspect_entry_key_unquoted',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `\${/^[A-Za-z_$][\\w$]*$/.test(key) ? key : JSON.stringify(key)}`,
+				replace: `\${key}`
+			}
+		]
+	},
+	{
+		name: 'introspect_lazy_of_lazy_elided',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `to_type((s = s.def()), s.kind !== 'lazy')`,
+				replace: `to_type((s = s.def()), true)`
+			}
+		]
+	},
+	{
+		name: 'introspect_entries_of_rest_dropped',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `			? s.def.entries
+			: undefined;`,
+				replace: `			? undefined
+			: undefined;`
+			}
+		]
 	}
 ];
