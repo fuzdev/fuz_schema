@@ -31,6 +31,10 @@ export interface StandardTypedV1<TInput = unknown, TOutput = TInput> {
 	readonly '~standard': StandardTypedV1Props<TInput, TOutput>;
 }
 
+/**
+ * The spec's `StandardTypedV1.Props`: what `~standard` holds on every one of
+ * its interfaces, the version of the spec, the library's name, and the types.
+ */
 export interface StandardTypedV1Props<TInput = unknown, TOutput = TInput> {
 	readonly version: 1;
 	readonly vendor: string;
@@ -38,11 +42,16 @@ export interface StandardTypedV1Props<TInput = unknown, TOutput = TInput> {
 	readonly types?: StandardTypedV1Types<TInput, TOutput> | undefined;
 }
 
+/** The spec's `StandardTypedV1.Types`: the input and output types of a schema. */
 export interface StandardTypedV1Types<TInput = unknown, TOutput = TInput> {
 	readonly input: TInput;
 	readonly output: TOutput;
 }
 
+/**
+ * The spec's `StandardSchemaV1.Props`: `StandardTypedV1Props` and `validate`,
+ * which may return its result or a promise of it.
+ */
 export interface StandardSchemaV1Props<
 	TInput = unknown,
 	TOutput = TInput
@@ -53,15 +62,25 @@ export interface StandardSchemaV1Props<
 	) => StandardSchemaV1Result<TOutput> | Promise<StandardSchemaV1Result<TOutput>>;
 }
 
+/** The spec's `StandardSchemaV1.Options`: what `validate` may be passed. */
 export interface StandardSchemaV1Options {
 	/** Vendor-specific parameters. `to_standard_schema` reads none. */
 	readonly libraryOptions?: Record<string, unknown> | undefined;
 }
 
+/**
+ * The spec's `StandardSchemaV1.Result`: the output of a value that matches, or
+ * the issues of one that doesn't, told apart by `issues`.
+ */
 export type StandardSchemaV1Result<TOutput> =
 	| { readonly value: TOutput; readonly issues?: undefined }
 	| { readonly issues: ReadonlyArray<StandardSchemaV1Issue> };
 
+/**
+ * The spec's `StandardSchemaV1.Issue`: a failure's text and the keys from the
+ * value to where it failed, outermost first, each a key or an object holding
+ * one. `to_standard_schema` writes each key bare.
+ */
 export interface StandardSchemaV1Issue {
 	readonly message: string;
 	readonly path?: ReadonlyArray<PropertyKey | { readonly key: PropertyKey }> | undefined;

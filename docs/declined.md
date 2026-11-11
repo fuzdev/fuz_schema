@@ -937,6 +937,28 @@ key, and the retry over `options.slice(0, i)`.
   elsewhere.
 - **Measured**: before v0.5.1.
 
+### `message` choosing on each call
+
+One `run` for `message` that reads on every call whether what it holds
+takes the object and the key, in place of two closures chosen when it is
+made.
+
+- **Cost**: slower on valid input. The figure was not kept.
+- **Why**: time on every parse through a `message`.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
+### One body for `message`'s two closures
+
+`message`'s two closures sharing the body that counts and labels the issues,
+as one call from each, in place of each writing it out.
+
+- **Cost**: slower on valid input, a call more on every parse through a
+  `message`. The figure was not kept.
+- **Why**: time on every parse through a `message`.
+- **Reopens**: nothing known.
+- **Measured**: before v0.2.0.
+
 ### A `pipe` that looks for the key wherever it has the object
 
 The closure that passes the object and the key on looking for the key too,

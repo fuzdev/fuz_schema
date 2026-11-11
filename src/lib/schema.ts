@@ -10,7 +10,13 @@
  * - `kind` and `def` describe a schema as data. What each kind's `def` holds
  *   is written down in `SchemaDefs`.
  * - `run` returns the output directly and reports failure by counting it in
- *   `ctx.fails`. Nothing is allocated per node on the success path.
+ *   `ctx.fails`. A valid value that comes back as it was given allocates
+ *   nothing per node but where a step makes a new value: a container
+ *   allocates only for a copy, when something in it changed, `to_lower_case`
+ *   allocates the string it returns whatever its case, and a `memo_union`
+ *   allocates its memo when it is probed.
+ *   `npm run benchmark:allocations` measures the bytes of a parse, which
+ *   are the same for a nested object as for a flat one when nothing is copied.
  * - Output is copy-on-write: a container returns its input when nothing in it
  *   changed, so a valid value with no defaults, transforms, or keys to drop
  *   comes back as the same object. Callers must not assume a fresh copy, and
@@ -30,7 +36,8 @@
  *   counted without building issues.
  *
  * Import as a namespace: `import * as s from '@fuzdev/fuz_schema/schema.ts'`.
- * The design is described at more length in `docs/design.md`.
+ * The design is described at more length in
+ * https://github.com/fuzdev/fuz_schema/blob/main/docs/design.md.
  *
  * @module
  */
@@ -69,7 +76,8 @@ export interface SchemaIssue {
  */
 export interface SchemaContext {
 	/**
-	 * One per failure, except in probe mode where it stays as it was.
+	 * One per failure up to a hundred, past which a failure is counted in
+	 * `fails` and builds none, and in probe mode it stays as it was.
 	 * `undefined` until the first, so a parse with no failure allocates none.
 	 * While the parse runs each path is innermost first: a container pushes its
 	 * key, and `parse` and `parse_or_throw` reverse each path as they return it.
@@ -95,16 +103,23 @@ export interface SchemaContext {
  * A schema or action. `run` returns the output for `value`,
  * or reports a failure with `fail` and returns anything.
  *
- * All schemas share this exact shape so `run` call sites stay monomorphic;
- * kind-specific data goes in `def`.
+ * All schemas share this exact shape, with kind-specific data in `def`, so
+ * the engine gives every schema one hidden class, which
+ * `src/test/schema.shape.test.ts` asks it for, and a `run` is read from one
+ * shape wherever it is called.
  *
  * The object schemas call an entry's `run` with three more arguments, the
  * object being read, the entry's key, and `1`, so a schema that accepts
  * `undefined` can tell a key that is missing from one that is there.
- * `nullable`, `lazy`, `union`, `pipe`, and `message` pass the object and the
- * key on to what they hold as the entry, and only `message` passes the third,
- * which says that what it holds is the entry itself. Every other call gives
- * the first two only, and a `run` that takes only those works as an entry.
+ * `nullable`, `union`, `memo_union`, and `message` pass the object and the
+ * key on to what they hold, and a `pipe` to its first schema, only to a `run`
+ * that declares more than two parameters or to a `lazy`, so a `run` that
+ * reads them declares them as plain parameters. A `lazy` passes on what it
+ * was called with. A `pipe` that starts with an `optional` reads the key
+ * itself and passes them to none. `flavor`, `brand`, and `meta` return a
+ * schema with the same `run`. Only `message` passes the third, which says
+ * that what it holds is the entry itself. Every other call gives the first
+ * two only, and a `run` that takes only those works as an entry.
  */
 export interface Schema<
 	TOutput = unknown,
@@ -161,8 +176,10 @@ export type AnySchema = Schema<any, any, string, any>;
  * with their schema under `schema`. The object schemas have their entries, and
  * `object_with_rest` has an object with them under `entries`.
  *
- * `message`, `flavor`, and `brand` have no kind of their own: what they
- * return has the `kind` and `def` of the schema they were given.
+ * `message`, `flavor`, `brand`, and `meta` have no kind of their own: what
+ * they return has the `kind` and `def` of the schema they were given. Nor do
+ * `memo_union`, which is a `union`, `void`, a `literal` of `undefined`, and
+ * `check_at`, a `check`.
  *
  * A schema of a kind defined outside this module is typed by adding its
  * entry through declaration merging, which adds it to `SchemaNode` too.
@@ -495,8 +512,13 @@ export type SchemaStripObjectInput<T extends SchemaEntries> = T extends unknown
 		: SchemaObjectInput<T>
 	: never;
 
+/**
+ * What `parse` returns: the output of a value that matches, or the issues of
+ * one that doesn't, the first hundred, told apart by `ok`.
+ */
 export type SchemaResult<T> = { ok: true; value: T } | { ok: false; issues: Array<SchemaIssue> };
 
+/** A value `literal` and `one_of` match: any primitive but a symbol. */
 export type SchemaLiteral = string | number | bigint | boolean | null | undefined;
 
 //
@@ -550,6 +572,8 @@ const MAX_ISSUES = 100;
 /**
  * Records an issue. Returns `value` so a `run` can fail in expression position.
  *
+ * @param ctx - the state of the parse the failure is reported to
+ * @param kind - the issue's `kind`: the schema's, or `missing_key` or `unknown_key`
  * @param value - the value that failed, which the issue names the type of and doesn't hold
  * @param expected - describes what was expected, defaulting to `kind`
  * @mutates ctx - increments `ctx.fails`, and outside probe mode, for the first hundred failures of a parse, pushes to `ctx.issues`, creating it on the first
@@ -832,6 +856,7 @@ export interface BigintSchema extends Schema<bigint, bigint, 'bigint', undefined
 /** The type of `unknown`. */
 export interface UnknownSchema extends Schema<unknown, unknown, 'unknown', undefined> {}
 
+/** Matches a string. */
 export const string: StringSchema = {
 	kind: 'string',
 	def: undefined,
@@ -857,12 +882,14 @@ export const number: NumberSchema = {
 	run: (value, ctx) => (Number.isFinite(value) ? value : fail(ctx, 'number', value))
 };
 
+/** Matches `true` and `false`. */
 export const boolean: BooleanSchema = {
 	kind: 'boolean',
 	def: undefined,
 	run: (value, ctx) => (typeof value === 'boolean' ? value : fail(ctx, 'boolean', value))
 };
 
+/** Matches a bigint, which JSON has no form of: `to_json_schema` refuses it. */
 export const bigint: BigintSchema = {
 	kind: 'bigint',
 	def: undefined,
@@ -877,11 +904,11 @@ export const bigint: BigintSchema = {
  * `missing_key`. Write `optional(unknown)` to let the key be missing.
  *
  * It tells the two apart by the object and key the object schema hands it,
- * which reach it as the entry itself and through `flavor`, `brand`, `message`,
- * `nullable`, `lazy`, an option of a `union`, and the first schema of a
- * `pipe`. Anywhere else it is told nothing of a key and accepts `undefined`:
- * at the top level, as an array's item, as a record's value, and as a step
- * of a `pipe` after the first. Under a `union` whose first option to match a
+ * which reach it as the entry itself and through `flavor`, `brand`, `meta`,
+ * `message`, `nullable`, `lazy`, an option of a `union` or a `memo_union`, and
+ * the first schema of a `pipe`. Anywhere else it is told nothing of a key and
+ * accepts `undefined`: at the top level, as an array's item, as a record's
+ * value, and as a step of a `pipe` after the first. Under a `union` whose first option to match a
  * missing key after it fills the key in, as a `with_default` does, the key
  * is optional, and it accepts the `undefined`, see `union`.
  */
@@ -1013,8 +1040,10 @@ export interface OneOfSchema<T extends ReadonlyArray<SchemaLiteral>> extends Sch
  * match each other, and `NaN` when it is among them.
  *
  * With `undefined` among `values` it needs its key as an object entry, as
- * `literal(undefined)` does. `values` are read once, when the schema is made:
- * changing the array afterwards changes `def` and not what the schema matches.
+ * `literal(undefined)` does. What it matches is read from `values` once, when
+ * the schema is made: changing the array afterwards changes `def` and not
+ * what the schema matches, though an issue's `expected` is written from the
+ * array as it is at the first failure.
  */
 // @__NO_SIDE_EFFECTS__
 export const one_of = <const T extends ReadonlyArray<SchemaLiteral>>(values: T): OneOfSchema<T> => {
@@ -1350,10 +1379,11 @@ export const message: {
 		// two closures that differ only in what they pass on, chosen once here:
 		// handing the object and the key to a `run` that doesn't take them
 		// measured slower on valid input, and so did choosing on every call
-		// and sharing the body below as one call. A `lazy` declares two
-		// parameters and passes on what it is given, so it is named. The test
-		// is written out here and in `nullable`, `union`, and `pipe`: one
-		// function for all of them measured larger in the bundle of each alone.
+		// and sharing the body below as one call, see `docs/declined.md`. A
+		// `lazy` declares two parameters and passes on what it is given, so it
+		// is named. The test is written out here and in `nullable`, `union`, and
+		// `pipe`: one function for all of them measured larger in the bundle of
+		// each alone.
 		// What this holds is the entry wherever this is, so `entry` is passed
 		// on too
 		run:
@@ -1933,7 +1963,8 @@ export const array = <T extends Schema>(schema: T): ArraySchema<T> => ({
 			} else if (output) output[i] = v;
 			else if (!Object.is(v, input)) {
 				// one allocation of the whole length, where a prefix would be regrown,
-				// with both bounds given: the no-argument form measured slower on the
+				// with both bounds given: the no-argument form would copy items past
+				// the length read, which no schema ran, and measured slower on the
 				// valid path
 				output = value.slice(0, length);
 				output[i] = v;
@@ -2355,14 +2386,15 @@ export const pipe: SchemaPipeFactory = (
 		kind: 'pipe',
 		// the overloads take any schema, and `def` is typed as the contract has it
 		def: schemas as Array<SchemaNode>,
-		// three closures chosen once here, as in `message`. The first is of a
-		// pipe that starts with an `optional`: as the entry itself, a key that
-		// isn't in the object is missing, so it gives `undefined`, which keeps
-		// the key out, and nothing runs. Not the value it was handed, which is
-		// `undefined` for every object but a `Proxy` that says the key is
-		// missing and gives a value for it, and which would reach the output
-		// unchecked. It shares the steps with the third, which a pipe it starts
-		// with is called with
+		// three closures chosen once here, as in `message`: one for a pipe that
+		// starts with an `optional`, one that passes the object and the key on to
+		// its first schema, and `run`, the closure of two. The one for an
+		// `optional`: as the entry itself, a key that isn't in the object is
+		// missing, so it gives `undefined`, which keeps the key out, and nothing
+		// runs. Not the value it was handed, which is `undefined` for every object
+		// but a `Proxy` that says the key is missing and gives a value for it, and
+		// which would reach the output unchecked. It shares the steps with `run`,
+		// which a pipe it starts with is called with
 		run:
 			first.kind === 'optional'
 				? (value, ctx, parent, key, entry) =>
@@ -2406,6 +2438,13 @@ export const pipe: SchemaPipeFactory = (
  */
 export type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 
+/**
+ * Fails a value whose `length` is less than `min`: of a string its UTF-16
+ * code units, and of an array its items. In a `pipe` its output is the type
+ * of the step before it.
+ *
+ * @param min - the least length that passes
+ */
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
@@ -2421,6 +2460,12 @@ export const min_length = <T extends { length: number }>(
 	};
 };
 
+/**
+ * Fails a value whose `length` is more than `max`, as `min_length` reads it.
+ * In a `pipe` its output is the type of the step before it.
+ *
+ * @param max - the greatest length that passes
+ */
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
@@ -2436,6 +2481,12 @@ export const max_length = <T extends { length: number }>(
 	};
 };
 
+/**
+ * Fails a number or a bigint that is not `>= min`, so `NaN` fails. In a
+ * `pipe` its output is the type of the step before it.
+ *
+ * @param min - the least value that passes, a bigint for a bigint and a number for a number
+ */
 // @__NO_SIDE_EFFECTS__
 export const min_value = <T extends number | bigint>(
 	min: T extends bigint ? bigint : number
@@ -2449,6 +2500,12 @@ export const min_value = <T extends number | bigint>(
 	};
 };
 
+/**
+ * Fails a number or a bigint that is not `<= max`, so `NaN` fails. In a
+ * `pipe` its output is the type of the step before it.
+ *
+ * @param max - the greatest value that passes, a bigint for a bigint and a number for a number
+ */
 // @__NO_SIDE_EFFECTS__
 export const max_value = <T extends number | bigint>(
 	max: T extends bigint ? bigint : number
@@ -2494,6 +2551,7 @@ export const safe_integer: SchemaRefinement<number, number, 'safe_integer', unde
  * and time in UTC, use `uuid` or `iso_datetime`, which it writes.
  *
  * @param pattern - must not have the `g` or `y` flag, whose `lastIndex` state would leak between calls
+ * @param expected - describes what was expected, defaulting to the pattern as `String` writes it
  */
 // @__NO_SIDE_EFFECTS__
 export const regex = <T extends string>(
@@ -2592,6 +2650,9 @@ export const to_lower_case: SchemaAction<string, string, 'to_lower_case', undefi
  * a `string`. Outside a `pipe` it takes what `fn` does.
  *
  * `to_schema_json` refuses it, as it holds a function.
+ *
+ * @param fn - returns `false` for a value that fails
+ * @param expected - describes what was expected, defaulting to `'check'`
  */
 // @__NO_SIDE_EFFECTS__
 export const check = <V extends T, T = V>(
@@ -2703,7 +2764,13 @@ export const check_at: {
 };
 
 /**
- * Replaces the value with the result of `fn`.
+ * Replaces the value with what `fn` returns, and reports no failure. It is an
+ * action that changes the value, so not a refinement: in a `pipe` the steps
+ * after it are given what `fn` returns, and the output is typed from it.
+ *
+ * `to_schema_json` refuses it, as it holds a function.
+ *
+ * @param fn - given the value, and returns the output
  */
 // @__NO_SIDE_EFFECTS__
 export const transform = <T, O>(
