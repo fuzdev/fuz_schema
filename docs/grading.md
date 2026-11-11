@@ -13,6 +13,7 @@ npm run grade -- --no-process                   # skip retained heap and cold st
 npm run grade -- --class correctness            # price the bytes as a fix of correctness
 npm run grade -- --class security               # price the bytes as a fix of security
 npm run grade -- --class feature                # price the bytes as a new export
+npm run grade -- --replay .gro/grade            # read a finished grade again, measuring nothing
 ```
 
 `grade` compares a version of `schema.ts`, the working tree's unless
@@ -82,9 +83,24 @@ When a change targets a path no case isolates, add the case first.
 | `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, `correctness`, `security`, or `feature`, [below](#bytes)              |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
 | `--no-process`               | off                            | skip retained heap and cold start, and with them the verdict of rule 9                                                         |
+| `--replay <dir>`             | none                           | measure nothing: read the grade whose record and jobs are in this directory again, [below](#replay)                            |
 
 The exit code is 0 whatever the verdicts, and nonzero only when the grade
 could not run.
+
+### Replay
+
+A grade writes what it is and what it measured but its jobs to
+`.gro/grade/record.json`: its args and setup, the cases and which of them ran
+alone and apart, the bundles, the retained heap, cold start, and the number
+of each job's files in `.gro/grade/jobs/`, by what the job was.
+`--replay <dir>` reads a directory that holds a `record.json` and a `jobs/`
+beside it, prints the verdict and the tables, and writes the report to
+`report_replay.json` there, starting no process. It reads by the rules as
+they are in the working tree, so a grade can be read again after a rule
+changes, and its report is the grade's own where the rules are the same.
+`src/benchmarks/grade_read.ts` is the reading, which `src/test/grade_read.test.ts`
+holds to grades made up for it.
 
 The grader builds the schemas of its own args with the working tree's
 `schema.ts` and `meta.ts`, whatever `--new-file` names: a working tree whose
@@ -94,7 +110,7 @@ misreads its args.
 ## How it measures
 
 **Instances.** A timing process of `matrix` or `alone` loads each version
-`INSTANCES` times over (`grade.ts`), as module instances with their own
+`INSTANCES` times over (`grade_plan.ts`), as module instances with their own
 functions. Two instances of one file don't read the same. On a case here and
 there one settles several percent from another, sometimes more than a tenth,
 and stays there for the life of the process, and the next process draws again.
@@ -192,7 +208,7 @@ any other.
   in both versions alike, with nothing left of what the `lazy` cost. In its
   own instance it changes what the process shares and leaves the timed
   functions having run one case.
-- **The default cases**, `APART_CASES` in `grade.ts`, are mostly ones the
+- **The default cases**, `APART_CASES` in `grade_plan.ts`, are mostly ones the
   engine folds whole, each of another construction. A folded case is where
   shared state shows, as little else is left of the parse: the `lazy` above
   nearly doubled an array of strings and left a flat object where it was. One
