@@ -67,8 +67,9 @@ describe('pipe and actions', () => {
 		assert.strictEqual(s.parse_or_throw(Length, 'abc'), 3);
 	});
 
-	test('transform ignores the context argument', () => {
-		assert.strictEqual(s.parse_or_throw(s.pipe(s.string, s.transform(parseInt)), '11'), 11);
+	test('transform hands its function the value alone', () => {
+		const count = s.transform((...args: Array<unknown>) => args.length);
+		assert.strictEqual(s.parse_or_throw(s.pipe(s.string, count), '11'), 1);
 	});
 
 	// KNOWN: an action used as a schema itself, outside a `pipe`, is handed the

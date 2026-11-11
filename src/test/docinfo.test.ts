@@ -5,6 +5,7 @@ import * as v from 'valibot';
 import * as s from '#lib/schema.ts';
 import * as docinfo_valibot from '../benchmarks/docinfo/docinfo_valibot.ts';
 import { create_docinfo } from '../benchmarks/docinfo/docinfo_fuz_schema.ts';
+import { walk } from './harvest_test_helpers.ts';
 
 interface DocinfoFixture {
 	name: string;
@@ -21,21 +22,6 @@ const library: Array<Record<string, unknown>> = JSON.parse(
 ).modules;
 
 const docinfo = create_docinfo(s);
-
-// every object and array in `value`, with the keys that lead to it
-const walk = (
-	value: unknown,
-	path: Array<PropertyKey> = [],
-	found: Array<{ at: any; path: Array<PropertyKey> }> = []
-): Array<{ at: any; path: Array<PropertyKey> }> => {
-	if (value !== null && typeof value === 'object') {
-		found.push({ at: value, path });
-		for (const [key, child] of Object.entries(value)) {
-			walk(child, [...path, Array.isArray(value) ? Number(key) : key], found);
-		}
-	}
-	return found;
-};
 
 // a value of each JSON type but an array: valibot's `strictObject` takes an
 // array for an object and reports its missing keys, where this library

@@ -5,7 +5,7 @@ import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import { to_standard_schema } from '#lib/standard_schema.ts';
-import { issues_of } from './schema_test_helpers.ts';
+import { assert_schema_error, issues_of } from './schema_test_helpers.ts';
 
 // a revoked `Proxy` throws on `Array.isArray`, which `fail` names `received` with and the
 // containers check first: it is never accepted, only thrown on, see docs/declined.md
@@ -84,17 +84,12 @@ describe('a revoked Proxy', () => {
 describe('parse_or_throw', () => {
 	test('throws SchemaError listing every issue', () => {
 		const O = s.strip_object({ a: s.string, b: s.array(s.number) });
-		try {
-			s.parse_or_throw(O, { a: 1, b: [1, null] });
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.strictEqual(error.issues.length, 2);
-			assert.strictEqual(
-				error.message,
-				'a: expected string, received number\nb.1: expected number, received null'
-			);
-		}
+		const error = assert_schema_error(() => s.parse_or_throw(O, { a: 1, b: [1, null] }));
+		assert.strictEqual(error.issues.length, 2);
+		assert.strictEqual(
+			error.message,
+			'a: expected string, received number\nb.1: expected number, received null'
+		);
 	});
 });
 
@@ -205,26 +200,14 @@ describe('issues', () => {
 		);
 		assert(!unmatched.ok);
 		assert.strictEqual(unmatched.issues.length, 100);
-		try {
-			s.parse_or_throw(S, input);
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.strictEqual(error.issues.length, 100);
-			assert.deepEqual(error.issues[99]!.path, ['b', 'p']);
-		}
+		const error = assert_schema_error(() => s.parse_or_throw(S, input));
+		assert.strictEqual(error.issues.length, 100);
+		assert.deepEqual(error.issues[99]!.path, ['b', 'p']);
 	});
 
 	test("a SchemaError's message lists the first ten issues and counts the rest", () => {
-		const message_of = (count: number): string => {
-			try {
-				s.parse_or_throw(s.array(s.string), Array(count).fill(1));
-			} catch (error) {
-				assert(error instanceof s.SchemaError);
-				return error.message;
-			}
-			throw Error('expected a throw');
-		};
+		const message_of = (count: number): string =>
+			assert_schema_error(() => s.parse_or_throw(s.array(s.string), Array(count).fill(1))).message;
 		const lines = (count: number): Array<string> =>
 			Array.from({ length: count }, (_, i) => `${i}: expected string, received number`);
 		assert.deepEqual(message_of(9).split('\n'), lines(9));
@@ -234,15 +217,12 @@ describe('issues', () => {
 		assert.deepEqual(message_of(150).split('\n'), [...lines(10), 'and 140 more']);
 		// a long key many issues share is in ten lines, not one per issue
 		const key = 'k'.repeat(10_000);
-		try {
-			s.parse_or_throw(s.record(s.array(s.string)), { [key]: Array(100).fill(1) });
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.strictEqual(error.issues.length, 100);
-			assert.isBelow(error.message.length, 11 * (key.length + 40));
-			assert.strictEqual(error.message.split('\n').length, 11);
-		}
+		const error = assert_schema_error(() =>
+			s.parse_or_throw(s.record(s.array(s.string)), { [key]: Array(100).fill(1) })
+		);
+		assert.strictEqual(error.issues.length, 100);
+		assert.isBelow(error.message.length, 11 * (key.length + 40));
+		assert.strictEqual(error.message.split('\n').length, 11);
 		// one issue is its line alone
 		assert.strictEqual(
 			new s.SchemaError(issues_of(s.string, 1)).message,
@@ -251,21 +231,18 @@ describe('issues', () => {
 	});
 
 	test('a SchemaError thrown by parse_or_throw counts every failure, and holds the hundred issues', () => {
-		try {
-			s.parse_or_throw(s.array(s.string), Array(500).fill(1));
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.strictEqual(error.issues.length, 100);
-			assert.strictEqual(error.message.split('\n').at(-1), 'and 490 more');
-			// the count is in the message alone
-			assert.deepEqual(
-				Reflect.ownKeys(error)
-					.map(String)
-					.sort((a, b) => a.localeCompare(b)),
-				['issues', 'message', 'name', 'stack']
-			);
-		}
+		const error = assert_schema_error(() =>
+			s.parse_or_throw(s.array(s.string), Array(500).fill(1))
+		);
+		assert.strictEqual(error.issues.length, 100);
+		assert.strictEqual(error.message.split('\n').at(-1), 'and 490 more');
+		// the count is in the message alone
+		assert.deepEqual(
+			Reflect.ownKeys(error)
+				.map(String)
+				.sort((a, b) => a.localeCompare(b)),
+			['issues', 'message', 'name', 'stack']
+		);
 		// `parse` is as it was: the hundred issues, and no count
 		const result = s.parse(s.array(s.string), Array(500).fill(1));
 		assert(!result.ok);
@@ -301,18 +278,13 @@ describe('issues', () => {
 			issues_of(Node, input).map((i) => i.path),
 			expected
 		);
-		try {
-			s.parse_or_throw(Node, input);
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.deepEqual(
-				error.issues.map((i) => i.path),
-				expected
-			);
-			// the message is written from the paths as they are returned
-			assert.strictEqual(error.message, error.issues.map(s.format_issue).join('\n'));
-		}
+		const error = assert_schema_error(() => s.parse_or_throw(Node, input));
+		assert.deepEqual(
+			error.issues.map((i) => i.path),
+			expected
+		);
+		// the message is written from the paths as they are returned
+		assert.strictEqual(error.message, error.issues.map(s.format_issue).join('\n'));
 		// a function under the spine is handed the path below it
 		const seen: Array<Array<PropertyKey>> = [];
 		const Labeled = s.object({
@@ -665,19 +637,14 @@ describe('issues', () => {
 	});
 
 	test('a SchemaError has its issues and nothing else of its own', () => {
-		try {
-			s.parse_or_throw(s.string, 1);
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.deepEqual(
-				Reflect.ownKeys(error)
-					.map(String)
-					.sort((a, b) => a.localeCompare(b)),
-				['issues', 'message', 'name', 'stack']
-			);
-			assert.strictEqual(error.cause, undefined);
-		}
+		const error = assert_schema_error(() => s.parse_or_throw(s.string, 1));
+		assert.deepEqual(
+			Reflect.ownKeys(error)
+				.map(String)
+				.sort((a, b) => a.localeCompare(b)),
+			['issues', 'message', 'name', 'stack']
+		);
+		assert.strictEqual(error.cause, undefined);
 	});
 
 	test('a message function can put the value in an issue, and only it can', () => {
@@ -764,17 +731,12 @@ describe('format_issue', () => {
 	test('a key cannot add a line to a SchemaError', () => {
 		const forged = 'a: expected string, received number\nb';
 		const input = JSON.parse(JSON.stringify({ [forged]: 1, c: 2 }));
-		try {
-			s.parse_or_throw(s.object({}), input);
-			assert.fail('expected a throw');
-		} catch (error) {
-			assert(error instanceof s.SchemaError);
-			assert.strictEqual(error.issues.length, 2);
-			assert.deepEqual(error.message.split('\n'), [
-				'"a: expected string, received number\\nb": expected no unknown keys, received number',
-				'c: expected no unknown keys, received number'
-			]);
-		}
+		const error = assert_schema_error(() => s.parse_or_throw(s.object({}), input));
+		assert.strictEqual(error.issues.length, 2);
+		assert.deepEqual(error.message.split('\n'), [
+			'"a: expected string, received number\\nb": expected no unknown keys, received number',
+			'c: expected no unknown keys, received number'
+		]);
 	});
 
 	test('uses the text set by message as it is', () => {

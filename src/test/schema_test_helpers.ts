@@ -8,3 +8,15 @@ export const issues_of = (schema: s.AnySchema, value: unknown): Array<s.SchemaIs
 	assert(!result.ok);
 	return result.issues;
 };
+
+/** Calls `fn`, asserts it throws a `SchemaError`, and returns the error. */
+export const assert_schema_error = (fn: () => unknown): s.SchemaError => {
+	let thrown: unknown;
+	try {
+		fn();
+	} catch (error) {
+		thrown = error;
+	}
+	assert(thrown instanceof s.SchemaError, 'expected a SchemaError to be thrown');
+	return thrown;
+};

@@ -3,6 +3,7 @@ import { describe, test, assert, expectTypeOf } from 'vitest';
 import * as s from '#lib/schema.ts';
 import { meta, get_meta, type SchemaMeta } from '#lib/meta.ts';
 import type * as Meta from '#lib/meta.ts';
+import { issues_of } from './schema_test_helpers.ts';
 
 // how a consumer adds its own keys
 declare module '#lib/meta.ts' {
@@ -10,12 +11,6 @@ declare module '#lib/meta.ts' {
 		test_aliases?: Array<string>;
 	}
 }
-
-const issues_of = (schema: s.AnySchema, value: unknown): Array<s.SchemaIssue> => {
-	const result = s.parse(schema, value);
-	assert(!result.ok);
-	return result.issues;
-};
 
 describe('meta', () => {
 	test('a copy of unknown needs its key as an entry, as unknown does', () => {

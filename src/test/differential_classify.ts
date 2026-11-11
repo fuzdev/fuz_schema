@@ -54,7 +54,13 @@ import {
 	type ConformanceLibName,
 	type ConformanceParsed
 } from './conformance_adapters.ts';
-import { render_parsed, render_value, render_whole } from './conformance_test_helpers.ts';
+import {
+	is_index,
+	is_object,
+	render_parsed,
+	render_value,
+	render_whole
+} from './conformance_test_helpers.ts';
 import type { ConformanceSidesRow } from './conformance_tables.ts';
 import {
 	build_spec,
@@ -96,8 +102,6 @@ import {
 	holder_returned,
 	holds_no_proto,
 	is_bare_transform,
-	is_index,
-	is_object,
 	left_unread,
 	path_text,
 	reaches_check,

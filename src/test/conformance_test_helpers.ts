@@ -56,7 +56,8 @@ export const render_value = (value: unknown): string => {
 	);
 };
 
-const is_index = (key: PropertyKey): boolean => typeof key === 'string' && /^\d+$/.test(key);
+/** Whether `key` is the key of an item of an array. */
+export const is_index = (key: PropertyKey): boolean => typeof key === 'string' && /^\d+$/.test(key);
 
 /**
  * Writes what an object is past its keys and values: its prototype, when that
@@ -133,7 +134,9 @@ export interface ConformanceRow {
 	informational: Partial<Record<InformationalLibName, string>>;
 }
 
-const is_object = (value: unknown): value is object => typeof value === 'object' && value !== null;
+/** Whether `value` is an object or an array, and not `null`. */
+export const is_object = (value: unknown): value is object =>
+	typeof value === 'object' && value !== null;
 
 const run_one = (
 	lib: Partial<ConformanceLib>,

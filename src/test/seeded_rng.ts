@@ -29,3 +29,11 @@ export const create_seeded_rng = (seed: number): SeededRng => {
 		pick: <T>(items: ReadonlyArray<T>): T => items[Math.floor(next() * items.length)]!
 	};
 };
+
+/** Shuffles `list` in place, drawing from `rng`. */
+export const seeded_shuffle = <T>(rng: SeededRng, list: Array<T>): void => {
+	for (let i = list.length - 1; i > 0; i--) {
+		const j = rng.int(i + 1);
+		[list[i], list[j]] = [list[j]!, list[i]!];
+	}
+};

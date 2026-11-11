@@ -17,7 +17,7 @@ import {
 } from './conformance_adapters.ts';
 import { ConformanceList, ConformancePoint } from './conformance_cases.ts';
 import { render_parsed, render_value } from './conformance_test_helpers.ts';
-import type { SeededRng } from './seeded_rng.ts';
+import { seeded_shuffle, type SeededRng } from './seeded_rng.ts';
 
 //
 // Schemas
@@ -841,13 +841,6 @@ const dedupe = (list: DifferentialEntries): DifferentialEntries => {
 	return list.filter(([key]) => !seen.has(key) && !!seen.add(key));
 };
 
-const shuffle = (rng: SeededRng, list: Array<unknown>): void => {
-	for (let i = list.length - 1; i > 0; i--) {
-		const j = rng.int(i + 1);
-		[list[i], list[j]] = [list[j], list[i]];
-	}
-};
-
 // what an object input is past its own enumerable keys, now and then
 const vary_object = (rng: SeededRng, input: DifferentialInput & { t: 'obj' }): void => {
 	if (!input.proto.length) {
@@ -885,7 +878,7 @@ const gen_object_input = (
 	if (rng.chance(0.2))
 		own.push([rng.pick(EXTRA_KEYS), rest ? gen_input(rng, rest, depth + 1) : edge(rng)]);
 	if (rng.chance(0.08)) proto.push([rng.pick(EXTRA_KEYS), edge(rng)]);
-	if (rng.chance(0.1)) shuffle(rng, own);
+	if (rng.chance(0.1)) seeded_shuffle(rng, own);
 	const input = obj_in(dedupe(own), dedupe(proto)) as DifferentialInput & { t: 'obj' };
 	vary_object(rng, input);
 	return input;

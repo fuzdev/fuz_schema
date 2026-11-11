@@ -21,7 +21,7 @@
 
 import * as s from '#lib/schema.ts';
 import { SCHEMA_JSON_MAX_DEPTH, to_schema_json } from '#lib/schema_json.ts';
-import { create_seeded_rng, type SeededRng } from '../../seeded_rng.ts';
+import { create_seeded_rng, seeded_shuffle, type SeededRng } from '../../seeded_rng.ts';
 import type { JsonFixture, JsonFixtureText } from './json_test_helpers.ts';
 
 /** The cases a generated group has unless it is asked for another number. */
@@ -432,13 +432,6 @@ const object_text = (t: TextState, pairs: Array<[string, string]>): string =>
 	ws(t) +
 	'}';
 
-const shuffle = <T>(rng: SeededRng, list: Array<T>): void => {
-	for (let i = list.length - 1; i > 0; i--) {
-		const j = rng.int(i + 1);
-		[list[i], list[j]] = [list[j]!, list[i]!];
-	}
-};
-
 const wrong_text = (t: TextState): string => {
 	if (t.rng.chance(0.1)) {
 		const depth = t.rng.pick([10, 60, 120]);
@@ -493,7 +486,7 @@ const entries_text = (
 		// an extra key that an entry has is not written twice by chance
 		if (!pairs.some(([k]) => k === key)) pairs.push([key, any_text(t, depth + 1)]);
 	}
-	if (t.rng.chance(0.3)) shuffle(t.rng, pairs);
+	if (t.rng.chance(0.3)) seeded_shuffle(t.rng, pairs);
 	if (pairs.length && t.rng.chance(0.06)) {
 		const [key, value] = t.rng.pick(pairs);
 		if (t.rng.chance(0.5)) {

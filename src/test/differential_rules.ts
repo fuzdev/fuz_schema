@@ -9,6 +9,8 @@
 
 import type { ConformanceParsed } from './conformance_adapters.ts';
 import {
+	is_index,
+	is_object,
 	render_parsed,
 	render_shape,
 	render_value,
@@ -26,10 +28,6 @@ import {
 	type DifferentialResult,
 	type DifferentialSpec
 } from './differential_generate.ts';
-
-/** Whether `value` is an object or an array, and not `null`. */
-export const is_object = (value: unknown): value is object =>
-	typeof value === 'object' && value !== null;
 
 /**
  * Every object reachable from `value` through its own keys and its prototypes,
@@ -49,9 +47,6 @@ export const collect_input_objects = (
 	}
 	return found;
 };
-
-/** Whether `key` is the key of an item of an array. */
-export const is_index = (key: PropertyKey): boolean => typeof key === 'string' && /^\d+$/.test(key);
 
 //
 // Rules

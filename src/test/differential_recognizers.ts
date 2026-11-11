@@ -9,7 +9,7 @@
  * @module
  */
 
-import { render_shape, render_value } from './conformance_test_helpers.ts';
+import { is_index, is_object, render_shape, render_value } from './conformance_test_helpers.ts';
 import {
 	SIDES,
 	type ConformanceDifferencesRow,
@@ -32,8 +32,6 @@ import {
 	RENAMED_PROTO,
 	WRAPPERS,
 	is_bare_transform,
-	is_index,
-	is_object,
 	names_entry,
 	rewrite_input,
 	rewrite_missing_keys,

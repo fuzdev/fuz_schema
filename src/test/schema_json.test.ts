@@ -346,7 +346,7 @@ describe('to_schema_json', () => {
 });
 
 describe('to_schema_json refuses', () => {
-	const refuses = (schema: () => s.AnySchema, message: string): void => {
+	const assert_refuses = (schema: () => s.AnySchema, message: string): void => {
 		try {
 			to_schema_json(schema());
 		} catch (error) {
@@ -358,11 +358,11 @@ describe('to_schema_json refuses', () => {
 	};
 
 	test('kinds that hold a JavaScript value', () => {
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.string, s.regex(/a/)),
 			'cannot serialize `regex` at /schema/def/1: it holds a JavaScript value and is not portable'
 		);
-		refuses(
+		assert_refuses(
 			() =>
 				s.object({
 					a: s.pipe(
@@ -373,7 +373,7 @@ describe('to_schema_json refuses', () => {
 			'cannot serialize `check` at /schema/def/a/def/1: it holds a JavaScript value and is not portable'
 		);
 		// a `check_at` is a `check`
-		refuses(
+		assert_refuses(
 			() =>
 				s.pipe(
 					s.array(s.number),
@@ -381,7 +381,7 @@ describe('to_schema_json refuses', () => {
 				),
 			'cannot serialize `check` at /schema/def/1: it holds a JavaScript value and is not portable'
 		);
-		refuses(
+		assert_refuses(
 			() =>
 				s.array(
 					s.pipe(
@@ -391,17 +391,17 @@ describe('to_schema_json refuses', () => {
 				),
 			'cannot serialize `transform` at /schema/def/def/1: it holds a JavaScript value and is not portable'
 		);
-		refuses(
+		assert_refuses(
 			() => s.regex(/a/),
 			'cannot serialize `regex` at /schema: it holds a JavaScript value and is not portable'
 		);
 		// not among the kinds the crate refuses by name: it refuses it as one it doesn't know
 		let made = 0;
-		refuses(
+		assert_refuses(
 			() => s.object({ a: s.nullable(s.with_default_fn(s.array(s.string), () => (made++, []))) }),
 			'cannot serialize `with_default_fn` at /schema/def/a/def/schema: it holds a JavaScript value and is not portable'
 		);
-		refuses(
+		assert_refuses(
 			() => s.with_default_fn(s.number, () => 1),
 			'cannot serialize `with_default_fn` at /schema: it holds a JavaScript value and is not portable'
 		);
@@ -410,39 +410,39 @@ describe('to_schema_json refuses', () => {
 
 	test('an object_with_rest, which the crate does not carry', () => {
 		// not among the kinds the crate refuses by name: it refuses it as one it doesn't know
-		refuses(
+		assert_refuses(
 			() => s.object_with_rest({ a: s.string }, s.number),
 			'cannot serialize `object_with_rest` at /schema: it is not portable, as the Rust crate does not carry it'
 		);
-		refuses(
+		assert_refuses(
 			() => s.array(s.object_with_rest({}, s.string)),
 			'cannot serialize `object_with_rest` at /schema/def: it is not portable, as the Rust crate does not carry it'
 		);
 	});
 
 	test('literals JSON does not hold', () => {
-		refuses(
+		assert_refuses(
 			() => s.literal(undefined),
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not undefined'
 		);
 		// `void` is that literal
-		refuses(
+		assert_refuses(
 			() => s.void,
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not undefined'
 		);
-		refuses(
+		assert_refuses(
 			() => s.literal(1n),
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not bigint'
 		);
-		refuses(
+		assert_refuses(
 			() => s.literal(NaN),
 			'cannot serialize `literal` at /schema/def: a literal must be a string, a finite number, a boolean, or null, not NaN'
 		);
-		refuses(
+		assert_refuses(
 			() => s.one_of(['a', Infinity]),
 			'cannot serialize `literal` at /schema/def/1: a literal must be a string, a finite number, a boolean, or null, not Infinity'
 		);
-		refuses(
+		assert_refuses(
 			() => s.one_of([1, undefined]),
 			'cannot serialize `literal` at /schema/def/1: a literal must be a string, a finite number, a boolean, or null, not undefined'
 		);
@@ -451,15 +451,15 @@ describe('to_schema_json refuses', () => {
 	test('bounds that are not finite numbers', () => {
 		// made apart from the `pipe`, which would type its bound as a number
 		const bigint_bound = s.min_value(1n);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.number, bigint_bound),
 			'cannot serialize `min_value` at /schema/def/1/def: the bound is not a finite number'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.number, s.max_value(Infinity)),
 			'cannot serialize `max_value` at /schema/def/1/def: the bound is not a finite number'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.string, s.min_length(NaN)),
 			'cannot serialize `min_length` at /schema/def/1/def: the bound is not a finite number'
 		);
@@ -469,24 +469,24 @@ describe('to_schema_json refuses', () => {
 		const reason = 'a string that is not well-formed Unicode, which the crate does not read';
 		const lead = '\ud800';
 		const trail = 'a\udc00';
-		refuses(() => s.literal(lead), `cannot serialize \`literal\` at /schema/def: ${reason}`);
-		refuses(
+		assert_refuses(() => s.literal(lead), `cannot serialize \`literal\` at /schema/def: ${reason}`);
+		assert_refuses(
 			() => s.array(s.one_of(['a', trail])),
 			`cannot serialize \`literal\` at /schema/def/def/1: ${reason}`
 		);
 		for (const object of [s.object, s.loose_object, s.strip_object]) {
 			const schema = object({ a: s.string, [lead]: s.string });
-			refuses(
+			assert_refuses(
 				() => schema,
 				`cannot serialize \`${schema.kind}\` at /schema/def: an entry is named by ${reason}`
 			);
 		}
-		refuses(
+		assert_refuses(
 			() => s.variant(lead, [s.object({ [lead]: s.literal('a') })]),
 			`cannot serialize \`variant\` at /schema/def/key: its key is ${reason}`
 		);
 		for (const value of [lead, ['a', [trail]], { a: { [lead]: 1 } }, { a: [{ b: trail }] }]) {
-			refuses(
+			assert_refuses(
 				() => s.object({ a: s.with_default(s.unknown, value) }),
 				`cannot serialize \`with_default\` at /schema/def/a/def/value: the default holds ${reason}`
 			);
@@ -501,14 +501,14 @@ describe('to_schema_json refuses', () => {
 	test('a document nested deeper than the crate reads', () => {
 		let schema: s.AnySchema = s.string;
 		for (let i = 0; i < SCHEMA_JSON_MAX_DEPTH - 1; i++) schema = s.array(schema);
-		refuses(
+		assert_refuses(
 			() => schema,
 			`cannot serialize at /schema${'/def'.repeat(SCHEMA_JSON_MAX_DEPTH - 1)}: the document nests deeper than ${SCHEMA_JSON_MAX_DEPTH}, which is as deep as the crate reads`
 		);
 		// objects nest twice as fast, an entry and its schema
 		let objects: s.AnySchema = s.string;
 		for (let i = 0; i < SCHEMA_JSON_MAX_DEPTH / 2; i++) objects = s.object({ a: objects });
-		refuses(
+		assert_refuses(
 			() => objects,
 			`cannot serialize at /schema${'/def/a'.repeat((SCHEMA_JSON_MAX_DEPTH - 1) / 2)}: the document nests deeper than ${SCHEMA_JSON_MAX_DEPTH}, which is as deep as the crate reads`
 		);
@@ -516,7 +516,7 @@ describe('to_schema_json refuses', () => {
 		let value: unknown = 1;
 		for (let i = 0; i < SCHEMA_JSON_MAX_DEPTH - 3; i++) value = [value];
 		to_schema_json(s.with_default(s.unknown, value));
-		refuses(
+		assert_refuses(
 			() => s.with_default(s.unknown, [value]),
 			`cannot serialize at /schema/def/value${'/0'.repeat(SCHEMA_JSON_MAX_DEPTH - 3)}: the document nests deeper than ${SCHEMA_JSON_MAX_DEPTH}, which is as deep as the crate reads`
 		);
@@ -528,7 +528,7 @@ describe('to_schema_json refuses', () => {
 		const object: Record<string, unknown> = { a: 1 };
 		object.b = { c: object };
 		for (const value of [array, object, { a: [object] }]) {
-			refuses(
+			assert_refuses(
 				() => s.with_default(s.unknown, value),
 				`cannot serialize \`with_default\` at /schema/def/value: the default nests deeper than ${SCHEMA_JSON_MAX_DEPTH}`
 			);
@@ -554,7 +554,7 @@ describe('to_schema_json refuses', () => {
 
 	test('defaults that are not JSON', () => {
 		for (const value of [undefined, 1n, NaN, new Date(0), () => 1, [undefined], { a: undefined }]) {
-			refuses(
+			assert_refuses(
 				() => s.object({ a: s.with_default(s.unknown, value) }),
 				'cannot serialize `with_default` at /schema/def/a/def/value: the default is not a JSON value'
 			);
@@ -566,18 +566,18 @@ describe('to_schema_json refuses', () => {
 			for (const object of [s.object, s.loose_object, s.strip_object]) {
 				// computed, so that `__proto__` is an entry and not the prototype
 				const schema = object({ ok: s.string, [key]: s.unknown });
-				refuses(
+				assert_refuses(
 					() => s.array(schema),
 					`cannot serialize \`${schema.kind}\` at /schema/def/def/${key}: the entry is named like a member of Object.prototype`
 				);
 			}
 			// a `variant` with no option reads its key off the input all the same
-			refuses(
+			assert_refuses(
 				() => s.array(s.variant(key, [])),
 				'cannot serialize `variant` at /schema/def/def/key: the key is named like a member of Object.prototype'
 			);
 			// with options the key is an entry, and is refused as one
-			refuses(
+			assert_refuses(
 				() => s.variant(key, [s.object({ [key]: s.literal('a') })]),
 				`cannot serialize \`object\` at /schema/def/options/0/def/${key}: the entry is named like a member of Object.prototype`
 			);
@@ -593,37 +593,40 @@ describe('to_schema_json refuses', () => {
 	});
 
 	test('actions outside a pipe', () => {
-		refuses(
+		assert_refuses(
 			() => s.min_length(1),
 			'cannot serialize `min_length` at /schema: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.object({ 'a/b~c': s.max_value(1) }),
 			'cannot serialize `max_value` at /schema/def/a~1b~0c: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.array(s.optional(s.max_length(1))),
 			'cannot serialize `max_length` at /schema/def/def/schema: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.union([s.string, s.min_value(1)]),
 			'cannot serialize `min_value` at /schema/def/1: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.lazy(() => s.min_value(1)),
 			'cannot serialize `min_value` at /defs/$0: it means something only in a pipe'
 		);
 		// the format tests are for a string, which a bare one doesn't know it has
-		refuses(() => s.uuid, 'cannot serialize `uuid` at /schema: it means something only in a pipe');
-		refuses(
+		assert_refuses(
+			() => s.uuid,
+			'cannot serialize `uuid` at /schema: it means something only in a pipe'
+		);
+		assert_refuses(
 			() => s.object({ at: s.iso_datetime }),
 			'cannot serialize `iso_datetime` at /schema/def/at: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.union([s.string, s.uuid]),
 			'cannot serialize `uuid` at /schema/def/1: it means something only in a pipe'
 		);
-		refuses(
+		assert_refuses(
 			() => s.object({ a: s.to_lower_case }),
 			'cannot serialize `to_lower_case` at /schema/def/a: it means something only in a pipe'
 		);
@@ -631,51 +634,51 @@ describe('to_schema_json refuses', () => {
 
 	test('pipes that do not fix a type, or act on another', () => {
 		// `pipe` itself reads its first schema when it is made, so one with none is written by hand
-		refuses(
+		assert_refuses(
 			() => ({ kind: 'pipe', def: [], run: s.unknown.run }) satisfies s.SchemaNode<'pipe'>,
 			'cannot serialize `pipe` at /schema: it has no schema'
 		);
 		// the types refuse `min_length` after these, so it is cast to a schema
 		const step = s.min_length(1) as s.Schema<{ length: number }, unknown>;
 		for (const head of [s.unknown, s.boolean, s.nullable(s.string), s.record(s.string)]) {
-			refuses(
+			assert_refuses(
 				() => s.pipe(head, step),
 				'cannot serialize `pipe` at /schema/def/0: a pipe must start with a schema that fixes the type of its value'
 			);
 		}
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.string, s.string),
 			"cannot serialize `pipe` at /schema/def/1: only actions follow a pipe's first schema"
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.string, s.min_value(0) as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for strings'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.string, s.min_length(0), s.integer as any),
 			'cannot serialize `pipe` at /schema/def/2: the action is not for strings'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.number, s.max_length(1) as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.array(s.string), s.safe_integer as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for arrays'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.number, s.uuid as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.array(s.string), s.iso_datetime as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for arrays'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.number, s.to_lower_case as any),
 			'cannot serialize `pipe` at /schema/def/1: the action is not for numbers'
 		);
-		refuses(
+		assert_refuses(
 			() => s.pipe(s.uuid, s.min_length(1)),
 			'cannot serialize `pipe` at /schema/def/0: a pipe must start with a schema that fixes the type of its value'
 		);
@@ -687,12 +690,12 @@ describe('to_schema_json refuses', () => {
 			...s.variant(key, []),
 			def: { key, options }
 		});
-		refuses(
+		assert_refuses(
 			() => variant('k', [s.object({ k: s.literal('a') }), s.string]),
 			'cannot serialize `variant` at /schema/def/options/1: an option must be an object schema'
 		);
 		// one the library builds: the wrapper's `def` has a `schema`, which is a literal
-		refuses(
+		assert_refuses(
 			() => s.variant('schema', [s.optional(s.literal('a')) as any]),
 			'cannot serialize `variant` at /schema/def/options/0: an option must be an object schema'
 		);
@@ -702,13 +705,13 @@ describe('to_schema_json refuses', () => {
 			s.object({ k: s.optional(s.literal('a')) }),
 			s.object({ other: s.literal('a') })
 		]) {
-			refuses(
+			assert_refuses(
 				() => variant('k', [option]),
 				'cannot serialize `variant` at /schema/def/options/0: an option needs a `literal` entry at "k"'
 			);
 		}
 		// built by the library too, and an inherited member is not an entry
-		refuses(
+		assert_refuses(
 			() => s.variant('toString', [s.object({}) as any]),
 			'cannot serialize `variant` at /schema/def/options/0: an option needs a `literal` entry at "toString"'
 		);
@@ -717,17 +720,17 @@ describe('to_schema_json refuses', () => {
 	test('schemas that come back to themselves without reading into the value', () => {
 		const message = ': the schema comes back to itself without reading into the value';
 		const optional: s.AnySchema = s.optional(s.lazy(() => optional));
-		refuses(() => optional, 'cannot serialize `optional` at /schema' + message);
+		assert_refuses(() => optional, 'cannot serialize `optional` at /schema' + message);
 		const union: s.AnySchema = s.union([s.string, s.lazy(() => union)]);
-		refuses(() => s.array(union), 'cannot serialize `union` at /schema' + message);
+		assert_refuses(() => s.array(union), 'cannot serialize `union` at /schema' + message);
 		const self: s.AnySchema = s.lazy(() => self);
-		refuses(() => self, 'cannot serialize `lazy` at /schema' + message);
+		assert_refuses(() => self, 'cannot serialize `lazy` at /schema' + message);
 		const a: s.AnySchema = s.nullable(s.lazy(() => b));
 		const b: s.AnySchema = s.with_default(
 			s.lazy(() => a),
 			null
 		);
-		refuses(() => s.object({ a }), 'cannot serialize `with_default` at /schema' + message);
+		assert_refuses(() => s.object({ a }), 'cannot serialize `with_default` at /schema' + message);
 	});
 
 	test('schemas that come back to themselves through a container are fine', () => {
@@ -742,15 +745,15 @@ describe('to_schema_json refuses', () => {
 	test('nesting past the limit', () => {
 		let schema: s.AnySchema = s.string;
 		for (let i = 0; i <= SCHEMA_JSON_MAX_NESTING; i++) schema = s.nullable(schema);
-		refuses(
+		assert_refuses(
 			() => schema,
 			`cannot serialize \`nullable\` at /schema: more than ${SCHEMA_JSON_MAX_NESTING} wrappers, lazies, unions, and pipes around one value`
 		);
 	});
 
 	test('what is not a schema, or not a kind of the library', () => {
-		refuses(() => s.array(1 as any), 'cannot serialize at /schema/def: not a schema');
-		refuses(
+		assert_refuses(() => s.array(1 as any), 'cannot serialize at /schema/def: not a schema');
+		assert_refuses(
 			() => ({ kind: 'date', def: undefined, run: (v: unknown) => v }),
 			'cannot serialize at /schema: unknown kind "date"'
 		);
