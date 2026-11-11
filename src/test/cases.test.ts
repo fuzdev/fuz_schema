@@ -3,7 +3,6 @@ import { test, assert, describe } from 'vitest';
 import * as s from '#lib/schema.ts';
 import {
 	CASE_GROUPS,
-	CASE_PATHS,
 	create_cases,
 	to_create_case,
 	type Case,
@@ -11,6 +10,7 @@ import {
 	type SchemaLib
 } from '../benchmarks/cases.ts';
 import { build_cases } from '../benchmarks/grade_arm.ts';
+import { CASE_PATHS } from '../benchmarks/grade_job.ts';
 import { INPUT_COPIES_MAX } from '../benchmarks/inputs.ts';
 
 describe('the case matrix', () => {
@@ -78,6 +78,71 @@ describe('the case matrix', () => {
 		);
 	});
 
+	test('a case of an export a baseline may lack drops only itself from a version without it', () => {
+		// a `lazy`, a step of a `pipe`, an item of an `array`, and a function given
+		// later throw only when called, so each such case throws as it is built:
+		// otherwise a baseline without the export would fail in the middle of a
+		// grade, or the group it is in would drop with it
+		const lacking_of: Record<string, Array<string>> = {
+			memo_union: ['nested/memo_union_shared_depth_10/valid', 'create/memo_union/valid'],
+			format_issue_with_value: ['object/6_keys_all_bad_format_issue_with_value/invalid'],
+			check_at: ['each/pipe_check_at/valid', 'each/pipe_check_at_bad/invalid'],
+			void: ['each/void/valid']
+		};
+		for (const [name, lacking] of Object.entries(lacking_of)) {
+			const older: SchemaLib = { ...s, [name]: undefined };
+			const built = new Set(create_cases(older).map((c) => c.name));
+			assert.deepEqual(
+				cases.map((c) => c.name).filter((n) => !built.has(n)),
+				lacking,
+				name
+			);
+		}
+		// every export at once, as a baseline from before them all
+		const oldest: SchemaLib = {
+			...s,
+			...Object.fromEntries(Object.keys(lacking_of).map((name) => [name, undefined]))
+		};
+		const built = new Set(create_cases(oldest).map((c) => c.name));
+		assert.deepEqual(
+			cases.map((c) => c.name).filter((n) => !built.has(n)),
+			cases.map((c) => c.name).filter((n) => Object.values(lacking_of).flat().includes(n))
+		);
+		// the creations without `loose_object`, which the harvested sets need too:
+		// its own and theirs, and no other
+		const without_loose = { ...s, loose_object: undefined } as unknown as SchemaLib;
+		const created = new Set(create_cases(without_loose).map((c) => c.name));
+		assert.deepEqual(
+			cases.filter((c) => c.group === 'create' && !created.has(c.name)).map((c) => c.name),
+			['create/loose_object/valid', 'create/fuz_app_specs/valid']
+		);
+	});
+
+	test('the creation of a `memo_union` makes the union, and not a `lazy` of it', () => {
+		const created = cases.find((c) => c.name === 'create/memo_union/valid');
+		assert(created);
+		const output = created.run();
+		assert(s.is_schema(output));
+		assert.strictEqual(output.kind, 'union');
+	});
+
+	test('the copies of a tree that shares its nodes are apart, and each shares its own', () => {
+		const shared = cases.find((c) => c.name === 'nested/memo_union_shared_depth_10/valid');
+		assert(shared);
+		assert.strictEqual(shared.inputs.length, INPUT_COPIES_MAX);
+		const nodes = new Set<unknown>();
+		for (const input of shared.inputs) {
+			let node = input as { args: Array<unknown> };
+			for (let depth = 0; node.args.length; depth++) {
+				// the one below, the same object both times, and in no other copy
+				assert.strictEqual(node.args[0], node.args[1]);
+				assert(!nodes.has(node), String(depth));
+				nodes.add(node);
+				node = node.args[0] as { args: Array<unknown> };
+			}
+		}
+	});
+
 	test('a case cycles through copies of its input, distinct objects made alike', () => {
 		for (const c of cases) {
 			if (c.path === 'create') {
@@ -122,7 +187,12 @@ describe('the case matrix', () => {
 				assert.strictEqual(output === c.given(), c.path === 'identity', c.name);
 			} else {
 				assert.strictEqual(c.path, 'issues', c.name);
-				assert.strictEqual(output, undefined, c.name);
+				// a case that formats its issues gives the length of their text
+				if (c.name.includes('_format_issue')) {
+					assert(typeof output === 'number' && output > 0, c.name);
+				} else {
+					assert.strictEqual(output, undefined, c.name);
+				}
 			}
 		}
 	});

@@ -46,6 +46,7 @@
 import { readFileSync } from 'node:fs';
 
 import type * as schema_lib from '#lib/schema.ts';
+import type { CasePath } from './grade_job.ts';
 import { INPUT_COPIES_MAX, to_input_copies } from './inputs.ts';
 import { create_docinfo } from './docinfo/docinfo_fuz_schema.ts';
 import { create_repos_status } from './repos_status/repos_status_fuz_schema.ts';
@@ -85,26 +86,6 @@ type OneOfFactory = (values: ReadonlyArray<schema_lib.SchemaLiteral>) => schema_
 const to_one_of = (s: SchemaLib): OneOfFactory =>
 	'one_of' in s ? s.one_of : (s as unknown as { picklist: OneOfFactory }).picklist;
 
-/**
- * What a case's parse does:
- *
- * - `identity` - matches, and the output is the input itself
- * - `copy` - matches, and the output is another value
- * - `issues` - doesn't match, through `parse`, which builds issues
- * - `probe` - goes through `is`, which builds none, matching or not
- * - `create` - builds a schema and parses nothing, what an app pays as its
- *   modules load
- */
-export type CasePath = 'identity' | 'copy' | 'issues' | 'probe' | 'create';
-
-export const CASE_PATHS: ReadonlyArray<CasePath> = [
-	'identity',
-	'copy',
-	'issues',
-	'probe',
-	'create'
-];
-
 export interface Case {
 	name: string;
 	group: string;
@@ -121,7 +102,11 @@ export interface Case {
 	 * `to_input_copies`. A case of the `create` path has none.
 	 */
 	inputs: ReadonlyArray<unknown>;
-	/** Parses the next copy of the input, returning the output, or `undefined` when it didn't match. */
+	/**
+	 * Parses the next copy of the input, returning the output, or `undefined`
+	 * when it didn't match, but for a case that formats its issues, which
+	 * returns the length of their text.
+	 */
 	run: () => unknown;
 	/** The copy the last call of `run` was given. */
 	given: () => unknown;
@@ -580,6 +565,13 @@ const real_docinfo: CaseGroup = (s) => {
 	deepest.node.kind = 'bogus';
 	return [
 		to_case(s, 'real/docinfo_module/valid', ModuleJson, component, 'copy'),
+		// modules of other declarations than a component, each stored without
+		// its defaults and copied where they are filled in: a class beside an
+		// interface and a variable, functions with their parameters, and types
+		// and interfaces, whose members fill theirs
+		to_case(s, 'real/docinfo_class_module/valid', ModuleJson, to_module('site.svelte.ts'), 'copy'),
+		to_case(s, 'real/docinfo_functions_module/valid', ModuleJson, to_module('tome.ts'), 'copy'),
+		to_case(s, 'real/docinfo_types_module/valid', ModuleJson, to_module('dialog.ts'), 'copy'),
 		// the same as it is once read, with nothing left to fill in
 		to_case(s, 'real/docinfo_module_full/valid', ModuleJson, to_json(parsed.value), 'identity'),
 		to_case(s, 'real/docinfo_types/valid', s.array(TypeJson), types, 'identity'),
@@ -745,8 +737,11 @@ const real_fuz_app: CaseGroup = (s) => {
 			notification.params,
 			'identity'
 		),
+		// a list asked for with no params, which a client that wants every cell
+		// sends: the server's input fills its default in, a fresh object a call
+		to_case(s, 'real/fuz_app_cell_list_input_absent/valid', app.CellListInput, undefined, 'copy'),
 		// what a server asks of every frame before it reads one, through `is`
-		to_probe_case(s, 'fixed/fuz_app_jsonrpc_is/valid', app.JsonrpcRequest, list_request, true),
+		to_probe_case(s, 'real/fuz_app_jsonrpc_is/valid', app.JsonrpcRequest, list_request, true),
 		// a bearer token's scope as its row holds it, read on every request it makes
 		to_case(
 			s,
@@ -811,7 +806,9 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/;
 // pays it once a schema, as its modules load, and a change that moves work
 // from the parse to the factory shows here and in no parse
 const create: CaseGroup = (s) => [
-	to_create_case(s, 'create/string/valid', () => s.optional(s.string)),
+	to_create_case(s, 'create/optional_string/valid', () => s.optional(s.string)),
+	to_create_case(s, 'create/array/valid', () => s.array(s.string)),
+	to_create_case(s, 'create/record/valid', () => s.record(s.number)),
 	to_create_case(s, 'create/pipe/valid', () =>
 		s.pipe(s.string, s.min_length(1), s.max_length(254), s.regex(EMAIL_PATTERN))
 	),
@@ -843,6 +840,56 @@ const create: CaseGroup = (s) => [
 			meta: s.optional(to_object(s)({ views: s.number, likes: s.number }))
 		})
 	),
+	to_create_case(s, 'create/strip_object/valid', () =>
+		to_strip_object(s)({
+			id: s.number,
+			name: s.string,
+			email: s.string,
+			active: s.boolean,
+			score: s.optional(s.number),
+			role: to_one_of(s)(['member', 'admin', 'owner'])
+		})
+	),
+	// built on its own, as a baseline may lack `loose_object`
+	{
+		name: 'create/loose_object/valid',
+		build: () =>
+			to_create_case(s, 'create/loose_object/valid', () =>
+				s.loose_object({
+					id: s.number,
+					name: s.string,
+					email: s.string,
+					active: s.boolean,
+					score: s.optional(s.number),
+					role: to_one_of(s)(['member', 'admin', 'owner'])
+				})
+			)
+	},
+	// a tree as an app writes one, an object that holds itself through a `lazy`
+	to_create_case(s, 'create/lazy/valid', () => {
+		const tree: schema_lib.AnySchema = to_object(s)({
+			value: s.string,
+			children: s.array(s.lazy(() => tree))
+		});
+		return tree;
+	}),
+	// the same of a union that keeps what its options read, the union made as the
+	// case is called and not left to a `lazy`'s first parse: built on its own, as
+	// a baseline may lack `memo_union`
+	{
+		name: 'create/memo_union/valid',
+		build: () => {
+			if (!s.memo_union) throw Error('this version has no `memo_union`');
+			return to_create_case(s, 'create/memo_union/valid', () => {
+				const node: schema_lib.AnySchema = s.memo_union(
+					['a', 'b'].map((op) =>
+						to_object(s)({ args: s.array(s.lazy(() => node)), op: s.literal(op) })
+					)
+				);
+				return node;
+			});
+		}
+	},
 	to_create_case(s, 'create/union/valid', () =>
 		s.union([
 			to_object(s)({ type: s.literal('click'), x: s.number, y: s.number }),
@@ -1061,6 +1108,30 @@ const each: CaseGroup = (s) => {
 		),
 		of('pipe_string_3_actions/valid', Name, 'ada lovelace'),
 		of('pipe_number_3_actions/valid', Age, 36),
+		of('pipe_safe_integer/valid', s.pipe(s.number, s.safe_integer), 36),
+		// a check of one entry of an object, which finds the entry for its issue:
+		// built on its own, as a baseline may lack `check_at`
+		{
+			name: 'each/pipe_check_at/valid',
+			build: () => of('pipe_check_at/valid', to_check_at(s), { a: 1 })
+		},
+		// neither has a JSON form, so the items are not parsed. A `void` is built
+		// on its own, as a baseline may lack it, and an array of what a version
+		// lacks is made without a throw
+		to_case(s, 'each/bigint/valid', s.array(s.bigint), range(100).map(BigInt), 'identity'),
+		{
+			name: 'each/void/valid',
+			build: () => {
+				if (!s.void) throw Error('this version has no `void`');
+				return to_case(
+					s,
+					'each/void/valid',
+					s.array(s.void),
+					range(100).map(() => undefined),
+					'identity'
+				);
+			}
+		},
 		of(
 			'pipe_check/valid',
 			s.pipe(
@@ -1196,8 +1267,54 @@ const each: CaseGroup = (s) => {
 		of('union_3_primitives/invalid', primitives, null, 'issues'),
 		of('variant_10_unknown_kind/invalid', Shape, { kind: 'zz', value: 1 }, 'issues'),
 		// the option is found and one of its entries fails
-		of('variant_10_entry_bad/invalid', Shape, { kind: 'k9', value: 'x' }, 'issues')
+		of('variant_10_entry_bad/invalid', Shape, { kind: 'k9', value: 'x' }, 'issues'),
+		// the check fails, and its issue is at the entry it names
+		{
+			name: 'each/pipe_check_at_bad/invalid',
+			build: () => of('pipe_check_at_bad/invalid', to_check_at(s), { a: 0 }, 'issues')
+		}
 	];
+};
+
+// an object whose one entry `check_at` checks, made only by a version that has it
+const to_check_at = (s: SchemaLib): schema_lib.AnySchema => {
+	if (!s.check_at) throw Error('this version has no `check_at`');
+	return s.pipe(
+		to_object(s)({ a: s.number }),
+		s.check_at('a', (v: { a: number }) => v.a > 0)
+	);
+};
+
+// a case through `parse` of an input that fails, each of its issues formatted,
+// cycling through the copies it is given
+const to_formatting_case = (
+	s: SchemaLib,
+	name: string,
+	schema: schema_lib.AnySchema,
+	inputs: Array<unknown>,
+	format: (issue: schema_lib.SchemaIssue, input: unknown) => string
+): Case => {
+	const mask = inputs.length - 1;
+	let at = 0;
+	return {
+		name,
+		group: to_group(name),
+		realistic: false,
+		path: 'issues',
+		valid: false,
+		inputs,
+		run: () => {
+			const input = inputs[(at = (at + 1) & mask)];
+			const result = to_parse(s)(schema, input);
+			if (result.ok) return result.value;
+			// the length of the text, so what the loop is given is of the formatting
+			let length = 0;
+			for (const issue of result.issues) length += format(issue, input).length;
+			return length;
+		},
+		given: () => inputs[at],
+		ok: () => to_parse(s)(schema, inputs[0]).ok
+	};
 };
 
 // `object`, and with it everything it shares with `strip_object`
@@ -1370,6 +1487,24 @@ const object: CaseGroup = (s) => {
 			to_json(to_six(1)),
 			'issues'
 		),
+		// the same failure with each issue formatted, alone and with the value it is of
+		to_formatting_case(s, 'object/6_keys_all_bad_format_issue/invalid', O, all_bad, (issue) =>
+			s.format_issue(issue)
+		),
+		{
+			name: 'object/6_keys_all_bad_format_issue_with_value/invalid',
+			build: () => {
+				if (!s.format_issue_with_value)
+					throw Error('this version has no `format_issue_with_value`');
+				return to_formatting_case(
+					s,
+					'object/6_keys_all_bad_format_issue_with_value/invalid',
+					O,
+					all_bad,
+					s.format_issue_with_value
+				);
+			}
+		},
 		// the same failure thrown, its issues formatted into the error's message
 		{
 			name: 'object/6_keys_all_bad_throw/invalid',
@@ -1587,6 +1722,30 @@ const rest: CaseGroup = (s) => {
 	];
 };
 
+// a recursive `memo_union` as `program.ts` builds one: a node is an op and its
+// args, each a node, and its options are told apart by the op, after the args.
+// A `lazy` reads its schema only when it parses, so a version without
+// `memo_union` throws here and not at its first parse
+const create_memo_tree = (s: SchemaLib): schema_lib.AnySchema => {
+	if (!s.memo_union) throw Error('this version has no `memo_union`');
+	const node: schema_lib.AnySchema = s.lazy(() =>
+		s.memo_union(['a', 'b'].map((op) => to_object(s)({ args: s.array(node), op: s.literal(op) })))
+	);
+	return node;
+};
+
+// a node of a tree whose every level holds the one below twice, the same object
+// both times, as a parse of an expression with a shared subterm gives one
+interface SharedNode {
+	args: Array<SharedNode>;
+	op: string;
+}
+const to_shared_tree = (depth: number): SharedNode => {
+	let node: SharedNode = { args: [], op: 'b' };
+	for (let i = 0; i < depth; i++) node = { args: [node, node], op: 'b' };
+	return node;
+};
+
 const nested: CaseGroup = (s) => {
 	const to_schema = (depth: number): schema_lib.AnySchema =>
 		depth === 0 ? s.string : to_object(s)({ a: s.number, next: to_schema(depth - 1) });
@@ -1609,7 +1768,29 @@ const nested: CaseGroup = (s) => {
 			})(),
 			to_json(to_input(7, { a: 0 })),
 			'copy'
-		)
+		),
+		// a recursive `memo_union` whose second option is the one that matches, over
+		// a tree that reuses its nodes: the first option walks a node's args before
+		// it misses at its op, and the second reads what the first kept of them.
+		// Built on its own: a version without `memo_union` goes without the case
+		{
+			name: 'nested/memo_union_shared_depth_10/valid',
+			build: () =>
+				to_case(
+					s,
+					'nested/memo_union_shared_depth_10/valid',
+					create_memo_tree(s),
+					undefined,
+					'identity',
+					// each copy built apart from the others, as `to_input_copies` makes
+					// them, so no copy shares a node with another, and each keeps the
+					// nodes its own tree shares. Not through `to_input_copies`: its JSON
+					// text writes a shared node out at every place that holds it, so a
+					// copy from it would share nothing, and the text's length would cut
+					// the copies to two where the tree is a few objects
+					Array.from({ length: INPUT_COPIES_MAX }, () => to_shared_tree(10))
+				)
+		}
 	];
 };
 

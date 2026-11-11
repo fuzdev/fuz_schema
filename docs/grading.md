@@ -13,25 +13,31 @@ npm run grade -- --no-process                   # skip retained heap and cold st
 npm run grade -- --class correctness            # price the bytes as a fix of correctness
 npm run grade -- --class security               # price the bytes as a fix of security
 npm run grade -- --class feature                # price the bytes as a new export
-npm run grade -- --replay .gro/grade            # read a finished grade again, measuring nothing
+npm run grade -- --replay .gro/grade/<start>    # read a finished grade again, measuring nothing
 ```
 
 `grade` compares a version of `schema.ts`, the working tree's unless
 `--new-file` names one, with a baseline, from git or from a file. It prints
 what it expects to take before it starts, with the machine's state: Node's
 version, the load average, each CPU's clock where `/proc/cpuinfo` gives it,
-and the frequency governor and boost where `/sys` does. A timing taken under
-load reads a wider A/A. When it is done it prints the verdict first, the rule
-lines and the lists of cases slower, faster, and marked, with the machine's
-state at the end, and the tables after, and writes the whole report, every
-case's readings with it, to `.gro/grade/report.json`, and a copy named by the
-time the grade started beside it, which the next grade leaves. The report
-says what the grade ran on and with: the host, the CPU's model, Node's and
-V8's versions, the comparison libraries' and the bundler's, the commit of
-the working tree and whether it had changes, the commit `--against` resolved
-to, a hash of each version's `schema.ts` as it was loaded, the args, and when
-it started and ended. What each timing process printed, every round of every
-instance, is kept beside its job in `.gro/grade/jobs/`. Per
+and the first CPU's frequency governor, scaling driver, and
+energy-performance preference, and whether the CPUs may boost, where `/sys`
+gives them. A timing taken under load reads a wider A/A. When it is done it
+prints the verdict first, the rule lines and the lists of cases slower,
+faster, and marked, with the machine's state at the end, and the tables
+after, and writes the whole report, every case's readings with it, to
+`.gro/grade/report.json`.
+
+Each grade has a directory of its own, `.gro/grade/<start>/`, named for the
+time it started, which the next grade leaves: a copy of its report, its
+record, which `--replay` reads, [below](#replay), and in `jobs/` every job a
+process was given and what that process printed, every round of every
+instance, numbered from 0 in the order they started. The report says what
+the grade ran on and with: the host, the CPU's model, Node's and V8's
+versions, the comparison libraries' and the bundler's, the commit of the
+working tree and whether it had changes, the commit `--against` resolved to,
+a hash of each version's `schema.ts` as it was loaded, the args, the grade's
+directory, and when it started and ended. Per
 [case](benchmarks.md#scenarios-and-cases) the tables report:
 
 - time per parse, the graded version over the baseline, beside its floor
@@ -81,26 +87,52 @@ When a change targets a path no case isolates, add the case first.
 | `--slice <ms>`               | 1                              | milliseconds one timing slice of one instance lasts                                                                            |
 | `--samples <n>`              | 15                             | the cold-start rounds kept                                                                                                     |
 | `--class <class>`            | `speed`                        | what the change is for, which prices its bytes: `speed`, `correctness`, `security`, or `feature`, [below](#bytes)              |
+| `--bundle`                   | on                             | measure bundle size, and read rules 4 and 5 on it                                                                              |
 | `--no-bundle`                | off                            | skip bundle size, and with it the verdicts of rules 4 and 5                                                                    |
+| `--process`                  | on                             | measure retained heap and cold start, in processes of their own, and read rule 9 on them                                       |
 | `--no-process`               | off                            | skip retained heap and cold start, and with them the verdict of rule 9                                                         |
 | `--replay <dir>`             | none                           | measure nothing: read the grade whose record and jobs are in this directory again, [below](#replay)                            |
 
 The exit code is 0 whatever the verdicts, and nonzero only when the grade
-could not run.
+could not run: a positional arg, which it refuses, naming `--filter`,
+another grade measuring in the same checkout, a process that failed, the
+file the bundles and the retained heap are built from changed, or a
+`--replay` of a directory it can't read.
+
+The bundles and the retained heap are built from the working tree's
+`schema.ts` where no `--new-file` is given, read as it is then and not from
+the copy timed. So a grade compares the file's hash with the one taken at
+the start, before each of the two and after it, and stops where they differ,
+rather than give the bytes or the heap of another file than the timing. With
+`--new-file` the file is the grader's own copy under `.gro/grade/`, which
+changes only if something else writes there.
+
+Two grades at once in one checkout would write the same copies of the two
+versions under `.gro/grade/`, which each other's processes load. So a grade
+holds `.gro/grade/lock`, the pid of its process, from before it writes the
+copies to its end, and one started while another holds it is refused. A
+lock whose process is not running, as a grade that was killed leaves, is
+taken over with a note, and one whose pid another process has since taken
+is removed by hand, as the refusal says. `--replay` measures nothing and
+takes no lock.
 
 ### Replay
 
 A grade writes what it is and what it measured but its jobs to
-`.gro/grade/record.json`: its args and setup, the cases and which of them ran
-alone and apart, the bundles, the retained heap, cold start, and the number
-of each job's files in `.gro/grade/jobs/`, by what the job was.
-`--replay <dir>` reads a directory that holds a `record.json` and a `jobs/`
+`record.json` in its directory: its args and setup, the cases and which of
+them ran alone and apart, the bundles, the retained heap, cold start, and the
+number of each job's files in `jobs/`, by what the job was. `--replay <dir>`
+reads a grade's directory, or any that holds a `record.json` and a `jobs/`
 beside it, prints the verdict and the tables, and writes the report to
 `report_replay.json` there, starting no process. It reads by the rules as
 they are in the working tree, so a grade can be read again after a rule
-changes, and its report is the grade's own where the rules are the same.
-`src/benchmarks/grade_read.ts` is the reading, which `src/test/grade_read.test.ts`
-holds to grades made up for it.
+changes, and its report is the grade's own where the rules are the same. A
+directory that is not there, has no `record.json`, or lacks a job the record
+names is refused with what is missing, as is a record without a field the
+reading needs, by its name. A record from before the count of the realistic
+cases was kept reads a subset without that count.
+`src/benchmarks/grade_read.ts` is the reading, which
+`src/test/grade_read.test.ts` holds to grades made up for it.
 
 The grader builds the schemas of its own args with the working tree's
 `schema.ts` and `meta.ts`, whatever `--new-file` names: a working tree whose
@@ -146,7 +178,9 @@ the objects the engine removed.
 
 `--filter` picks the cases that are measured and reported. The matrix process
 still runs every case first, so a filtered case is timed in the same code as
-in a whole run.
+in a whole run. Every summary and rule reads only the cases measured, and the
+verdict says how many of the realistic cases those are and that rules 4 and
+6 were read on them.
 
 **Runs.** The whole of the timing is repeated, four times by default, each
 run in fresh processes with the instances loaded in another order: which
@@ -161,6 +195,11 @@ holds two instances of each version: where the two of one version differ by
 what a case is listed for, the case is marked `~` and left out of the lists,
 and a case is listed as allocating more only when both instances of the
 graded version read past both of the baseline's.
+
+**Every process checks its job** before it loads an instance, and fails
+otherwise: every instance loads from one directory, a timing runs under no
+flags of its own and no `NODE_OPTIONS`, a bytes process holds two instances
+of each version or more, and a process apart holds one version.
 
 **Within a process** the instances of a case are warmed in turns, for a set
 time and a floor of calls, then timed a round at a time, every instance once a
@@ -208,12 +247,15 @@ any other.
   in both versions alike, with nothing left of what the `lazy` cost. In its
   own instance it changes what the process shares and leaves the timed
   functions having run one case.
-- **The default cases**, `APART_CASES` in `grade_plan.ts`, are mostly ones the
-  engine folds whole, each of another construction. A folded case is where
-  shared state shows, as little else is left of the parse: the `lazy` above
-  nearly doubled an array of strings and left a flat object where it was. One
-  is a recursive schema, which is not folded: it is the case that runs a
-  `lazy` itself, so a change to `lazy` is read on what it is for.
+- **The default cases**, `APART_CASES` in `src/benchmarks/grade_plan.ts`, are
+  mostly ones the engine folds whole, each of another construction. A folded
+  case is where shared state shows, as little else is left of the parse: the
+  `lazy` above nearly doubled an array of strings and left a flat object
+  where it was. One copies, a flat object whose last entry is filled in, so a
+  change to the copy is read apart too. One is a recursive schema, which is
+  not folded: it is the case that runs a `lazy` itself, so a change to `lazy`
+  is read on what it is for. `src/test/grade_plan.test.ts` holds every name
+  among them to a case of the matrix.
 - **Both versions load from one directory.** `grade` copies each version's
   file into `.gro/grade/` and loads it from there, in every regime. The same
   bytes read apart by where their file sat: from a file outside any directory
@@ -267,13 +309,31 @@ found by any number of runs worth waiting for.
 
 **A summary line**, a mean over cases, is where a small change shows. Its figure
 is the geometric mean of the cases' ratios, taken a run at a time and then at
-the median of the runs. Its A/A is from the same cases in the same processes:
+the median of the runs. Its A/A is from the same cases in the same runs:
 each instance's mean over them, the standard deviation of those among the
 instances of one version, pooled over the versions and the runs, times 3.3 over
-the root of the runs. Apart it is of the processes of one version in the same
-runs. A figure inside its A/A is not a difference, and a shift inside it cannot
-be told from none. The grade prints the A/A it measured, and more runs narrow
-it.
+the root of the runs. In `matrix` the instances are those of one process. In
+`alone` each case has processes of its own, and an instance is the one at
+the same place in each case's process. Apart it is of the processes of one
+version in the same runs. A figure inside its A/A is not a difference, and a
+shift inside it cannot be told from none. The grade prints the A/A it
+measured beside every figure, with the count of cases the figure rests on.
+It prints the A/A on the figure's own side, what the figure is compared
+with: a slowdown is past it beyond `exp(band) - 1`, and a speedup beyond
+`1 - exp(-band)`, the narrower. Both are printed to one digit, or to as many
+more as they take to print apart, so a figure past its A/A never prints as
+its equal, nor one inside it as past it. More runs narrow the A/A, and so do
+more cases: much of what an instance reads apart is of the case, and a mean
+over more cases averages it out.
+
+A path's line rests on the realistic cases that take the path. Those that
+copy fill defaults in, as a config does and as svelte-docinfo's modules do,
+of a component, a class, functions, and types, and as fuz_app's list
+request with no params does, or drop keys, as a form posted with fields of
+its own and a process's environment do. Those through `is` are a guard that
+fails inside a list and the check of a JSON-RPC frame every fuz_app server
+makes, too few for the warning to read their line, which it prints,
+[below](#rules).
 
 The 3.3 was set by resampling two ten-run A/As of one desktop machine, four
 runs at a time as a grade takes them, `apart` left out. That is a few grades'
@@ -286,8 +346,36 @@ four or more of them, and on a path of a few cases, as the realistic copy
 path, about three, which is why a path only warns. A realistic slowdown spread
 over the realistic cases was found by four runs about one time in five at 1%,
 three in four at 1.5%, and nearly always from 2%; by six, one in three at 1%
-and nearly always from 1.5%. A series of small accepted changes should now and
-then be graded against an older ref (`--against <ref>`), with more runs.
+and nearly always from 1.5%. Those chances are of that one desktop machine:
+a noisier one reads a wider A/A, and finds less. A series of small accepted
+changes should now and then be graded against an older ref
+(`--against <ref>`), with more runs.
+
+How often two copies of one file warn is derived from that, and not
+measured. A line at three of its deviations reads slower past its A/A by
+noise about once in 741, the one-sided tail of a normal draw past three. The
+warning reads a line only where it rests on four cases or more, which with
+the realistic cases as they are leaves eight, four in each of `matrix` and
+`alone`: the realistic valid identity and copy paths, the realistic invalid
+cases, and their issues. The count follows the cases: `grade_aa.ts`, below,
+marks the lines it finds unread. So a grade of an identical tree warns about once in
+ninety-three where every line's A/A is three of its deviations, at most, as
+the lines overlap in their cases, and more often where one's A/A is under
+three: at two and a half, a line is past it about once in 161, and eight
+such lines warn about once in twenty. A line of fewer cases has an A/A read
+from so little that how often it is past by noise is not known, which is why
+the warning doesn't read it. A `WARN` on an identical tree is that, and is
+read with the lists.
+
+`node src/benchmarks/grade_aa.ts <dir>...` reads grades of two copies of one
+file, each the directory of a grade or one that holds them, as
+`.gro/grade/`, and prints for each summary line rule 6 fails on and the
+warning reads how often its figure was slower past its A/A, its mean over the A/A,
+and the most. It measures nothing, reads each grade by the rules as they are
+in the working tree, as `--replay` does, and puts together only grades of
+the same runs, instances, and cases. It is the evidence for the 3.3 and for
+the rate above: grade a working tree whose `schema.ts` is its baseline's now
+and then, and read the grades together.
 
 ## Rules
 
@@ -337,12 +425,15 @@ more in total, or starts slower. The rest is judgment.
   or `alone`, when every valid case together does in `matrix`, or when a
   valid case, realistic or not, is confirmed slower in any regime, `apart`
   among them. Each line a rule fails on is one more chance for two copies of
-  one file to fail it, so the family is kept to these. A realistic path, as
-  identity or copy, and the realistic invalid path and its issues, read slower
-  past their A/A, `WARN`: a path of a few cases reads past its A/A by noise
-  far more often than the whole, and a warning is read with the lists. The
-  summary of the cases timed apart is printed and no rule reads it: they are a
-  few chosen cases, read one at a time. No rule reads the whole slice yet.
+  one file to fail it, so the family is kept to these. A realistic valid
+  path, as identity, copy, or probe, and the realistic invalid cases and
+  their issues, read slower past their A/A, in `matrix` or `alone`, `WARN`:
+  a path of a few cases reads past its A/A by noise far more often than the
+  whole, and a warning is read with the lists. A line of fewer than four
+  cases, `WARN_LEAST_CASES` in `src/benchmarks/grade_read.ts`, is printed
+  with its count and not read. The summary of the cases timed apart is
+  printed and no rule reads it: they are a few chosen cases, read one at a
+  time. No rule reads the whole slice yet.
 - **Rule 9** reads every figure of retained heap per further schema, under
   any class, and one over the allowance reads `ASK`.
 - **Below three runs** rule 6, and rule 4 for speed when bytes were added,
@@ -481,7 +572,10 @@ per schema says so, and the user rules. A figure repeats to within a byte, so
 a rise of 2 or less is not read as growth, and the allowance is read 2 past
 its figure. A figure one version lacks, as a scenario the baseline's module
 has no factory for, or an export the baseline can't build its entry with, is
-compared on nothing.
+compared on nothing. An export whose process threw in either version, as
+one the version lacks does, is printed under the export table with what it
+threw, and is in the report as `heap_export_failures`, so an export a
+baseline lacks is told from one its process crashed on.
 
 The figures depend on Node's version and the machine's architecture, so they
 are read fresh in every grade, of both versions on one machine, and kept in

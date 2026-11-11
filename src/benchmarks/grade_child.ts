@@ -45,6 +45,7 @@
 
 import { readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
+import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { Case, SchemaLib } from './cases.ts';
@@ -93,6 +94,35 @@ if (job.mode === 'bytes') {
 			'take them off the command line and out of NODE_OPTIONS'
 	);
 	process.exit(1);
+}
+
+// What the grader holds every job to, which a change to how it plans one could
+// break without a test seeing it, checked before any arm is loaded. The same
+// bytes read apart by the directory their file sits in, a timing under a flag
+// of its own is not a consumer's, a version allocates more only where both of
+// its instances say so, and a process apart sees only its own version's use
+// of the state it shares.
+if (new Set(job.arms.map((arm) => dirname(arm.path))).size !== 1) {
+	throw new Error('the arms of a job load from more than one directory');
+}
+// blank NODE_OPTIONS sets nothing, and the grader lets it through as blank
+if (job.mode === 'time' && (process.execArgv.length || process.env.NODE_OPTIONS?.trim())) {
+	throw new Error(
+		`a timing runs under no flags of its own and no NODE_OPTIONS, and has ` +
+			`${JSON.stringify(process.execArgv)} and ${JSON.stringify(process.env.NODE_OPTIONS ?? '')}`
+	);
+}
+if (
+	job.mode === 'bytes' &&
+	[false, true].some((graded) => job.arms.filter((arm) => arm.graded === graded).length < 2)
+) {
+	throw new Error('a process of bytes holds two instances of each version or more');
+}
+if (
+	job.regime === 'apart' &&
+	new Set(job.arms.map((arm) => `${arm.graded} ${arm.path}`)).size !== 1
+) {
+	throw new Error('a process of the `apart` regime holds one version');
 }
 
 // an arm's modules import under the arm's query, so they are that arm's alone

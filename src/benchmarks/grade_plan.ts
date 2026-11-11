@@ -30,6 +30,8 @@ export const APART_PROCESSES = INSTANCES;
  *   loop and a call an item
  * - the same through a wrapper
  * - a flat object, its loop over its entries
+ * - the same with a default at its last entry, whose parse copies the
+ *   object, so a change to the copy is read apart too
  * - a recursive schema, which runs a `lazy` itself
  *
  * The recursive one is not folded. It is here as the case that uses a `lazy`
@@ -40,6 +42,7 @@ export const APART_CASES: ReadonlyArray<string> = [
 	'each/optional_present/valid',
 	'scale/array_10_numbers/valid',
 	'object/6_keys/valid',
+	'object/7_keys_last_defaulted/valid',
 	'real/docinfo_types/valid'
 ];
 
@@ -87,10 +90,88 @@ export const to_apart_arms = (paths: GradePaths, graded: boolean): Array<GradeJo
 	];
 };
 
+/**
+ * A job of a grade.
+ *
+ * @param offset - moves on which arm is loaded first and which order leads
+ */
+export const to_grade_job = (
+	mode: GradeJob['mode'],
+	regime: GradeJob['regime'],
+	cases: Array<string>,
+	offset: number,
+	arms: Array<GradeJobArm>,
+	slice_ms: number
+): GradeJob => ({ mode, regime, arms, cases, slice_ms, offset });
+
+/** A job of the `apart` regime, and which version its process holds. */
+export interface GradeApartJob {
+	graded: boolean;
+	job: GradeJob;
+}
+
+/**
+ * The jobs of one case apart in one run, in the order they run:
+ * `APART_PROCESSES` processes of each version, a process of one and then of
+ * the other, and which goes first moves on by a process, a case, and a run.
+ * The two versions' jobs at one place differ in the path of their arms, the
+ * id of the timed one, and which is graded, and in nothing else.
+ *
+ * @param index - the case's place among the cases apart
+ */
+export const to_apart_jobs = (
+	paths: GradePaths,
+	name: string,
+	run: number,
+	index: number,
+	slice_ms: number
+): Array<GradeApartJob> =>
+	Array.from({ length: APART_PROCESSES }, (_, at) =>
+		((run + index + at) % 2 ? [true, false] : [false, true]).map((graded): GradeApartJob => ({
+			graded,
+			job: to_grade_job('time', 'apart', [name], run + at, to_apart_arms(paths, graded), slice_ms)
+		}))
+	).flat();
+
 /** Items in at most `count` chunks of one size, the last the smaller. */
 export const to_chunks = <T>(items: Array<T>, count: number): Array<Array<T>> => {
 	const size = Math.ceil(items.length / count);
 	return Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
 		items.slice(i * size, (i + 1) * size)
 	);
+};
+
+/** The name of the file under the grader's directory that a grade measuring holds. */
+export const GRADE_LOCK_FILE = 'lock';
+
+/**
+ * What a lock file says of the grade that wrote it:
+ *
+ * - `free` - there is none
+ * - `held` - a process of its pid is alive, as another grade still measuring
+ * - `stale` - none of its pid is, as a grade that was killed leaves
+ * - `unreadable` - it names no pid
+ */
+export type GradeLockState =
+	| { state: 'free' }
+	| { state: 'held'; pid: number }
+	| { state: 'stale'; pid: number }
+	| { state: 'unreadable'; text: string };
+
+/**
+ * Reads a lock file's text. Two grades at once in one checkout write the same
+ * copies of the two versions, which each other's processes load, so a grade
+ * measures only while it holds the lock.
+ *
+ * @param text - the file's text, `undefined` where there is none
+ * @param is_alive - whether a process of a pid is alive
+ */
+export const to_grade_lock_state = (
+	text: string | undefined,
+	is_alive: (pid: number) => boolean
+): GradeLockState => {
+	if (text === undefined) return { state: 'free' };
+	const pid = /^\d+$/.test(text.trim()) ? Number(text.trim()) : NaN;
+	if (!Number.isSafeInteger(pid) || pid <= 0) return { state: 'unreadable', text };
+	return is_alive(pid) ? { state: 'held', pid } : { state: 'stale', pid };
 };

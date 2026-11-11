@@ -56,14 +56,21 @@
  *   npm run grade -- --against-file .gro/grade/snapshot.ts --runs 5
  *   npm run grade -- --new-file .gro/grade/variant.ts --alone object/
  *   npm run grade -- --apart each/ --no-alone
- *   npm run grade -- --replay .gro/grade
+ *   npm run grade -- --replay .gro/grade/<start>
  *
  * @module
  */
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	unlinkSync,
+	writeFileSync
+} from 'node:fs';
 import { availableParallelism, hostname } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -71,7 +78,12 @@ import { map_concurrent } from '@fuzdev/fuz_util/async.ts';
 
 import { meta, parse_args, s } from './args.ts';
 import { create_cases, type SchemaLib } from './cases.ts';
-import { format_machine_state, read_machine_state, read_text } from './machine.ts';
+import {
+	format_machine_state,
+	read_cpu_model,
+	read_machine_state,
+	read_package_versions
+} from './machine.ts';
 import { PROGRAM } from './program.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { measure_bundle_size, measure_export_sizes } from './bundle_size.ts';
@@ -97,18 +109,20 @@ import {
 	APART_CASES,
 	APART_PROCESSES,
 	COLDSTART_SCENARIOS,
+	GRADE_LOCK_FILE,
 	INSTANCES,
-	to_apart_arms,
+	to_apart_jobs,
 	to_bytes_arms,
 	to_chunks,
+	to_grade_job,
+	to_grade_lock_state,
 	to_time_arms
 } from './grade_plan.ts';
 import {
 	format_grade_record,
 	format_grade_report,
-	parse_grade_record,
+	load_grade,
 	read_grade,
-	to_grade_outputs,
 	type GradeBundleMeasures,
 	type GradeColdstartForm,
 	type GradeHeapMeasures,
@@ -119,7 +133,12 @@ import {
 	type ScenarioLibsRow
 } from './grade_read.ts';
 import { measure_export_heap, measure_retained_heap } from './heap.ts';
-import { ALLOCATION_NODE_FLAGS, refuse_timing_node_flags, to_balanced_orders } from './measure.ts';
+import {
+	ALLOCATION_NODE_FLAGS,
+	format_seconds,
+	refuse_timing_node_flags,
+	to_balanced_orders
+} from './measure.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
@@ -189,6 +208,13 @@ const Args = s.object({
 });
 
 const args = parse_args(Args);
+if (args._.length) {
+	console.error(
+		`grade reads no positional args, and was given ${args._.map((a) => JSON.stringify(a)).join(' ')}: ` +
+			'to grade the cases whose name includes a part, give it as --filter <part>'
+	);
+	process.exit(1);
+}
 if (args['against-libs-file'] && !args['against-file']) {
 	console.error(
 		'--against-libs-file goes with --against-file: a baseline from git (--against) brings ' +
@@ -204,11 +230,7 @@ const BYTES_CONCURRENCY = Math.max(1, Math.min(6, availableParallelism() >> 1));
 
 const LIB_MODULE = 'src/benchmarks/libs/fuz_schema.ts';
 const WORK_DIR = resolve('.gro/grade');
-const JOBS_DIR = join(WORK_DIR, 'jobs');
 const CHILD_PATH = fileURLToPath(new URL('./grade_child.ts', import.meta.url));
-
-const format_seconds = (seconds: number): string =>
-	seconds < 90 ? `${Math.round(seconds)}s` : `${(seconds / 60).toFixed(1)} min`;
 
 const COMPARED_PACKAGES = ['valibot', 'zod', 'typebox', 'arktype', 'rolldown'];
 
@@ -226,14 +248,85 @@ const to_git = (args: Array<string>): string | undefined => {
 const to_file_hash = (path: string): string =>
 	createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 16);
 
+const LOCK_PATH = join(WORK_DIR, GRADE_LOCK_FILE);
+
+// whether a process of the pid is alive, one this user may not signal among them
+const is_pid_alive = (pid: number): boolean => {
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch (error) {
+		return (error as NodeJS.ErrnoException).code === 'EPERM';
+	}
+};
+
+const read_lock = (): string | undefined => {
+	try {
+		return readFileSync(LOCK_PATH, 'utf8');
+	} catch {
+		return undefined;
+	}
+};
+
+/**
+ * Takes the lock of the grader's directory for this process, or exits where
+ * another grade holds it: two grades at once write the same copies of the two
+ * versions, which each other's processes load. A lock whose pid is not alive
+ * is taken over, with a note. It is let go as the process exits, however it
+ * exits but by a signal, which leaves it stale.
+ */
+const take_lock = (): void => {
+	for (;;) {
+		try {
+			writeFileSync(LOCK_PATH, String(process.pid), { flag: 'wx' });
+			break;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+		}
+		const lock = to_grade_lock_state(read_lock(), is_pid_alive);
+		if (lock.state === 'held') {
+			console.error(
+				`another grade is measuring in this checkout, process ${lock.pid}, which holds ${LOCK_PATH}: ` +
+					"two at once would load each other's copies of the versions. Grade when it is done, " +
+					`or remove ${LOCK_PATH} if process ${lock.pid} is not a grade`
+			);
+			process.exit(1);
+		}
+		if (lock.state === 'unreadable') {
+			console.error(
+				`${LOCK_PATH} names no process, ${JSON.stringify(lock.text)}: remove it if no grade is measuring`
+			);
+			process.exit(1);
+		}
+		if (lock.state === 'stale') {
+			console.log(`taking over ${LOCK_PATH} from process ${lock.pid}, which is not running`);
+			unlinkSync(LOCK_PATH);
+		}
+	}
+	process.on('exit', () => {
+		if (read_lock() !== String(process.pid)) return;
+		try {
+			unlinkSync(LOCK_PATH);
+		} catch {
+			// gone already, which leaves nothing to let go
+		}
+	});
+};
+
 /**
  * Runs every process of a grade and reads what each measured.
  *
- * @returns the record of the grade, and what its jobs printed
+ * @returns the record of the grade, what its jobs printed, and its own directory
  */
-const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOutputs }> => {
+const measure_grade = async (): Promise<{
+	record: GradeRecord;
+	outputs: GradeOutputs;
+	dir: string;
+}> => {
 	refuse_timing_node_flags('grade', true);
-	mkdirSync(JOBS_DIR, { recursive: true });
+	mkdirSync(WORK_DIR, { recursive: true });
+	// before either copy is written, which another grade's processes may be loading
+	take_lock();
 
 	//
 	// The two versions
@@ -318,7 +411,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 	// a job's output, and the number its files are under in the jobs directory
 	const run_job = async (job: GradeJob): Promise<{ job: number; output: GradeChildOutput }> => {
 		const number = job_count++;
-		const path = join(JOBS_DIR, `${number}.json`);
+		const path = join(jobs_dir, `${number}.json`);
 		writeFileSync(path, JSON.stringify(job));
 		const start = (): Promise<unknown> =>
 			// a timing gets none of this process's own flags either
@@ -347,14 +440,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 		names: Array<string>,
 		offset: number,
 		arms: Array<GradeJobArm> = mode === 'time' ? TIME_ARMS : BYTES_ARMS
-	): GradeJob => ({
-		mode,
-		regime,
-		arms,
-		cases: names,
-		slice_ms: args.slice,
-		offset
-	});
+	): GradeJob => to_grade_job(mode, regime, names, offset, arms, args.slice);
 
 	// What the run will take, in seconds. A timing is its rounds and the one
 	// thrown away, each every arm once; the rest is fitted to runs of this.
@@ -382,15 +468,10 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 		const status = to_git(['status', '--porcelain']);
 		return {
 			hostname: hostname(),
-			cpu_model: /^model name\s*:\s*(.+)$/m.exec(read_text('/proc/cpuinfo') ?? '')?.[1],
+			cpu_model: read_cpu_model(),
 			node: process.versions.node,
 			v8: process.versions.v8,
-			packages: Object.fromEntries(
-				COMPARED_PACKAGES.map((name) => {
-					const text = read_text(resolve('node_modules', name, 'package.json'));
-					return [name, text && (JSON.parse(text) as { version?: string }).version];
-				})
-			),
+			packages: read_package_versions(COMPARED_PACKAGES),
 			head: {
 				sha: to_git(['rev-parse', 'HEAD']),
 				dirty: status === undefined ? undefined : !!status
@@ -406,6 +487,18 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 	const machine_start = read_machine_state();
 	const setup = read_grade_setup();
 	const started_at = new Date();
+	// the grade's own directory, named for its start: its jobs, its record, and a copy of its report
+	const grade_dir = join(
+		WORK_DIR,
+		started_at
+			.toISOString()
+			.replace(/\.\d+Z$/, 'Z')
+			.replaceAll(':', '-')
+	);
+	const jobs_dir = join(grade_dir, 'jobs');
+	// not recursive: a grade started in the same second as the last fails here, and leaves its jobs
+	mkdirSync(grade_dir);
+	mkdirSync(jobs_dir);
 	console.log(
 		`grading ${new_label} against ${baseline_label}: ${cases.length} cases, ` +
 			`${alone_cases.length} of them also alone, ${apart_cases.length} apart, ` +
@@ -448,25 +541,17 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 		bytes_alone: []
 	};
 
-	/**
-	 * Times the cases of the `apart` regime for one run: each in
-	 * `APART_PROCESSES` processes of each version, a process of one and then of
-	 * the other, and which goes first moves on by a process, a case, and a run.
-	 */
+	// times the cases of the `apart` regime for one run, each in the processes `to_apart_jobs` plans
 	const time_apart = async (run: number): Promise<void> => {
 		const run_jobs: GradeJobsIndex['apart'][number] = [];
 		const run_outputs: GradeOutputs['apart'][number] = [];
 		for (const [index, c] of apart_cases.entries()) {
 			const case_jobs: GradeJobsIndex['apart'][number][number] = [];
 			const case_outputs: GradeOutputs['apart'][number][number] = [];
-			for (let at = 0; at < APART_PROCESSES; at++) {
-				for (const graded of (run + index + at) % 2 ? [true, false] : [false, true]) {
-					const { job, output } = await run_job(
-						to_job('time', 'apart', [c.name], run + at, to_apart_arms(paths, graded))
-					);
-					case_jobs.push({ job, graded });
-					case_outputs.push({ graded, output });
-				}
+			for (const { graded, job: planned } of to_apart_jobs(paths, c.name, run, index, args.slice)) {
+				const { job, output } = await run_job(planned);
+				case_jobs.push({ job, graded });
+				case_outputs.push({ graded, output });
 			}
 			run_jobs.push(case_jobs);
 			run_outputs.push(case_outputs);
@@ -518,8 +603,29 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 	// Bundle size
 	//
 
+	// The bundles and the retained heap of the graded version are built from the
+	// working tree's own file where no --new-file is given, read as it is when
+	// they are measured, and not from the copy timed: a file changed since the
+	// copy was taken would give the bytes and heap of another file than the rest.
+	// Checked before each and after it, so a change while one is measured is seen too.
+	const measured_path = new_variant?.schema_path ?? resolve('src/lib/schema.ts');
+	const refuse_changed = (what: string): void => {
+		const hash = to_file_hash(measured_path);
+		if (hash === setup.new_hash) return;
+		console.error(
+			`${measured_path} changed during the grade: its SHA-256 begins ${hash} where the copy timed ` +
+				`begins ${setup.new_hash}, so ${what} of another file than the timing. ` +
+				(args['new-file']
+					? `It is the grader's own copy of ${args['new-file']}, which changes only if something ` +
+						`else writes to ${WORK_DIR}: grade again with nothing else writing there`
+					: 'Grade again with the file left alone, or grade a copy of it with --new-file')
+		);
+		process.exit(1);
+	};
+
 	let bundle: GradeBundleMeasures | undefined;
 	if (args.bundle) {
+		refuse_changed('the bundles would be');
 		const since = performance.now();
 		const all_names = SCENARIOS.map((s) => s.name);
 		const measure_base = async (names: Array<string>): Promise<number> =>
@@ -586,6 +692,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 			new_scenario_rows,
 			many_schema_rows
 		};
+		refuse_changed('the bundles were');
 		console.log(`\nbundles: ${to_elapsed(since)}`);
 	}
 
@@ -596,6 +703,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 	let heap: GradeHeapMeasures | undefined;
 	let coldstart: Array<GradeColdstartForm> | undefined;
 	if (args.process) {
+		refuse_changed('the retained heap would be');
 		const variant: EntryVariant = {
 			id: 'base',
 			schema_path: baseline_path,
@@ -625,6 +733,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 			await measure_export_heap(new_variant, true)
 		];
 		heap = { scenarios: heap_scenarios, base_exports, new_exports };
+		refuse_changed('the retained heap was');
 		console.log(`\nretained heap: ${to_elapsed(since)}`);
 
 		// a baseline's module may be from before one of them
@@ -674,6 +783,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 		against: baseline_label,
 		identical,
 		args,
+		dir: grade_dir,
 		started_at: started_at.toISOString(),
 		ended_at: new Date().toISOString(),
 		elapsed_s: (performance.now() - started) / 1000,
@@ -689,6 +799,7 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 			path: c.path,
 			valid: c.valid
 		})),
+		realistic_total: all_cases.filter((c) => c.realistic).length,
 		alone: alone_cases.map((c) => c.name),
 		apart: apart_cases.map((c) => c.name),
 		bundle,
@@ -696,37 +807,40 @@ const measure_grade = async (): Promise<{ record: GradeRecord; outputs: GradeOut
 		coldstart,
 		jobs
 	};
-	return { record, outputs };
+	return { record, outputs, dir: grade_dir };
 };
 
 if (args.replay) {
 	const dir = resolve(args.replay);
-	const record = parse_grade_record<GradeRecord>(readFileSync(join(dir, 'record.json'), 'utf8'));
-	const outputs = to_grade_outputs(
-		record.jobs,
-		(job) =>
-			JSON.parse(readFileSync(join(dir, 'jobs', `${job}.out.json`), 'utf8')) as GradeChildOutput
-	);
-	const { verdict, tables, report } = read_grade(record, outputs);
+	if (!existsSync(dir)) {
+		console.error(`--replay ${args.replay}: there is no ${dir}`);
+		process.exit(1);
+	}
+	const loaded = load_grade((path) => {
+		const file = join(dir, path);
+		return existsSync(file) ? readFileSync(file, 'utf8') : undefined;
+	});
+	if (!loaded.ok) {
+		console.error(`--replay ${args.replay}: ${loaded.message}`);
+		process.exit(1);
+	}
+	const { verdict, tables, report } = read_grade(loaded.record, loaded.outputs);
 	console.log(verdict.join('\n'));
 	console.log(tables.join('\n'));
 	const replay_path = join(dir, 'report_replay.json');
 	writeFileSync(replay_path, format_grade_report(report));
 	console.log(`\nthe whole report of the replay, as JSON: ${replay_path}`);
 } else {
-	const { record, outputs } = await measure_grade();
+	const { record, outputs, dir } = await measure_grade();
 	// the record first, so a grade whose reading throws can be read again
-	writeFileSync(join(WORK_DIR, 'record.json'), format_grade_record(record));
+	writeFileSync(join(dir, 'record.json'), format_grade_record(record));
 	const { verdict, tables, report } = read_grade(record, outputs);
 	console.log(verdict.join('\n'));
 	console.log(tables.join('\n'));
 	const REPORT_PATH = join(WORK_DIR, 'report.json');
 	writeFileSync(REPORT_PATH, format_grade_report(report));
 	// a copy under the time it started, so the next grade leaves this one's
-	const report_copy = join(
-		WORK_DIR,
-		`report_${record.started_at.replace(/\.\d+Z$/, 'Z').replaceAll(':', '-')}.json`
-	);
+	const report_copy = join(dir, 'report.json');
 	copyFileSync(REPORT_PATH, report_copy);
 	console.log(`\nthe whole report, as JSON: ${REPORT_PATH}, and a copy at ${report_copy}`);
 	console.log(`\n${format_seconds(record.elapsed_s)}`);

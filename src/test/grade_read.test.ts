@@ -1,10 +1,13 @@
 import { describe, test, assert } from 'vitest';
 
-import type { CasePath } from '../benchmarks/cases.ts';
-import type { GradeChildCase, GradeChildOutput } from '../benchmarks/grade_job.ts';
+import type { CasePath, GradeChildCase, GradeChildOutput } from '../benchmarks/grade_job.ts';
+import { CORE_SCENARIO } from '../benchmarks/grade_bytes.ts';
 import {
+	WARN_LEAST_CASES,
 	format_grade_record,
+	format_speed,
 	judge_core_speed,
+	load_grade,
 	parse_grade_record,
 	read_grade,
 	to_all_valid_matrix,
@@ -15,14 +18,19 @@ import {
 	to_graded,
 	to_mark,
 	to_slowed,
+	to_speed,
+	to_speed_band,
+	to_summary_lines,
 	to_valid_by_regime,
+	to_warn_unread,
 	to_warned,
 	is_more_alloc,
+	type GradeBundleMeasures,
 	type GradeCase,
 	type GradeOutputs,
 	type GradeRecord
 } from '../benchmarks/grade_read.ts';
-import { to_case_time } from '../benchmarks/grade_stats.ts';
+import { is_outside, to_case_time, type Summary } from '../benchmarks/grade_stats.ts';
 
 const log = Math.log;
 
@@ -80,12 +88,15 @@ const to_grade = (
 		runs = 4,
 		times = () => SAME,
 		alone = [],
-		apart = []
+		apart = [],
+		program_ran = { base: 10, new: 10 }
 	}: {
 		runs?: number;
 		times?: (c: GradeCase, run: number) => Times;
 		alone?: Array<string>;
 		apart?: Array<string>;
+		/** What a process apart of each version says it ran of the program. */
+		program_ran?: { base: number; new: number };
 	} = {}
 ): MadeGrade => {
 	const record: GradeRecord = {
@@ -110,6 +121,7 @@ const to_grade = (
 		apart_processes: 3,
 		program_entries: 10,
 		cases,
+		realistic_total: cases.filter((c) => c.realistic).length,
 		alone,
 		apart,
 		jobs: { matrix: [], alone: [], apart: [], bytes_matrix: [], bytes_alone: [] }
@@ -135,7 +147,7 @@ const to_grade = (
 						output: {
 							cases: [to_child_case(name, { base: [base], new: [] })],
 							disagreed: [],
-							program_ran: 10,
+							program_ran: program_ran.base,
 							sink: 0
 						}
 					},
@@ -144,7 +156,7 @@ const to_grade = (
 						output: {
 							cases: [to_child_case(name, { base: [], new: [t.new[i]!] })],
 							disagreed: [],
-							program_ran: 10,
+							program_ran: program_ran.new,
 							sink: 0
 						}
 					}
@@ -176,6 +188,36 @@ const find_line = (verdict: Array<string>, start: string): string => {
 	return found;
 };
 
+// `count` realistic valid cases of a path, named for it
+const to_realistic = (path: CasePath, count: number): Array<GradeCase> =>
+	Array.from({ length: count }, (_, i) => to_case(`real/${path}_${i}/valid`, path, true));
+
+// the names of lines as the verdict prints them, without their figures
+const to_line_names = (lines: Array<string>): Array<string> =>
+	lines.map((line) => line.replace(/ [+-][\d.]+% \(.*$/, ''));
+
+// a summary of a speed beside an A/A, given as a ratio's band
+const to_speed_summary = (speed: number, band: number, cases = 5): Summary => ({
+	cases,
+	ratio: Math.log(1 - speed),
+	runs: [],
+	band
+});
+
+// a record's bundles, every figure the same in both versions but `parse`,
+// which grows by `core_growth`
+const to_bundle = (core_growth: number): GradeBundleMeasures => ({
+	scenarios: [{ name: CORE_SCENARIO, base: 1000, new: 1000, valibot: 2000 }],
+	unshared: [],
+	many_schemas: [],
+	new_scenario_libs: [],
+	all: { base: 1000, new_shared: 1000, valibot: 2000 },
+	base_exports: { parse: 500, library: 3000, exports: [] },
+	new_exports: { parse: 500 + core_growth, library: 3000 + core_growth, exports: [] },
+	new_scenario_rows: [],
+	many_schema_rows: []
+});
+
 describe('grade_read', () => {
 	test('an A/A passes every rule and warns of nothing', () => {
 		const grade = to_grade(CASES);
@@ -185,8 +227,9 @@ describe('grade_read', () => {
 			'the valid path is not slowed: pass'
 		);
 		assert.strictEqual(
-			find_line(verdict, 'a realistic path is not slowed'),
-			'a realistic path is not slowed, a warning: none'
+			find_line(verdict, 'a realistic path is not slowed').split('\n')[0],
+			// every path here rests on fewer cases than the warning reads
+			'a realistic path is not slowed, a warning: nothing read'
 		);
 		assert.include(find_line(verdict, 'realistic valid-path speed, matrix'), 'inside its A/A');
 		assert.strictEqual(find_line(verdict, 'cases slower, matrix'), 'cases slower, matrix: none');
@@ -235,7 +278,7 @@ describe('grade_read', () => {
 		// past the copy path's A/A, inside the least floor of a case, and diluted
 		// under the A/A of the valid line by the identity cases beside it
 		const copy = to_graded_of(
-			to_grade([...CASES, to_case('real/g/valid', 'identity', true)], {
+			to_grade([...CASES, ...to_realistic('copy', 4), ...to_realistic('identity', 8)], {
 				times: (c) => (c.path === 'copy' && c.realistic ? to_shifted(1.003) : SAME)
 			})
 		);
@@ -244,8 +287,13 @@ describe('grade_read', () => {
 			to_warned(copy).map((line) => line.split(' (')[0]!.replace(/ [+-][\d.]+%$/, '')),
 			['realistic copy matrix']
 		);
+		const invalid_cases = Array.from({ length: 4 }, (_, i) =>
+			to_case(`real/bad_${i}/invalid`, 'issues', true)
+		);
 		const invalid = to_graded_of(
-			to_grade(CASES, { times: (c) => (c.realistic && !c.valid ? to_shifted(1.05) : SAME) })
+			to_grade([...CASES, ...invalid_cases], {
+				times: (c) => (c.realistic && !c.valid ? to_shifted(1.05) : SAME)
+			})
 		);
 		assert.deepEqual(
 			to_warned(invalid).map((line) => line.split(' ').slice(0, 3).join(' ')),
@@ -308,7 +356,7 @@ describe('grade_read', () => {
 			'the valid path is not slowed: not judged, fewer than 3 runs'
 		);
 		assert.strictEqual(
-			find_line(verdict, 'a realistic path is not slowed'),
+			find_line(verdict, 'a realistic path is not slowed').split('\n')[0],
 			'a realistic path is not slowed, a warning: not judged, fewer than 3 runs'
 		);
 	});
@@ -437,5 +485,297 @@ describe('grade_read', () => {
 	test('a record keeps a figure that is not finite, where the report writes null', () => {
 		const text = format_grade_record({ a: NaN, b: [Infinity, -Infinity, 1], c: 'x' });
 		assert.deepEqual(parse_grade_record(text), { a: NaN, b: [Infinity, -Infinity, 1], c: 'x' });
+	});
+
+	test('the warning reads every path of the realistic valid cases, in matrix and alone', () => {
+		const cases = [
+			...to_realistic('identity', WARN_LEAST_CASES),
+			...to_realistic('copy', WARN_LEAST_CASES),
+			to_case('real/z/invalid', 'issues', true)
+		];
+		const names = cases.map((c) => c.name);
+		for (const path of ['identity', 'copy'] as const) {
+			// slower on one path, in the matrix and alone
+			const graded = to_graded_of(
+				to_grade(cases, {
+					alone: names,
+					times: (c) => (c.path === path ? to_shifted(1.003) : SAME)
+				})
+			);
+			assert.deepEqual(to_line_names(to_warned(graded)), [
+				`realistic ${path} matrix`,
+				`realistic ${path} alone`
+			]);
+		}
+		// slower alone and not in the matrix: the line alone warns by itself
+		const grade = to_grade(cases, { alone: names });
+		for (const run of grade.outputs.alone) {
+			for (const c of run) {
+				if (!c.name.includes('copy')) continue;
+				for (const arm of c.arms) {
+					if (arm.startsWith('new')) c.ns![arm] = c.ns![arm]!.map((v) => v * 1.003);
+				}
+			}
+		}
+		assert.deepEqual(to_line_names(to_warned(to_graded_of(grade))), ['realistic copy alone']);
+	});
+
+	test('the warning reads a line of four cases or more, and prints one of fewer unread', () => {
+		for (const count of [WARN_LEAST_CASES - 1, WARN_LEAST_CASES]) {
+			const graded = to_graded_of(
+				to_grade([...to_realistic('identity', 8), ...to_realistic('copy', count)], {
+					times: (c) => (c.path === 'copy' ? to_shifted(1.003) : SAME)
+				})
+			);
+			const read = count >= WARN_LEAST_CASES;
+			assert.deepEqual(to_line_names(to_warned(graded)), read ? ['realistic copy matrix'] : []);
+			assert.deepEqual(
+				to_line_names(to_warn_unread(graded)),
+				read ? [] : ['realistic copy matrix']
+			);
+			const copy = to_summary_lines(graded).find((l) => l.name === 'realistic copy matrix');
+			assert(copy);
+			assert.strictEqual(copy.read, read);
+			assert.strictEqual(copy.summary.cases, count);
+		}
+		// printed in the verdict with its count, however it reads
+		const grade = to_grade([...to_realistic('identity', 4), ...to_realistic('probe', 1)]);
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.match(
+			find_line(verdict, 'a realistic path is not slowed'),
+			/^a realistic path is not slowed, a warning: none\n {2}on fewer than 4 cases, reported and not read: realistic probe matrix [+-][\d.]+% \(A\/A ±[\d.]+%, 1 case\)$/
+		);
+	});
+
+	test('rule 6 and the warning read the lines they name, and no other', () => {
+		// a realistic invalid case that is no issues case, so the invalid line
+		// and the issues line rest on different counts, and the invalid case
+		// that isn't realistic is in neither
+		const cases = [...CASES, { ...to_case('real/g/invalid', 'probe', true), valid: false }];
+		const lines = to_summary_lines(to_graded_of(to_grade(cases, { alone: ['real/a/valid'] })));
+		assert.deepEqual(
+			lines.map((l) => [l.name, l.family, l.summary.cases]),
+			[
+				['realistic valid matrix', 'rule 6', 2],
+				['realistic valid alone', 'rule 6', 1],
+				['every valid case matrix', 'rule 6', 3],
+				['realistic identity matrix', 'warn', 1],
+				['realistic copy matrix', 'warn', 1],
+				['realistic invalid matrix', 'warn', 2],
+				['realistic issues matrix', 'warn', 1],
+				['realistic identity alone', 'warn', 1]
+			]
+		);
+	});
+
+	test('a warning with no line read says so', () => {
+		const grade = to_grade(to_realistic('probe', 1));
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.match(
+			find_line(verdict, 'a realistic path is not slowed'),
+			/^a realistic path is not slowed, a warning: nothing read\n {2}on fewer than 4 cases, reported and not read: /
+		);
+	});
+
+	test('the lists of marks read each its own mark', () => {
+		const grade = to_grade(CASES, {
+			// one case shown slower in every run, and one in all but the first
+			times: (c, run) =>
+				c.name === 'each/d/valid' || (c.name === 'real/a/valid' && run > 0) ? to_shifted(1.2) : SAME
+		});
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.strictEqual(
+			find_line(verdict, 'cases slower, matrix'),
+			'cases slower, matrix: each/d/valid'
+		);
+		assert.strictEqual(
+			find_line(verdict, 'cases marked ?, matrix'),
+			'cases marked ?, matrix: real/a/valid'
+		);
+		assert.strictEqual(find_line(verdict, 'cases faster, matrix'), 'cases faster, matrix: none');
+	});
+
+	test('a filtered grade says so, with the realistic cases of the whole, and still reads rule 4', () => {
+		const grade = to_grade(CASES);
+		grade.record.args = { ...grade.record.args, filter: 'real/', bundle: true };
+		grade.record.realistic_total = 10;
+		grade.record.bundle = to_bundle(20);
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.strictEqual(
+			find_line(verdict, 'a subset'),
+			'a subset, --filter real/: 3 of the 10 realistic cases graded, and rules 4 and 6 read on those alone'
+		);
+		assert.match(
+			find_line(verdict, '  core bytes'),
+			/^ {2}core bytes \(.*\): \+20 gzip, .*: FAIL, /
+		);
+		// a record from before the count was kept reads without it
+		delete grade.record.realistic_total;
+		assert.strictEqual(
+			find_line(read_grade(grade.record, grade.outputs).verdict, 'a subset'),
+			'a subset, --filter real/: 3 realistic cases graded, of a count in the whole matrix the record ' +
+				'does not hold, and rules 4 and 6 read on those alone'
+		);
+		// and a whole grade has no such line
+		const whole = to_grade(CASES);
+		assert(!read_grade(whole.record, whole.outputs).verdict.some((l) => l.startsWith('a subset')));
+	});
+
+	test('a speed prints with the count of its cases, and its A/A on its own side', () => {
+		const band = Math.log(1.0202);
+		assert.strictEqual(format_speed(to_speed_summary(0.05, band)), '+5.0% (A/A ±2.0%, 5 cases)');
+		assert.strictEqual(format_speed(to_speed_summary(-0.05, band, 1)), '-5.0% (A/A ±2.0%, 1 case)');
+		// on the faster side a speed is compared with 1 - exp(-band), the narrower
+		assert.closeTo(to_speed_band(to_speed_summary(0.01, band)), 1 - 1 / 1.0202, 1e-12);
+		assert.closeTo(to_speed_band(to_speed_summary(-0.01, band)), 0.0202, 1e-12);
+	});
+
+	test('a speed past its A/A never prints as its equal, nor one inside it as past it', () => {
+		const to_printed = (text: string): [number, number] => {
+			const match = /^[+-]([\d.]+)% \(A\/A ±([\d.]+)%/.exec(text);
+			assert(match, text);
+			return [Number(match[1]), Number(match[2])];
+		};
+		for (const band of [Math.log(1.0202), Math.log(1.025), Math.log(1.001), Math.log(1.1)]) {
+			for (const side of [1, -1]) {
+				// the speed at the band on its side, and a hair either way of it
+				const edge = side > 0 ? 1 - Math.exp(-band) : -(Math.exp(band) - 1);
+				for (const by of [-1e-4, -1e-5, -1e-6, 1e-6, 1e-5, 1e-4]) {
+					const summary = to_speed_summary(edge * (1 + by), band);
+					const [figure, printed_band] = to_printed(format_speed(summary));
+					assert.strictEqual(figure > printed_band, is_outside(summary), format_speed(summary));
+					assert.strictEqual(Math.sign(to_speed(summary)), side);
+				}
+			}
+		}
+		// faster by 1.99% beside a band of 2.02% on the slower side is past it
+		const faster = to_speed_summary(0.0199, Math.log(1.0202));
+		assert(is_outside(faster));
+		assert.strictEqual(format_speed(faster), '+1.99% (A/A ±1.98%, 5 cases)');
+		// one digit where one tells them apart
+		assert.strictEqual(
+			format_speed(to_speed_summary(0.012, Math.log(1.02))),
+			'+1.2% (A/A ±2.0%, 5 cases)'
+		);
+	});
+
+	test('a case is compared only where the baseline was timed on it in every run', () => {
+		const grade = to_grade(CASES);
+		const lacking = grade.outputs.matrix[1]!.cases.find((c) => c.name === 'each/d/valid')!;
+		lacking.arms = lacking.arms.filter((arm) => arm.startsWith('new'));
+		assert.deepEqual(
+			to_graded_of(grade)
+				.filter((g) => !g.compared)
+				.map((g) => g.c.name),
+			['each/d/valid']
+		);
+	});
+
+	test('a case allocates more only where both instances of the new version are past both of the baseline', () => {
+		const to_bytes = (base0: number, base1: number, new0: number, new1: number) =>
+			to_case_bytes({ ...to_bytes_case('a'), bytes: { base0, base1, new0, new1 } });
+		// one instance of the new version past, the other not, the two settled
+		const one_new = to_bytes(100, 100, 108, 104);
+		assert(one_new.settled && !is_more_alloc(one_new));
+		// one instance of the baseline near the new version's, the other not
+		const one_base = to_bytes(100, 104, 110, 110);
+		assert(one_base.settled && !is_more_alloc(one_base));
+		assert(is_more_alloc(to_bytes(100, 100, 108, 108)));
+	});
+
+	test('the program apart is counted of the processes of the baseline alone', () => {
+		const grade = to_grade(CASES, { apart: ['each/d/valid'], program_ran: { base: 7, new: 5 } });
+		assert.strictEqual(to_apart_program_ran(grade.record, grade.outputs), 7);
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.strictEqual(
+			find_line(verdict, 'the program, apart'),
+			'the program, apart: the baseline ran 7 of its 10 entries, the rest throwing or giving ' +
+				'another answer in it, where the new version ran them all'
+		);
+	});
+
+	test('a case whose output identity changed is listed', () => {
+		const grade = to_grade(CASES);
+		const changed = grade.outputs.matrix[0]!.cases.find((c) => c.name === 'real/b/valid')!;
+		for (const arm of changed.arms) if (arm.startsWith('base')) changed.same[arm] = false;
+		const { verdict } = read_grade(grade.record, grade.outputs);
+		assert.strictEqual(
+			find_line(verdict, 'cases whose output identity changed'),
+			'cases whose output identity changed: real/b/valid'
+		);
+	});
+
+	test('an export whose process of retained heap threw is printed, and is in the report', () => {
+		const grade = to_grade(CASES);
+		grade.record.args = { ...grade.record.args, process: true };
+		grade.record.heap = {
+			scenarios: [],
+			base_exports: [
+				{ name: 'memo_union', further_schema_bytes: NaN, failed: 'no memo_union' },
+				{ name: 'string', further_schema_bytes: 0, failed: null }
+			],
+			new_exports: [
+				{ name: 'memo_union', further_schema_bytes: 100, failed: null },
+				{ name: 'string', further_schema_bytes: 0, failed: null }
+			]
+		};
+		grade.record.coldstart = [];
+		const { tables, report } = read_grade(grade.record, grade.outputs);
+		assert.deepEqual(report.heap_export_failures, [
+			{ name: 'memo_union', version: 'base', failed: 'no memo_union' }
+		]);
+		assert.include(tables, 'memo_union: the baseline threw, compared on nothing: no memo_union');
+	});
+
+	test('a grade is loaded from its files, or refused with what is missing', () => {
+		const grade = to_grade(CASES, { runs: 1 });
+		grade.record.jobs = {
+			matrix: [0],
+			alone: [[]],
+			apart: [[]],
+			bytes_matrix: [1],
+			bytes_alone: []
+		};
+		const files: Record<string, string> = {
+			'record.json': format_grade_record(grade.record),
+			'jobs/0.out.json': JSON.stringify(grade.outputs.matrix[0]),
+			'jobs/1.out.json': JSON.stringify({
+				cases: grade.outputs.bytes_matrix,
+				disagreed: [],
+				sink: 0
+			})
+		};
+		const load = (overrides: Record<string, string | undefined> = {}) =>
+			load_grade((path) => (path in overrides ? overrides[path] : files[path]));
+		const loaded = load();
+		assert(loaded.ok);
+		assert.deepEqual(loaded.record, grade.record);
+		assert.deepEqual(loaded.outputs.bytes_matrix, grade.outputs.bytes_matrix);
+		const to_message = (overrides: Record<string, string | undefined>): string => {
+			const failed = load(overrides);
+			assert(!failed.ok);
+			return failed.message;
+		};
+		assert.match(to_message({ 'record.json': undefined }), /^no record\.json: /);
+		assert.match(to_message({ 'record.json': '{' }), /^record\.json is not JSON: /);
+		assert.strictEqual(to_message({ 'record.json': '[]' }), 'record.json holds no object');
+		assert.strictEqual(
+			to_message({ 'jobs/1.out.json': undefined }),
+			'the record names job 1, and jobs/1.out.json is missing'
+		);
+		assert.match(to_message({ 'jobs/1.out.json': '{' }), /^jobs\/1\.out\.json is not JSON: /);
+		const { jobs: _jobs, ...no_jobs } = grade.record;
+		assert.match(
+			to_message({ 'record.json': JSON.stringify(no_jobs) }),
+			/^record\.json lacks jobs, /
+		);
+		const { runs: _runs, ...no_runs } = grade.record.args;
+		assert.match(
+			to_message({ 'record.json': JSON.stringify({ ...grade.record, args: no_runs }) }),
+			/^record\.json lacks args\.runs, /
+		);
+		// a field read with a default is not refused
+		const { realistic_total: _total, ...no_total } = grade.record;
+		assert(load({ 'record.json': format_grade_record(no_total) }).ok);
 	});
 });

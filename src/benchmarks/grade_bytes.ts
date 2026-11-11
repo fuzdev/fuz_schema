@@ -326,6 +326,30 @@ export const format_backstop_line = (
 /** A figure as a signed delta, with `+` on growth and none. */
 export const format_size_delta = (delta: number): string => `${delta >= 0 ? '+' : ''}${delta}`;
 
+/**
+ * Figures as `name +delta`, a kind at a time in the order of `labels`, each
+ * kind named by its label where it has any: what `format_size_figures` and
+ * `format_heap_figures` share.
+ *
+ * @param labels - each kind's name, in the order the kinds are listed
+ * @param to_delta - what a figure grew by
+ */
+export const format_figure_deltas = <TFigure extends { name: string; kind: string }>(
+	figures: ReadonlyArray<TFigure>,
+	labels: Readonly<Record<TFigure['kind'], string>>,
+	to_delta: (f: TFigure) => number
+): string =>
+	(Object.keys(labels) as Array<TFigure['kind']>)
+		.map((kind) => {
+			const of_kind = figures.filter((f) => f.kind === kind);
+			return of_kind.length
+				? `${labels[kind]} ` +
+						of_kind.map((f) => `${f.name} ${format_size_delta(to_delta(f))}`).join(', ')
+				: '';
+		})
+		.filter(Boolean)
+		.join('; ');
+
 const SIZE_FIGURE_LABELS: Record<SizeFigureKind, string> = {
 	scenario: 'scenarios',
 	export: 'exports last in',
@@ -337,16 +361,7 @@ const SIZE_FIGURE_LABELS: Record<SizeFigureKind, string> = {
  * alone, each kind named where it has any.
  */
 export const format_size_figures = (figures: ReadonlyArray<SizeFigure>): string =>
-	(['scenario', 'export', 'alone'] as const)
-		.map((kind) => {
-			const of_kind = figures.filter((f) => f.kind === kind);
-			return of_kind.length
-				? `${SIZE_FIGURE_LABELS[kind]} ` +
-						of_kind.map((f) => `${f.name} ${format_size_delta(to_size_delta(f))}`).join(', ')
-				: '';
-		})
-		.filter(Boolean)
-		.join('; ');
+	format_figure_deltas(figures, SIZE_FIGURE_LABELS, to_size_delta);
 
 /**
  * The verdict line of the opt-in bytes. The library's delta, every export in

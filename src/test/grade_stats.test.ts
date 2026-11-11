@@ -170,10 +170,11 @@ describe('grade_stats', () => {
 
 	// A grade's readings: each instance off by a draw of its own on every case,
 	// `common`, as an instance of the desk's A/A reads a percent from the others on
-	// all of its cases at once, and by another draw on each case, `spread`.
+	// all of its cases at once, and by another draw on each case, `spread`, about
+	// what an instance reads apart on one case in a saved A/A.
 	const to_grade = (
 		normal: () => number,
-		{ cases = 120, realistic = 17, shift = 1, spread = 0.01, common = 0.006, runs = 4 } = {}
+		{ cases = 120, realistic = 17, shift = 1, spread = 0.025, common = 0.006, runs = 4 } = {}
 	): { realistic: Array<CaseTime>; all: Array<CaseTime> } => {
 		const offsets = Array.from({ length: runs }, () => ({
 			base: [0, 1, 2].map(() => common * normal()),

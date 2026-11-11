@@ -16,6 +16,8 @@
  * @module
  */
 
+import { format_figure_deltas } from './grade_bytes.ts';
+
 /**
  * What a change may grow any one figure by, in bytes per further schema,
  * read past `HEAP_JITTER`: two words of the 64-bit heap, room for a field
@@ -84,9 +86,6 @@ export const judge_heap = (figures: ReadonlyArray<HeapFigure>): HeapVerdict => {
 	return { verdict: over.length ? 'ask' : 'pass', grew, over };
 };
 
-/** A delta with `+` on growth and none. */
-export const format_heap_delta = (delta: number): string => `${delta >= 0 ? '+' : ''}${delta}`;
-
 const HEAP_FIGURE_LABELS: Record<HeapFigureKind, string> = {
 	scenario: 'scenarios',
 	export: 'exports alone'
@@ -97,16 +96,7 @@ const HEAP_FIGURE_LABELS: Record<HeapFigureKind, string> = {
  * has any.
  */
 export const format_heap_figures = (figures: ReadonlyArray<HeapFigure>): string =>
-	(['scenario', 'export'] as const)
-		.map((kind) => {
-			const of_kind = figures.filter((f) => f.kind === kind);
-			return of_kind.length
-				? `${HEAP_FIGURE_LABELS[kind]} ` +
-						of_kind.map((f) => `${f.name} ${format_heap_delta(to_heap_delta(f))}`).join(', ')
-				: '';
-		})
-		.filter(Boolean)
-		.join('; ');
+	format_figure_deltas(figures, HEAP_FIGURE_LABELS, to_heap_delta);
 
 /**
  * The verdict line of retained heap.

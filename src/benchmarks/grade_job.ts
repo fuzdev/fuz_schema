@@ -1,7 +1,9 @@
 /**
  * What `grade.ts` and the processes it runs (`grade_child.ts`) share: the job a
- * process is given, what it prints, and the constants of a timing, which the
- * parent estimates a run from.
+ * process is given, what it prints, the constants of a timing, which the
+ * parent estimates a run from, and the paths a case takes, which the cases
+ * name and the reading lists them by. It imports nothing, so the reading takes
+ * the paths without loading a case.
  *
  * @module
  */
@@ -49,6 +51,27 @@ export interface GradeJob {
  *   `program.ts` and then one case
  */
 export type GradeRegime = 'matrix' | 'alone' | 'apart';
+
+/**
+ * What a case's parse does:
+ *
+ * - `identity` - matches, and the output is the input itself
+ * - `copy` - matches, and the output is another value
+ * - `issues` - doesn't match, through `parse`, which builds issues
+ * - `probe` - goes through `is`, which builds none, matching or not
+ * - `create` - builds a schema and parses nothing, what an app pays as its
+ *   modules load
+ */
+export type CasePath = 'identity' | 'copy' | 'issues' | 'probe' | 'create';
+
+/** Every path, in the order the tables list them. */
+export const CASE_PATHS: ReadonlyArray<CasePath> = [
+	'identity',
+	'copy',
+	'issues',
+	'probe',
+	'create'
+];
 
 export interface GradeChildCase {
 	name: string;

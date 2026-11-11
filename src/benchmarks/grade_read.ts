@@ -11,7 +11,6 @@
  * @module
  */
 
-import type { CasePath } from './cases.ts';
 import type { ExportSize, ExportSizes } from './bundle_size.ts';
 import type { ColdstartStage, ColdstartSummary } from './coldstart.ts';
 import { HEAP_SETTLED_BELOW_BYTES, type ExportHeap, type RetainedHeap } from './heap.ts';
@@ -53,11 +52,16 @@ import {
 	type ReadingSeries,
 	type Summary
 } from './grade_stats.ts';
-import type { GradeChildCase, GradeChildOutput, GradeRegime } from './grade_job.ts';
+import {
+	CASE_PATHS,
+	type CasePath,
+	type GradeChildCase,
+	type GradeChildOutput,
+	type GradeRegime
+} from './grade_job.ts';
 import {
 	HEAP_ALLOWANCE,
 	HEAP_JITTER,
-	format_heap_delta,
 	format_heap_line,
 	is_heap_compared,
 	is_over_heap_allowance,
@@ -66,10 +70,6 @@ import {
 	type HeapFigure
 } from './grade_heap.ts';
 import { format_table, geometric_mean } from './measure.ts';
-
-// the paths in the order the tables list them, as `CASE_PATHS` of `cases.ts`,
-// which this module imports for its types alone so a test loads no case
-const PATHS: ReadonlyArray<CasePath> = ['identity', 'copy', 'issues', 'probe', 'create'];
 
 /**
  * What a case's allocation must rise by to be listed: a word or more, and on
@@ -113,6 +113,8 @@ export interface GradeSetup {
 /** The args of a grade the reading reads. The whole of them is in the report. */
 export interface GradeArgs {
 	runs: number;
+	/** Only the cases whose name includes this were measured. */
+	filter?: string;
 	class: ChangeClass;
 	samples: number;
 	bundle: boolean;
@@ -181,6 +183,8 @@ export interface GradeRecord {
 	identical: boolean;
 	/** The parsed args, every one, as the report writes them. */
 	args: GradeArgs;
+	/** The grade's own directory, which holds its jobs, its record, and a copy of its report. */
+	dir?: string;
 	started_at: string;
 	ended_at: string;
 	/** How long the grade took to the end of its measuring, in seconds. */
@@ -195,6 +199,11 @@ export interface GradeRecord {
 	program_entries: number;
 	/** The cases measured, in the order of the matrix. */
 	cases: Array<GradeCase>;
+	/**
+	 * How many realistic cases the whole matrix has, measured or not. A record
+	 * from before it was kept lacks it, and a subset is then read without it.
+	 */
+	realistic_total?: number;
 	/** The names of the cases also timed alone, and apart, in the same order. */
 	alone: Array<string>;
 	apart: Array<string>;
@@ -506,9 +515,37 @@ export const format_percent = (n: number, digits = 1): string => {
 /** A summary as a speed: positive is faster. */
 export const to_speed = (s: Summary): number => 1 - Math.exp(s.ratio);
 
-/** A summary as a speed beside its A/A, what it may be from none. */
-export const format_speed = (s: Summary): string =>
-	`${format_percent(to_speed(s))} (A/A ±${((Math.exp(s.band) - 1) * 100).toFixed(1)}%)`;
+/**
+ * The A/A of a summary as a speed on the side its figure is, what the speed
+ * is compared with: on the slower side `exp(band) - 1`, and on the faster
+ * `1 - exp(-band)`, the narrower, as a ratio's logarithm past `band` either
+ * way is past its A/A.
+ */
+export const to_speed_band = (s: Summary): number =>
+	s.ratio < 0 ? 1 - Math.exp(-s.band) : Math.exp(s.band) - 1;
+
+/** The most digits a speed and its A/A are printed to, past a percent. */
+export const SPEED_DIGITS_MOST = 12;
+
+/**
+ * A summary as a speed beside its A/A on the side the speed is, what it may
+ * be from none, and the count of cases it rests on. Both are printed to one
+ * digit, or to as many more as the two take to print apart, so a figure past
+ * its A/A never prints as its equal, nor one inside it as past it.
+ */
+export const format_speed = (s: Summary): string => {
+	const percent = Math.abs(to_speed(s)) * 100;
+	const band = to_speed_band(s) * 100;
+	const to_printed = (n: number, digits: number): number => Number(n.toFixed(digits));
+	let digits = 1;
+	while (digits < SPEED_DIGITS_MOST && to_printed(percent, digits) === to_printed(band, digits)) {
+		digits++;
+	}
+	return (
+		`${format_percent(to_speed(s), digits)} (A/A ±${band.toFixed(digits)}%, ` +
+		`${s.cases} ${s.cases === 1 ? 'case' : 'cases'})`
+	);
+};
 
 const format_standing = (s: Summary): string =>
 	!is_outside(s) ? 'inside its A/A' : s.ratio < 0 ? 'faster, past its A/A' : 'slower, past its A/A';
@@ -541,7 +578,7 @@ export const to_valid_by_regime = (graded: Array<Graded>): Array<ValidByRegime> 
 			regime,
 			whole: summarize(valid, regime),
 			whole_slice: summarize_whole(valid, regime),
-			paths: PATHS.map((path) => ({
+			paths: CASE_PATHS.map((path) => ({
 				path,
 				summary: summarize(
 					valid.filter((g) => g.c.path === path),
@@ -568,6 +605,77 @@ export const to_flagged = (
 	graded.filter((g) => g[regime]?.flag === flag && (valid === undefined || g.c.valid === valid));
 
 /**
+ * The fewest cases a line of the warning rests on for `WARN` to read it. The
+ * warning's rate on two copies of one file is derived for a line whose A/A is
+ * three of its deviations, and a line of one case or a few has an A/A read
+ * from so little that how often it is past by noise is not known: one such
+ * line, of a single case, read ±0.20% in one grade of identical trees and
+ * ±1.8% in another. Such a line is printed with its count and not read.
+ */
+export const WARN_LEAST_CASES = 4;
+
+/** A summary a rule reads, as the verdict names it. */
+export interface SummaryLine {
+	/** As the verdict names it, as `realistic copy matrix`. */
+	name: string;
+	/** Which reads it: rule 6, which fails on it, or the warning. */
+	family: 'rule 6' | 'warn';
+	summary: Summary;
+	/** Whether its family reads it, which a line of the warning on fewer than `WARN_LEAST_CASES` cases is not. */
+	read: boolean;
+}
+
+/**
+ * The summaries rule 6 and the warning read: rule 6 the realistic valid
+ * summary in `matrix` and `alone` and the summary of every valid case in
+ * `matrix`, and the warning each realistic valid path, the realistic invalid
+ * cases, and their issues, in `matrix` and `alone`. A line with no case is
+ * left out.
+ */
+export const to_summary_lines = (graded: Array<Graded>): Array<SummaryLine> => {
+	const valid_by_regime = to_valid_by_regime(graded);
+	const all_valid_matrix = to_all_valid_matrix(graded);
+	const of_rule_6 = (name: string, summary: Summary): SummaryLine => ({
+		name,
+		family: 'rule 6',
+		summary,
+		read: true
+	});
+	const of_warning = (name: string, summary: Summary): SummaryLine => ({
+		name,
+		family: 'warn',
+		summary,
+		read: summary.cases >= WARN_LEAST_CASES
+	});
+	return [
+		...valid_by_regime.map(({ regime, whole }) => of_rule_6(`realistic valid ${regime}`, whole)),
+		of_rule_6('every valid case matrix', all_valid_matrix),
+		...SUMMARY_RULE_REGIMES.flatMap((regime) => {
+			const invalid = graded.filter(
+				(g) => g.c.realistic && !g.c.valid && g[regime] && !Number.isNaN(g[regime].ratio)
+			);
+			return [
+				...(valid_by_regime.find((v) => v.regime === regime)?.paths ?? []).map((p) =>
+					of_warning(`realistic ${p.path} ${regime}`, p.summary)
+				),
+				of_warning(`realistic invalid ${regime}`, summarize(invalid, regime)),
+				of_warning(
+					`realistic issues ${regime}`,
+					summarize(
+						invalid.filter((g) => g.c.path === 'issues'),
+						regime
+					)
+				)
+			];
+		})
+	].filter((line) => line.summary.cases);
+};
+
+// a line as the verdict prints it, its name and its figure
+const format_summary_line = (line: SummaryLine): string =>
+	`${line.name} ${format_speed(line.summary)}`;
+
+/**
  * What rule 6 fails on: the realistic valid summary in `matrix` and `alone`
  * slower past its A/A, the summary of every valid case in `matrix`, and a
  * valid case through a parse confirmed slower in any regime.
@@ -575,14 +683,10 @@ export const to_flagged = (
  * @returns each line that failed, as the verdict names it, none on a pass
  */
 export const to_slowed = (graded: Array<Graded>): Array<string> => {
-	const all_valid_matrix = to_all_valid_matrix(graded);
 	return [
-		...to_valid_by_regime(graded)
-			.filter(({ whole }) => is_slower_past(whole))
-			.map(({ regime, whole }) => `realistic valid ${regime} ${format_speed(whole)}`),
-		...(all_valid_matrix.cases && is_slower_past(all_valid_matrix)
-			? [`every valid case matrix ${format_speed(all_valid_matrix)}`]
-			: []),
+		...to_summary_lines(graded)
+			.filter((line) => line.family === 'rule 6' && is_slower_past(line.summary))
+			.map(format_summary_line),
 		...REGIMES.flatMap((regime) => {
 			// a creation parses nothing, and is listed below
 			const slower_cases = to_flagged(graded, regime, 'slower', true).filter(
@@ -597,39 +701,25 @@ export const to_slowed = (graded: Array<Graded>): Array<string> => {
 
 /**
  * What warns: a realistic path, valid or invalid, slower past its A/A, in
- * `matrix` or `alone`.
+ * `matrix` or `alone`, on `WARN_LEAST_CASES` cases or more.
  *
  * @returns each line that warned, as the verdict names it
  */
-export const to_warned = (graded: Array<Graded>): Array<string> => {
-	const valid_by_regime = to_valid_by_regime(graded);
-	return SUMMARY_RULE_REGIMES.flatMap((regime) => {
-		const realistic = graded.filter(
-			(g) => g.c.realistic && g[regime] && !Number.isNaN(g[regime].ratio)
-		);
-		const valid_paths =
-			valid_by_regime
-				.find((v) => v.regime === regime)
-				?.paths.map((p) => ({
-					label: p.path,
-					summary: p.summary
-				})) ?? [];
-		const invalid = realistic.filter((g) => !g.c.valid);
-		return [
-			...valid_paths,
-			{ label: 'invalid', summary: summarize(invalid, regime) },
-			{
-				label: 'issues',
-				summary: summarize(
-					invalid.filter((g) => g.c.path === 'issues'),
-					regime
-				)
-			}
-		]
-			.filter((p) => p.summary.cases && is_slower_past(p.summary))
-			.map((p) => `realistic ${p.label} ${regime} ${format_speed(p.summary)}`);
-	});
-};
+export const to_warned = (graded: Array<Graded>): Array<string> =>
+	to_summary_lines(graded)
+		.filter((line) => line.family === 'warn' && line.read && is_slower_past(line.summary))
+		.map(format_summary_line);
+
+/**
+ * The lines of the warning on fewer than `WARN_LEAST_CASES` cases, which it
+ * prints and does not read, however they read.
+ *
+ * @returns each, as the verdict names it
+ */
+export const to_warn_unread = (graded: Array<Graded>): Array<string> =>
+	to_summary_lines(graded)
+		.filter((line) => line.family === 'warn' && !line.read)
+		.map(format_summary_line);
 
 /**
  * Rule 4's verdict for a change of the speed class: no core bytes added
@@ -883,9 +973,18 @@ const read_bundle = (
 	};
 };
 
+/** An export whose process of retained heap threw, as a version that lacks it does. */
+export interface HeapExportFailure {
+	name: string;
+	version: 'base' | 'new';
+	failed: string;
+}
+
 /** What the heap tables and rule 9 read, from what the processes of retained heap measured. */
 interface HeapReading {
 	heap_figures: Array<HeapFigure>;
+	/** Each export a version's process threw on, and what it threw. */
+	heap_export_failures: Array<HeapExportFailure>;
 	heap_totals: Array<{ name: string; base: number; new: number; delta: number }>;
 	heap_totals_grew: Array<string>;
 }
@@ -900,7 +999,7 @@ const read_heap = (heap: GradeHeapMeasures, print_table: (text: string) => void)
 	const heap_totals_grew: Array<string> = [];
 	const format_bytes = (bytes: number): string => (Number.isNaN(bytes) ? '-' : String(bytes));
 	const format_figure_delta = (f: HeapFigure): string =>
-		(is_heap_compared(f) ? format_heap_delta(to_heap_delta(f)) : '-') +
+		(is_heap_compared(f) ? format_size_delta(to_heap_delta(f)) : '-') +
 		(is_over_heap_allowance(f) ? '!' : ' ');
 	const heap_rows: Array<Array<string>> = [];
 	for (const { name, base, new: current } of heap.scenarios) {
@@ -922,7 +1021,7 @@ const read_heap = (heap: GradeHeapMeasures, print_table: (text: string) => void)
 			name,
 			format_kb(base.total_bytes),
 			format_kb(current.total_bytes),
-			Number.isNaN(total_delta) ? '-' : format_heap_delta(total_delta),
+			Number.isNaN(total_delta) ? '-' : format_size_delta(total_delta),
 			format_bytes(figure.base),
 			format_bytes(figure.new),
 			format_figure_delta(figure)
@@ -977,7 +1076,18 @@ const read_heap = (heap: GradeHeapMeasures, print_table: (text: string) => void)
 				? `, ! over the allowance of ${HEAP_ALLOWANCE}`
 				: '')
 	);
-	return { heap_figures, heap_totals, heap_totals_grew };
+	// a figure compared on nothing is of an export a version lacks, or of one its process threw on for
+	// another reason, which is printed so the two are told apart
+	const heap_export_failures: Array<HeapExportFailure> = [
+		...heap.base_exports.map((e) => ({ name: e.name, version: 'base' as const, failed: e.failed })),
+		...heap.new_exports.map((e) => ({ name: e.name, version: 'new' as const, failed: e.failed }))
+	].filter((f): f is HeapExportFailure => f.failed !== null);
+	for (const f of heap_export_failures) {
+		print_table(
+			`${f.name}: the ${f.version === 'base' ? 'baseline' : 'new version'} threw, compared on nothing: ${f.failed}`
+		);
+	}
+	return { heap_figures, heap_export_failures, heap_totals, heap_totals_grew };
 };
 
 /** What the cold-start table and its verdict line read. */
@@ -1235,7 +1345,7 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 		};
 		// a path's cases are of one validity, but for `probe`, so its row has one time
 		const to_path_rows = (label: string, gs: Array<Graded>): Array<Array<string>> =>
-			PATHS.map((path) => gs.filter((g) => g.c.path === path))
+			CASE_PATHS.map((path) => gs.filter((g) => g.c.path === path))
 				.filter((of_path) => of_path.length)
 				.map((of_path) => {
 					const summary = summarize(of_path, regime);
@@ -1324,7 +1434,7 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 			};
 	const heap = record.heap
 		? read_heap(record.heap, print_table)
-		: { heap_figures: [], heap_totals: [], heap_totals_grew: [] };
+		: { heap_figures: [], heap_export_failures: [], heap_totals: [], heap_totals_grew: [] };
 	const coldstart = record.coldstart
 		? read_coldstart(record.coldstart, args.samples, print_table)
 		: {
@@ -1345,6 +1455,16 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 	print_verdict(
 		`\nagainst the acceptance rules: time is of ${args.runs} ${args.runs === 1 ? 'run' : 'runs'} together, and every figure of it is beside its A/A\n`
 	);
+	if (args.filter !== undefined) {
+		const realistic = record.cases.filter((c) => c.realistic).length;
+		print_verdict(
+			`a subset, --filter ${args.filter}: ` +
+				(record.realistic_total === undefined
+					? `${realistic} realistic ${realistic === 1 ? 'case' : 'cases'} graded, of a count in the whole matrix the record does not hold`
+					: `${realistic} of the ${record.realistic_total} realistic cases graded`) +
+				', and rules 4 and 6 read on those alone'
+		);
+	}
 	if (!valid_by_regime.length) {
 		print_verdict('realistic valid-path speed: no realistic valid cases in this run');
 	}
@@ -1419,9 +1539,21 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 			(!confirmable ? NOT_JUDGED : slowed.length ? `FAIL: ${slowed.join(', ')}` : 'pass')
 	);
 	const warned = to_warned(graded);
+	const warn_unread = to_warn_unread(graded);
+	// "none" is of the lines read: with none read, as a subset can leave it, it says so
+	const warn_read = to_summary_lines(graded).some((line) => line.family === 'warn' && line.read);
 	print_verdict(
 		'a realistic path is not slowed, a warning: ' +
-			(!confirmable ? NOT_JUDGED : warned.length ? `WARN: ${warned.join(', ')}` : 'none')
+			(!confirmable
+				? NOT_JUDGED
+				: warned.length
+					? `WARN: ${warned.join(', ')}`
+					: warn_read
+						? 'none'
+						: 'nothing read') +
+			(warn_unread.length
+				? `\n  on fewer than ${WARN_LEAST_CASES} cases, reported and not read: ${warn_unread.join(', ')}`
+				: '')
 	);
 
 	for (const regime of REGIMES) {
@@ -1480,6 +1612,7 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 		args: record.args,
 		started_at: record.started_at,
 		ended_at: record.ended_at,
+		dir: record.dir,
 		setup: record.setup,
 		machine: record.machine,
 		instances: record.instances,
@@ -1510,6 +1643,7 @@ export const read_grade = (record: GradeRecord, outputs: GradeOutputs): GradeRea
 		many_schema_rows,
 		all_sizes,
 		heap_figures: heap.heap_figures,
+		heap_export_failures: heap.heap_export_failures,
 		heap_totals: heap.heap_totals,
 		heap_totals_grew: heap.heap_totals_grew,
 		coldstart: coldstart.coldstart_report,
@@ -1551,3 +1685,115 @@ export const parse_grade_record = <T>(text: string): T =>
 	JSON.parse(text, (_, v: unknown) =>
 		typeof v === 'string' && v in NOT_FINITE ? NOT_FINITE[v] : v
 	) as T;
+
+/**
+ * The fields a record is read by, each refused by name where a record lacks
+ * it, as one written by a grader from before it was kept. `dir` and
+ * `realistic_total` are read with a default, and are not among them.
+ */
+export const GRADE_RECORD_FIELDS: ReadonlyArray<keyof GradeRecord> = [
+	'graded',
+	'against',
+	'identical',
+	'args',
+	'started_at',
+	'ended_at',
+	'elapsed_s',
+	'setup',
+	'machine',
+	'instances',
+	'apart_processes',
+	'program_entries',
+	'cases',
+	'alone',
+	'apart',
+	'jobs'
+];
+const GRADE_ARGS_FIELDS: ReadonlyArray<keyof GradeArgs> = [
+	'runs',
+	'class',
+	'samples',
+	'bundle',
+	'process'
+];
+const GRADE_JOBS_FIELDS: ReadonlyArray<keyof GradeJobsIndex> = [
+	'matrix',
+	'alone',
+	'apart',
+	'bytes_matrix',
+	'bytes_alone'
+];
+
+/** A grade read back from its directory, or what kept it from being read. */
+export type LoadedGrade =
+	{ ok: true; record: GradeRecord; outputs: GradeOutputs } | { ok: false; message: string };
+
+const is_record_object = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// the fields of `fields` that `value` lacks, each named after `prefix`, or
+// `prefix` itself where `value` is no object
+const to_missing = (
+	value: unknown,
+	fields: ReadonlyArray<string>,
+	prefix: string
+): Array<string> =>
+	is_record_object(value)
+		? fields.filter((field) => !(field in value)).map((field) => prefix + field)
+		: [`${prefix.slice(0, -1)} as an object`];
+
+/**
+ * Reads a grade's record and the outputs of its jobs, for `--replay`.
+ *
+ * @param read_file - the text of a file at a path relative to the grade's directory, `undefined` where there is none
+ * @returns the record and the outputs, or a message that names what is missing or unreadable
+ */
+export const load_grade = (read_file: (path: string) => string | undefined): LoadedGrade => {
+	const text = read_file('record.json');
+	if (text === undefined) {
+		return {
+			ok: false,
+			message:
+				'no record.json: give the directory of one grade, `.gro/grade/<start>/`, ' +
+				'which a grade writes its record to as it finishes measuring'
+		};
+	}
+	let parsed: unknown;
+	try {
+		parsed = parse_grade_record(text);
+	} catch (error) {
+		return { ok: false, message: `record.json is not JSON: ${(error as Error).message}` };
+	}
+	if (!is_record_object(parsed)) return { ok: false, message: 'record.json holds no object' };
+	const missing = [
+		...GRADE_RECORD_FIELDS.filter((field) => !(field in parsed)),
+		...('args' in parsed ? to_missing(parsed.args, GRADE_ARGS_FIELDS, 'args.') : []),
+		...('jobs' in parsed ? to_missing(parsed.jobs, GRADE_JOBS_FIELDS, 'jobs.') : [])
+	];
+	if (missing.length) {
+		return {
+			ok: false,
+			message:
+				`record.json lacks ${missing.join(', ')}, which the reading needs: ` +
+				'it was written by a grader from before the record held them'
+		};
+	}
+	const record = parsed as unknown as GradeRecord;
+	try {
+		const outputs = to_grade_outputs(record.jobs, (job) => {
+			const path = `jobs/${job}.out.json`;
+			const output = read_file(path);
+			if (output === undefined) {
+				throw new Error(`the record names job ${job}, and ${path} is missing`);
+			}
+			try {
+				return JSON.parse(output) as GradeChildOutput;
+			} catch (error) {
+				throw new Error(`${path} is not JSON: ${(error as Error).message}`);
+			}
+		});
+		return { ok: true, record, outputs };
+	} catch (error) {
+		return { ok: false, message: (error as Error).message };
+	}
+};
