@@ -708,7 +708,7 @@ describe('to_json_schema', () => {
 			const source = readFileSync(new URL('../lib/schema.ts', import.meta.url), 'utf8');
 			const literal = /const ISO_DATETIME =\s*\/(.*)\/;/.exec(source)?.[1];
 			assert.strictEqual(write(s.iso_datetime).pattern, literal);
-			// `uuid` reads char codes, held to this grammar by schema.test.ts
+			// `uuid` reads char codes, held to this grammar by schema.formats.test.ts
 			const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
 			const grammar = /### `uuid`\n\n```\n(.*)\n```/.exec(formats)?.[1];
 			assert.strictEqual(write(s.uuid).pattern, grammar);
@@ -1145,4 +1145,121 @@ describe('to_json_schema', () => {
 		assert.notStrictEqual(doc.properties!.a, doc.properties!.b);
 		assert.notStrictEqual(to_json_schema(shared), to_json_schema(shared));
 	});
+});
+
+describe('to_json_schema of every kind', () => {
+	const UUID = write(s.uuid).pattern;
+	const ISO_DATETIME = write(s.iso_datetime).pattern;
+	const STRING = { type: 'string' };
+	const NUMBER = { type: 'number' };
+	const OBJECT = { type: 'object', properties: { a: STRING }, required: ['a'] };
+
+	// every kind, which the types hold the table to: a new kind is a row here,
+	// with a schema that has it, as the root or the last step of a pipe, and the
+	// document written of it or the message it is refused with, as output and,
+	// where it differs, as input
+	const kinds: Record<
+		s.SchemaKind,
+		[s.AnySchema, Record<string, unknown> | string, (Record<string, unknown> | string)?]
+	> = {
+		string: [s.string, STRING],
+		number: [s.number, NUMBER],
+		boolean: [s.boolean, { type: 'boolean' }],
+		bigint: [s.bigint, 'cannot express `bigint` at #: a bigint is not JSON'],
+		unknown: [s.unknown, {}],
+		literal: [s.literal('a'), { type: 'string', const: 'a' }],
+		one_of: [s.one_of(['a', 1]), { enum: ['a', 1] }],
+		optional: [s.optional(s.string), STRING],
+		nullable: [s.nullable(s.string), { type: ['string', 'null'] }],
+		with_default: [s.with_default(s.number, 1), { type: 'number', default: 1 }],
+		with_default_fn: [s.with_default_fn(s.number, () => 1), NUMBER],
+		lazy: [s.lazy(() => s.string), STRING],
+		object: [s.object({ a: s.string }), { ...OBJECT, additionalProperties: false }],
+		loose_object: [s.loose_object({ a: s.string }), { ...OBJECT, additionalProperties: {} }],
+		// what an input may hold beyond its entries is not said
+		strip_object: [
+			s.strip_object({ a: s.string }),
+			{ ...OBJECT, additionalProperties: false },
+			OBJECT
+		],
+		object_with_rest: [
+			s.object_with_rest({ a: s.string }, s.number),
+			{ ...OBJECT, additionalProperties: NUMBER }
+		],
+		record: [
+			s.record(s.number),
+			{ type: 'object', propertyNames: STRING, additionalProperties: NUMBER }
+		],
+		array: [s.array(s.string), { type: 'array', items: STRING }],
+		union: [s.union([s.string, s.number]), { type: ['string', 'number'] }],
+		variant: [
+			s.variant('t', [s.object({ t: s.literal('a') })]),
+			{
+				oneOf: [
+					{
+						type: 'object',
+						properties: { t: { type: 'string', const: 'a' } },
+						required: ['t'],
+						additionalProperties: false
+					}
+				]
+			}
+		],
+		pipe: [s.pipe(s.string, s.min_length(1)), { type: 'string', minLength: 1 }],
+		// the actions are written in a pipe, outside one each is refused
+		min_length: [s.pipe(s.string, s.min_length(1)), { type: 'string', minLength: 1 }],
+		max_length: [
+			s.pipe(s.array(s.string), s.max_length(2)),
+			{ type: 'array', items: STRING, maxItems: 2 }
+		],
+		min_value: [s.pipe(s.number, s.min_value(1)), { type: 'number', minimum: 1 }],
+		max_value: [s.pipe(s.number, s.max_value(2)), { type: 'number', maximum: 2 }],
+		integer: [s.pipe(s.number, s.integer), { type: 'integer' }],
+		safe_integer: [
+			s.pipe(s.number, s.safe_integer),
+			{ type: 'integer', minimum: -Number.MAX_SAFE_INTEGER, maximum: Number.MAX_SAFE_INTEGER }
+		],
+		regex: [s.pipe(s.string, s.regex(/a/)), { type: 'string', pattern: 'a' }],
+		uuid: [s.pipe(s.string, s.uuid), { type: 'string', format: 'uuid', pattern: UUID }],
+		iso_datetime: [
+			s.pipe(s.string, s.iso_datetime),
+			{ type: 'string', format: 'date-time', pattern: ISO_DATETIME }
+		],
+		to_lower_case: [s.pipe(s.string, s.to_lower_case), STRING],
+		check: [
+			s.pipe(
+				s.string,
+				s.check(() => true)
+			),
+			'cannot express `check` at #: it holds a function'
+		],
+		transform: [
+			s.pipe(
+				s.string,
+				s.transform((v: string) => v)
+			),
+			'cannot express `transform` at #: its output is not known',
+			STRING
+		]
+	};
+
+	const written = (
+		schema: s.AnySchema,
+		options: JsonSchemaOptions
+	): Record<string, unknown> | string => {
+		try {
+			return write(schema, options);
+		} catch (error) {
+			return (error as Error).message;
+		}
+	};
+
+	for (const [kind, [schema, output, input = output]] of Object.entries(kinds)) {
+		test(kind, () => {
+			const last = schema.kind === 'pipe' ? (schema.def as Array<s.AnySchema>).at(-1)! : schema;
+			assert(schema.kind === kind || last.kind === kind, 'the row has its kind');
+			assert.deepEqual(written(schema, OUTPUT), output);
+			assert.deepEqual(written(schema, INPUT), input);
+		});
+	}
 });

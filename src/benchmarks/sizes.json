@@ -218,7 +218,7 @@
 	"modules": {
 		"meta.ts": 49,
 		"standard_schema.ts": 87,
-		"schema_json.ts": 2257,
+		"schema_json.ts": 2261,
 		"json_schema.ts": 4126,
 		"introspect.ts": 823
 	}

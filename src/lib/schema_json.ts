@@ -224,6 +224,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 	// kept apart because a lazy can defer to a lazy.
 	const lazies: Map<unknown, string> = new Map();
 	const targets: Map<AnySchema, string> = new Map();
+	const paths: Map<SchemaJsonNode, string> = new Map();
 
 	const refuse = (kind: string, path: string, reason: string): never => {
 		throw Error(`cannot serialize \`${kind}\` at ${path}: ${reason}`);
@@ -285,8 +286,14 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 		return out;
 	};
 
-	// `depth` is how many schemas are around this one, through every lazy
 	const node = (value: unknown, path: string, depth: number): SchemaJsonNode => {
+		const made = make(value, path, depth);
+		paths.set(made, path);
+		return made;
+	};
+
+	// `depth` is how many schemas are around this one, through every lazy
+	const make = (value: unknown, path: string, depth: number): SchemaJsonNode => {
 		if (!is_schema(value)) throw Error(`cannot serialize at ${path}: not a schema`);
 		// read as data, whatever the kind turns out to be
 		const kind: string = value.kind;
@@ -449,7 +456,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 	}
 	const root = node(schema, '/schema', 0);
 	const json: SchemaJson = Object.keys(defs).length ? { schema: root, defs } : { schema: root };
-	check_nesting(json);
+	check_nesting(json, paths);
 	const deep = too_deep_at(json);
 	if (deep !== undefined) {
 		throw Error(
@@ -464,9 +471,11 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
  * and one that nests further than `SCHEMA_JSON_MAX_NESTING`.
  *
  * What nests is what steps to another schema for the same value: a wrapper,
- * a `lazy`, the options of a `union`, and the first schema of a `pipe`.
+ * a `lazy`, the options of a `union`, and the first schema of a `pipe`. Each
+ * refusal names where in the document the schema it is about is, from
+ * `paths`, which for a schema a `lazy` defers to is under `defs`.
  */
-const check_nesting = (json: SchemaJson): void => {
+const check_nesting = (json: SchemaJson, paths: Map<SchemaJsonNode, string>): void => {
 	const depths: Map<SchemaJsonNode, number> = new Map();
 	const open: Set<SchemaJsonNode> = new Set();
 
@@ -508,21 +517,21 @@ const check_nesting = (json: SchemaJson): void => {
 		}
 	};
 
-	const depth_of = (node: SchemaJsonNode, path: string): number => {
+	const depth_of = (node: SchemaJsonNode): number => {
 		const known = depths.get(node);
 		if (known !== undefined) return known;
 		if (open.has(node)) {
 			throw Error(
-				`cannot serialize \`${node.kind}\` at ${path}: the schema comes back to itself without reading into the value`
+				`cannot serialize \`${node.kind}\` at ${paths.get(node)}: the schema comes back to itself without reading into the value`
 			);
 		}
 		open.add(node);
 		let depth = 0;
-		for (const next of nesting(node)) depth = Math.max(depth, depth_of(next, path) + 1);
+		for (const next of nesting(node)) depth = Math.max(depth, depth_of(next) + 1);
 		open.delete(node);
 		if (depth > SCHEMA_JSON_MAX_NESTING) {
 			throw Error(
-				`cannot serialize \`${node.kind}\` at ${path}: more than ${SCHEMA_JSON_MAX_NESTING} wrappers, lazies, unions, and pipes around one value`
+				`cannot serialize \`${node.kind}\` at ${paths.get(node)}: more than ${SCHEMA_JSON_MAX_NESTING} wrappers, lazies, unions, and pipes around one value`
 			);
 		}
 		depths.set(node, depth);
@@ -530,13 +539,13 @@ const check_nesting = (json: SchemaJson): void => {
 	};
 
 	const seen: Set<SchemaJsonNode> = new Set();
-	const visit = (node: SchemaJsonNode, path: string): void => {
+	const visit = (node: SchemaJsonNode): void => {
 		if (seen.has(node)) return;
 		seen.add(node);
-		depth_of(node, path);
+		depth_of(node);
 		// a lazy's target is visited under its own name
-		if (node.kind !== 'lazy') for (const next of held(node)) visit(next, path);
+		if (node.kind !== 'lazy') for (const next of held(node)) visit(next);
 	};
-	visit(json.schema, '/schema');
-	for (const name in json.defs) visit(json.defs[name]!, `/defs/${pointer_token(name)}`);
+	visit(json.schema);
+	for (const name in json.defs) visit(json.defs[name]!);
 };

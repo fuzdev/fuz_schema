@@ -349,7 +349,7 @@ export const JSON_REFUSALS: ReadonlyArray<JsonRefusal> = [
 		schema: self,
 		document: doc('{"kind":"lazy","def":"$0"}', '{"$0":{"kind":"lazy","def":"$0"}}'),
 		refused: 'unguarded_recursion',
-		message: '`lazy` at /schema: the schema comes back to itself without reading into the value'
+		message: '`lazy` at /defs/$0: the schema comes back to itself without reading into the value'
 	},
 	{
 		name: 'wrapper_around_itself',
@@ -359,7 +359,8 @@ export const JSON_REFUSALS: ReadonlyArray<JsonRefusal> = [
 			'{"$0":{"kind":"nullable","def":{"schema":{"kind":"lazy","def":"$0"}}}}'
 		),
 		refused: 'unguarded_recursion',
-		message: '`nullable` at /schema: the schema comes back to itself without reading into the value'
+		message:
+			'`nullable` at /defs/$0: the schema comes back to itself without reading into the value'
 	},
 	{
 		name: 'too_nested',

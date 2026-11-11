@@ -270,6 +270,24 @@ describe('to_schema_json', () => {
 		assert.deepEqual(Object.keys(json.defs!), ['$0']);
 	});
 
+	test('a second function that returns a named schema is called once', () => {
+		const target = s.string;
+		let calls = 0;
+		const first = s.lazy(() => target);
+		const second = s.lazy(() => {
+			calls++;
+			return target;
+		});
+		// `message` copies the second's function to another lazy, which is met after it
+		const json = to_schema_json(s.object({ a: first, b: second, c: s.message(second, 'no') }));
+		assert.strictEqual(calls, 1);
+		assert.deepEqual(json.schema.def, {
+			a: { kind: 'lazy', def: '$0' },
+			b: { kind: 'lazy', def: '$0' },
+			c: { kind: 'lazy', def: '$0' }
+		});
+	});
+
 	test('a function that makes a new schema each call is called once', () => {
 		const make = (): s.AnySchema => s.object({ next: s.optional(s.lazy(make)) });
 		assert.deepEqual(to_schema_json(make()), {
@@ -553,7 +571,17 @@ describe('to_schema_json refuses', () => {
 	});
 
 	test('defaults that are not JSON', () => {
-		for (const value of [undefined, 1n, NaN, new Date(0), () => 1, [undefined], { a: undefined }]) {
+		for (const value of [
+			undefined,
+			1n,
+			NaN,
+			Infinity,
+			-Infinity,
+			new Date(0),
+			() => 1,
+			[undefined],
+			{ a: undefined }
+		]) {
 			assert_refuses(
 				() => s.object({ a: s.with_default(s.unknown, value) }),
 				'cannot serialize `with_default` at /schema/def/a/def/value: the default is not a JSON value'
@@ -719,18 +747,25 @@ describe('to_schema_json refuses', () => {
 
 	test('schemas that come back to themselves without reading into the value', () => {
 		const message = ': the schema comes back to itself without reading into the value';
+		// each is named where it is in the document, which a lazy's target is under `defs`
 		const optional: s.AnySchema = s.optional(s.lazy(() => optional));
-		assert_refuses(() => optional, 'cannot serialize `optional` at /schema' + message);
+		assert_refuses(() => optional, 'cannot serialize `optional` at /defs/$0' + message);
 		const union: s.AnySchema = s.union([s.string, s.lazy(() => union)]);
-		assert_refuses(() => s.array(union), 'cannot serialize `union` at /schema' + message);
+		assert_refuses(() => s.array(union), 'cannot serialize `union` at /defs/$0' + message);
 		const self: s.AnySchema = s.lazy(() => self);
-		assert_refuses(() => self, 'cannot serialize `lazy` at /schema' + message);
+		assert_refuses(() => self, 'cannot serialize `lazy` at /defs/$0' + message);
 		const a: s.AnySchema = s.nullable(s.lazy(() => b));
 		const b: s.AnySchema = s.with_default(
 			s.lazy(() => a),
 			null
 		);
-		assert_refuses(() => s.object({ a }), 'cannot serialize `with_default` at /schema' + message);
+		assert_refuses(() => s.object({ a }), 'cannot serialize `with_default` at /defs/$0' + message);
+		// a lazy the root holds deep, and the definitions before it, which are fine
+		const fine: s.AnySchema = s.array(s.lazy(() => fine));
+		assert_refuses(
+			() => s.object({ a: s.object({ b: s.array(s.lazy(() => fine)), c: s.array(union) }) }),
+			'cannot serialize `union` at /defs/$1' + message
+		);
 	});
 
 	test('schemas that come back to themselves through a container are fine', () => {
@@ -745,10 +780,37 @@ describe('to_schema_json refuses', () => {
 	test('nesting past the limit', () => {
 		let schema: s.AnySchema = s.string;
 		for (let i = 0; i <= SCHEMA_JSON_MAX_NESTING; i++) schema = s.nullable(schema);
-		assert_refuses(
-			() => schema,
-			`cannot serialize \`nullable\` at /schema: more than ${SCHEMA_JSON_MAX_NESTING} wrappers, lazies, unions, and pipes around one value`
-		);
+		const message = `: more than ${SCHEMA_JSON_MAX_NESTING} wrappers, lazies, unions, and pipes around one value`;
+		assert_refuses(() => schema, 'cannot serialize `nullable` at /schema' + message);
+		// named where it is, under whatever holds it
+		const under: Array<[holder: () => s.AnySchema, path: string]> = [
+			[() => s.object({ a: s.object({ 'b/c': schema }) }), '/schema/def/a/def/b~1c'],
+			[() => s.loose_object({ a: schema }), '/schema/def/a'],
+			[() => s.strip_object({ a: schema }), '/schema/def/a'],
+			[() => s.object({ deep: s.array(schema) }), '/schema/def/deep/def'],
+			[() => s.array(s.record(schema)), '/schema/def/def'],
+			[() => s.array(s.union([s.string, schema])), '/schema/def/def/1'],
+			[() => s.array(s.pipe(s.array(schema), s.min_length(1))), '/schema/def/def/0/def'],
+			[() => s.array(s.optional(s.array(schema))), '/schema/def/def/schema/def'],
+			[() => s.array(s.nullable(s.array(schema))), '/schema/def/def/schema/def'],
+			[() => s.array(s.with_default(s.array(schema), [])), '/schema/def/def/schema/def'],
+			[
+				() =>
+					s.variant('k', [
+						s.object({ k: s.literal('a') }),
+						s.object({ k: s.literal('b'), x: schema })
+					]),
+				'/schema/def/options/1/def/x'
+			],
+			[() => s.array(s.lazy(() => s.object({ a: schema }))), '/defs/$0/def/a']
+		];
+		for (const [holder, path] of under) {
+			assert_refuses(holder, `cannot serialize \`nullable\` at ${path}${message}`);
+		}
+		// past the limit by the schemas around one in a lazy's definition, named at the schema that takes it past
+		let around: s.AnySchema = s.lazy(() => s.string);
+		for (let i = 0; i < SCHEMA_JSON_MAX_NESTING; i++) around = s.nullable(around);
+		assert_refuses(() => s.array(around), 'cannot serialize `nullable` at /schema/def' + message);
 	});
 
 	test('what is not a schema, or not a kind of the library', () => {
@@ -758,4 +820,129 @@ describe('to_schema_json refuses', () => {
 			'cannot serialize at /schema: unknown kind "date"'
 		);
 	});
+});
+
+describe('to_schema_json of every kind', () => {
+	const refused = (kind: string, path: string, reason: string): string =>
+		`cannot serialize \`${kind}\` at ${path}: ${reason}`;
+	const NOT_PORTABLE = 'it holds a JavaScript value and is not portable';
+
+	// every kind, which the types hold the table to: a new kind is a row here,
+	// with a schema that has it, as the root or the last step of a pipe, and
+	// the node written of that schema or the message it is refused with
+	const kinds: Record<s.SchemaKind, [s.AnySchema, SchemaJsonNode | string]> = {
+		string: [s.string, STRING],
+		number: [s.number, NUMBER],
+		boolean: [s.boolean, { kind: 'boolean' }],
+		bigint: [s.bigint, { kind: 'bigint' }],
+		unknown: [s.unknown, { kind: 'unknown' }],
+		literal: [s.literal('a'), { kind: 'literal', def: 'a' }],
+		one_of: [s.one_of(['a', 1]), { kind: 'one_of', def: ['a', 1] }],
+		optional: [s.optional(s.string), { kind: 'optional', def: { schema: STRING } }],
+		nullable: [s.nullable(s.string), { kind: 'nullable', def: { schema: STRING } }],
+		with_default: [
+			s.with_default(s.number, 1),
+			{ kind: 'with_default', def: { schema: NUMBER, value: 1 } }
+		],
+		with_default_fn: [
+			s.with_default_fn(s.number, () => 1),
+			refused('with_default_fn', '/schema', NOT_PORTABLE)
+		],
+		lazy: [s.lazy(() => s.string), { kind: 'lazy', def: '$0' }],
+		object: [s.object({ a: s.string }), { kind: 'object', def: { a: STRING } }],
+		loose_object: [s.loose_object({ a: s.string }), { kind: 'loose_object', def: { a: STRING } }],
+		strip_object: [s.strip_object({ a: s.string }), { kind: 'strip_object', def: { a: STRING } }],
+		object_with_rest: [
+			s.object_with_rest({ a: s.string }, s.number),
+			refused(
+				'object_with_rest',
+				'/schema',
+				'it is not portable, as the Rust crate does not carry it'
+			)
+		],
+		record: [s.record(s.number), { kind: 'record', def: NUMBER }],
+		array: [s.array(s.string), { kind: 'array', def: STRING }],
+		union: [s.union([s.string, s.number]), { kind: 'union', def: [STRING, NUMBER] }],
+		variant: [
+			s.variant('t', [s.object({ t: s.literal('a') })]),
+			{
+				kind: 'variant',
+				def: { key: 't', options: [{ kind: 'object', def: { t: { kind: 'literal', def: 'a' } } }] }
+			}
+		],
+		pipe: [
+			s.pipe(s.string, s.min_length(1)),
+			{ kind: 'pipe', def: [STRING, { kind: 'min_length', def: 1 }] }
+		],
+		// the actions are written in a pipe, outside one each is refused
+		min_length: [
+			s.pipe(s.string, s.min_length(1)),
+			{ kind: 'pipe', def: [STRING, { kind: 'min_length', def: 1 }] }
+		],
+		max_length: [
+			s.pipe(s.array(s.string), s.max_length(2)),
+			{
+				kind: 'pipe',
+				def: [
+					{ kind: 'array', def: STRING },
+					{ kind: 'max_length', def: 2 }
+				]
+			}
+		],
+		min_value: [
+			s.pipe(s.number, s.min_value(1)),
+			{ kind: 'pipe', def: [NUMBER, { kind: 'min_value', def: 1 }] }
+		],
+		max_value: [
+			s.pipe(s.number, s.max_value(2)),
+			{ kind: 'pipe', def: [NUMBER, { kind: 'max_value', def: 2 }] }
+		],
+		integer: [s.pipe(s.number, s.integer), { kind: 'pipe', def: [NUMBER, { kind: 'integer' }] }],
+		safe_integer: [
+			s.pipe(s.number, s.safe_integer),
+			{ kind: 'pipe', def: [NUMBER, { kind: 'safe_integer' }] }
+		],
+		regex: [s.pipe(s.string, s.regex(/a/)), refused('regex', '/schema/def/1', NOT_PORTABLE)],
+		uuid: [s.pipe(s.string, s.uuid), { kind: 'pipe', def: [STRING, { kind: 'uuid' }] }],
+		iso_datetime: [
+			s.pipe(s.string, s.iso_datetime),
+			{ kind: 'pipe', def: [STRING, { kind: 'iso_datetime' }] }
+		],
+		to_lower_case: [
+			s.pipe(s.string, s.to_lower_case),
+			{ kind: 'pipe', def: [STRING, { kind: 'to_lower_case' }] }
+		],
+		check: [
+			s.pipe(
+				s.string,
+				s.check(() => true)
+			),
+			refused('check', '/schema/def/1', NOT_PORTABLE)
+		],
+		transform: [
+			s.pipe(
+				s.string,
+				s.transform((v: string) => v)
+			),
+			refused('transform', '/schema/def/1', NOT_PORTABLE)
+		]
+	};
+
+	for (const [kind, [schema, expected]] of Object.entries(kinds)) {
+		test(kind, () => {
+			const last = schema.kind === 'pipe' ? (schema.def as Array<s.AnySchema>).at(-1)! : schema;
+			assert(schema.kind === kind || last.kind === kind, 'the row has its kind');
+			if (typeof expected === 'string') {
+				let message: string | undefined;
+				try {
+					to_schema_json(schema);
+				} catch (error) {
+					message = (error as Error).message;
+				}
+				assert.strictEqual(message, expected);
+			} else {
+				assert.deepEqual(node(schema), expected);
+			}
+		});
+	}
 });

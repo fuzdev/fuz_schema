@@ -898,7 +898,12 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				unrepresentable(s.kind, path, 'it means something only in a pipe after a schema it fits');
 				return {};
 			default:
-				unrepresentable((s as AnySchema).kind, path, 'it is a kind defined outside the library');
+				// every kind of the library is a case above, which a new one fails to compile without
+				unrepresentable(
+					(s satisfies never as AnySchema).kind,
+					path,
+					'it is a kind defined outside the library'
+				);
 				return {};
 		}
 	};
