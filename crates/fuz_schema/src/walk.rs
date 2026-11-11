@@ -19,7 +19,7 @@
 //! the report's `Probe` and dropped with it.
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::error::JsonError;
 use crate::format;
@@ -169,8 +169,8 @@ impl Memo {
     /// An array is known by the address of its items and an object by its
     /// own, which no other array, or other object, of the tree shares while
     /// it lives: every empty array has one address, and the same verdict. An
-    /// array's address can be an object's, of the object that is its first
-    /// item, so the key says which it is.
+    /// array's address could be an object's, by layout, so the key says which
+    /// it is.
     fn key(schema: &Schema, id: NodeId, value: Value<'_>) -> Option<MemoKey> {
         let (container, address) = match value {
             Value::Array(items) => (Container::Array, items.as_ptr().addr()),
@@ -240,7 +240,7 @@ impl Report for Collect<'_> {
         );
         self.issues.push(SchemaIssue {
             kind: failure.issue_kind(),
-            expected: expected(self.schema, at, failure),
+            expected: expected(self.schema, node, at, failure),
             received,
             path: Vec::new(),
         });
@@ -265,8 +265,9 @@ impl Report for Collect<'_> {
 }
 
 /// The `expected` of the issue the TypeScript library reports for `failure`
-/// of `node`: the kind's name where the library gives `fail` no other text.
-fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
+/// of `node`, whose id is `id`: the kind's name where the library gives `fail`
+/// no other text.
+fn expected(schema: &Schema, id: NodeId, node: &SchemaNode, failure: Failure) -> String {
     match (failure, node) {
         (Failure::UnknownKey, _) => "no unknown keys".to_owned(),
         (Failure::MissingKey, _) => "a required key".to_owned(),
@@ -283,18 +284,44 @@ fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
         ) => "object".to_owned(),
         (_, SchemaNode::Literal(literal)) => format_literals([literal]),
         (_, SchemaNode::OneOf(literals)) => format_literals(literals.iter()),
-        (_, SchemaNode::Union(options)) => {
-            let mut parts = Vec::new();
-            for &option in options {
-                describe_option(schema, option, &mut parts);
-            }
-            parts.join(" | ")
-        }
+        (_, SchemaNode::Union(_)) => schema.union_expected(id).to_owned(),
         (_, SchemaNode::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
         (_, SchemaNode::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
         (_, SchemaNode::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
         (_, SchemaNode::MaxValue(max)) => format!("<= {}", js::number_to_string(*max)),
         _ => node.kind().as_str().to_owned(),
+    }
+}
+
+/// The `expected` of a failed `union` with `options`: what each option adds,
+/// joined by ` | `, as the library's `union` writes it.
+///
+/// `SchemaBuilder::build` writes it once for each union, as the library writes
+/// it once for each and keeps it, so a union that fails many times, or names
+/// many values, costs its text once.
+pub fn union_expected(nodes: &[SchemaNode], options: &[NodeId]) -> Box<str> {
+    let mut parts = Parts::default();
+    for &option in options {
+        describe_option(nodes, option, &mut parts);
+    }
+    parts.order.join(" | ").into_boxed_str()
+}
+
+/// The parts of a union's `expected`, each once by its text, in the order
+/// they first appear, as the library's `Set` keeps them.
+#[derive(Default)]
+struct Parts {
+    order: Vec<Cow<'static, str>>,
+    seen: HashSet<Cow<'static, str>>,
+}
+
+impl Parts {
+    /// Adds `part` unless a part of the same text is there.
+    fn add(&mut self, part: Cow<'static, str>) {
+        if !self.seen.contains(&part) {
+            self.seen.insert(part.clone());
+            self.order.push(part);
+        }
     }
 }
 
@@ -306,43 +333,36 @@ fn expected(schema: &Schema, node: &SchemaNode, failure: Failure) -> String {
 /// what its schema adds, a `nullable` that and then `null`, and any other node
 /// its kind. A `lazy` is its kind, so a recursive union is never followed back
 /// to itself, and the builder bounds the rest.
-fn describe_option(schema: &Schema, id: NodeId, parts: &mut Vec<Cow<'static, str>>) {
-    match schema.at(id) {
+fn describe_option(nodes: &[SchemaNode], id: NodeId, parts: &mut Parts) {
+    match &nodes[id.index()] {
         SchemaNode::Union(options) => {
             for &option in options {
-                describe_option(schema, option, parts);
+                describe_option(nodes, option, parts);
             }
         }
         SchemaNode::Pipe(steps) => {
             if let Some(&first) = steps.first() {
-                describe_option(schema, first, parts);
+                describe_option(nodes, first, parts);
             }
         }
-        SchemaNode::Literal(literal) => add_part(parts, Cow::Owned(format_literal(literal))),
+        SchemaNode::Literal(literal) => parts.add(Cow::Owned(format_literal(literal))),
         SchemaNode::OneOf(literals) => {
             for literal in literals {
-                add_part(parts, Cow::Owned(format_literal(literal)));
+                parts.add(Cow::Owned(format_literal(literal)));
             }
         }
         SchemaNode::Object(_)
         | SchemaNode::LooseObject(_)
         | SchemaNode::StripObject(_)
         | SchemaNode::Record(_)
-        | SchemaNode::Variant(_) => add_part(parts, Cow::Borrowed("object")),
-        SchemaNode::Optional(inner) => describe_option(schema, *inner, parts),
-        SchemaNode::WithDefault(def) => describe_option(schema, def.schema, parts),
+        | SchemaNode::Variant(_) => parts.add(Cow::Borrowed("object")),
+        SchemaNode::Optional(inner) => describe_option(nodes, *inner, parts),
+        SchemaNode::WithDefault(def) => describe_option(nodes, def.schema, parts),
         SchemaNode::Nullable(inner) => {
-            describe_option(schema, *inner, parts);
-            add_part(parts, Cow::Borrowed("null"));
+            describe_option(nodes, *inner, parts);
+            parts.add(Cow::Borrowed("null"));
         }
-        node => add_part(parts, Cow::Borrowed(node.kind().as_str())),
-    }
-}
-
-/// Adds `part` unless a part of the same text is there.
-fn add_part(parts: &mut Vec<Cow<'static, str>>, part: Cow<'static, str>) {
-    if !parts.contains(&part) {
-        parts.push(part);
+        node => parts.add(Cow::Borrowed(node.kind().as_str())),
     }
 }
 
@@ -536,8 +556,11 @@ fn union(
     }
     let mut matched = false;
     for &option in options {
+        // a test that bounds the work gives up here, keeping nothing
         #[cfg(test)]
-        tests::OPTION_RUNS.with(|runs| runs.set(runs.get() + 1));
+        if !tests::count_option_run() {
+            return false;
+        }
         if run(schema, option, value, probe) {
             matched = true;
             break;
@@ -568,8 +591,11 @@ fn pipe<'a, R: Report>(
     let mut pipes: [&[NodeId]; MAX_NESTING + 1] = [&[]; MAX_NESTING + 1];
     let mut count = 0;
     while let Some((&head, actions)) = steps.split_first() {
-        // `build` lets no more pipes than this start with one another
+        // `build` lets no more pipes than this start with one another, so a
+        // bound that drifts from its own panics in a debug build and fails the
+        // match in a release one
         let Some(pipe) = pipes.get_mut(count) else {
+            debug_assert!(false, "more pipes start with one another than `build` lets");
             return false;
         };
         *pipe = actions;
@@ -826,6 +852,37 @@ pub mod tests {
     thread_local! {
         /// How many options the unions of this thread have run.
         pub static OPTION_RUNS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+        /// How many a union may run before it gives up, unbounded but where
+        /// `within_budget` sets it.
+        static OPTION_BUDGET: std::cell::Cell<usize> = const { std::cell::Cell::new(usize::MAX) };
+        /// Whether a union gave up since `within_budget` set the budget.
+        static OVER_BUDGET: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    }
+
+    /// Counts an option a union is about to run, and says whether it may.
+    pub fn count_option_run() -> bool {
+        let runs = OPTION_RUNS.with(|runs| {
+            runs.set(runs.get() + 1);
+            runs.get()
+        });
+        if runs > OPTION_BUDGET.with(std::cell::Cell::get) {
+            OVER_BUDGET.with(|over| over.set(true));
+            return false;
+        }
+        true
+    }
+
+    /// What `evaluate` returns and how many options its unions ran, or `None`
+    /// when they ran more than `budget`, where the first union past it gave up
+    /// and what `evaluate` returned means nothing.
+    pub fn within_budget<T>(budget: usize, evaluate: impl FnOnce() -> T) -> Option<(T, usize)> {
+        OPTION_RUNS.with(|runs| runs.set(0));
+        OPTION_BUDGET.with(|limit| limit.set(budget));
+        OVER_BUDGET.with(|over| over.set(false));
+        let result = evaluate();
+        OPTION_BUDGET.with(|limit| limit.set(usize::MAX));
+        let runs = OPTION_RUNS.with(std::cell::Cell::get);
+        (!OVER_BUDGET.with(std::cell::Cell::get)).then_some((result, runs))
     }
 
     /// A report that keeps the node of each failure.
@@ -2471,23 +2528,38 @@ pub mod tests {
         });
         let deepest_array = format!("{}{}", "[".repeat(127), "]".repeat(127));
         let deepest_object = format!("{}{{}}{}", r#"{"a":"#.repeat(126), "}".repeat(126));
+        // and the same with the innermost value one no schema there takes, so
+        // that a failure is reported, and its path built, from the bottom up
+        let deepest_array_wrong = format!("{}1{}", "[".repeat(126), "]".repeat(126));
+        let deepest_object_wrong = format!("{}1{}", r#"{"a":"#.repeat(126), "}".repeat(126));
         let thread = std::thread::Builder::new()
             .stack_size(stack)
             .spawn(move || {
-                for (schema, text) in [
-                    (&nested, &deepest_array),
-                    (&nested_memoized, &deepest_object),
-                    (&piped, &deepest_array),
-                    (&piped_option, &deepest_array),
-                    (&piped_unions, &deepest_array),
-                    (&arrays, &deepest_array),
-                    (&objects, &deepest_object),
-                    (&records, &deepest_object),
+                let array = (&deepest_array, &deepest_array_wrong);
+                let object = (&deepest_object, &deepest_object_wrong);
+                for (schema, (text, wrong)) in [
+                    (&nested, array),
+                    (&nested_memoized, object),
+                    (&piped, array),
+                    (&piped_option, array),
+                    (&piped_unions, array),
+                    (&arrays, array),
+                    (&objects, object),
+                    (&records, object),
                 ] {
                     assert_eq!(matches_json(schema, text), Ok(true));
                     assert_eq!(crate::stream::matches_json(schema, text), Ok(true));
                     assert_eq!(validate_json(schema, text), Ok(Vec::new()));
+                    assert_eq!(matches_json(schema, wrong), Ok(false));
+                    assert_eq!(crate::stream::matches_json(schema, wrong), Ok(false));
+                    let issues = validate_json(schema, wrong).unwrap();
+                    assert_eq!(issues.len(), 1, "{issues:?}");
                 }
+                // where no union probes it, the issue is at the bottom
+                let issues = validate_json(&arrays, &deepest_array_wrong).unwrap();
+                assert_eq!(issues[0].path().len(), 126);
+                let issues = validate_json(&records, &deepest_object_wrong).unwrap();
+                assert_eq!(issues[0].path().len(), 126);
             });
         thread.unwrap().join().unwrap();
     }

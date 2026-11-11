@@ -70,6 +70,8 @@ mod interchange;
 mod issue;
 mod js;
 mod json;
+#[cfg(test)]
+mod memo_check;
 mod schema;
 mod stream;
 mod walk;

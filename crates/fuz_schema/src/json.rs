@@ -13,8 +13,8 @@ use serde::de::{DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use crate::error::JsonError;
 use crate::js;
 
-/// Objects up to this many keys or entries are searched in order, and larger
-/// ones through a sorted index.
+/// Objects up to this many keys or entries, and a `variant`'s table up to this
+/// many values, are searched in order, and larger ones through a sorted index.
 pub const LINEAR_MAX: usize = 8;
 
 /// The deepest that arrays and objects can be nested in a text the crate

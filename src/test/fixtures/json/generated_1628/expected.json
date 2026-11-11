@@ -1,0 +1,589 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "loose_object",
+			"def": {
+				"é": {
+					"kind": "nullable",
+					"def": {
+						"schema": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "uuid"
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						}
+					}
+				},
+				"😀": {
+					"kind": "object",
+					"def": {}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_aimed",
+			"text": "{\"é\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"\\uD83D\\ude00\":{\"\\u0074oS\\u0074\\u0072i\\u006eg\":true}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received array"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"😀",
+						"toString"
+					],
+					"formatted": "\"😀\".toString: expected no unknown keys, received boolean"
+				}
+			]
+		},
+		{
+			"name": "01_near",
+			"text": "{\"😀\":{},\"é\":\"é\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "02_aimed",
+			"text": "{\"é\"\r\n: \"123e4567-e89b-42d3-a456-42661417400０\"  }",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received undefined"
+				}
+			]
+		},
+		{
+			"name": "03_aimed",
+			"text": "[[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "04_aimed",
+			"text": "{\"é\":null,\"\\u0074oS\\u0074\\u0072i\\u006eg\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received undefined"
+				}
+			]
+		},
+		{
+			"name": "05_tail",
+			"text": "{\"é\":null,\"😀\":{}} ]",
+			"json": false
+		},
+		{
+			"name": "06_aimed",
+			"text": "{\r\n\"é\":\r\nnull\n,\"\\ud83d\\uDE00\":{  }  }",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "07_near",
+			"text": "{\"é\":null,\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "08_near",
+			"text": "{\"é\":null,\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "09_near",
+			"text": "{\"é\":\"123e4567e89b42d3a456426614174000\",\"😀\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "10_aimed",
+			"text": "{\"😀\":{},\"é\":false}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "boolean",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received boolean"
+				}
+			]
+		},
+		{
+			"name": "11_aimed",
+			"text": "{\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received undefined"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "12_aimed",
+			"text": "{ \"é\":\tnull,\r\n\"😀\": {}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "13_tail",
+			"text": "{\"é\":[[[[[[[[[[]]]]]]]]]],\"😀\":{}} //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "14_near",
+			"text": "{\"é\":null,\"😀\":{\"toString\":{},\"toString\":-1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"😀",
+						"toString"
+					],
+					"formatted": "\"😀\".toString: expected no unknown keys, received number"
+				}
+			]
+		},
+		{
+			"name": "15_aimed",
+			"text": "{\"é\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"😀\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received array"
+				}
+			]
+		},
+		{
+			"name": "16_aimed",
+			"text": "{\"a\":[null,[false]],\"😀\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received undefined"
+				}
+			]
+		},
+		{
+			"name": "17_aimed",
+			"text": "{\"é\":{\"a\":1},\"😀\":0}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "object",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received object"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received number"
+				}
+			]
+		},
+		{
+			"name": "18_near",
+			"text": "{\"😀\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received undefined"
+				}
+			]
+		},
+		{
+			"name": "19_aimed",
+			"text": "{\"é\":null ,\n\"😀\": {  }}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "20_aimed",
+			"text": "{\"😀\":{},\"é\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "21_aimed",
+			"text": "[null]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "22_near",
+			"text": "{\"é\":\"\\u0031\\u0032\\u0033e4567-e\\u0038\\u0039\\u0062\\u002d4\\u0032\\u0064\\u0033-\\u0061456\\u002D4\\u003266141\\u00374\\u003000\",\"😀\":null}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "null",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received null"
+				}
+			]
+		},
+		{
+			"name": "23_near",
+			"text": "{\"é\":null,\"😀\":{\"constructor\":{\" \":\"\\n\",\"k0\":2.5e-3}}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"😀",
+						"constructor"
+					],
+					"formatted": "\"😀\".constructor: expected no unknown keys, received object"
+				}
+			]
+		},
+		{
+			"name": "24_near",
+			"text": "{\"é\"\t:\t\"123e4567-e89b-42d3-a456-42661417400０\"\t,\"😀\"\n:{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "25_aimed",
+			"text": "{\"é\" :\"abc\"  ,\"😀\"\r\n:\t{\t}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "26_aimed",
+			"text": "{\"😀\":{},\"0\":\"\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected string, received undefined"
+				}
+			]
+		},
+		{
+			"name": "27_tail",
+			"text": "{  \"é\":\"123e4567-e89b-42d3-c456-426614174000\",\r\n\"😀\":{} }}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "28_aimed",
+			"text": "{\"é\":null,\"😀\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "29_tail",
+			"text": "{ \"é\" :\r\n-1.5  ,\"😀\"\r\n:  {  }\r\n} //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "30_aimed",
+			"text": "{\"é\":\"123e4567-e89b-42d3-a456-426614174000\",\"😀\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_aimed",
+			"text": "{\"\\u00E9\":null,\"😀\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "32_aimed",
+			"text": "[[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "loose_object",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "33_aimed",
+			"text": "{\"é\":\"123E4567-E89B-82D3-B456-426614174000\",\"😀\":{}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "34_aimed",
+			"text": "{\"é\":null,\"😀\":{},\"\":{\"0\":{\" \":\"a\\\"b\",\"k1\":\"abc\"}}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "35_aimed",
+			"text": "{\"é\":\"x\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				},
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "undefined",
+					"path": [
+						"😀"
+					],
+					"formatted": "\"😀\": expected object, received undefined"
+				}
+			]
+		},
+		{
+			"name": "36_near",
+			"text": "{\"é\":\"000\\u00300\\u003000-0\\u003000\\u002d0\\u0030\\u00300-0000-\\u0030\\u00300\\u00300\\u00300\\u0030000\\u0030\"\t,\"😀\"\t:  {\t} }",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "37_near",
+			"text": "{\"😀\":\t{  },\r\n\"é\"\t:\"123e4567-e89b-42d3-a456-42661417400０\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "uuid",
+					"expected": "uuid",
+					"received": "string",
+					"path": [
+						"é"
+					],
+					"formatted": "\"é\": expected uuid, received string"
+				}
+			]
+		},
+		{
+			"name": "38_aimed",
+			"text": "{  \"é\":  \"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\",\t\"😀\": { }  }",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "39_tail",
+			"text": "{\"é\":\"\\u0031\\u0032\\u0033e4\\u0035\\u0036\\u0037-e89b\\u002D4\\u0032\\u0064\\u0033\\u002D\\u0061456\\u002d\\u0034266\\u003141\\u0037\\u003400\\u0030\",\"\\uD83D\\ude00\":{}} null",
+			"json": false
+		}
+	]
+}

@@ -44,16 +44,24 @@ impl Bits {
     }
 
     /// Whether every member of `other` is a member of this set. The two must
-    /// have been made with the same length.
+    /// have been made with the same length: a caller that makes them with
+    /// different lengths panics in a debug build, and is told `false` in a
+    /// release one.
     pub(crate) fn is_superset(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Small(word), Self::Small(other)) => word & other == *other,
-            (Self::Large(words), Self::Large(other)) => words
-                .iter()
-                .zip(other)
-                .all(|(word, other)| word & other == *other),
-            // made with different lengths, which the callers never do
-            _ => false,
+            (Self::Large(words), Self::Large(other)) => {
+                debug_assert_eq!(words.len(), other.len(), "sets of different lengths");
+                words.len() == other.len()
+                    && words
+                        .iter()
+                        .zip(other)
+                        .all(|(word, other)| word & other == *other)
+            }
+            _ => {
+                debug_assert!(false, "sets of different lengths");
+                false
+            }
         }
     }
 }
@@ -90,8 +98,16 @@ mod tests {
     }
 
     #[test]
-    fn sets_of_different_lengths_are_not_supersets() {
-        assert!(!Bits::new(1).is_superset(&Bits::new(100)));
-        assert!(!Bits::new(100).is_superset(&Bits::new(1)));
+    #[cfg(debug_assertions)]
+    #[should_panic = "sets of different lengths"]
+    fn sets_of_different_lengths_fail_in_a_test() {
+        Bits::new(1).is_superset(&Bits::new(100));
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic = "sets of different lengths"]
+    fn large_sets_of_different_lengths_fail_in_a_test() {
+        Bits::new(100).is_superset(&Bits::new(200));
     }
 }

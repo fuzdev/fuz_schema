@@ -167,9 +167,10 @@ impl fmt::Display for Received {
 /// an `object` has no entry for, or a key an `unknown` entry needs and the
 /// value does not have.
 ///
-/// The kinds that never fail a value have none: `unknown` accepts every
-/// value, and the wrappers, `lazy`, and `pipe` leave the failure to the
-/// schema they hold.
+/// Some kinds have none of their own name. `unknown` accepts every value
+/// that is present, and fails a missing key as a `MissingKey`. The wrappers,
+/// `lazy`, and `pipe` leave the failure to the schema they hold, and
+/// `to_lower_case` never fails.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SchemaIssueKind {

@@ -1,0 +1,177 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "bigint"
+					},
+					{
+						"kind": "union",
+						"def": [
+							{
+								"kind": "bigint"
+							},
+							{
+								"kind": "union",
+								"def": [
+									{
+										"kind": "bigint"
+									},
+									{
+										"kind": "union",
+										"def": [
+											{
+												"kind": "bigint"
+											},
+											{
+												"kind": "union",
+												"def": [
+													{
+														"kind": "bigint"
+													},
+													{
+														"kind": "union",
+														"def": [
+															{
+																"kind": "bigint"
+															},
+															{
+																"kind": "union",
+																"def": [
+																	{
+																		"kind": "bigint"
+																	},
+																	{
+																		"kind": "union",
+																		"def": [
+																			{
+																				"kind": "bigint"
+																			},
+																			{
+																				"kind": "union",
+																				"def": [
+																					{
+																						"kind": "bigint"
+																					},
+																					{
+																						"kind": "union",
+																						"def": [
+																							{
+																								"kind": "bigint"
+																							},
+																							{
+																								"kind": "union",
+																								"def": [
+																									{
+																										"kind": "bigint"
+																									},
+																									{
+																										"kind": "union",
+																										"def": [
+																											{
+																												"kind": "bigint"
+																											},
+																											{
+																												"kind": "union",
+																												"def": [
+																													{
+																														"kind": "bigint"
+																													},
+																													{
+																														"kind": "union",
+																														"def": [
+																															{
+																																"kind": "bigint"
+																															},
+																															{
+																																"kind": "pipe",
+																																"def": [
+																																	{
+																																		"kind": "array",
+																																		"def": {
+																																			"kind": "lazy",
+																																			"def": "$0"
+																																		}
+																																	},
+																																	{
+																																		"kind": "min_length",
+																																		"def": 0
+																																	}
+																																]
+																															}
+																														]
+																													}
+																												]
+																											}
+																										]
+																									}
+																								]
+																							}
+																						]
+																					}
+																				]
+																			}
+																		]
+																	}
+																]
+															}
+														]
+													}
+												]
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "[]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "deepest",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "deepest_wrong",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "bigint | array",
+					"received": "array",
+					"path": [],
+					"formatted": "expected bigint | array, received array"
+				}
+			]
+		},
+		{
+			"name": "past_deepest",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": true,
+			"issues": [],
+			"diverges": "depth_limit"
+		}
+	]
+}

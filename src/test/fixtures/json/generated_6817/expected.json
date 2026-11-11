@@ -1,0 +1,949 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "lazy",
+			"def": "$0"
+		},
+		"defs": {
+			"$0": {
+				"kind": "record",
+				"def": {
+					"kind": "object",
+					"def": {
+						"1": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "string"
+								},
+								{
+									"kind": "max_length",
+									"def": 3
+								},
+								{
+									"kind": "iso_datetime"
+								},
+								{
+									"kind": "to_lower_case"
+								}
+							]
+						},
+						"é": {
+							"kind": "pipe",
+							"def": [
+								{
+									"kind": "safe_integer"
+								},
+								{
+									"kind": "min_value",
+									"def": 1.5
+								},
+								{
+									"kind": "max_value",
+									"def": 9007199254740992
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "00_aimed",
+			"text": "{\"a\\\"b\":{\"é\":null},\"é\":{\"é\":2.5,\"1\":null},\"10\":{\"1\":\"日本\",\"é\":1e0}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"10",
+						"1"
+					],
+					"formatted": "10.1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						"10",
+						"é"
+					],
+					"formatted": "10.\"é\": expected >= 1.5, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"a\"b",
+						"1"
+					],
+					"formatted": "\"a\\\"b\".1: expected string, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"a\"b",
+						"é"
+					],
+					"formatted": "\"a\\\"b\".\"é\": expected safe_integer, received null"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"é",
+						"1"
+					],
+					"formatted": "\"é\".1: expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"é",
+						"é"
+					],
+					"formatted": "\"é\".\"é\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "01_near",
+			"text": "{\"10\":{\"1\":\"2024-01-01T23:59:60Z\",\"é\":null}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"10",
+						"1"
+					],
+					"formatted": "10.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"10",
+						"é"
+					],
+					"formatted": "10.\"é\": expected safe_integer, received null"
+				}
+			]
+		},
+		{
+			"name": "02_tail",
+			"text": "[] null",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "03_aimed",
+			"text": "{\"\\u006b1\":{\"\\u00e9\":9007199254740992e0,\"\\u0030\":{},\"\\u0031\":\"\"},\"__pr\\u006F\\u0074\\u006F\\u005F\\u005f\":{\"é\":null,\"\\u0031\":\"\"},\"10\":{\"\\u00e9\":9007199254740991,\"1\":\"190\\u0030-\\u00302\\u002d29T00:\\u0030\\u0030\\u003a\\u00300\\u005A\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"10",
+						"1"
+					],
+					"formatted": "10.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"k1",
+						"1"
+					],
+					"formatted": "k1.1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"k1",
+						"é"
+					],
+					"formatted": "k1.\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "object",
+					"path": [
+						"k1",
+						"0"
+					],
+					"formatted": "k1.0: expected no unknown keys, received object"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"__proto__",
+						"1"
+					],
+					"formatted": "__proto__.1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"__proto__",
+						"é"
+					],
+					"formatted": "__proto__.\"é\": expected safe_integer, received null"
+				}
+			]
+		},
+		{
+			"name": "04_aimed",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "05_tail",
+			"text": "{} ]",
+			"json": false
+		},
+		{
+			"name": "06_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "07_aimed",
+			"text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "08_aimed",
+			"text": "{\"a\\\"b\":{\"1\":\"a\\\"b\",\"é\":0,\"toString\":9007199254740991},\"10\":false,\"é\":{\"1\":\"a\\\\b\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "object",
+					"expected": "object",
+					"received": "boolean",
+					"path": [
+						"10"
+					],
+					"formatted": "10: expected object, received boolean"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"a\"b",
+						"1"
+					],
+					"formatted": "\"a\\\"b\".1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						"a\"b",
+						"é"
+					],
+					"formatted": "\"a\\\"b\".\"é\": expected >= 1.5, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a\"b",
+						"toString"
+					],
+					"formatted": "\"a\\\"b\".toString: expected no unknown keys, received number"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"é",
+						"1"
+					],
+					"formatted": "\"é\".1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "undefined",
+					"path": [
+						"é",
+						"é"
+					],
+					"formatted": "\"é\".\"é\": expected safe_integer, received undefined"
+				}
+			]
+		},
+		{
+			"name": "09_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "10_tail",
+			"text": "\"\" 1",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "11_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "12_aimed",
+			"text": "{\"0\":{},\"a\\\"b\":{\"1\":null,\"é\":2}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"0",
+						"1"
+					],
+					"formatted": "0.1: expected string, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "undefined",
+					"path": [
+						"0",
+						"é"
+					],
+					"formatted": "0.\"é\": expected safe_integer, received undefined"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"a\"b",
+						"1"
+					],
+					"formatted": "\"a\\\"b\".1: expected string, received null"
+				}
+			]
+		},
+		{
+			"name": "13_aimed",
+			"text": "{\"__proto__\":{\"1\":\"0000-02-29T00:00:00Z\",\"é\":9007199254740991}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"__proto__",
+						"1"
+					],
+					"formatted": "__proto__.1: expected length <= 3, received string"
+				}
+			]
+		},
+		{
+			"name": "14_aimed",
+			"text": "{\"10\":{\"é\":9007199254740992,\"1\":\"2024-01-01T00:00:00Z\\n\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"10",
+						"1"
+					],
+					"formatted": "10.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"10",
+						"é"
+					],
+					"formatted": "10.\"é\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "15_tail",
+			"text": "{} x",
+			"json": false
+		},
+		{
+			"name": "16_aimed",
+			"text": "[[]]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "17_tail",
+			"text": "{} //",
+			"json": false
+		},
+		{
+			"name": "18_aimed",
+			"text": "{\"0\":{\"1\":\"\",\"é\":90071992547409920e-1},\"😀\":{\"é\":null,\"1\":\"2024-01-01T00:00:00.1234567890Z\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"0",
+						"1"
+					],
+					"formatted": "0.1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"0",
+						"é"
+					],
+					"formatted": "0.\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"😀",
+						"1"
+					],
+					"formatted": "\"😀\".1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"😀",
+						"é"
+					],
+					"formatted": "\"😀\".\"é\": expected safe_integer, received null"
+				}
+			]
+		},
+		{
+			"name": "19_tail",
+			"text": "{} {}",
+			"json": false
+		},
+		{
+			"name": "20_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "21_tail",
+			"text": "{\"10\":{\"1\":\"2024-01-01T00:00:00Z\\n\"}} ]",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "22_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "23_aimed",
+			"text": "{\"k0\":{\"é\":1.0,\"1\":\"0000-02-29T00:00:00Z\"},\" \":{\"1\":\"2024-01-01T00:00:00Z\\n\",\"é\":2},\"é\":{\"é\":1,\"1\":[null]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"k0",
+						"1"
+					],
+					"formatted": "k0.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						"k0",
+						"é"
+					],
+					"formatted": "k0.\"é\": expected >= 1.5, received number"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						" ",
+						"1"
+					],
+					"formatted": "\" \".1: expected length <= 3, received string"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "array",
+					"path": [
+						"é",
+						"1"
+					],
+					"formatted": "\"é\".1: expected string, received array"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						"é",
+						"é"
+					],
+					"formatted": "\"é\".\"é\": expected >= 1.5, received number"
+				}
+			]
+		},
+		{
+			"name": "24_cut",
+			"text": "{",
+			"json": false
+		},
+		{
+			"name": "25_tail",
+			"text": "{} ]",
+			"json": false
+		},
+		{
+			"name": "26_near",
+			"text": "{\"😀\":{\"1\":\"0000-02-29T00:00:00Z\",\"é\":90071992547409920e-1}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"😀",
+						"1"
+					],
+					"formatted": "\"😀\".1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"😀",
+						"é"
+					],
+					"formatted": "\"😀\".\"é\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "27_aimed",
+			"text": "{  \"é\":{\"1\":\"é\"\t,\n\"é\":[null]},\"0\"  :{\"1\"  :\t\"0000-02-29T00:00:00Z\"\t,\r\n\"é\"\t:  1.5},\"constructor\"\r\n:{\"é\"\t:\r\n-1\r\n,\"1\"\r\n:\tnull\r\n}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"0",
+						"1"
+					],
+					"formatted": "0.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"0",
+						"é"
+					],
+					"formatted": "0.\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						"é",
+						"1"
+					],
+					"formatted": "\"é\".1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "array",
+					"path": [
+						"é",
+						"é"
+					],
+					"formatted": "\"é\".\"é\": expected safe_integer, received array"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"constructor",
+						"1"
+					],
+					"formatted": "constructor.1: expected string, received null"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						"constructor",
+						"é"
+					],
+					"formatted": "constructor.\"é\": expected >= 1.5, received number"
+				}
+			]
+		},
+		{
+			"name": "28_near",
+			"text": "{\" \":{\"1\":\"2024-04-31T00:00:00Z\",\"é\":9007199254740992}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						" ",
+						"1"
+					],
+					"formatted": "\" \".1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						" ",
+						"é"
+					],
+					"formatted": "\" \".\"é\": expected safe_integer, received number"
+				}
+			]
+		},
+		{
+			"name": "29_aimed",
+			"text": "{\"\\ud83d\\ude00\":{\"é\":1e21,\"\\u0031\":null},\"\\u0061\\\"\\u0062\":{\"1\":\"\\u0032\\u0030\\u0032\\u0033\\u002D\\u0030\\u0032\\u002D\\u0032\\u0039\\u0054\\u0030\\u0030\\u003A00\\u003a0\\u0030Z\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "null",
+					"path": [
+						"😀",
+						"1"
+					],
+					"formatted": "\"😀\".1: expected string, received null"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"😀",
+						"é"
+					],
+					"formatted": "\"😀\".\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"a\"b",
+						"1"
+					],
+					"formatted": "\"a\\\"b\".1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "undefined",
+					"path": [
+						"a\"b",
+						"é"
+					],
+					"formatted": "\"a\\\"b\".\"é\": expected safe_integer, received undefined"
+				}
+			]
+		},
+		{
+			"name": "30_aimed",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "31_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "32_tail",
+			"text": "{\"a\\\"b\":{\"1\":\"b\",\"é\":2,\"é\":2},\"é\":{\"1\":\"2024-02-29T23:59:59.123456789Z\",\"é\":2},\"k0\":{\"é\":9007199254740992.0}} //",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "33_aimed",
+			"text": "-1.5",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "number",
+					"path": [],
+					"formatted": "expected object, received number"
+				}
+			]
+		},
+		{
+			"name": "34_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "35_aimed",
+			"text": "{\"\\u0030\":{\"\\u0031\":\"\\u003190\\u0030\\u002D02\\u002d\\u00329\\u0054\\u0030\\u0030:\\u0030\\u0030\\u003a\\u0030\\u0030\\u005A\",\"é\":1.5},\"\\u0063onst\\u0072\\u0075c\\u0074\\u006fr\":{\"é\":null}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"0",
+						"1"
+					],
+					"formatted": "0.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"0",
+						"é"
+					],
+					"formatted": "0.\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"constructor",
+						"1"
+					],
+					"formatted": "constructor.1: expected string, received undefined"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "null",
+					"path": [
+						"constructor",
+						"é"
+					],
+					"formatted": "constructor.\"é\": expected safe_integer, received null"
+				}
+			]
+		},
+		{
+			"name": "36_near",
+			"text": "{\" \":{\"é\":0,\"__proto__\":1E+21,\"1\":\"ab\"},\"constructor\":{\"1\":\"2024-01-01T00:00:00+01:00\",\"é\":1.5,\"a\":true}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "iso_datetime",
+					"expected": "iso_datetime",
+					"received": "string",
+					"path": [
+						" ",
+						"1"
+					],
+					"formatted": "\" \".1: expected iso_datetime, received string"
+				},
+				{
+					"kind": "min_value",
+					"expected": ">= 1.5",
+					"received": "number",
+					"path": [
+						" ",
+						"é"
+					],
+					"formatted": "\" \".\"é\": expected >= 1.5, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						" ",
+						"__proto__"
+					],
+					"formatted": "\" \".__proto__: expected no unknown keys, received number"
+				},
+				{
+					"kind": "max_length",
+					"expected": "length <= 3",
+					"received": "string",
+					"path": [
+						"constructor",
+						"1"
+					],
+					"formatted": "constructor.1: expected length <= 3, received string"
+				},
+				{
+					"kind": "safe_integer",
+					"expected": "safe_integer",
+					"received": "number",
+					"path": [
+						"constructor",
+						"é"
+					],
+					"formatted": "constructor.\"é\": expected safe_integer, received number"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "boolean",
+					"path": [
+						"constructor",
+						"a"
+					],
+					"formatted": "constructor.a: expected no unknown keys, received boolean"
+				}
+			]
+		},
+		{
+			"name": "37_near",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "38_tail",
+			"text": "-1.5 {}",
+			"json": false,
+			"diverges": "malformed_tail"
+		},
+		{
+			"name": "39_aimed",
+			"text": "false",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "record",
+					"expected": "object",
+					"received": "boolean",
+					"path": [],
+					"formatted": "expected object, received boolean"
+				}
+			]
+		}
+	]
+}

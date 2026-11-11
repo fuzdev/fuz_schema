@@ -241,6 +241,16 @@ impl SchemaLiteral {
         }
     }
 
+    /// The literal as a value of the tree.
+    pub(crate) fn as_value(&self) -> Value<'_> {
+        match self {
+            Self::Null => Value::Null,
+            Self::Boolean(value) => Value::Bool(*value),
+            Self::Number(value) => Value::Number(*value),
+            Self::String(value) => Value::String(value),
+        }
+    }
+
     pub(crate) const fn is_finite(&self) -> bool {
         match self {
             Self::Number(number) => number.is_finite(),
@@ -436,7 +446,8 @@ pub struct SchemaEntries {
     pub(crate) schemas: Box<[NodeId]>,
     /// The positions sorted by key, empty for a small object.
     sorted: Box<[usize]>,
-    /// The entries that reject a missing key.
+    /// The entries that reject a missing key, which `SchemaBuilder::build`
+    /// finds once every node is finished.
     pub(crate) required: Bits,
 }
 
@@ -461,7 +472,6 @@ impl SchemaEntries {
             sorted.sort_unstable_by(|&a, &b| self.keys[a].cmp(&self.keys[b]));
             self.sorted = sorted.into_boxed_slice();
         }
-        self.required = Bits::new(self.keys.len());
     }
 
     /// The number of entries.
@@ -528,6 +538,8 @@ pub struct VariantDef {
     /// values first appear. A value given twice selects the later option, as
     /// the TypeScript library's `Map` does.
     pub(crate) table: Box<[(SchemaLiteral, NodeId)]>,
+    /// The positions of `table` sorted by value, empty for a small table.
+    pub(crate) sorted: Box<[usize]>,
 }
 
 impl VariantDef {
@@ -543,11 +555,56 @@ impl VariantDef {
 
     /// The option `value` selects, as the value at the discriminator.
     pub(crate) fn select(&self, value: Value<'_>) -> Option<NodeId> {
-        // TODO: index the strings when there are many options
-        self.table
-            .iter()
-            .find(|(literal, _)| literal.matches(value))
-            .map(|&(_, option)| option)
+        if self.sorted.is_empty() {
+            return self
+                .table
+                .iter()
+                .find(|(literal, _)| literal.matches(value))
+                .map(|&(_, option)| option);
+        }
+        // a value no literal is the type of, such as an array, selects none
+        literal_rank(value)?;
+        self.sorted
+            .binary_search_by(|&position| compare_literal(&self.table[position].0, value))
+            .ok()
+            .map(|found| self.table[self.sorted[found]].1)
+    }
+
+    /// Builds the index of a table of more values than are searched in order.
+    pub(crate) fn index(&mut self) {
+        self.sorted = Box::default();
+        if self.table.len() > LINEAR_MAX {
+            let mut sorted: Vec<usize> = (0..self.table.len()).collect();
+            sorted.sort_unstable_by(|&a, &b| {
+                compare_literal(&self.table[a].0, self.table[b].0.as_value())
+            });
+            self.sorted = sorted.into_boxed_slice();
+        }
+    }
+}
+
+/// Where the type of a literal's value sorts among the others, or `None` for
+/// a value no literal is.
+const fn literal_rank(value: Value<'_>) -> Option<u8> {
+    match value {
+        Value::Null => Some(0),
+        Value::Bool(_) => Some(1),
+        Value::Number(_) => Some(2),
+        Value::String(_) => Some(3),
+        Value::Undefined | Value::Array(_) | Value::Object(_) => None,
+    }
+}
+
+/// The order of a variant's index: by type, then by value, with `0` and `-0`
+/// one value as `===` has them. A literal is finite, so no `NaN` is ordered.
+fn compare_literal(literal: &SchemaLiteral, value: Value<'_>) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let ours = literal.as_value();
+    match (ours, value) {
+        (Value::Bool(a), Value::Bool(b)) => a.cmp(&b),
+        (Value::Number(a), Value::Number(b)) => a.partial_cmp(&b).unwrap_or(Ordering::Equal),
+        (Value::String(a), Value::String(b)) => a.cmp(b),
+        _ => literal_rank(ours).cmp(&literal_rank(value)),
     }
 }
 
@@ -589,6 +646,9 @@ pub struct Schema {
     /// take one reach a cycle, and for objects, no `literal` entry tells
     /// those options apart before they reach one. Any other node keeps none.
     pub(crate) memoized: Box<[[bool; 2]]>,
+    /// For each `union`, the `expected` of its issue, written when it is
+    /// built. Any other node has none.
+    pub(crate) union_expected: Box<[Option<Box<str>>]>,
 }
 
 impl Schema {
@@ -623,6 +683,23 @@ impl Schema {
     /// objects, no `literal` tells them apart first.
     pub(crate) fn memoizes_on(&self, id: NodeId, container: Container) -> bool {
         self.memoized[id.index()][container as usize]
+    }
+
+    /// The `expected` of an issue of the `union` with `id`.
+    pub(crate) fn union_expected(&self, id: NodeId) -> &str {
+        let expected = self.union_expected[id.index()].as_deref();
+        // every union `build` reached has one, and no other is evaluated
+        debug_assert!(expected.is_some(), "a union with no `expected`");
+        expected.unwrap_or_default()
+    }
+
+    /// The same schema with no union keeping its verdicts, to hold the ones
+    /// that do to what they would give without.
+    #[cfg(test)]
+    pub(crate) fn without_memo(&self) -> Self {
+        let mut schema = self.clone();
+        schema.memoized.fill([false; 2]);
+        schema
     }
 
     /// The options of the `union` with `id` that `container` could match.
@@ -995,5 +1072,78 @@ mod tests {
         assert_eq!(def.select(Value::String("1")), None);
         assert_eq!(def.select(Value::Undefined), None);
         assert_eq!(def.select(Value::Array(&[])), None);
+    }
+
+    /// A variant of more values than are searched in order selects through
+    /// its index what a search in order selects, of every type, with `0` and
+    /// `-0` one value and a value given twice the later option's.
+    #[test]
+    fn a_variant_of_many_values_selects_through_its_index() {
+        let literals: Vec<SchemaLiteral> = vec![
+            "b".into(),
+            "a".into(),
+            "".into(),
+            "é".into(),
+            "a".into(),
+            1.into(),
+            (-0.0).into(),
+            0.into(),
+            1.5.into(),
+            (-1e21).into(),
+            true.into(),
+            false.into(),
+            SchemaLiteral::Null,
+            "1".into(),
+            "null".into(),
+            "true".into(),
+        ];
+        let mut b = SchemaBuilder::new();
+        let options: Vec<NodeId> = literals
+            .iter()
+            .map(|literal| {
+                let tag = b.literal(literal.clone());
+                b.object([("k", tag)])
+            })
+            .collect();
+        let variant = b.variant("k", options.iter().copied());
+        let schema = b.build(variant).unwrap();
+        let SchemaNode::Variant(def) = schema.at(variant) else {
+            panic!("not a variant");
+        };
+        assert!(def.table.len() > LINEAR_MAX);
+        assert_eq!(def.sorted.len(), def.table.len());
+        let in_order = |value: Value<'_>| {
+            def.table
+                .iter()
+                .find(|(literal, _)| literal.matches(value))
+                .map(|&(_, option)| option)
+        };
+        let values = [
+            Value::String("a"),
+            Value::String("b"),
+            Value::String(""),
+            Value::String("é"),
+            Value::String("1"),
+            Value::String("null"),
+            Value::String("c"),
+            Value::Number(1.0),
+            Value::Number(0.0),
+            Value::Number(-0.0),
+            Value::Number(1.5),
+            Value::Number(-1e21),
+            Value::Number(2.0),
+            Value::Bool(true),
+            Value::Bool(false),
+            Value::Null,
+            Value::Undefined,
+            Value::Array(&[]),
+        ];
+        for value in values {
+            assert_eq!(def.select(value), in_order(value), "{value:?}");
+        }
+        assert_eq!(def.select(Value::String("a")), Some(options[4]));
+        assert_eq!(def.select(Value::Number(-0.0)), Some(options[7]));
+        assert_eq!(def.select(Value::String("c")), None);
+        assert_eq!(def.select(Value::Undefined), None);
     }
 }

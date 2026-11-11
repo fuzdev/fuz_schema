@@ -207,15 +207,17 @@ pub enum SchemaBuildErrorKind {
         kind: SchemaKind,
     },
     /// An action on a value it is not for: a length of a number, a bound or
-    /// number test of a string or array, or a format test of anything but a
-    /// string.
+    /// number test of a string or array, or a format test or a
+    /// `to_lower_case` of anything but a string.
     ActionMismatch {
         /// The action.
         kind: SchemaKind,
     },
-    /// A length, bound, or format action outside a `pipe`. The TypeScript
-    /// library would coerce or throw on a length or bound there, and a format
-    /// test is held to a `pipe` of a `string`, as `to_schema_json` holds it.
+    /// A length, bound, or format action, or a `to_lower_case`, outside a
+    /// `pipe`. The TypeScript library would coerce or throw on a length or
+    /// bound there, and throws on a `to_lower_case` of a value that is not a
+    /// string. A format test is held to a `pipe` of a `string`, as
+    /// `to_schema_json` holds it.
     ActionOutsidePipe {
         /// The action.
         kind: SchemaKind,

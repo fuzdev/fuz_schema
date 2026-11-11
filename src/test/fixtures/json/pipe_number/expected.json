@@ -1543,6 +1543,30 @@
 			"issues": []
 		},
 		{
+			"name": "at_least_tiny_6",
+			"text": "{\"at_least_tiny\":2.4703282292062328e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "at_least_tiny_7",
+			"text": "{\"at_least_tiny\":2.4703282292062327e-324}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "min_value",
+					"expected": ">= 5e-324",
+					"received": "number",
+					"path": [
+						"at_least_tiny"
+					],
+					"formatted": "at_least_tiny: expected >= 5e-324, received number"
+				}
+			]
+		},
+		{
 			"name": "at_most_max_0",
 			"text": "{\"at_most_max\":1.7976931348623157e308}",
 			"json": true,

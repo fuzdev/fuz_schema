@@ -34,14 +34,21 @@ for (const key of Object.keys(entries)) {
 // a number of any size is one, an integer past the safe ones among them
 for (const [name, text] of Object.entries({
 	largest: '1.7976931348623157e308',
+	// past the largest by digits, and nearer it than past it: the largest
+	rounds_to_largest: '1.7976931348623158e308',
 	most_negative: '-1.7976931348623157e308',
 	smallest: '5e-324',
+	// either side of half the smallest: the smallest, and zero
+	rounds_to_smallest: '2.4703282292062328e-324',
+	rounds_to_zero: '2.4703282292062327e-324',
+	rounds_to_negative_smallest: '-2.4703282292062328e-324',
 	underflow: '1e-999',
 	past_safe: '9007199254740993',
 	huge_integer: '123456789012345678901234567890',
 	huge_integer_by_digits: `1${'0'.repeat(308)}`
 })) {
 	cases[`number_${name}`] = `{"number":${text}}`;
+	cases[`unknown_${name}`] = `{"unknown":${text}}`;
 }
 // and one past a double is an infinity to `JSON.parse`, which `number` refuses
 // and `unknown` takes, and which the crate's parser doesn't read

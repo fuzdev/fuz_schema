@@ -122,8 +122,10 @@ that kind and behaves as the library's in the crate.
 - **Two shapes are read into a tree first** and walked: an array or object
   that more than one option of a `union` could match, and a `variant` whose
   discriminator is not the first key.
-- **A value the schema accepts whatever it is, is skipped**: one under
-  `unknown`, or at a key a `loose_object` or `strip_object` has no entry for.
+- **A value the schema accepts whatever it is, is skipped**: one at a node
+  that accepts every value that is present, which is an `unknown`, a
+  wrapper or a `lazy` around such a node, and a `union` with such an option,
+  and one at a key a `loose_object` or `strip_object` has no entry for.
 - **`js.rs` holds the JavaScript semantics** both share: a string's length in
   UTF-16 code units, its lowercase, the integer tests on the value and not
   the token, `===` on doubles, and key order.
@@ -141,14 +143,21 @@ that kind and behaves as the library's in the crate.
   through the walks of what it reads into a tree, each with a memo of its own,
   as a tree is dropped after its walk and the next can have its addresses. A
   verdict is a function of the node and the value alone, so keeping it changes
-  no verdict and no issue: a union never reports what its options found.
+  no verdict and no issue: a union never reports what its options found. A
+  test, `memo_check.rs`, holds each fixture's verdicts and issues with every
+  union's memo off to those with it on, and prints the texts it skips as too
+  slow without. The `union_memo` group asks two such unions of one value that
+  one takes and the other refuses, so a verdict read back for the wrong union
+  fails it.
   A `memo_union` is written by `to_schema_json` as the `union` it is, and
   loads as one, so which unions keep their verdicts is this rule's, whichever
   of the two the library was given.
 
 `MAX_NESTING` bounds how far the evaluators recurse per level of the input,
 and with `MAX_DEPTH` how far they recurse in all. A test runs the deepest
-input under the most nesting on a small stack. Neither bounds the work. The
+input under the most nesting on a small stack, matching and failing, and the
+`deepest_*` fixture groups hold two of its shapes, so the wasm build's
+pre-checks run them too. Neither bounds the work. The
 unions that keep their verdicts bound it by the size of the input times its
 depth, and a factor of the schema: without them a `union` with two options
 that reach a cycle tries each at every level, which takes time exponential
@@ -192,7 +201,8 @@ the same order. A `SchemaIssue` owns what it holds:
   and otherwise the issue of the entry's schema. It is at the entry's place
   in the order.
 - **A failed `union` is one issue**, at the union's value, naming its options
-  as the library does, each part once by its text: a `union` among them by
+  as the library does, in a text written once for each union when the schema
+  is built, each part once by its text: a `union` among them by
   its own options, at any depth, a `pipe` by its first schema, a `nullable`
   by its schema's and then `null`, an `optional` or a `with_default` by its
   schema's, a `literal` or a `one_of` by its values, an object schema, a
@@ -255,9 +265,9 @@ it in the interchange form. Nothing is guessed at.
 | Refused | `SchemaBuildErrorKind` |
 |---|---|
 | `regex`, `check`, `transform` | `UnsupportedKind` |
-| `with_default_fn`, `object_with_rest`, which the crate doesn't carry yet, and a kind that isn't the library's | `UnknownKind` |
+| `with_default_fn`, which holds a function, `object_with_rest`, which the crate doesn't carry yet, and a kind that isn't the library's | `UnknownKind` |
 | an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
-| a literal or bound that isn't finite | `NonFiniteNumber` |
+| a literal or bound that isn't finite, which only a builder can be given: a document has no such number, and `to_schema_json` refuses the one `JSON.stringify` would write as `null`, which the crate would load as a `null` | `NonFiniteNumber` |
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
 | a `pipe` that is empty, or starts with a schema that doesn't fix its value's type | `EmptyPipe`, `PipeHead` |
 | a step after a pipe's first that isn't an action, or is for another type | `PipeStep`, `ActionMismatch` |
@@ -303,7 +313,14 @@ and Node do: `contract.json` holds Node's, and a test fails where
   The file is never edited by hand.
 - It also generates `contract.json`, the constants both sides hold: the
   nesting limit, the parser's depth, the cap on issues, the refused key
-  names and kinds, the flags, and the version of Unicode Node lowercases by.
+  names and kinds, the flags, the version of Unicode Node lowercases by, and
+  the refusals of `refusals.ts`: for each schema `to_schema_json` refuses,
+  the document a writer without that refusal would write, and the
+  `SchemaBuildErrorKind` the crate refuses it with. The task fails when
+  `to_schema_json` writes one of those schemas, or refuses it with a message
+  that lacks the part its row names, and the Rust tests when the crate loads
+  a document or refuses it as another kind, or when no row is of a kind they
+  list as a refusal of both sides.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
   evaluators against the oracle or the declared divergence, and the issues
@@ -329,8 +346,9 @@ and Node do: `contract.json` holds Node's, and a test fails where
   parser, so of the flags only `malformed_tail` is declared. A union has
   the recursion in one option at most: two that reach the same `lazy` make
   the library's time exponential in a text's depth. The format tests are
-  in the pool, and the committed seeds draw none: `npm run fixtures:deep`
-  draws them, and the `format_*` groups hold their edges.
+  in the pool, and few seeds draw them, so two committed groups are of seeds
+  that draw and reach them, named for their index, and the `format_*` groups
+  hold their edges.
 - `npm run fixtures:deep` runs more of them, outside `gro check` and the repo:
   it writes each group's `expected.json` under `--dir`
   (`~/.cache/fuz_schema/fixtures_deep` by default) and runs

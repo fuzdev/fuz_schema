@@ -100,7 +100,17 @@ const values: Record<keyof typeof entries, Array<string>> = {
 		'1e20'
 	],
 	at_least_zero: ['0', '-0', '0.0', '-0.0', '5e-324', '-5e-324', '1e-400', '-1e-400', '-1'],
-	at_least_tiny: ['5e-324', '4.9e-324', '2.5e-324', '2.4e-324', '0', '1e-323'],
+	// the last two either side of half the smallest double, which round to it and to zero
+	at_least_tiny: [
+		'5e-324',
+		'4.9e-324',
+		'2.5e-324',
+		'2.4e-324',
+		'0',
+		'1e-323',
+		'2.4703282292062328e-324',
+		'2.4703282292062327e-324'
+	],
 	at_most_max: [
 		'1.7976931348623157e308',
 		'1.7976931348623158e308',

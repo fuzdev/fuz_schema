@@ -1,0 +1,948 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "object",
+			"def": {
+				"expr": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "lazy",
+							"def": "$0"
+						}
+					}
+				},
+				"nest": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "lazy",
+							"def": "$1"
+						}
+					}
+				},
+				"list": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "array",
+							"def": {
+								"kind": "lazy",
+								"def": "$0"
+							}
+						}
+					}
+				},
+				"two_unions": {
+					"kind": "optional",
+					"def": {
+						"schema": {
+							"kind": "union",
+							"def": [
+								{
+									"kind": "lazy",
+									"def": "$2"
+								},
+								{
+									"kind": "array",
+									"def": {
+										"kind": "lazy",
+										"def": "$2"
+									}
+								},
+								{
+									"kind": "lazy",
+									"def": "$3"
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		"defs": {
+			"$0": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "object",
+						"def": {
+							"args": {
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$0"
+								}
+							},
+							"op": {
+								"kind": "literal",
+								"def": "a"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"args": {
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$0"
+								}
+							},
+							"op": {
+								"kind": "literal",
+								"def": "b"
+							}
+						}
+					}
+				]
+			},
+			"$1": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$1"
+								}
+							},
+							{
+								"kind": "min_length",
+								"def": 2
+							}
+						]
+					},
+					{
+						"kind": "array",
+						"def": {
+							"kind": "lazy",
+							"def": "$1"
+						}
+					},
+					{
+						"kind": "literal",
+						"def": 0
+					}
+				]
+			},
+			"$2": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$2"
+								}
+							},
+							{
+								"kind": "max_length",
+								"def": 1
+							}
+						]
+					},
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$2"
+								}
+							},
+							{
+								"kind": "max_length",
+								"def": 0
+							}
+						]
+					},
+					{
+						"kind": "loose_object",
+						"def": {
+							"a": {
+								"kind": "lazy",
+								"def": "$2"
+							}
+						}
+					},
+					{
+						"kind": "record",
+						"def": {
+							"kind": "lazy",
+							"def": "$2"
+						}
+					},
+					{
+						"kind": "literal",
+						"def": 0
+					}
+				]
+			},
+			"$3": {
+				"kind": "union",
+				"def": [
+					{
+						"kind": "array",
+						"def": {
+							"kind": "lazy",
+							"def": "$3"
+						}
+					},
+					{
+						"kind": "pipe",
+						"def": [
+							{
+								"kind": "array",
+								"def": {
+									"kind": "lazy",
+									"def": "$3"
+								}
+							},
+							{
+								"kind": "min_length",
+								"def": 5
+							}
+						]
+					},
+					{
+						"kind": "loose_object",
+						"def": {
+							"b": {
+								"kind": "lazy",
+								"def": "$3"
+							}
+						}
+					},
+					{
+						"kind": "record",
+						"def": {
+							"kind": "lazy",
+							"def": "$3"
+						}
+					},
+					{
+						"kind": "literal",
+						"def": 0
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "empty",
+			"text": "{}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_leaf",
+			"text": "{\"expr\":{\"args\":[],\"op\":\"a\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_wrong_op",
+			"text": "{\"expr\":{\"args\":[],\"op\":\"c\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_not_object",
+			"text": "{\"expr\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "array",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_leaf",
+			"text": "{\"nest\":[0,0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_one",
+			"text": "{\"nest\":[0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_wrong",
+			"text": "{\"nest\":[1]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "list",
+			"text": "{\"list\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"},{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"x\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"},1,{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"list",
+						1
+					],
+					"formatted": "list.1: expected object, received object"
+				},
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "number",
+					"path": [
+						"list",
+						2
+					],
+					"formatted": "list.2: expected object, received number"
+				}
+			]
+		},
+		{
+			"name": "expr_1",
+			"text": "{\"expr\":{\"args\":[],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_1_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_1_mixed",
+			"text": "{\"expr\":{\"args\":[],\"op\":\"a\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_1",
+			"text": "{\"nest\":[0,0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_1_wrong_leaf",
+			"text": "{\"nest\":[1,0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_1_one_item",
+			"text": "{\"nest\":[0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_2",
+			"text": "{\"expr\":{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_2_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_2_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_2",
+			"text": "{\"nest\":[[0,0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_2_wrong_leaf",
+			"text": "{\"nest\":[[1,0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_2_one_item",
+			"text": "{\"nest\":[[0]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_3",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_3_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_3_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_3",
+			"text": "{\"nest\":[[[0,0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_3_wrong_leaf",
+			"text": "{\"nest\":[[[1,0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_3_one_item",
+			"text": "{\"nest\":[[[0]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_5",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_5_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_5_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_5",
+			"text": "{\"nest\":[[[[[0,0],0],0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_5_wrong_leaf",
+			"text": "{\"nest\":[[[[[1,0],0],0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_5_one_item",
+			"text": "{\"nest\":[[[[[0]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_8",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_8_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_8_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_8",
+			"text": "{\"nest\":[[[[[[[[0,0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_8_wrong_leaf",
+			"text": "{\"nest\":[[[[[[[[1,0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_8_one_item",
+			"text": "{\"nest\":[[[[[[[[0]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_12",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_12_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_12_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_12",
+			"text": "{\"nest\":[[[[[[[[[[[[0,0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_12_wrong_leaf",
+			"text": "{\"nest\":[[[[[[[[[[[[1,0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_12_one_item",
+			"text": "{\"nest\":[[[[[[[[[[[[0]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_30",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_30_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_30_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_30",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0,0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_30_wrong_leaf",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1,0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_30_one_item",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_62",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "expr_62_wrong_leaf",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"c\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "object",
+					"received": "object",
+					"path": [
+						"expr"
+					],
+					"formatted": "expr: expected object, received object"
+				}
+			]
+		},
+		{
+			"name": "expr_62_mixed",
+			"text": "{\"expr\":{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}],\"op\":\"b\"}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_62",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0,0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "nest_62_wrong_leaf",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[1,0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0],0]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "array | 0",
+					"received": "array",
+					"path": [
+						"nest"
+					],
+					"formatted": "nest: expected array | 0, received array"
+				}
+			]
+		},
+		{
+			"name": "nest_62_one_item",
+			"text": "{\"nest\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_unions_inner",
+			"text": "{\"two_unions\":[[0,0]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_unions_second_item",
+			"text": "{\"two_unions\":[[0,0],[0]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_unions_in_an_object",
+			"text": "{\"two_unions\":{\"a\":[[0,0]]}}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_unions_deeper",
+			"text": "{\"two_unions\":[[[0,0]],[0,0]]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "two_unions_wrong_inner",
+			"text": "{\"two_unions\":[[0,1]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "lazy | array",
+					"received": "array",
+					"path": [
+						"two_unions"
+					],
+					"formatted": "two_unions: expected lazy | array, received array"
+				}
+			]
+		},
+		{
+			"name": "two_unions_wrong_second_item",
+			"text": "{\"two_unions\":[[0,0],[1]]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "lazy | array",
+					"received": "array",
+					"path": [
+						"two_unions"
+					],
+					"formatted": "two_unions: expected lazy | array, received array"
+				}
+			]
+		},
+		{
+			"name": "two_unions_wrong_in_an_object",
+			"text": "{\"two_unions\":{\"a\":[[0,\"x\"]]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "lazy | array",
+					"received": "object",
+					"path": [
+						"two_unions"
+					],
+					"formatted": "two_unions: expected lazy | array, received object"
+				}
+			]
+		},
+		{
+			"name": "two_unions_wrong_beside",
+			"text": "{\"two_unions\":{\"a\":[[0,0]],\"b\":[[1]]}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "union",
+					"expected": "lazy | array",
+					"received": "object",
+					"path": [
+						"two_unions"
+					],
+					"formatted": "two_unions: expected lazy | array, received object"
+				}
+			]
+		},
+		{
+			"name": "list_of_chains",
+			"text": "{\"list\":[{\"args\":[],\"op\":\"a\"},{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"},{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[{\"args\":[],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}],\"op\":\"a\"}]}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		}
+	]
+}

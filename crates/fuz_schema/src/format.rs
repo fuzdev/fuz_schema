@@ -1,9 +1,12 @@
 //! The format tests, `uuid` and `iso_datetime`, as scans of a string's bytes.
 //!
-//! The TypeScript library tests each with a regular expression, the grammar
-//! `docs/formats.md` gives, and this is that grammar by hand: exact lengths,
-//! ASCII digits and hex digits only, and nothing past the end, so a trailing
-//! newline fails where it would also fail `$` without the `m` flag.
+//! Each is the grammar `docs/formats.md` gives, as the TypeScript library
+//! tests it: `uuid` by the string's length and char codes, with a regular
+//! expression for the nil and max UUIDs, and `iso_datetime` by a regular
+//! expression. Here both are scans by hand: exact lengths, ASCII
+//! digits and hex digits only, and nothing past the end, so a trailing
+//! newline fails as it fails the library's length check and its `$` without
+//! the `m` flag.
 
 /// Whether `text` is a UUID of RFC 9562: 8-4-4-4-12 hex digits of either case,
 /// with a version from 1 to 8 and the RFC's variant, or the nil UUID, or the

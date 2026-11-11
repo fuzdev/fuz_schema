@@ -493,6 +493,113 @@ fn every_kind_appears_in_a_fixture_schema() {
     }
 }
 
+/// The name `contract.json` gives a `SchemaBuildErrorKind`: its variant in
+/// snake case, and for a `Json` error, the kind of that error after it.
+fn refusal_name(kind: &SchemaBuildErrorKind) -> String {
+    let name = match kind {
+        SchemaBuildErrorKind::Json(error) => {
+            return format!(
+                "json_{}",
+                match error.kind() {
+                    JsonErrorKind::Syntax => "syntax",
+                    JsonErrorKind::Eof => "eof",
+                    JsonErrorKind::NumberOutOfRange => "number_out_of_range",
+                    JsonErrorKind::LoneSurrogate => "lone_surrogate",
+                    JsonErrorKind::DepthLimit => "depth_limit",
+                    JsonErrorKind::InvalidUtf8 => "invalid_utf8",
+                    _ => "unnamed",
+                }
+            );
+        }
+        SchemaBuildErrorKind::Malformed { .. } => "malformed",
+        SchemaBuildErrorKind::UnexpectedKey { .. } => "unexpected_key",
+        SchemaBuildErrorKind::RepeatedKey { .. } => "repeated_key",
+        SchemaBuildErrorKind::UnknownKind { .. } => "unknown_kind",
+        SchemaBuildErrorKind::UnsupportedKind { .. } => "unsupported_kind",
+        SchemaBuildErrorKind::UnsupportedLiteral => "unsupported_literal",
+        SchemaBuildErrorKind::NonFiniteNumber => "non_finite_number",
+        SchemaBuildErrorKind::PrototypeKey { .. } => "prototype_key",
+        SchemaBuildErrorKind::DuplicateKey { .. } => "duplicate_key",
+        SchemaBuildErrorKind::EmptyPipe => "empty_pipe",
+        SchemaBuildErrorKind::PipeHead { .. } => "pipe_head",
+        SchemaBuildErrorKind::PipeStep { .. } => "pipe_step",
+        SchemaBuildErrorKind::ActionMismatch { .. } => "action_mismatch",
+        SchemaBuildErrorKind::ActionOutsidePipe { .. } => "action_outside_pipe",
+        SchemaBuildErrorKind::VariantOption { .. } => "variant_option",
+        SchemaBuildErrorKind::VariantDiscriminator { .. } => "variant_discriminator",
+        SchemaBuildErrorKind::UnresolvedLazy { .. } => "unresolved_lazy",
+        SchemaBuildErrorKind::UndefinedLazy => "undefined_lazy",
+        SchemaBuildErrorKind::RedefinedLazy => "redefined_lazy",
+        SchemaBuildErrorKind::UnguardedRecursion => "unguarded_recursion",
+        SchemaBuildErrorKind::TooNested { .. } => "too_nested",
+        SchemaBuildErrorKind::InvalidNode => "invalid_node",
+        SchemaBuildErrorKind::ArbitraryPrecision => "arbitrary_precision",
+        SchemaBuildErrorKind::TooManyNodes => "too_many_nodes",
+        _ => "unnamed",
+    };
+    name.to_owned()
+}
+
+/// The refusals of a document both sides make, each of which a row of
+/// `contract.json` must hold, so that one dropped from the table fails here.
+const DOCUMENT_REFUSALS: &[&str] = &[
+    "unsupported_kind",
+    "unknown_kind",
+    "action_outside_pipe",
+    "unsupported_literal",
+    "json_lone_surrogate",
+    "json_depth_limit",
+    "malformed",
+    "prototype_key",
+    "variant_option",
+    "variant_discriminator",
+    "empty_pipe",
+    "pipe_head",
+    "pipe_step",
+    "action_mismatch",
+    "unguarded_recursion",
+    "too_nested",
+];
+
+/// Each document of `contract.json`'s refusals, which `to_schema_json`
+/// refuses the schema of as it writes them, is refused here, with the kind
+/// the row names: a refusal of one side is one of the other.
+#[test]
+fn what_to_schema_json_refuses_does_not_load() {
+    let contract = &read_json(&fixtures_dir().join("contract.json")).unwrap();
+    let Some(Value::Array(rows)) = contract.get("refusals") else {
+        panic!("contract.json has no `refusals`");
+    };
+    let mut failures = Vec::new();
+    let mut refused = BTreeSet::new();
+    for row in rows {
+        let name = string(row, "name", "a refusal").unwrap();
+        let document = string(row, "document", &name).unwrap();
+        let expected = string(row, "refused", &name).unwrap();
+        match Schema::from_json(&document) {
+            Ok(_) => failures.push(format!("{name}: loads")),
+            Err(error) => {
+                let actual = refusal_name(error.kind());
+                if actual != expected {
+                    failures.push(format!(
+                        "{name}: refused as {actual} ({error}), not {expected}"
+                    ));
+                }
+            }
+        }
+        refused.insert(expected);
+    }
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    for &name in DOCUMENT_REFUSALS {
+        assert!(refused.contains(name), "no refusal is of `{name}`");
+    }
+}
+
 /// `contract.json` holds the constants the TypeScript side has, which are the
 /// crate's too.
 #[test]

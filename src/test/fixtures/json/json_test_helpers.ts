@@ -29,6 +29,7 @@ import {
 	to_schema_json,
 	type SchemaJson
 } from '#lib/schema_json.ts';
+import { JSON_REFUSALS } from './refusals.ts';
 
 /** Every `JsonDivergence`. The Rust tests fail on a flag that isn't one of these. */
 export const JSON_DIVERGENCES = [
@@ -266,7 +267,47 @@ export interface JsonFixtureContract {
 	 * string on both sides.
 	 */
 	unicode_version: string;
+	/**
+	 * The refusals of `refusals.ts`, each a document a writer without the
+	 * refusal would write, and the kind of error the crate refuses it with.
+	 * `to_schema_json` refuses the schema of each.
+	 */
+	refusals: ReadonlyArray<JsonFixtureRefusal>;
 }
+
+/** A row of `JsonFixtureContract.refusals`. */
+export interface JsonFixtureRefusal {
+	name: string;
+	document: string;
+	refused: string;
+}
+
+/**
+ * The rows of `refusals.ts` as `contract.json` holds them.
+ *
+ * @throws Error when `to_schema_json` writes a row's schema or refuses it with a message that lacks the row's, a row's document is not JSON, or two rows share a name
+ */
+const read_refusals = (): Array<JsonFixtureRefusal> => {
+	const names: Set<string> = new Set();
+	return JSON_REFUSALS.map(({ name, schema, document, refused, message }) => {
+		if (names.has(name)) throw Error(`refusal "${name}" is named twice`);
+		names.add(name);
+		let thrown: string | undefined;
+		try {
+			to_schema_json(schema);
+		} catch (error) {
+			thrown = error instanceof Error ? error.message : String(error);
+		}
+		if (thrown === undefined) throw Error(`refusal "${name}": to_schema_json writes its schema`);
+		if (!thrown.includes(message)) {
+			throw Error(
+				`refusal "${name}": to_schema_json refuses its schema for another reason: ${thrown}`
+			);
+		}
+		JSON.parse(document);
+		return { name, document, refused };
+	});
+};
 
 // the cap `fail` holds a parse's issues to, which the library doesn't export,
 // read from what a parse of an input that fails more often returns
@@ -293,7 +334,8 @@ export const generate_json_fixture_contract = (): JsonFixtureContract => ({
 	object_prototype_keys: SCHEMA_JSON_REFUSED_KEYS,
 	unsupported_kinds: SCHEMA_JSON_UNSUPPORTED_KINDS,
 	divergences: JSON_DIVERGENCES,
-	unicode_version: read_unicode_version()
+	unicode_version: read_unicode_version(),
+	refusals: read_refusals()
 });
 
 const contract_path = join(JSON_FIXTURES_DIR, 'contract.json');

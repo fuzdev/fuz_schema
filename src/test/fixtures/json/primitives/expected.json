@@ -892,8 +892,36 @@
 			"issues": []
 		},
 		{
+			"name": "unknown_largest",
+			"text": "{\"unknown\":1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_rounds_to_largest",
+			"text": "{\"number\":1.7976931348623158e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_rounds_to_largest",
+			"text": "{\"unknown\":1.7976931348623158e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
 			"name": "number_most_negative",
 			"text": "{\"number\":-1.7976931348623157e308}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_most_negative",
+			"text": "{\"unknown\":-1.7976931348623157e308}",
 			"json": true,
 			"valid": true,
 			"issues": []
@@ -906,8 +934,64 @@
 			"issues": []
 		},
 		{
+			"name": "unknown_smallest",
+			"text": "{\"unknown\":5e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_rounds_to_smallest",
+			"text": "{\"number\":2.4703282292062328e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_rounds_to_smallest",
+			"text": "{\"unknown\":2.4703282292062328e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_rounds_to_zero",
+			"text": "{\"number\":2.4703282292062327e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_rounds_to_zero",
+			"text": "{\"unknown\":2.4703282292062327e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_rounds_to_negative_smallest",
+			"text": "{\"number\":-2.4703282292062328e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_rounds_to_negative_smallest",
+			"text": "{\"unknown\":-2.4703282292062328e-324}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
 			"name": "number_underflow",
 			"text": "{\"number\":1e-999}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_underflow",
+			"text": "{\"unknown\":1e-999}",
 			"json": true,
 			"valid": true,
 			"issues": []
@@ -920,6 +1004,13 @@
 			"issues": []
 		},
 		{
+			"name": "unknown_past_safe",
+			"text": "{\"unknown\":9007199254740993}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
 			"name": "number_huge_integer",
 			"text": "{\"number\":123456789012345678901234567890}",
 			"json": true,
@@ -927,8 +1018,22 @@
 			"issues": []
 		},
 		{
+			"name": "unknown_huge_integer",
+			"text": "{\"unknown\":123456789012345678901234567890}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
 			"name": "number_huge_integer_by_digits",
 			"text": "{\"number\":100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "unknown_huge_integer_by_digits",
+			"text": "{\"unknown\":100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
 			"json": true,
 			"valid": true,
 			"issues": []

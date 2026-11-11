@@ -206,6 +206,7 @@ impl SchemaBuilder {
             key: key.into(),
             options: options.into_iter().collect(),
             table: Box::default(),
+            sorted: Box::default(),
         })))
     }
 
@@ -304,6 +305,7 @@ impl SchemaBuilder {
                 let table = variant_table(&nodes, variant);
                 if let SchemaNode::Variant(variant) = &mut nodes[id.index()] {
                     variant.table = table;
+                    variant.index();
                 }
             }
         }
@@ -331,12 +333,19 @@ impl SchemaBuilder {
                 memoized[id.index()] = union_memoized(&nodes, &reaches, options, &mut memo);
             }
         }
+        let mut union_expected = vec![None; nodes.len()];
+        for &id in &order {
+            if let SchemaNode::Union(options) = &nodes[id.index()] {
+                union_expected[id.index()] = Some(walk::union_expected(&nodes, options));
+            }
+        }
         let mut schema = Schema {
             nodes: nodes.into_boxed_slice(),
             root,
             any,
             candidates: candidates.into_boxed_slice(),
             memoized: memoized.into_boxed_slice(),
+            union_expected: union_expected.into_boxed_slice(),
         };
         // an entry is required when a missing key fails it, which the tree
         // evaluator is asked

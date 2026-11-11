@@ -28,13 +28,26 @@ enum Mark {
 
 fn schemas() -> Vec<(&'static str, Schema)> {
     type Make = fn(&mut SchemaBuilder) -> NodeId;
-    let single: [(&str, Make); 29] = [
+    let single: [(&str, Make); 36] = [
         ("string", SchemaBuilder::string),
         ("number", SchemaBuilder::number),
         ("boolean", SchemaBuilder::boolean),
         ("bigint", SchemaBuilder::bigint),
         ("unknown", SchemaBuilder::unknown),
         ("integer", SchemaBuilder::integer),
+        ("safe_integer", SchemaBuilder::safe_integer),
+        ("uuid", |b| {
+            let string = b.string();
+            let uuid = b.uuid();
+            b.pipe([string, uuid])
+        }),
+        ("datetime", |b| {
+            let string = b.string();
+            let datetime = b.iso_datetime();
+            let lower = b.to_lower_case();
+            let piped = b.pipe([string, datetime, lower]);
+            b.nullable(piped)
+        }),
         ("literal", |b| b.literal("a")),
         ("one_of", |b| {
             b.one_of([
@@ -139,6 +152,51 @@ fn schemas() -> Vec<(&'static str, Schema)> {
             let variant = b.variant("a", [option]);
             let items = b.array(variant);
             b.union([number, variant, items])
+        }),
+        // a variant among options that could take an object too, so the
+        // object is read whole before the variant sees its discriminator
+        ("union_of_variant_and_object", |b| {
+            let x = b.literal("x");
+            let number = b.number();
+            let option = b.object([("a", x), ("b", number)]);
+            let variant = b.variant("a", [option]);
+            let loose = b.loose_object([("b", number)]);
+            let items = b.array(variant);
+            b.union([variant, loose, items])
+        }),
+        // more entries than are searched in order
+        ("wide", |b| {
+            let number = b.number();
+            let optional = b.optional(number);
+            let mut entries = vec![("a", number)];
+            for key in ["b", "c", "1", "k0", "k1", "k2", "k3", "k4", "k5"] {
+                entries.push((key, optional));
+            }
+            b.object(entries)
+        }),
+        ("wide_loose", |b| {
+            let string = b.string();
+            let optional = b.optional(string);
+            let unknown = b.unknown();
+            let mut entries = vec![("c", unknown)];
+            for key in ["a", "b", "0", "k0", "k1", "k2", "k3", "k4", "k5"] {
+                entries.push((key, optional));
+            }
+            b.loose_object(entries)
+        }),
+        // a union two of whose options could take an array, and two an
+        // object, each reaching its cycle, so it keeps its verdicts on both
+        ("memoized", |b| {
+            let lazy = b.declare();
+            let items = b.array(lazy);
+            let short = b.max_length(1.0);
+            let short_items = b.pipe([items, short]);
+            let other_items = b.array(lazy);
+            let a = b.loose_object([("a", lazy)]);
+            let record = b.record(lazy);
+            let union = b.union([short_items, other_items, a, record]);
+            b.define(lazy, union);
+            lazy
         }),
         ("variant", |b| {
             let x = b.literal("x");
@@ -262,6 +320,50 @@ const TEXTS: &[(&str, Mark)] = &[
     (r#"{"b":[],"a":1}"#, Mark::Same),
     (r#"{"":1}"#, Mark::Same),
     (" [ 1 , 2 ] ", Mark::Same),
+    // integers at the edge of the safe ones
+    ("9007199254740991", Mark::Same),
+    ("-9007199254740991.0", Mark::Same),
+    ("9007199254740992", Mark::Same),
+    // the format tests
+    (r#""123e4567-e89b-42d3-a456-426614174000""#, Mark::Same),
+    (r#""123E4567-E89B-42D3-A456-426614174000""#, Mark::Same),
+    (r#""\u003123e4567-e89b-42d3-a456-426614174000""#, Mark::Same),
+    (r#""00000000-0000-0000-0000-000000000000""#, Mark::Same),
+    (r#""123e4567-e89b-02d3-a456-426614174000""#, Mark::Same),
+    (r#""2024-02-29T12:00:00Z""#, Mark::Same),
+    (r#""2024-01-01T00:00:00.123456789Z""#, Mark::Same),
+    (r#""2023-02-29T12:00:00Z""#, Mark::Same),
+    (r#""2024-01-01t00:00:00z""#, Mark::Same),
+    (r#"["2024-01-01T00:00:00Z",null]"#, Mark::Same),
+    // more keys than are searched in order, in the schema's order and not
+    (
+        r#"{"a":1,"b":2,"c":3,"1":4,"k0":5,"k1":6,"k2":7,"k3":8,"k4":9,"k5":10}"#,
+        Mark::Same,
+    ),
+    (
+        r#"{"k5":"x","k4":"x","k3":"x","k2":"x","k1":"x","k0":"x","0":"x","b":"x","a":"x","c":1}"#,
+        Mark::Same,
+    ),
+    (
+        r#"{"k0":1,"k1":2,"k2":3,"k3":4,"k4":5,"k5":6,"b":7,"c":8,"a":9,"z":10}"#,
+        Mark::Same,
+    ),
+    (r#"{"k5":"x","a":1,"k9":1,"c":null}"#, Mark::Same),
+    // keys written with escapes, which are the keys they spell
+    (r#"{"\u0061":1}"#, Mark::Same),
+    (r#"{"\u0062":"s","a":1}"#, Mark::Same),
+    (r#"{"\"":1,"a":1}"#, Mark::Same),
+    (r#"{"a\u0000":1,"a":1}"#, Mark::Same),
+    // a variant's discriminator after the other keys, in and out of an array
+    (r#"[{"b":2,"a":"x"}]"#, Mark::Same),
+    (r#"[{"b":2,"a":"y"}]"#, Mark::Same),
+    (r#"{"b":"2","a":"x"}"#, Mark::Same),
+    // values a union that keeps its verdicts is asked of more than once
+    ("[[[]]]", Mark::Same),
+    ("[[],[]]", Mark::Same),
+    ("[[[],[]]]", Mark::Same),
+    (r#"{"a":{"a":[1]}}"#, Mark::Same),
+    (r#"[{"a":[[]]},{"b":{}}]"#, Mark::Same),
     // not JSON, wherever it is read
     ("", Mark::Same),
     ("nul", Mark::Same),
@@ -280,6 +382,7 @@ const TEXTS: &[(&str, Mark)] = &[
     (r#"{"a":[1],"a":1}"#, Mark::Repeated),
     (r#"{"a":1,"b":[{"a":"x","a":2}]}"#, Mark::Repeated),
     (r#"[{"a":"x","a":1}]"#, Mark::Repeated),
+    (r#"{"\u0061":"x","a":1}"#, Mark::Repeated),
     // malformed after the first token
     ("01", Mark::Tail),
     ("[", Mark::Tail),
@@ -311,6 +414,9 @@ const TEXTS: &[(&str, Mark)] = &[
     (r#"["\udc00"]"#, Mark::Refused),
     (r#"{"a":1,"b":"\ud800"}"#, Mark::Refused),
     (r#"{"a":1,"c":["\ud800\u0041"]}"#, Mark::Refused),
+    // a lone surrogate in a key, which a skip reads no more than a value
+    (r#"{"\ud800":1}"#, Mark::Refused),
+    (r#"{"a":1,"\udc00x":2}"#, Mark::Refused),
 ];
 
 fn compare(name: &str, schema: &Schema, text: &str, mark: Mark) {
@@ -405,4 +511,119 @@ fn every_mark_is_used_and_every_verdict_reached() {
     assert!(differs(Mark::Tail, Result::is_err, Ok(false)));
     assert!(differs(Mark::Refused, Result::is_err, Ok(false)));
     assert!(differs(Mark::Refused, Result::is_err, Ok(true)));
+}
+
+/// The schemas that are in the table for a path of the evaluators take it: a
+/// union that keeps its verdicts on arrays and on objects, and objects of
+/// more entries than are searched in order.
+#[test]
+fn the_schemas_take_the_paths_they_are_here_for() {
+    use crate::json::LINEAR_MAX;
+    use crate::schema::{Container, SchemaNode};
+    let schemas = schemas();
+    let schema = |name: &str| &schemas.iter().find(|(n, _)| *n == name).unwrap().1;
+    let memoized = schema("memoized");
+    let SchemaNode::Lazy(union) = memoized.at(memoized.root()) else {
+        panic!("not a lazy");
+    };
+    for container in [Container::Array, Container::Object] {
+        assert!(memoized.memoizes_on(*union, container), "{container:?}");
+    }
+    for name in ["wide", "wide_loose"] {
+        let wide = schema(name);
+        let entries = wide.at(wide.root()).entries().unwrap();
+        assert!(entries.len() > LINEAR_MAX, "{name}");
+    }
+}
+
+/// A text of over a hundred kilobytes, generated here from a fixed seed: an
+/// array of records, each with a recursive value, once as it is made and once
+/// with one value changed near the start, the middle, or the end. The two
+/// evaluators give one verdict on each, and `validate_json` has issues exactly
+/// when the tree evaluator says no. Nothing either evaluator does turns on the
+/// size of a text, as both read it whole from one string, so a larger one
+/// takes no path this one doesn't.
+#[test]
+fn the_evaluators_agree_on_a_large_text() {
+    let schema = build(|b| {
+        let json = b.declare();
+        let null = b.literal(SchemaLiteral::Null);
+        let boolean = b.boolean();
+        let number = b.number();
+        let string = b.string();
+        let items = b.array(json);
+        let fields = b.record(json);
+        let any = b.union([null, boolean, number, string, items, fields]);
+        b.define(json, any);
+        let integer = b.integer();
+        let id = b.pipe([number, integer]);
+        let short = b.max_length(8.0);
+        let name = b.pipe([string, short]);
+        let tag = b.one_of([
+            SchemaLiteral::from("a"),
+            SchemaLiteral::from("b"),
+            SchemaLiteral::from("c"),
+        ]);
+        let tags = b.array(tag);
+        let data = b.optional(json);
+        let item = b.object([("id", id), ("name", name), ("tags", tags), ("data", data)]);
+        b.array(item)
+    });
+    // a linear congruential generator, enough to vary the text
+    let mut state: u64 = 0x2545_f491_4f6c_dd1d;
+    let mut next = move |below: u64| {
+        state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        (state >> 33) % below
+    };
+    let mut items = Vec::new();
+    let mut length = 0;
+    while length < 1 << 17 {
+        let tags: Vec<&str> = (0..next(4))
+            .map(|_| ["\"a\"", "\"b\"", "\"c\""][usize::try_from(next(3)).unwrap()])
+            .collect();
+        let data = match next(4) {
+            0 => String::new(),
+            1 => r#","data":null"#.to_owned(),
+            2 => format!(r#","data":{{"x":[{},"é",true,{{"y":[]}}]}}"#, next(1000)),
+            _ => format!(r#","data":[[{}],{{"z":"😀"}}]"#, next(1000)),
+        };
+        let item = format!(
+            r#"{{"id":{},"name":"n{}","tags":[{}]{data}}}"#,
+            items.len(),
+            next(1000),
+            tags.join(",")
+        );
+        length += item.len() + 1;
+        items.push(item);
+    }
+    let whole = format!("[{}]", items.join(","));
+    assert!(whole.len() > 1 << 17);
+    let mut texts = vec![whole];
+    for at in [3, items.len() / 2, items.len() - 2] {
+        for wrong in [
+            format!(r#"{{"id":{at}.5,"name":"n","tags":[]}}"#),
+            format!(r#"{{"id":{at},"name":"too long a name","tags":[]}}"#),
+            format!(r#"{{"id":{at},"name":"n","tags":["d"]}}"#),
+            format!(r#"{{"id":{at},"name":"n","tags":[],"other":1}}"#),
+        ] {
+            let mut changed = items.clone();
+            changed[at] = wrong;
+            texts.push(format!("[{}]", changed.join(",")));
+        }
+    }
+    for (index, text) in texts.iter().enumerate() {
+        let tree = walk::matches_json(&schema, text);
+        let streamed = stream::matches_json(&schema, text);
+        let issues = walk::validate_json(&schema, text).unwrap();
+        // the first is whole, and every other has one value wrong
+        assert_eq!(tree, Ok(index == 0), "text {index}");
+        assert_eq!(streamed, tree, "text {index}");
+        assert_eq!(
+            issues.len(),
+            usize::from(index != 0),
+            "text {index}: {issues:?}"
+        );
+    }
 }
