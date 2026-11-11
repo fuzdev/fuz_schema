@@ -9,10 +9,15 @@ const to_runner =
 
 export const scenario_string: ScenarioModule['scenario_string'] = () => to_runner(type('string'));
 
-// arktype keeps unknown keys by default where the others drop them
+// arktype keeps a key the schema doesn't name by default, and with
+// `'+': 'delete'` drops it, as the others' objects here do. That makes the
+// type a morph, and a morph's call deep-clones its input before it runs
+// (`@ark/schema`'s `clone` default), so these rows are a clone and a parse:
+// its guard, `allows`, clones nothing, and is where its speed on the shape shows
 export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =>
 	to_runner(
 		type({
+			'+': 'delete',
 			id: 'number',
 			name: 'string',
 			email: 'string',
@@ -37,6 +42,7 @@ export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = 
 export const scenario_pipe: ScenarioModule['scenario_pipe'] = () =>
 	to_runner(
 		type({
+			'+': 'delete',
 			name: '1 <= string <= 50',
 			age: '0 <= number.integer <= 150',
 			slug: /^[a-z0-9-]+$/

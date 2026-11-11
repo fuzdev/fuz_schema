@@ -71,6 +71,21 @@ const strip_types = (path: string): string => {
 
 const SCHEMA_SOURCE_PATH = fileURLToPath(new URL('../lib/schema.ts', import.meta.url));
 const SCHEMA_BUILT_PATH = fileURLToPath(new URL('../../dist/schema.js', import.meta.url));
+const SCHEMA_DECLARATIONS_PATH = fileURLToPath(new URL('../../dist/schema.d.ts', import.meta.url));
+
+// a file of the build, or the script says to build it and exits, which is no
+// error of the harness
+const to_built_path = (path: string, name: string, reader: string): string => {
+	const built = existsSync(path) && statSync(path).mtimeMs;
+	if (!built || built < statSync(SCHEMA_SOURCE_PATH).mtimeMs) {
+		console.error(
+			`${reader} the built \`${name}\`, which is ${built ? 'older than `src/lib/schema.ts`' : 'missing'}: ` +
+				'run `gro build` first'
+		);
+		process.exit(1);
+	}
+	return path;
+};
 
 /**
  * The built `dist/schema.js`, which an unbundled entry of the working tree's
@@ -78,17 +93,17 @@ const SCHEMA_BUILT_PATH = fileURLToPath(new URL('../../dist/schema.js', import.m
  * is missing or older than `src/lib/schema.ts` the script says to build it and
  * exits, which is no error of the harness.
  */
-export const to_built_schema_path = (): string => {
-	const built = existsSync(SCHEMA_BUILT_PATH) && statSync(SCHEMA_BUILT_PATH).mtimeMs;
-	if (!built || built < statSync(SCHEMA_SOURCE_PATH).mtimeMs) {
-		console.error(
-			`the unbundled entry loads the built \`dist/schema.js\`, which is ${built ? 'older than `src/lib/schema.ts`' : 'missing'}: ` +
-				'run `gro build` first'
-		);
-		process.exit(1);
-	}
-	return SCHEMA_BUILT_PATH;
-};
+export const to_built_schema_path = (): string =>
+	to_built_path(SCHEMA_BUILT_PATH, 'dist/schema.js', 'the unbundled entry loads');
+
+/**
+ * The built `dist/schema.d.ts`, what a consumer's compiler reads of the
+ * library, which the type benchmark checks this library against, as it checks
+ * every other library against its declarations. Missing or older than
+ * `src/lib/schema.ts`, the script says to build it and exits.
+ */
+export const to_built_schema_declarations_path = (): string =>
+	to_built_path(SCHEMA_DECLARATIONS_PATH, 'dist/schema.d.ts', 'the type benchmark reads');
 
 /**
  * Another version of this repo's library to build an entry against, for

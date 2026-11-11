@@ -11,13 +11,15 @@
  *
  * What the sides promise differs, and each set's notes say how. Valibot and
  * zod return a fresh copy of what they read, and this library returns what it
- * was given wherever nothing changed. zod is reported twice, with the object
- * parsers it compiles and with its interpreter.
+ * was given wherever nothing changed. zod is reported three times, with the
+ * object parsers it compiles on a first parse, with its interpreter, and with
+ * each root through `z.compile`, which has no figure of a row whose root it
+ * hands back uncompiled: that row is `-` in its column.
  *
  * **A side of a set is a process.** The consumer's library, this library, and
- * each of zod's two modes are timed in processes of their own, so what one
+ * each of zod's three modes are timed in processes of their own, so what one
  * side's parses teach the engine is not there when another is timed, and zod's
- * two columns share none of zod's code. A process holds one set, so a set
+ * columns share none of zod's code. A process holds one set, so a set
  * reads the same run alone. The whole is repeated in passes of fresh
  * processes, and a time is the median of its passes beside their spread: see
  * `timing_passes.ts`.
@@ -46,6 +48,8 @@ import {
 	HARVEST_ASIDES,
 	HARVEST_OURS,
 	HARVEST_SETS,
+	HARVEST_ZOD_COMPILED,
+	take_uncompiled_harvest_rows,
 	type HarvestAside,
 	type HarvestRow,
 	type HarvestRowsOf,
@@ -136,9 +140,13 @@ const measure_bundle = async (entry: string, port: string): Promise<BundleSize> 
 const format_bundles = async (set: HarvestSet): Promise<string> => {
 	const { reference, root } = set;
 	const port = to_port_module(set);
-	const theirs = await measure_bundle(
-		reference.to_entry(root, to_path(`./${set.name}/${set.name}_${reference.name}.ts`)),
-		port
+	const their_path = to_path(`./${set.name}/${set.name}_${reference.name}.ts`);
+	const theirs = await measure_bundle(reference.to_entry(root, their_path), port);
+	const their_modes = await Promise.all(
+		Object.entries(reference.to_mode_entries ?? {}).map(async ([mode, to_entry]) => ({
+			mode,
+			size: await measure_bundle(to_entry(root, their_path), port)
+		}))
 	);
 	const ours = await measure_bundle(
 		`import { parse } from ${JSON.stringify(SCHEMA_PATH)};
@@ -151,9 +159,10 @@ export const run = (value) => parse(${root}, value);`,
 		format_table([
 			['', 'minified', 'gzip'],
 			[reference.name, String(theirs.minified), String(theirs.gzip)],
+			...their_modes.map(({ mode, size }) => [mode, String(size.minified), String(size.gzip)]),
 			['fuz_schema', String(ours.minified), String(ours.gzip)],
 			[
-				'ratio',
+				`fuz_schema/${reference.name}`,
 				(ours.minified / theirs.minified).toFixed(2) + 'x',
 				(ours.gzip / theirs.gzip).toFixed(2) + 'x'
 			]
@@ -173,8 +182,8 @@ export const run = (value) => parse(${root}, value);`,
 // issues of one that doesn't match, which are not compared here. A row that
 // fails this is a finding, to be reported and not dropped or loosened.
 const assert_agreement = (set: HarvestSet, row: HarvestRow): void => {
-	const ours = row.ours();
-	const outputs = [...row.theirs.map((run) => run()), ours];
+	const ours = row.ours()();
+	const outputs = [...row.theirs.map((side) => side()()), ours];
 	const names = [...set.reference.modes, HARVEST_OURS];
 	for (let i = 0; i < outputs.length; i++) {
 		if ((outputs[i] !== undefined) !== row.valid) {
@@ -188,8 +197,8 @@ const assert_agreement = (set: HarvestSet, row: HarvestRow): void => {
 	}
 };
 
-const format_ratio = (ours: number, theirs: number): string =>
-	theirs > 0 ? (ours / theirs).toFixed(2) + 'x' : '-';
+const format_ratio = (ours: number, theirs: number | undefined): string =>
+	theirs !== undefined && theirs > 0 ? (ours / theirs).toFixed(2) + 'x' : '-';
 
 // A row is run this long before it is timed, after the process has run every
 // row of its side. A count alone leaves the first row of a new process timed
@@ -225,6 +234,8 @@ interface TimedSet {
 	set: HarvestSet;
 	bundles: string;
 	rows: Array<HarvestRow>;
+	/** The rows `HARVEST_ZOD_COMPILED` has no figure of, which it times none of. */
+	uncompiled: Array<string>;
 	asides: Array<HarvestAside>;
 	sides: Array<string>;
 	units: Array<TimingUnit>;
@@ -239,15 +250,26 @@ const time_set = async (set: HarvestSet): Promise<TimedSet> => {
 
 	// held to one answer here, in a process that times nothing
 	const { rows, asides = [] } = await set.load();
+	take_uncompiled_harvest_rows();
 	for (const row of rows) assert_agreement(set, row);
+	const uncompiled = take_uncompiled_harvest_rows();
 
 	const sides = [...set.reference.modes, HARVEST_OURS];
-	const units = [...sides, ...(asides.length ? [HARVEST_ASIDES] : [])].map((side): TimingUnit => {
-		const of: HarvestRowsOf = { set: set.name, side };
-		return { id: side, of };
-	});
+	// a side's process holds every row, and times the ones it has a figure of
+	const units = [...sides, ...(asides.length ? [HARVEST_ASIDES] : [])].flatMap(
+		(side): Array<TimingUnit> => {
+			const of: HarvestRowsOf = { set: set.name, side };
+			if (side !== HARVEST_ZOD_COMPILED || !uncompiled.length) return [{ id: side, of }];
+			const timed = rows.map((row) => row.name).filter((name) => !uncompiled.includes(name));
+			return timed.length ? [{ id: side, of, rows: timed }] : [];
+		}
+	);
 	// a process also times a function that does nothing, as it does a row
-	const row_count = sides.length * rows.length + asides.length + units.length;
+	const row_count = units.reduce(
+		(sum, unit) =>
+			sum + 1 + (unit.rows?.length ?? (unit.id === HARVEST_ASIDES ? asides.length : rows.length)),
+		0
+	);
 	const pass_seconds =
 		units.length * PROCESS_SECONDS +
 		(row_count * (TIMING_PRELUDE_MS + plan.warm_ms + plan.duration_ms)) / 1000;
@@ -256,18 +278,20 @@ const time_set = async (set: HarvestSet): Promise<TimedSet> => {
 			`${args.passes === 1 ? 'pass' : 'passes'}, about ${format_seconds(pass_seconds * args.passes)}...`
 	);
 	const times = await time_units(units, plan, args.passes);
-	return { set, bundles, rows, asides, sides, units, times };
+	return { set, bundles, rows, uncompiled, asides, sides, units, times };
 };
 
 // the libraries whose notes have been said, under the first of their sets
 const noted_references: Set<string> = new Set();
 
 const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
-	const { set, rows, asides, sides, times } = timed;
+	const { set, rows, uncompiled, asides, sides, times } = timed;
 	const { reference } = set;
 	const { modes } = reference;
-	const to_bytes = (side: string, row: string): number =>
-		bytes.get(to_bytes_id(set, side))!.get(row)!;
+	const has_figure = (side: string, row: string): boolean =>
+		side !== HARVEST_ZOD_COMPILED || !uncompiled.includes(row);
+	const to_bytes = (side: string, row: string): number | undefined =>
+		has_figure(side, row) ? bytes.get(to_bytes_id(set, side))!.get(row)! : undefined;
 	console.log(`${set.name}: ${set.title}\n`);
 	console.log(timed.bundles);
 
@@ -278,6 +302,7 @@ const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 	for (const row of rows) {
 		// this library's last
 		const us = sides.map((side) => {
+			if (!has_figure(side, row.name)) return undefined;
 			const { ns, median_ns } = times.get(side)!.get(row.name)!;
 			const { median, spread } = to_pooled_timing(ns);
 			return { value: median / 1000, spread, batch: to_pooled_timing(median_ns).median / 1000 };
@@ -285,17 +310,21 @@ const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 		const our_us = us.at(-1)!.value;
 		time_table.push([
 			row.name,
-			...us.flatMap(({ value, spread, batch }) => [
-				`${format_number(value)} ${format_spread(spread)}`,
-				format_number(batch)
-			]),
-			...modes.map((_, i) => format_ratio(our_us, us[i]!.value))
+			...us.flatMap((side) =>
+				side
+					? [
+							`${format_number(side.value)} ${format_spread(side.spread)}`,
+							format_number(side.batch)
+						]
+					: ['-', '-']
+			),
+			...modes.map((_, i) => format_ratio(our_us, us[i]?.value))
 		]);
 		const row_bytes = sides.map((side) => to_bytes(side, row.name));
 		bytes_table.push([
 			row.name,
-			...row_bytes.map(format_number),
-			...modes.map((_, i) => format_ratio(row_bytes.at(-1)!, row_bytes[i]!))
+			...row_bytes.map((b) => (b === undefined ? '-' : format_number(b))),
+			...modes.map((_, i) => format_ratio(row_bytes.at(-1)!, row_bytes[i]))
 		]);
 	}
 	console.log(
@@ -316,7 +345,7 @@ const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 				aside.name,
 				`${format_number(median / 1000)} ${format_spread(spread)}`,
 				format_number(to_pooled_timing(median_ns).median / 1000),
-				format_number(to_bytes(HARVEST_ASIDES, aside.name))
+				format_number(to_bytes(HARVEST_ASIDES, aside.name)!)
 			]);
 		}
 		console.log(
@@ -325,6 +354,13 @@ const print_set = (timed: TimedSet, bytes: BytesReadings): void => {
 		console.log(format_table(aside_table));
 	}
 
+	if (uncompiled.length) {
+		console.log(
+			`\n\`-\` is a row a column has no figure of. \`${HARVEST_ZOD_COMPILED}\` has none of the rows ` +
+				'whose roots\n`z.compile` hands back uncompiled, and times none of them:\n' +
+				uncompiled.map((name) => `  ${name}`).join('\n')
+		);
+	}
 	const notes = noted_references.has(reference.name)
 		? set.notes
 		: [...reference.notes, ...set.notes];

@@ -42,6 +42,10 @@ export const read_text = (path: string): string | undefined => {
 
 const CPUFREQ_DIR = '/sys/devices/system/cpu/cpu0/cpufreq';
 
+/**
+ * Reads what the machine is doing now: Node's version and the load average,
+ * and, on Linux, each CPU's clock and the first CPU's frequency settings.
+ */
 export const read_machine_state = (): MachineState => {
 	const state: MachineState = { node: process.version, load: loadavg() };
 	const mhz = [...(read_text('/proc/cpuinfo') ?? '').matchAll(/^cpu MHz\s*:\s*([\d.]+)/gm)].map(
@@ -59,6 +63,7 @@ export const read_machine_state = (): MachineState => {
 	return state;
 };
 
+/** The state on one line, as every script's header and `grade`'s start and end print it. */
 export const format_machine_state = (state: MachineState): string =>
 	`node ${state.node}, load ${state.load.map((l) => l.toFixed(2)).join(' ')}` +
 	(state.cpu_mhz

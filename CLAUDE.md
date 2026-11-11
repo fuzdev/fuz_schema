@@ -29,7 +29,7 @@ npm run benchmark:heap        # memory still held after building and parsing
 npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_wasm
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
-npm run benchmark:survey      # many small shapes against valibot and zod, by what a parse does
+npm run benchmark:survey      # many small shapes against valibot, zod, and zod compiled, by what a parse does
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 npm run differential          # generated schemas and inputs against zod and valibot, memory-capped where systemd-run can
 npm run mutate                # break the library on purpose and check the tests fail, see docs/testing.md
@@ -38,11 +38,11 @@ gro task src/test/fixtures/json/update.task.ts # regenerate the JSON fixtures' e
 gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes.json
 ```
 
-`npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`,
+`npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`, `--no-guard`,
 `--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
 `npm run benchmark:allocations` and `npm run benchmark:heap` take `--scenario`
 and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
-`--samples`, and `--discard`, `npm run benchmark:types` takes `--lib`,
+`--samples`, and `--discard`, `npm run benchmark:types` takes `--lib` and `--runs`,
 `npm run benchmark:bundle` takes `--raw`, and `npm run benchmark:wasm` takes
 `--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every script takes
 `--help`.
@@ -114,7 +114,10 @@ dev server.
   after the grader's program, and a heap that doesn't grow with the count of
   distinct inputs, asked in processes of their own, `engine_state_test_child.ts`
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
-  inputs match, so the benchmarks compare like with like
+  inputs match, its guard with its factory, and its output with this
+  library's, so the benchmarks compare like with like; the app's schemas one
+  by one; every builder of `libs/schemas/` with its factory's text, and
+  `zod_compiled`'s factories with Zod's; and which roots `z.compile` compiles
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
   says and takes the path it names, and the grader builds the `create` cases
   with a library of their own
@@ -199,6 +202,11 @@ dev server.
   - `scenarios.ts`, `libs/`, `libs.ts`, `lib_names.ts` - the cross-library
     scenarios, one module per library, and the libraries' names, which import
     none of them
+  - `libs/schemas/`, `scenario_schemas.ts` - each library's scenarios again
+    as builders, with its guard and parse, which no bundle reaches: the guard
+    regime, the type benchmark's reads, and the parity tests read them
+  - `zod_compile.ts` - `compile_zod_root`, whether `z.compile` compiles a
+    root, by which every timing leaves `zod_compiled` without a figure
   - `run.ts`, `bundle.ts`, `allocations.ts`, `types.ts` - parse time, bundle
     size, allocation, type-checking cost
   - `timing_passes.ts`, `timing_child.ts`, `timing_job.ts`, `timing.ts` -
@@ -474,10 +482,11 @@ erasable syntax only, imports with explicit `.ts` extensions that Node
 resolves on its own (relative paths, packages, `#lib/*`), and `import type`
 for types. `allocations.ts` measures allocation, which needs the node flags
 for a large young generation: its npm script passes them, and it refuses to
-run without. `run.ts`, `survey.ts`, `harvest.ts`, and `grade.ts` time, so they run under
+run without, and starts itself again for each library under them. `run.ts`,
+`survey.ts`, `harvest.ts`, `grade.ts`, and `wasm.ts` time, so they run under
 none and refuse them, and refuse any `NODE_OPTIONS`, which every process they
-start would inherit; the last two pass the flags to the processes that
-measure their bytes.
+start would inherit; `harvest.ts` and `grade.ts` pass the flags to the
+processes that measure their bytes.
 
 ## Rust workspace
 

@@ -39,6 +39,7 @@ import {
 } from './measure.ts';
 import {
 	find_survey_disagreements,
+	find_uncompiled_survey_shapes,
 	is_survey_row_of,
 	load_survey_lib,
 	type SurveyRowsOf
@@ -49,7 +50,8 @@ import {
 	SURVEY_SHAPES,
 	to_survey_row_name,
 	type SurveyDoes,
-	type SurveyLibName
+	type SurveyLibName,
+	type Zod
 } from './survey_shapes.ts';
 import { TIMING_PRELUDE_MS } from './timing_job.ts';
 import {
@@ -71,7 +73,7 @@ const Args = s.object({
 		description: 'only time rows whose name includes this'
 	}),
 	lib: meta(s.optional(to_names_arg('library', 'libraries to compare with', OTHER_LIBS)), {
-		description: `the libraries to compare this one with, defaulting to ${OTHER_LIBS.join(' and ')}`
+		description: `the libraries to compare this one with, defaulting to ${OTHER_LIBS.join(', ')}`
 	}),
 	duration: meta(to_duration_arg(150), {
 		description: 'measurement ms per row of each library, shared out over the passes'
@@ -90,25 +92,13 @@ const others = OTHER_LIBS.filter((lib) => !args.lib || args.lib.includes(lib));
 const libs: Array<SurveyLibName> = [SUBJECT_LIB, ...others];
 refuse_timing_node_flags('the survey', false);
 
-console.log(format_benchmark_header(OTHER_LIBS));
+console.log(format_benchmark_header(['valibot', 'zod']));
 
 interface Row {
 	name: string;
 	does: SurveyDoes;
 	/** The libraries it is timed for. */
 	libs: Array<SurveyLibName>;
-}
-
-const rows: Array<Row> = SURVEY_SHAPES.flatMap((shape) =>
-	Object.entries(shape.inputs).map(([input_name, input]) => ({
-		name: to_survey_row_name(shape.name, input_name),
-		does: input.does,
-		libs: libs.filter((lib) => is_survey_row_of(shape, input, lib))
-	}))
-).filter((row) => !args.filter || row.name.includes(args.filter));
-if (!rows.length) {
-	console.error('no rows matched');
-	process.exit(1);
 }
 
 // a survey only compares like with like if every library gives the verdict a
@@ -121,6 +111,31 @@ if (disagreements.length) {
 	console.error(disagreements.join('\n'));
 	process.exit(1);
 }
+
+// The shapes `zod_compiled` has no figure of: their rows are timed for it in
+// no process, and the process that times the rest still builds them.
+const uncompiled_shapes: Set<string> = new Set(
+	others.includes('zod_compiled') ? find_uncompiled_survey_shapes(modules.zod as Zod) : []
+);
+
+const rows: Array<Row> = SURVEY_SHAPES.flatMap((shape) =>
+	Object.entries(shape.inputs).map(([input_name, input]) => ({
+		name: to_survey_row_name(shape.name, input_name),
+		does: input.does,
+		libs: libs.filter(
+			(lib) =>
+				is_survey_row_of(shape, input, lib) &&
+				!(lib === 'zod_compiled' && uncompiled_shapes.has(shape.name))
+		)
+	}))
+).filter((row) => !args.filter || row.name.includes(args.filter));
+if (!rows.length) {
+	console.error('no rows matched');
+	process.exit(1);
+}
+const uncompiled = [...uncompiled_shapes].filter((shape) =>
+	rows.some((row) => row.name.startsWith(`${shape}/`))
+);
 
 // A row is warmed this long before its timing. A process that holds one row
 // has everything still to compile, so it warms for longer. The rows are many
@@ -164,7 +179,7 @@ const pass_seconds = units.reduce(
 );
 
 console.log(
-	`\nsurvey: ${SUBJECT_LIB} against ${others.join(' and ')} on ${rows.length} ` +
+	`\nsurvey: ${SUBJECT_LIB} against ${others.join(', ')} on ${rows.length} ` +
 		`${rows.length === 1 ? 'row' : 'rows'}, ` +
 		(args.alone ? 'a process for each row of each library' : 'a process for each library') +
 		`, ${args.passes} ${args.passes === 1 ? 'pass' : 'passes'}, ` +
@@ -307,6 +322,12 @@ console.log(
 		`A row where either library takes\n${format_number(call_floor_ns)} ns or less, twice that, is at the call floor: ` +
 		'it is marked `~`, its ratio is mostly of\ntwo calls, it is in no mean of the summary, and it is never marked `<`.'
 );
+if (uncompiled.length) {
+	console.log(
+		'\n`zod_compiled` is Zod with the root of each shape through `z.compile`, which hands back ' +
+			`uncompiled\n${uncompiled.join(', ')}: it has no equivalent of their rows, which are \`-\`.`
+	);
+}
 console.log(
 	'\n`<` is a row where the other library is faster by more than the two spreads together, ' +
 		"this\nlibrary's and its own, and neither time is at the call floor." +

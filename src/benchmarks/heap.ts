@@ -29,7 +29,11 @@
  * dozen schemas reads as up to a hundred bytes or so each. The figure differs
  * by the pair it is read between, so only figures of one pair compare. Every
  * schema is built from the same definition, which flatters a library that
- * caches by definition.
+ * keeps the schema of a definition and hands it back for the same one, as
+ * ArkType does: an app's schemas are distinct definitions, which cost it far
+ * more each. A figure of distinct definitions needs a factory that varies its
+ * definition, in every library's scenario module, which would change their
+ * bundles.
  *
  * **Flags, for this reading only** (`HEAP_NODE_FLAGS`): `--expose-gc`;
  * a fixed young generation, which V8 otherwise sizes from the machine's

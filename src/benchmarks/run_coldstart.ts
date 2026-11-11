@@ -32,7 +32,11 @@ const Args = s.object({
 		{ description: 'library names to run' }
 	),
 	scenario: meta(
-		s.with_default_fn(ScenarioNamesArg, (): Array<ScenarioName> => ['object_flat', 'type_json']),
+		s.with_default_fn(ScenarioNamesArg, (): Array<ScenarioName> => [
+			'object_flat',
+			'type_json',
+			'app'
+		]),
 		{ description: 'scenario names to run' }
 	),
 	form: meta(
@@ -76,13 +80,13 @@ console.log(
 );
 console.log(
 	'import, create, first parse, parse 10, and parse 100 are median ms of work inside the process,\n' +
-		'each stage including the ones before it, the last two the tenth parse and the hundredth, each of\n' +
-		'a copy of the input; 2 to 100 is parse 100 from its clock after the first parse, in the same\n' +
-		'process; process is what first parse added to the whole process over bare, where an\n' +
-		`addition inside the bare band reads <${bare_band_ms.toFixed(1)}; ` +
-		'peak is MB of resident memory first parse added over bare. Each stage is processes of its own,\n' +
-		'so a stage can read under the one before it where the work between them is less than the\n' +
-		"spread of a stage's samples"
+		'each stage including the ones before it, the last two the tenth parse and the hundredth, each\n' +
+		'of a copy of the input; 2 to 100 is parse 100 from its clock after the first parse, in the\n' +
+		'same process; process is what first parse added to the whole process over bare, where an\n' +
+		`addition inside the bare band reads <${bare_band_ms.toFixed(1)}; peak is MB of resident ` +
+		'memory first parse added over\nbare. Each stage is processes of its own, so a stage can read ' +
+		'under the one before it where the\nwork between them is less than the spread of ' +
+		"a stage's samples"
 );
 
 for (const scenario of args.scenario) {

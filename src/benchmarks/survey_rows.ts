@@ -16,13 +16,18 @@ import type { ScenarioRunner } from './scenarios.ts';
 import {
 	SURVEY_LIBS,
 	SURVEY_SHAPES,
+	to_survey_builder_name,
 	to_survey_row_name,
+	type SurveyBuilderName,
 	type SurveyInput,
 	type SurveyLibName,
 	type SurveyRun,
-	type SurveyShape
+	type SurveyShape,
+	type Zod,
+	type ZodCompile
 } from './survey_shapes.ts';
 import type { LoadTimingRows, TimingRow } from './timing_job.ts';
+import { compile_zod_root } from './zod_compile.ts';
 
 /** What a process of `survey.ts` holds. */
 export interface SurveyRowsOf {
@@ -33,7 +38,26 @@ export interface SurveyRowsOf {
 
 /** Imports one library, as a shape's builder takes it. */
 export const load_survey_lib = (lib: SurveyLibName): Promise<unknown> =>
-	lib === 'fuz_schema' ? import('#lib/schema.ts') : import(lib);
+	lib === 'fuz_schema' ? import('#lib/schema.ts') : import(to_survey_builder_name(lib));
+
+const no_compile: ZodCompile = (schema) => schema;
+
+/**
+ * The shapes with a root `z.compile` hands back uncompiled, by
+ * `compile_zod_root`: `zod_compiled` has no figure of their rows, and `survey.ts`
+ * times none of them.
+ *
+ * @param z - Zod, as `load_survey_lib` returns it
+ */
+export const find_uncompiled_survey_shapes = (z: Zod): Array<string> =>
+	SURVEY_SHAPES.filter((shape) => {
+		let uncompiled = false;
+		shape.zod?.(z, (schema) => {
+			if (!compile_zod_root(z, schema)) uncompiled = true;
+			return schema;
+		});
+		return uncompiled;
+	}).map((shape) => shape.name);
 
 /**
  * Builds a shape's schema in one library.
@@ -47,8 +71,9 @@ export const create_survey_run = (
 	module: unknown
 ): SurveyRun | undefined => {
 	// each builder is typed to its own library, which the name picks
-	const create = shape[lib] as ((module: unknown) => SurveyRun) | undefined;
-	return create?.(module);
+	const create = shape[to_survey_builder_name(lib)] as
+		((module: unknown, compile: ZodCompile) => SurveyRun) | undefined;
+	return create?.(module, lib === 'zod_compiled' ? (module as Zod).compile : no_compile);
 };
 
 /** Whether a row is timed for a library: the shape has it, and it gives the verdict the input names. */
@@ -56,7 +81,10 @@ export const is_survey_row_of = (
 	shape: SurveyShape,
 	input: SurveyInput,
 	lib: SurveyLibName
-): boolean => !!shape[lib] && !input.differs?.[lib];
+): boolean => {
+	const builder = to_survey_builder_name(lib);
+	return !!shape[builder] && !input.differs?.[builder];
+};
 
 // a verdict, where a throw is a miss: `parse_or_throw` and its like
 const to_verdict = (matches: ScenarioRunner, value: unknown): boolean => {
@@ -88,7 +116,7 @@ export const find_survey_disagreements = (
 		const runs = SURVEY_LIBS.map((lib) => create_survey_run(shape, lib, modules[lib]));
 		for (const [i, lib] of SURVEY_LIBS.entries()) {
 			const run = runs[i];
-			if (!run === !shape.skips?.[lib]) {
+			if (!run === !shape.skips?.[to_survey_builder_name(lib)]) {
 				wrong.push(
 					`${shape.name}: ${lib} ` +
 						(run ? 'has a builder and a reason it has none' : 'has no builder and no reason')
@@ -102,7 +130,7 @@ export const find_survey_disagreements = (
 				);
 			}
 			for (const [name, input] of Object.entries(shape.inputs)) {
-				const differs = !!input.differs?.[lib];
+				const differs = !!input.differs?.[to_survey_builder_name(lib)];
 				const verdict = to_verdict(run.matches, input.value);
 				if (verdict !== (input.valid !== differs)) {
 					wrong.push(
@@ -119,7 +147,7 @@ export const find_survey_disagreements = (
 			const expected = subject.output(input.value);
 			for (const [i, lib] of SURVEY_LIBS.entries()) {
 				const output = runs[i]?.output;
-				if (i === 0 || !output || input.differs?.[lib]) continue;
+				if (i === 0 || !output || input.differs?.[to_survey_builder_name(lib)]) continue;
 				if (!isDeepStrictEqual(output(input.value), expected)) {
 					wrong.push(
 						`${to_survey_row_name(shape.name, name)}: ${lib} returned another output than ${SURVEY_LIBS[0]}`
@@ -128,7 +156,7 @@ export const find_survey_disagreements = (
 			}
 		}
 		for (const [name, input] of Object.entries(shape.inputs)) {
-			for (const lib of Object.keys(input.differs ?? {}) as Array<SurveyLibName>) {
+			for (const lib of Object.keys(input.differs ?? {}) as Array<SurveyBuilderName>) {
 				if (lib === 'fuz_schema' || !shape[lib]) {
 					wrong.push(`${to_survey_row_name(shape.name, name)}: ${lib} can't be declared to differ`);
 				}

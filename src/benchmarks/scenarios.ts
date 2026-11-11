@@ -9,6 +9,9 @@
  * is that scenario's under a second name: its bundle is the same bytes, and
  * in a bundle of every scenario it adds a call and no definition.
  *
+ * Each module in `libs/` has a schemas module in `libs/schemas/`, of the same
+ * schemas as builders, see `scenario_schemas.ts`.
+ *
  * `app` is the distinct schemas an app defines, an entity, an envelope, a
  * settings record, an event variant among them, each parsed apart: every
  * other scenario is one schema, and in this one the schemas' definitions, not

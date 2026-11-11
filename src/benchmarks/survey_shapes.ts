@@ -1,6 +1,8 @@
 /**
  * The shapes of `survey.ts`: many small schemas, each written for this
- * library, Valibot, and Zod, with the inputs each is run on.
+ * library, Valibot, and Zod, with the inputs each is run on. Zod's builder runs
+ * twice, as `zod` and as `zod_compiled`, which passes the root it parses
+ * through `z.compile`.
  *
  * The scenarios of `scenarios.ts` are a few schemas for every library. These
  * are many, for three, and each row is one thing a parse does: a primitive, a
@@ -37,11 +39,29 @@ import type { ScenarioRunner } from './scenarios.ts';
 
 type Fuz = typeof fuz_schema;
 type Valibot = typeof valibot;
-type Zod = typeof zod;
+/** Zod, as a shape's builder takes it. */
+export type Zod = typeof zod;
 
-/** The libraries a shape is written for, this one first. */
-export const SURVEY_LIBS = ['fuz_schema', 'valibot', 'zod'] as const;
+/**
+ * The libraries a shape is run in, this one first. `zod_compiled` is Zod's
+ * builder of a shape with its root through `z.compile`, so it is no builder of
+ * its own and is skipped and differs where Zod is.
+ */
+export const SURVEY_LIBS = ['fuz_schema', 'valibot', 'zod', 'zod_compiled'] as const;
 export type SurveyLibName = (typeof SURVEY_LIBS)[number];
+
+/** The libraries a shape has a builder for, which `zod_compiled` shares Zod's. */
+export type SurveyBuilderName = Exclude<SurveyLibName, 'zod_compiled'>;
+
+/** The library whose builder, skips, and differences a library of the survey reads. */
+export const to_survey_builder_name = (lib: SurveyLibName): SurveyBuilderName =>
+	lib === 'zod_compiled' ? 'zod' : lib;
+
+/**
+ * What a Zod builder passes its root through before it parses: nothing for
+ * `zod`, and `z.compile` for `zod_compiled`.
+ */
+export type ZodCompile = <T extends zod.ZodType>(schema: T) => T;
 
 /** What a row does, which the summary of `survey.ts` groups rows by. */
 export const SURVEY_DOES = [
@@ -72,7 +92,7 @@ export interface SurveyInput {
 	/** What the parse of it does, in this library. */
 	does: SurveyDoes;
 	/** The libraries that give the other verdict, each with why. The row is not timed for them. */
-	differs?: Partial<Record<SurveyLibName, string>>;
+	differs?: Partial<Record<SurveyBuilderName, string>>;
 }
 
 /** A shape built in one library. */
@@ -89,9 +109,9 @@ export interface SurveyShape {
 	name: string;
 	fuz_schema: (s: Fuz) => SurveyRun;
 	valibot?: (v: Valibot) => SurveyRun;
-	zod?: (z: Zod) => SurveyRun;
+	zod?: (z: Zod, compile: ZodCompile) => SurveyRun;
 	/** Why a library has no builder: what it has no equivalent of. */
-	skips?: Partial<Record<SurveyLibName, string>>;
+	skips?: Partial<Record<SurveyBuilderName, string>>;
 	/** Why the shape's builders give no `output`, where they don't: what it calls returns none. */
 	no_output?: string;
 	/** By name. A row is `<shape>/<input>`. */
@@ -116,10 +136,13 @@ const vp = (v: Valibot, schema: valibot.GenericSchema): SurveyRun => ({
 	matches: (value) => v.safeParse(schema, value).success,
 	output: (value) => v.parse(schema, value)
 });
-const zp = (schema: zod.ZodType): SurveyRun => ({
-	matches: (value) => schema.safeParse(value).success,
-	output: (value) => schema.parse(value)
-});
+const zp = (compile: ZodCompile, root: zod.ZodType): SurveyRun => {
+	const schema = compile(root);
+	return {
+		matches: (value) => schema.safeParse(value).success,
+		output: (value) => schema.parse(value)
+	};
+};
 
 const user = { id: 1, name: 'ada', email: 'a@b.c', active: true, role: 'admin', age: 36 };
 const { role: _, ...user_no_role } = user;
@@ -178,7 +201,7 @@ const to_nested_shape = (depth: 1 | 2 | 4 | 8): SurveyShape => ({
 	name: `nested_${depth}`,
 	fuz_schema: (s) => fp(s, fuz_nested(s, depth)),
 	valibot: (v) => vp(v, valibot_nested(v, depth)),
-	zod: (z) => zp(zod_nested(z, depth)),
+	zod: (z, c) => zp(c, zod_nested(z, depth)),
 	inputs: {
 		valid: ok(j(to_nested(depth, 1)), 'object identity'),
 		leaf_bad: bad(j(to_nested(depth, 'x')), `issue at depth ${depth}`)
@@ -199,7 +222,7 @@ const to_unknown_entry_shape = (
 	name,
 	fuz_schema: (s) => fp(s, s.object({ a: create.fuz_schema(s) })),
 	valibot: (v) => vp(v, v.strictObject({ a: create.valibot(v) })),
-	zod: (z) => zp(z.strictObject({ a: create.zod(z) })),
+	zod: (z, c) => zp(c, z.strictObject({ a: create.zod(z) })),
 	inputs: { present: ok(j({ a: 1 }), does), missing: bad({}, 'issue at depth 1') }
 });
 
@@ -218,14 +241,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'string',
 		fuz_schema: (s) => fp(s, s.string),
 		valibot: (v) => vp(v, v.string()),
-		zod: (z) => zp(z.string()),
+		zod: (z, c) => zp(c, z.string()),
 		inputs: { valid: ok('abc', 'primitive'), invalid: bad(1, 'issue at the root') }
 	},
 	{
 		name: 'number',
 		fuz_schema: (s) => fp(s, s.number),
 		valibot: (v) => vp(v, v.number()),
-		zod: (z) => zp(z.number()),
+		zod: (z, c) => zp(c, z.number()),
 		inputs: {
 			valid: ok(1.5, 'primitive'),
 			invalid: bad('a', 'issue at the root'),
@@ -236,21 +259,21 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'boolean',
 		fuz_schema: (s) => fp(s, s.boolean),
 		valibot: (v) => vp(v, v.boolean()),
-		zod: (z) => zp(z.boolean()),
+		zod: (z, c) => zp(c, z.boolean()),
 		inputs: { valid: ok(true, 'primitive'), invalid: bad(null, 'issue at the root') }
 	},
 	{
 		name: 'unknown',
 		fuz_schema: (s) => fp(s, s.unknown),
 		valibot: (v) => vp(v, v.unknown()),
-		zod: (z) => zp(z.unknown()),
+		zod: (z, c) => zp(c, z.unknown()),
 		inputs: { valid: ok(1, 'primitive') }
 	},
 	{
 		name: 'literal',
 		fuz_schema: (s) => fp(s, s.literal('a')),
 		valibot: (v) => vp(v, v.literal('a')),
-		zod: (z) => zp(z.literal('a')),
+		zod: (z, c) => zp(c, z.literal('a')),
 		inputs: { valid: ok('a', 'primitive'), invalid: bad('b', 'issue at the root') }
 	},
 	{
@@ -258,14 +281,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'literal_undefined',
 		fuz_schema: (s) => fp(s, s.literal(undefined)),
 		valibot: (v) => vp(v, v.undefined()),
-		zod: (z) => zp(z.literal(undefined)),
+		zod: (z, c) => zp(c, z.literal(undefined)),
 		inputs: { valid: ok(undefined, 'primitive'), invalid: bad(null, 'issue at the root') }
 	},
 	{
 		name: 'one_of_5',
 		fuz_schema: (s) => fp(s, s.one_of(LETTERS)),
 		valibot: (v) => vp(v, v.picklist(LETTERS)),
-		zod: (z) => zp(z.enum(LETTERS)),
+		zod: (z, c) => zp(c, z.enum(LETTERS)),
 		inputs: {
 			first: ok('a', 'primitive'),
 			last: ok('e', 'primitive'),
@@ -276,7 +299,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'optional_string',
 		fuz_schema: (s) => fp(s, s.optional(s.string)),
 		valibot: (v) => vp(v, v.optional(v.string())),
-		zod: (z) => zp(z.optional(z.string())),
+		zod: (z, c) => zp(c, z.optional(z.string())),
 		inputs: {
 			undefined: ok(undefined, 'wrapper'),
 			valid: ok('a', 'wrapper'),
@@ -287,7 +310,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'nullable_string',
 		fuz_schema: (s) => fp(s, s.nullable(s.string)),
 		valibot: (v) => vp(v, v.nullable(v.string())),
-		zod: (z) => zp(z.nullable(z.string())),
+		zod: (z, c) => zp(c, z.nullable(z.string())),
 		inputs: {
 			null: ok(null, 'wrapper'),
 			valid: ok('a', 'wrapper'),
@@ -298,14 +321,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'default_string',
 		fuz_schema: (s) => fp(s, s.with_default(s.string, 'x')),
 		valibot: (v) => vp(v, v.optional(v.string(), 'x')),
-		zod: (z) => zp(z.string().default('x')),
+		zod: (z, c) => zp(c, z.string().default('x')),
 		inputs: { undefined: ok(undefined, 'wrapper'), valid: ok('a', 'wrapper') }
 	},
 	{
 		name: 'message_string',
 		fuz_schema: (s) => fp(s, s.message(s.string, 'must be text')),
 		valibot: (v) => vp(v, v.string('must be text')),
-		zod: (z) => zp(z.string('must be text')),
+		zod: (z, c) => zp(c, z.string('must be text')),
 		inputs: { valid: ok('a', 'wrapper'), invalid: bad(1, 'issue at the root') }
 	},
 	{
@@ -320,7 +343,11 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 				v,
 				v.lazy(() => v.string())
 			),
-		zod: (z) => zp(z.lazy(() => z.string())),
+		zod: (z, c) =>
+			zp(
+				c,
+				z.lazy(() => z.string())
+			),
 		inputs: { valid: ok('a', 'lazy'), invalid: bad(1, 'issue at the root') }
 	},
 	{
@@ -330,7 +357,10 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 			const schema = v.string();
 			return { matches: (value) => v.is(schema, value) };
 		},
-		skips: { zod: 'it has no guard that builds no issues' },
+		zod: (z: Zod, c: ZodCompile): SurveyRun => {
+			const schema = c(z.string());
+			return { matches: (value) => z.validate(schema, value) };
+		},
 		no_output: 'a guard returns a verdict',
 		inputs: { valid: ok('abc', 'guard'), invalid: bad(1, 'guard') }
 	},
@@ -347,8 +377,8 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 				output: (value) => v.parse(schema, value)
 			};
 		},
-		zod: (z: Zod): SurveyRun => {
-			const schema = z.string();
+		zod: (z: Zod, c: ZodCompile): SurveyRun => {
+			const schema = c(z.string());
 			return {
 				matches: (value) => typeof schema.parse(value) === 'string',
 				output: (value) => schema.parse(value)
@@ -363,7 +393,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'array_numbers',
 		fuz_schema: (s) => fp(s, s.array(s.number)),
 		valibot: (v) => vp(v, v.array(v.number())),
-		zod: (z) => zp(z.array(z.number())),
+		zod: (z, c) => zp(c, z.array(z.number())),
 		inputs: {
 			empty: ok([], 'array'),
 			valid_10: ok(j(range(10)), 'array'),
@@ -377,14 +407,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'array_strings',
 		fuz_schema: (s) => fp(s, s.array(s.string)),
 		valibot: (v) => vp(v, v.array(v.string())),
-		zod: (z) => zp(z.array(z.string())),
+		zod: (z, c) => zp(c, z.array(z.string())),
 		inputs: { valid_10: ok(j(range(10).map(String)), 'array') }
 	},
 	{
 		name: 'array_message_string',
 		fuz_schema: (s) => fp(s, s.array(s.message(s.string, 'must be text'))),
 		valibot: (v) => vp(v, v.array(v.string('must be text'))),
-		zod: (z) => zp(z.array(z.string('must be text'))),
+		zod: (z, c) => zp(c, z.array(z.string('must be text'))),
 		inputs: {
 			valid_100: ok(j(range(100).map(String)), 'wrapper'),
 			all_bad_100: bad(j(range(100)), 'many issues')
@@ -394,14 +424,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'array_lazy_string',
 		fuz_schema: (s) => fp(s, s.array(s.lazy(() => s.string))),
 		valibot: (v) => vp(v, v.array(v.lazy(() => v.string()))),
-		zod: (z) => zp(z.array(z.lazy(() => z.string()))),
+		zod: (z, c) => zp(c, z.array(z.lazy(() => z.string()))),
 		inputs: { valid_100: ok(j(range(100).map(String)), 'lazy') }
 	},
 	{
 		name: 'array_nullable_number',
 		fuz_schema: (s) => fp(s, s.array(s.nullable(s.number))),
 		valibot: (v) => vp(v, v.array(v.nullable(v.number()))),
-		zod: (z) => zp(z.array(z.nullable(z.number()))),
+		zod: (z, c) => zp(c, z.array(z.nullable(z.number()))),
 		inputs: {
 			nulls_100: ok(j(range(100).map(() => null)), 'wrapper'),
 			numbers_100: ok(j(range(100)), 'wrapper')
@@ -411,14 +441,14 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'array_optional_number',
 		fuz_schema: (s) => fp(s, s.array(s.optional(s.number))),
 		valibot: (v) => vp(v, v.array(v.optional(v.number()))),
-		zod: (z) => zp(z.array(z.optional(z.number()))),
+		zod: (z, c) => zp(c, z.array(z.optional(z.number()))),
 		inputs: { numbers_100: ok(j(range(100)), 'wrapper') }
 	},
 	{
 		name: 'array_union',
 		fuz_schema: (s) => fp(s, s.array(s.union([s.string, s.number, s.boolean]))),
 		valibot: (v) => vp(v, v.array(v.union([v.string(), v.number(), v.boolean()]))),
-		zod: (z) => zp(z.array(z.union([z.string(), z.number(), z.boolean()]))),
+		zod: (z, c) => zp(c, z.array(z.union([z.string(), z.number(), z.boolean()]))),
 		inputs: {
 			mixed_30: ok(j(range(30).map((i) => (i % 3 === 0 ? 'a' : i % 3 === 1 ? i : true))), 'union')
 		}
@@ -427,7 +457,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'record_numbers',
 		fuz_schema: (s) => fp(s, s.record(s.number)),
 		valibot: (v) => vp(v, v.record(v.string(), v.number())),
-		zod: (z) => zp(z.record(z.string(), z.number())),
+		zod: (z, c) => zp(c, z.record(z.string(), z.number())),
 		inputs: {
 			valid_10: ok(j(Object.fromEntries(range(10).map((i) => [`k${i}`, i]))), 'record'),
 			valid_200: ok(j(Object.fromEntries(range(200).map((i) => [`k${i}`, i]))), 'record'),
@@ -444,21 +474,21 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'object',
 		fuz_schema: (s) => fp(s, s.object(fuz_user_entries(s))),
 		valibot: (v) => vp(v, v.strictObject(valibot_user_entries(v))),
-		zod: (z) => zp(z.strictObject(zod_user_entries(z))),
+		zod: (z, c) => zp(c, z.strictObject(zod_user_entries(z))),
 		inputs: to_object_inputs(bad(j({ ...user, extra: 1 }), 'issue at depth 1'))
 	},
 	{
 		name: 'loose_object',
 		fuz_schema: (s) => fp(s, s.loose_object(fuz_user_entries(s))),
 		valibot: (v) => vp(v, v.looseObject(valibot_user_entries(v))),
-		zod: (z) => zp(z.looseObject(zod_user_entries(z))),
+		zod: (z, c) => zp(c, z.looseObject(zod_user_entries(z))),
 		inputs: to_object_inputs(ok(j({ ...user, extra: 1 }), 'object identity'))
 	},
 	{
 		name: 'strip_object',
 		fuz_schema: (s) => fp(s, s.strip_object(fuz_user_entries(s))),
 		valibot: (v) => vp(v, v.object(valibot_user_entries(v))),
-		zod: (z) => zp(z.object(zod_user_entries(z))),
+		zod: (z, c) => zp(c, z.object(zod_user_entries(z))),
 		inputs: {
 			...to_object_inputs(ok(j({ ...user, extra: 1 }), 'object copy')),
 			extra_keys_6: ok(
@@ -471,7 +501,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'object_1_key',
 		fuz_schema: (s) => fp(s, s.object({ a: s.string })),
 		valibot: (v) => vp(v, v.strictObject({ a: v.string() })),
-		zod: (z) => zp(z.strictObject({ a: z.string() })),
+		zod: (z, c) => zp(c, z.strictObject({ a: z.string() })),
 		inputs: {
 			valid: ok(j({ a: 'x' }), 'object identity'),
 			invalid: bad(j({ a: 1 }), 'issue at depth 1'),
@@ -482,7 +512,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'object_empty',
 		fuz_schema: (s) => fp(s, s.object({})),
 		valibot: (v) => vp(v, v.strictObject({})),
-		zod: (z) => zp(z.strictObject({})),
+		zod: (z, c) => zp(c, z.strictObject({})),
 		inputs: { valid: ok({}, 'object identity') }
 	},
 	{
@@ -507,8 +537,9 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					name: v.string()
 				})
 			),
-		zod: (z) =>
+		zod: (z, c) =>
 			zp(
+				c,
 				z.strictObject({
 					host: z.string().default('localhost'),
 					port: z.number().default(80),
@@ -547,8 +578,9 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					c: v.string()
 				})
 			),
-		zod: (z) =>
+		zod: (z, c) =>
 			zp(
+				c,
 				z.strictObject({ a: z.string(), b: z.string().transform((x) => x.length), c: z.string() })
 			),
 		inputs: { valid: ok(j({ a: 'a', b: 'bb', c: 'c' }), 'object copy') }
@@ -558,7 +590,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'object_literal_undefined',
 		fuz_schema: (s) => fp(s, s.object({ a: s.literal(undefined), b: s.string })),
 		valibot: (v) => vp(v, v.strictObject({ a: v.undefined(), b: v.string() })),
-		zod: (z) => zp(z.strictObject({ a: z.literal(undefined), b: z.string() })),
+		zod: (z, c) => zp(c, z.strictObject({ a: z.literal(undefined), b: z.string() })),
 		inputs: {
 			present: ok({ a: undefined, b: 'x' }, 'object identity'),
 			missing: bad(j({ b: 'x' }), 'issue at depth 1')
@@ -603,7 +635,8 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 			fp(s, s.object(Object.fromEntries(range(20).map((i) => [`k${i}`, s.number])))),
 		valibot: (v) =>
 			vp(v, v.strictObject(Object.fromEntries(range(20).map((i) => [`k${i}`, v.number()])))),
-		zod: (z) => zp(z.strictObject(Object.fromEntries(range(20).map((i) => [`k${i}`, z.number()])))),
+		zod: (z, c) =>
+			zp(c, z.strictObject(Object.fromEntries(range(20).map((i) => [`k${i}`, z.number()])))),
 		inputs: {
 			valid: ok(j(Object.fromEntries(range(20).map((i) => [`k${i}`, i]))), 'object identity'),
 			all_bad: bad(j(Object.fromEntries(range(20).map((i) => [`k${i}`, 'x']))), 'many issues')
@@ -620,7 +653,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'users_30',
 		fuz_schema: (s) => fp(s, s.array(s.object(fuz_user_entries(s)))),
 		valibot: (v) => vp(v, v.array(v.strictObject(valibot_user_entries(v)))),
-		zod: (z) => zp(z.array(z.strictObject(zod_user_entries(z)))),
+		zod: (z, c) => zp(c, z.array(z.strictObject(zod_user_entries(z)))),
 		inputs: {
 			valid: ok(j(range(30).map((i) => ({ ...user, id: i }))), 'object identity'),
 			one_bad: bad(
@@ -647,10 +680,10 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 			for (let i = 0; i < 4; i++) schema = v.strictObject({ items: v.array(schema) });
 			return vp(v, schema);
 		},
-		zod: (z: Zod): SurveyRun => {
+		zod: (z: Zod, c: ZodCompile): SurveyRun => {
 			let schema: zod.ZodType = z.strictObject({ leaf: z.number() });
 			for (let i = 0; i < 4; i++) schema = z.strictObject({ items: z.array(schema) });
-			return zp(schema);
+			return zp(c, schema);
 		},
 		inputs: {
 			valid: ok(
@@ -668,7 +701,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'union_3_primitives',
 		fuz_schema: (s) => fp(s, s.union([s.string, s.number, s.boolean])),
 		valibot: (v) => vp(v, v.union([v.string(), v.number(), v.boolean()])),
-		zod: (z) => zp(z.union([z.string(), z.number(), z.boolean()])),
+		zod: (z, c) => zp(c, z.union([z.string(), z.number(), z.boolean()])),
 		inputs: {
 			first: ok('a', 'union'),
 			last: ok(true, 'union'),
@@ -695,8 +728,9 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					v.strictObject({ c: v.string(), n: v.number() })
 				])
 			),
-		zod: (z) =>
+		zod: (z, c) =>
 			zp(
+				c,
 				z.union([
 					z.strictObject({ a: z.string(), n: z.number() }),
 					z.strictObject({ b: z.string(), n: z.number() }),
@@ -713,7 +747,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'union_5_literals',
 		fuz_schema: (s) => fp(s, s.union(LETTERS.map((x) => s.literal(x)))),
 		valibot: (v) => vp(v, v.union(LETTERS.map((x) => v.literal(x)))),
-		zod: (z) => zp(z.union(LETTERS.map((x) => z.literal(x)))),
+		zod: (z, c) => zp(c, z.union(LETTERS.map((x) => z.literal(x)))),
 		inputs: {
 			first: ok('a', 'union'),
 			last: ok('e', 'union'),
@@ -740,8 +774,9 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					v.strictObject({ type: v.literal('c'), z: v.boolean() })
 				])
 			),
-		zod: (z) =>
+		zod: (z, c) =>
 			zp(
+				c,
 				z.discriminatedUnion('type', [
 					z.strictObject({ type: z.literal('a'), x: z.string() }),
 					z.strictObject({ type: z.literal('b'), y: z.number() }),
@@ -762,7 +797,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'pipe_string_lengths',
 		fuz_schema: (s) => fp(s, s.pipe(s.string, s.min_length(1), s.max_length(50))),
 		valibot: (v) => vp(v, v.pipe(v.string(), v.minLength(1), v.maxLength(50))),
-		zod: (z) => zp(z.string().min(1).max(50)),
+		zod: (z, c) => zp(c, z.string().min(1).max(50)),
 		inputs: {
 			valid: ok('abc', 'pipe'),
 			head_bad: bad(1, 'issue at the root'),
@@ -773,7 +808,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'pipe_number_4',
 		fuz_schema: (s) => fp(s, s.pipe(s.number, s.integer, s.min_value(0), s.max_value(150))),
 		valibot: (v) => vp(v, v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(150))),
-		zod: (z) => zp(z.int().min(0).max(150)),
+		zod: (z, c) => zp(c, z.int().min(0).max(150)),
 		inputs: {
 			valid: ok(36, 'pipe'),
 			last_bad: bad(200, 'issue at the root'),
@@ -784,7 +819,7 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 		name: 'pipe_regex',
 		fuz_schema: (s) => fp(s, s.pipe(s.string, s.regex(/^[a-z0-9-]+$/))),
 		valibot: (v) => vp(v, v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/))),
-		zod: (z) => zp(z.string().regex(/^[a-z0-9-]+$/)),
+		zod: (z, c) => zp(c, z.string().regex(/^[a-z0-9-]+$/)),
 		inputs: { valid: ok('abc-1', 'pipe'), invalid: bad('A B', 'issue at the root') }
 	},
 	{
@@ -805,7 +840,11 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					v.check((x) => x !== 'no')
 				)
 			),
-		zod: (z) => zp(z.string().refine((x) => x !== 'no')),
+		zod: (z, c) =>
+			zp(
+				c,
+				z.string().refine((x) => x !== 'no')
+			),
 		inputs: { valid: ok('yes', 'pipe'), invalid: bad('no', 'issue at the root') }
 	},
 	{
@@ -826,7 +865,11 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					v.transform((x) => x.length)
 				)
 			),
-		zod: (z) => zp(z.string().transform((x) => x.length)),
+		zod: (z, c) =>
+			zp(
+				c,
+				z.string().transform((x) => x.length)
+			),
 		inputs: { valid: ok('yes', 'pipe') }
 	},
 	{
@@ -849,8 +892,9 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 					slug: v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/))
 				})
 			),
-		zod: (z) =>
+		zod: (z, c) =>
 			zp(
+				c,
 				z.object({
 					name: z.string().min(1).max(50),
 					age: z.int().min(0).max(150),
@@ -881,12 +925,12 @@ export const SURVEY_SHAPES: Array<SurveyShape> = [
 			});
 			return vp(v, node);
 		},
-		zod: (z: Zod): SurveyRun => {
+		zod: (z: Zod, c: ZodCompile): SurveyRun => {
 			const node: zod.ZodType<Tree> = z.strictObject({
 				value: z.number(),
 				children: z.array(z.lazy(() => node))
 			});
-			return zp(node);
+			return zp(c, node);
 		},
 		inputs: {
 			valid: ok(

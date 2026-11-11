@@ -1,19 +1,19 @@
 # Benchmarks
 
 Everything is in `src/benchmarks/`. The comparison libraries are Valibot, Zod,
-Zod Mini, TypeBox, and ArkType.
+Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, and ArkType.
 
 | Command | Measures |
 |---|---|
-| `npm run benchmark` | parse time per scenario, valid and invalid, a library to a process |
+| `npm run benchmark` | parse time per scenario, valid and invalid, and each library's guard, a library to a process |
 | `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped, then this library's export by export |
-| `npm run benchmark:allocations` | heap bytes per parse and per schema built, and the time to build one, every library in one process |
+| `npm run benchmark:allocations` | heap bytes per parse and per schema built, and the time to build one, a library to a process |
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
 | `npm run benchmark:heap` | memory still held after building and parsing |
-| `npm run benchmark:types` | cost to the TypeScript checker |
+| `npm run benchmark:types` | cost to the TypeScript checker, of a scenario module and of a consumer's reads of what its schemas infer |
 | `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
-| `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot and Zod, by what a parse does |
+| `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot, Zod, and Zod compiled, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 
 `npm run differential` and `npm run mutate` are tests and not measurements, see
@@ -45,6 +45,20 @@ end (`machine.ts`), so a saved output can be read on its own.
   Mini, not priced, see [grading.md](grading.md#bytes). A test holds every library to
   the same answer on each, and on `app` to refusing a payload broken under
   any one of its keys.
+- **Schemas modules** (`libs/schemas/`, `scenario_schemas.ts`) hold each
+  library's scenarios again, as builders that return the schema, beside the
+  library's guard and its parse where it returns an output. The factories
+  keep their own text, so a scenario's bundle is its schema and its one
+  runner, as a consumer's module would be, and no bundle reaches a builder.
+  A factory that called its builder would bundle the same code arranged
+  another way: the bundler inlines the builder as a function called once, and
+  the runner as an arrow applied to its result. That moves a scenario's
+  gzipped figure by a few bytes at most, and on most scenarios by none. The guard regime of
+  `npm run benchmark` and the type benchmark's reads use the builders, and
+  `src/test/benchmarks.test.ts` holds each builder to its factory's text, less
+  comments, whitespace, and the runner, `zod_compiled`'s factories to Zod's,
+  each library's guard to its factory's verdicts, and the outputs of every
+  library that returns one to this library's, deeply and strictly.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
   - `real` is what a consumer has. Some are written for the purpose: an
@@ -130,7 +144,7 @@ once. `--passes` and `--duration` are as for `npm run benchmark`,
 defaults to 1000.
 
 - **A side of a set is a process.** A side is a column: the consumer's
-  library, this library, and each of Zod's two modes. Each is measured in a
+  library, this library, and each of Zod's three modes. Each is measured in a
   process of its own, so what one side's parses teach the engine is not there
   when another is timed. A process holds one set, so a set reads the same run
   alone. It loads the set whole: both schema modules are built in it, and this
@@ -158,18 +172,28 @@ defaults to 1000.
   they are done. The same parse in two rows reads within about a percent. A
   figure is of the code the engine has made for a set's rows together: a
   document parsed alone in a process can allocate less.
-- **Zod is two columns.** It compiles a parser for each object schema with
+- **Zod is three columns.** It compiles a parser for each object schema with
   `new Function` on that schema's first parse, where the environment lets it,
   and otherwise interprets: under `z.config({jitless: true})`, or a content
   security policy that refuses eval. `zod jitless` is the interpreter, asked
-  for a parse at a time on the same schemas. The two are processes of their
-  own, so neither runs in code the other shaped, and each checks itself: that
-  the interpreter's parses compiled nothing, and that the others compiled
-  some.
+  for a parse at a time on the same schemas. `zod compiled` is each row's
+  root through `z.compile`, its ahead-of-time mode, compiled as the process
+  makes its rows: a root it can't compile it hands back unchanged, and
+  `zod compiled` has no figure of a row of one, which is `-` in its column
+  and timed in no process: a set none of whose roots it compiles has no
+  `zod compiled` process. The three are processes of their
+  own, so none runs in code another shaped, and each checks itself: that the
+  interpreter's parses compiled nothing, and that the others compiled some. A
+  row's sides are made in the process that runs them, so a process makes no
+  copies of an input for another side, and only `zod compiled` compiles.
 - **Zod's bundle** is the consumer's module as it is written, on classic `zod`
-  and not `zod/mini`, which the consumer would have to be rewritten for.
-- **Zod has no guard**, so its side of a guard row is `safeParse` read for
-  `success`.
+  and not `zod/mini`, which the consumer would have to be rewritten for, and
+  again with its root through `z.compile`, which carries the compiler.
+- **Zod's guard** is `z.validate`, which returns a boolean and not the output
+  and stops at the first issue: on a compiled root through the assert-only
+  validator `z.compile` generates beside the parser, and otherwise through the
+  parser, which still copies what it reads.
+  Valibot's guard, `is`, runs its parser to the first issue the same way.
 
 It isn't like-for-like, in ways that differ by set and are printed under each:
 
@@ -192,7 +216,8 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 
 ### Survey
 
-`npm run benchmark:survey` times this library against Valibot and Zod over
+`npm run benchmark:survey` times this library against Valibot, Zod, and Zod
+with the root of each shape through `z.compile` over
 many small shapes (`survey_shapes.ts`), a row for each input of each: a
 primitive, a wrapper, an object returned as it came or copied, a union, a
 variant, a pipe, a recursive schema, and issues by how many there are and how
@@ -203,8 +228,13 @@ whoever runs it.
 
 - **A shape is written three times**, taking its library as a parameter, so a
   process that times one library loads no other. Zod is as its scenario
-  module has it, compiling where the environment lets it. A shape one library
-  has no equivalent of leaves it out and says why: Zod has no guard.
+  module has it, compiling where the environment lets it. `zod_compiled` runs
+  Zod's builder with its root through `z.compile`, so it leaves out and
+  differs where Zod does, and it has no equivalent of a shape whose root
+  `z.compile` hands back uncompiled: those rows are `-` in its columns, built
+  and run in its process and timed in none, and the run names the shapes. A
+  shape one library has no equivalent of leaves it out and says why. Zod's
+  guard is `z.validate`.
 - **Objects are matched by what they do with a key the schema doesn't name**:
   this library's `object` with `strictObject` and `z.strictObject`, its
   `strip_object` with Valibot's `object` and `z.object`, and its
@@ -245,7 +275,10 @@ whoever runs it.
 
 - **Parse time**: a process for each library, in passes. See
   [below](#timing-across-libraries). `grade` times its own way, see
-  [Grading](#grading).
+  [Grading](#grading). Each scenario has a third table, each library's guard
+  on the valid input, timed in a process of the library's guards beside the
+  one of its parses, see [comparing like with like](#comparing-like-with-like).
+  `--no-guard` leaves it out.
 - **Bundle size**: an entry that imports one scenario's factory and calls it,
   bundled and minified by Rolldown, then gzipped. See
   [below](#the-whole-library) for this library's own table. The scenario table
@@ -271,21 +304,25 @@ whoever runs it.
   two functions and throws them away before the first it keeps. The scripts
   need the young generation's node flags, which their npm scripts pass, and
   refuse to run without them. `benchmark:allocations` takes `--scenario` and
-  `--lib`, each repeatable, every one by default. It also times building a
-  schema, every library in one process and under those flags, which no other
+  `--lib`, each repeatable, every one by default. It starts a process for each
+  library, under those flags, which imports that library's scenario module
+  and no other: in one process of every library, Valibot's and Zod's `app`
+  rows read a couple of kilobytes more than in a process of their own, which
+  loads no other library. It also times building
+  a schema in each library's process, under those flags, which no other
   timing runs under, once every row's bytes are read, in batches of calls
-  sized to last a few milliseconds. Every row's bytes are read in that one
-  process, in order, so a row's library code has seen the scenarios before it
-  and no others: a parse among many schemas can allocate more than the same
-  parse alone, see below, and a row measured with `--scenario` can read less
-  than in a full run. `grade` and `benchmark:harvest` are the other
+  sized to last a few milliseconds. A library's rows are read in its process
+  in order, so a row's library code has seen the scenarios before it and no
+  others: a parse among many schemas can allocate more than the same parse
+  alone, see below, and a row measured with `--scenario` can read less than
+  in a full run. `grade` and `benchmark:harvest` are the other
   way round: they refuse them, and give them to the processes that measure
   their bytes, and such a process that fails is started once more, announced
   on stderr, which a timing never is.
 - **Cold start**: one fresh Node process per sample, in stages that build on
   each other, against a bare process: the import, the schema built, the first
   parse, and the tenth parse and the hundredth, each of a copy of the input
-  made before the clock starts, which are the first parses of a fresh process
+  made from its JSON before the clock starts, the first parse's too, which are the first parses of a fresh process
   in code the engine has yet to optimize. Those two also read their clock
   after the first parse, so parses 2 to 100 are timed inside one process,
   not as a difference of two stages' medians. Bundled and unbundled entries:
@@ -297,14 +334,22 @@ whoever runs it.
   be run again. Compile cache off, rounds interleaved, medians: every process
   runs once a round, another leading each round and each after another
   neighbor (`to_coldstart_order`). `--lib` and `--scenario` pick what runs,
-  every library and `object_flat` and `type_json` by default, `--form` is
+  every library and `object_flat`, `type_json`, and `app` by default, `--form` is
   `bundled`, `unbundled`, or both, `--samples` the rounds kept, 15 by default,
   and `--discard` the rounds thrown away first, 2 by default.
 - **Retained heap**: a fresh process builds the schema, parses once, and
   collects until the heap settles. Read for one schema and for many. See
   [below](#retained-heap). `--lib` and `--scenario` pick what runs, every
   library and `object_flat` and `type_json` by default.
-- **Type-checking**: `tsc` over one library's scenario module.
+- **Type-checking**: `tsc` over one library's scenario module, and over a
+  file that reads properties of the types its schemas module infers
+  (`ScenarioTypes`), as a consumer's code reads a value of an inferred type,
+  beside what the reads add to the schemas module alone. This library is read
+  from its built `dist/schema.d.ts`, as every other library is from its
+  declarations, and the script refuses to run when that is missing or older
+  than `src/lib/schema.ts`: run `gro build` first. Instantiations are the same
+  on every run, and check time is the median of `--runs` runs, 3 by default.
+  `--lib` picks the libraries.
 - **wasm**: rows timed a round at a time, each round starting a row later,
   medians. See [below](#wasm). `--rounds` is the rounds, 15 by default, and
   `--round-ms` what one timing of a row aims to take, 20 by default.
@@ -547,9 +592,9 @@ repeated.
   instances of the baseline in a bytes process and marks a case they differ
   on. A row of
   `benchmark:allocations` repeats within about a percent, with one kind of
-  exception: a row can settle at one of a few figures, tens of bytes apart or
-  a few hundred, each process at one of them and every reading in it the
-  same. That is over a tenth of the smallest such row. A retained-heap total
+  exception: a row can settle at one of a few figures, tens of bytes apart, a
+  few hundred, or a couple of kilobytes, each process at one of them and
+  every reading in it the same. That is over a tenth of the smallest such row. A retained-heap total
   repeats to about a kilobyte, and a figure per further schema to within a
   byte.
 - Allocation depends on what else the process has run. A parse whose call
@@ -564,12 +609,11 @@ repeated.
   and, for the cases it times apart, among processes. `benchmark`,
   `benchmark:harvest`, and `benchmark:survey` repeat the whole in fresh processes and print each
   figure's spread, which is of a few passes: a gap inside it is not a finding,
-  and one just outside it is not much of one. `benchmark:allocations` and
-  `benchmark:wasm` time in one process, once, so a small gap on a single row
-  there is not a finding.
-- It isn't like-for-like: TypeBox's check builds no output, ArkType keeps
-  unknown keys, and Valibot's bytes pay for more features. On `extra_keys`
-  those two drop nothing, which is the work the scenario is of.
+  and one just outside it is not much of one. `benchmark:allocations` times
+  once, in a process for each library, and `benchmark:wasm` once in one
+  process, so a small gap on a single row there is not a finding.
+- Valibot's bytes pay for more features than this library's. What else isn't
+  like-for-like is [below](#comparing-like-with-like).
 - Cold start reports work inside the process, which resolves sub-millisecond
   gaps. The whole process over bare is also reported, but can't be told from
   zero inside the bare process's own spread. Each stage is processes of its
@@ -582,6 +626,67 @@ repeated.
   their own, not a hundred of the warmed timings.
 - Peak memory is `VmHWM`, not `maxRSS`, which a child inherits from its parent.
 - Heap figures are for one Node version and architecture. V8 only throughout.
+
+## Comparing like with like
+
+Each was checked against the installed library's source:
+
+- **Plain Zod's object parser is generated code.** Classic `zod` makes its
+  objects with `$ZodObjectJIT`, which compiles a parser with `new Function`
+  on a schema's first parse where the environment allows eval. `zod_compiled`
+  is its ahead-of-time mode, `z.compile` on each scenario's root, which makes
+  a clone whose `safeParse` runs a generated parser that builds the output of
+  a valid input, and hands an invalid one to the regular parser; `z.validate`
+  runs an assert-only validator generated beside it. It is `z.compile` per
+  root and not the global `import "zod/compile"`, which would compile plain
+  `zod`'s schemas too in a process that loads both. Its bundles carry the
+  compiler, and its cold start compiles while the schema is built.
+- **`zod_compiled` has no time where `z.compile` hands the root back.** It
+  hands back a root it can't compile unchanged, which the recursive
+  `type_json` is. Timed in `zod_compiled`'s process, that root is neither
+  library's figure: Zod's runtime parser, in a process of compiled schemas,
+  reads its valid parse well above the `zod` column, mostly in collection, so
+  `npm run benchmark`'s three tables print `-` for it there, and the survey
+  and the harvest do the same for theirs (`compile_zod_root` in
+  `zod_compile.ts` is the one test). The other benchmarks print a figure of
+  it, and it is what it says: the bundle of `type_json` carries the compiler
+  it can't use, cold start's import and create pay for the compiler and the
+  attempt, as do the creation figures of `benchmark:allocations` and the
+  retained total, and its parse bytes and heap per further schema are close
+  to those of Zod's own schema, which the root is. The type benchmark reads a module
+  whole, not a scenario.
+- **Zod Mini's objects never compile**: `zod/mini` makes them with
+  `$ZodObject`, which has no generated parser.
+- **TypeBox's rows are a `Check`** of its compiled validator, which stops at
+  the first failure and builds no issues and no output, in every table: its
+  parse is a guard.
+- **ArkType keeps one schema of a definition**, and hands it back when the
+  same definition is built again. Retained heap's figure per further schema
+  and the creation figures of `benchmark:allocations` build each schema from
+  the scenario's one definition, so ArkType reads far lower there than for an
+  app's distinct definitions, and those cells are marked `†`: the libraries
+  that keep a definition's schema are `INTERNING_LIBS` in `lib_names.ts`, and
+  a cell of one is marked where its builder hands back the schema it built
+  before (`is_scenario_schema_kept`). ArkType does for a `type` and not for a
+  `scope`, which `type_json` and `app` are built with, so those are not
+  marked, and `src/test/benchmarks.test.ts` holds which are. A figure of
+  distinct definitions would need each library's factories to vary their
+  definitions, which would change their bundles, so the output marks it
+  instead.
+- **ArkType's dropping parse clones.** It keeps a key the schema doesn't name
+  by default; its scenarios drop one with `'+': 'delete'` where the others'
+  do, and refuse one with `'+': 'reject'` where theirs do. A `'delete'` makes
+  the type a morph, and a morph's call deep-clones its input before it runs
+  (`@ark/schema`'s default `clone`), so the parse rows of `object_flat`,
+  `extra_keys`, and `pipe` are a clone and a check, and read far above what
+  ArkType takes on an object it returns as it came. Its guard rows, `allows`,
+  clone nothing, and are where its speed on those shapes shows.
+- **On a strict or identity scenario this library returns its input** where
+  Valibot and Zod return a copy, so a parse row there compares a check with a
+  check and a copy. The guard regime sets that aside: each library's guard on
+  the valid input, `is` here and in Valibot, `z.validate` in Zod, TypeBox's
+  `Check`, ArkType's `allows`. Valibot's `is`, and Zod's `z.validate` on a
+  schema with no compiled path, still run the parser, which copies.
 
 ## wasm
 
@@ -629,9 +734,11 @@ and never a table.
 
 ## Extending
 
-- A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, and a
-  `scenario_<name>` export in every module under `libs/`.
-- A library: a module in `libs/`, an entry in `LIBS`, and its name in
+- A scenario: a name in `ScenarioName`, an entry in `SCENARIOS`, a
+  `scenario_<name>` export in every module under `libs/`, and a
+  `schema_<name>` export in every module under `libs/schemas/`.
+- A library: a module in `libs/`, its schemas module in `libs/schemas/`, an
+  entry in `LIBS`, and its name in
   `LIB_NAMES` (`lib_names.ts`), which the process and type benchmarks read and
   `src/test/benchmarks.test.ts` holds `LIBS` to.
 - A survey shape: an entry in `SURVEY_SHAPES`, with a builder for each

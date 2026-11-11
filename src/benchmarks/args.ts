@@ -58,6 +58,8 @@ export const to_names_arg = <T extends string>(
 	plural: string,
 	known: ReadonlyArray<T>
 ): Schema.Schema<Array<T>, string | Array<string>> =>
+	// the check is what makes the names `T`s, and a refinement's type gives a
+	// pipe the output of the step before it, an `Array<string>`
 	s.pipe(
 		s.union([s.string, s.array(s.string)]),
 		s.transform((v: string | Array<string>) => (Array.isArray(v) ? v : [v])),
@@ -67,7 +69,7 @@ export const to_names_arg = <T extends string>(
 				`no ${noun} ${(names as Array<string>).filter((name) => !known.includes(name as T)).join(', ')}: ` +
 				`the ${plural} are ${known.join(', ')}`
 		)
-	) as any;
+	) as Schema.Schema<Array<T>, string | Array<string>>;
 
 /** The names of libraries, any of `LIB_NAMES`. */
 export const LibNamesArg = to_names_arg('library', 'libraries', LIB_NAMES);

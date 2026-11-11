@@ -7,7 +7,9 @@
  * set through. A side is one column: a mode of the reference library, this
  * library, or the set's asides. The process loads the set whole, so both
  * schema modules are built in it and this library prepares the inputs that are
- * its own output, and from then on it runs its side's rows and no other's.
+ * its own output, and from then on it runs its side's rows and no other's. A
+ * row's sides are factories, so only its own side's copies of an input are
+ * made in a process, and only `zod compiled` compiles its schemas.
  * The reference library is imported by the sets that use it, so a process of a
  * valibot set holds no zod and one of a zod set no valibot.
  *
@@ -16,11 +18,12 @@
 
 import { readFileSync } from 'node:fs';
 import type * as v from 'valibot';
-import type { z } from 'zod';
+import type * as Zod from 'zod';
 
 import * as s from '#lib/schema.ts';
 import { to_input_copies } from './inputs.ts';
 import type { LoadTimingRows, TimingRow } from './timing_job.ts';
+import { compile_zod_root } from './zod_compile.ts';
 
 const to_json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -28,12 +31,15 @@ const to_json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 // What a set declares
 //
 
+/** Makes one side's call of a row, which parses the next of its copies of the input. */
+export type HarvestSide = () => () => unknown;
+
 export interface HarvestRow {
 	name: string;
 	valid: boolean;
 	/** The reference library's parse, once for each of its modes, in their order. */
-	theirs: Array<() => unknown>;
-	ours: () => unknown;
+	theirs: Array<HarvestSide>;
+	ours: HarvestSide;
 }
 
 /** A check that is a rewrite's own code and no library's, timed alone. */
@@ -53,11 +59,14 @@ export interface HarvestReference {
 	modes: Array<string>;
 	/** The body of a module that exports `run`, which parses a value with `root` imported from `path`. */
 	to_entry: (root: string, path: string) => string;
+	/** The same, for another way the library is run that ships other code, by its name. */
+	to_mode_entries?: Record<string, (root: string, path: string) => string>;
 	/** Said under the bundle table. */
 	bundle_note?: string;
 	/**
-	 * Runs `run_rows`, which calls every row of the mode at `mode` once and is
-	 * the first thing to, and throws when the mode is not what its column says.
+	 * Runs `run_rows`, which makes every row of the mode at `mode` and calls each
+	 * once, and is the first thing to, and throws when the mode is not what its
+	 * column says.
 	 */
 	assert_mode?: (mode: number, run_rows: () => void) => void;
 	/** Said under the first set of this library's, before the set's own notes. */
@@ -90,16 +99,19 @@ const to_document = (documents: Array<HarvestedDocument>, name: string): unknown
 	return found.value;
 };
 
-// A row's call: `parse` on the next of the input's copies (`inputs.ts`), each
-// call site's own copies and index, so every side pays the same for them.
-const to_cycled = (input: unknown, parse: (value: unknown) => unknown): (() => unknown) => {
-	const inputs = to_input_copies(input);
-	const mask = inputs.length - 1;
-	let at = 0;
-	return () => parse(inputs[(at = (at + 1) & mask)]);
-};
+// A row's side: makes a call of `parse` on the next of the input's copies
+// (`inputs.ts`), each call's own copies and index, so every side pays the same
+// for them.
+const to_cycled =
+	(input: unknown, parse: (value: unknown) => unknown): HarvestSide =>
+	() => {
+		const inputs = to_input_copies(input);
+		const mask = inputs.length - 1;
+		let at = 0;
+		return () => parse(inputs[(at = (at + 1) & mask)]);
+	};
 
-const to_ours = (schema: s.AnySchema, input: unknown): (() => unknown) =>
+const to_ours = (schema: s.AnySchema, input: unknown): HarvestSide =>
 	to_cycled(input, (value) => {
 		const result = s.parse(schema, value);
 		return result.ok ? result.value : undefined;
@@ -140,26 +152,42 @@ const count_compiled = (fn: () => void): number => {
 	return count;
 };
 
+/**
+ * The side of a zod set that is each root through `z.compile`, which has no
+ * figure of a row whose root it hands back, see `take_uncompiled_harvest_rows`.
+ */
+export const HARVEST_ZOD_COMPILED = 'zod compiled';
+
 const ZOD: HarvestReference = {
 	name: 'zod',
-	modes: ['zod', 'zod jitless'],
+	modes: ['zod', 'zod jitless', HARVEST_ZOD_COMPILED],
 	to_entry: (root, path) =>
 		`import { ${root} } from ${JSON.stringify(path)};
 export const run = (value) => ${root}.safeParse(value);`,
+	to_mode_entries: {
+		[HARVEST_ZOD_COMPILED]: (root, path) =>
+			`import { compile } from 'zod';
+import { ${root} } from ${JSON.stringify(path)};
+const compiled = compile(${root});
+export const run = (value) => compiled.safeParse(value);`
+	},
 	bundle_note:
 		"zod's is the consumer's module as it is written, on classic `zod` and not `zod/mini`",
 	// An object schema decides when it is made whether it may compile, compiles
 	// on its first parse that doesn't ask otherwise, and keeps its interpreter
-	// for one that does. A process runs one of the two, so its schemas have
-	// compiled nothing when its rows first run: the interpreter must then compile
-	// nothing, and the other mode something.
+	// for one that does. A process runs one of the modes, so its schemas have
+	// compiled nothing when its rows are first made and run: the interpreter must
+	// then compile nothing, and the others something, `zod compiled` its roots
+	// as it makes them.
 	assert_mode: (mode, run_rows) => {
 		const compiled = count_compiled(run_rows);
 		if (mode === 1 && compiled) {
 			throw new Error(`zod compiled ${compiled} functions when asked not to`);
 		}
-		if (mode === 0 && !compiled) {
-			throw new Error('zod compiled nothing: its `zod` column would be `zod jitless`');
+		if (mode !== 1 && !compiled) {
+			throw new Error(
+				`zod compiled nothing: its \`${ZOD.modes[mode]}\` column would be \`zod jitless\``
+			);
 		}
 	},
 	notes: [
@@ -169,7 +197,14 @@ export const run = (value) => ${root}.safeParse(value);`,
 			'here a parse at a time, `safeParse(value, {jitless: true})`, on the same schemas, in a process\n' +
 			'of its own, which has checked that those parses compiled nothing, as the process of the\n' +
 			'other column has that its parses compiled some.',
-		'zod has no guard: its side of a guard row is `safeParse` read for `success`.'
+		'`zod compiled` is each root through `z.compile`, its ahead-of-time mode: a clone of the\n' +
+			'schema whose `safeParse` runs a parser generated by `new Function` when the root is made,\n' +
+			'which builds the output of a valid input and hands an invalid one to the regular parser. A\n' +
+			"root it can't compile it hands back unchanged, and `zod compiled` has no figure of its rows.",
+		"zod's guard is `z.validate`, which returns a boolean and not the output, and stops at the\n" +
+			'first issue. On a compiled root it takes the assert-only validator compiled beside the\n' +
+			'parser, and otherwise it runs the parser, whose copy it drops: its bytes in the other two\n' +
+			'columns are those of a parse.'
 	]
 };
 
@@ -192,9 +227,32 @@ const to_valibot_row = (
 	ours: to_ours(ours, input)
 });
 
+// The rows whose roots `z.compile` handed back uncompiled, by their names,
+// asked by `compile_zod_root` where a row's compiled side is made.
+const uncompiled_rows: Set<string> = new Set();
+
+// A row's side that compiles its root when it is made, in the process of the
+// `zod compiled` side and no other.
+const to_compiled_cycled =
+	(
+		zod: typeof Zod,
+		name: string,
+		theirs: Zod.ZodType,
+		input: unknown,
+		parse: (schema: Zod.ZodType, value: unknown) => unknown
+	): HarvestSide =>
+	() => {
+		const compiled = compile_zod_root(zod, theirs);
+		if (!compiled) uncompiled_rows.add(name);
+		// a root handed back runs as `z.compile` would run it, on the runtime parser
+		const schema = compiled ?? theirs;
+		return to_cycled(input, (value) => parse(schema, value))();
+	};
+
 const to_zod_row = (
+	zod: typeof Zod,
 	name: string,
-	theirs: z.ZodType,
+	theirs: Zod.ZodType,
 	ours: s.AnySchema,
 	input: unknown,
 	valid = true
@@ -209,25 +267,45 @@ const to_zod_row = (
 		to_cycled(input, (value) => {
 			const result = theirs.safeParse(value, ZOD_JITLESS);
 			return result.success ? result.data : undefined;
+		}),
+		to_compiled_cycled(zod, name, theirs, input, (compiled, value) => {
+			const result = compiled.safeParse(value);
+			return result.success ? result.data : undefined;
 		})
 	],
 	ours: to_ours(ours, input)
 });
 
 const to_zod_guard_row = (
+	zod: typeof Zod,
 	name: string,
-	theirs: z.ZodType,
+	theirs: Zod.ZodType,
 	ours: s.AnySchema,
 	input: unknown
 ): HarvestRow => ({
 	name,
 	valid: true,
 	theirs: [
-		to_cycled(input, (value) => (theirs.safeParse(value).success ? value : undefined)),
-		to_cycled(input, (value) => (theirs.safeParse(value, ZOD_JITLESS).success ? value : undefined))
+		to_cycled(input, (value) => (zod.validate(theirs, value) ? value : undefined)),
+		to_cycled(input, (value) => (zod.validate(theirs, value, ZOD_JITLESS) ? value : undefined)),
+		to_compiled_cycled(zod, name, theirs, input, (compiled, value) =>
+			zod.validate(compiled, value) ? value : undefined
+		)
 	],
 	ours: to_cycled(input, (value) => (s.is(ours, value) ? value : undefined))
 });
+
+/**
+ * The rows made in this process since the last call whose roots `z.compile`
+ * handed back uncompiled, so `zod compiled` has no figure of them, and forgets
+ * them. Known once those sides are made, as `harvest.ts` makes every side of
+ * a set's rows before it times them.
+ */
+export const take_uncompiled_harvest_rows = (): Array<string> => {
+	const rows = [...uncompiled_rows];
+	uncompiled_rows.clear();
+	return rows;
+};
 
 //
 // The sets
@@ -302,6 +380,7 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 		reference: ZOD,
 		root: 'ReposStatusDocument',
 		load: async (): Promise<LoadedSet> => {
+			const zod = await import('zod');
 			const theirs = (await import('./repos_status/repos_status_zod.ts')).ReposStatusDocument;
 			const { create_repos_status } = await import('./repos_status/repos_status_fuz_schema.ts');
 			const ours = create_repos_status(s).ReposStatusDocument;
@@ -316,8 +395,9 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 			drifted.entries.at(-1).presence = { kind: 'not_yet_known' };
 			return {
 				rows: [
-					to_zod_row('a report', theirs, ours, report),
+					to_zod_row(zod, 'a report', theirs, ours, report),
 					to_zod_row(
+						zod,
 						'a report of one repo',
 						theirs,
 						ours,
@@ -325,13 +405,14 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 					),
 					// the union's second option, after its first has missed
 					to_zod_row(
+						zod,
 						'an error',
 						theirs,
 						ours,
 						to_document(documents, 'error_report_registry_invalid')
 					),
-					to_zod_row('a report, last presence unknown', theirs, ours, drifted, false),
-					to_zod_guard_row('a report, as a guard', theirs, ours, report)
+					to_zod_row(zod, 'a report, last presence unknown', theirs, ours, drifted, false),
+					to_zod_guard_row(zod, 'a report, as a guard', theirs, ours, report)
 				]
 			};
 		},
@@ -350,6 +431,7 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 		reference: ZOD,
 		root: 'PackageJson',
 		load: async (): Promise<LoadedSet> => {
+			const zod = await import('zod');
 			const theirs = (await import('./package_json/package_json_zod.ts')).PackageJson;
 			const { create_package_json } = await import('./package_json/package_json_fuz_schema.ts');
 			const ours = create_package_json(s).PackageJson;
@@ -379,25 +461,25 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 			if (!urls.every((url) => typeof url === 'string')) {
 				throw new Error('the published manifest no longer has the URLs timed alone');
 			}
-			const { z } = await import('zod');
-			const their_manifests = z.array(theirs);
+			const their_manifests = zod.array(theirs);
 			const our_manifests = s.array(ours);
 			return {
 				rows: [
-					to_zod_row('published, one', theirs, ours, published_one),
-					to_zod_row('published, all that match', their_manifests, our_manifests, published),
+					to_zod_row(zod, 'published, one', theirs, ours, published_one),
+					to_zod_row(zod, 'published, all that match', their_manifests, our_manifests, published),
 					// `sideEffects` is `false`, and the schema takes an array
 					to_zod_row(
+						zod,
 						'published, one refused',
 						theirs,
 						ours,
 						to_document(manifests, 'vitest@5.0.0'),
 						false
 					),
-					to_zod_guard_row('published, one, as a guard', theirs, ours, published_one),
-					to_zod_row('ecosystem, one', theirs, ours, ecosystem_one),
-					to_zod_row('ecosystem, one, no glyph', theirs, ours, to_json(ecosystem_one_bare)),
-					to_zod_row('ecosystem, all', their_manifests, our_manifests, ecosystem)
+					to_zod_guard_row(zod, 'published, one, as a guard', theirs, ours, published_one),
+					to_zod_row(zod, 'ecosystem, one', theirs, ours, ecosystem_one),
+					to_zod_row(zod, 'ecosystem, one, no glyph', theirs, ours, to_json(ecosystem_one_bare)),
+					to_zod_row(zod, 'ecosystem, all', their_manifests, our_manifests, ecosystem)
 				],
 				asides: [
 					{
@@ -434,6 +516,7 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 		reference: ZOD,
 		root: 'BenchResults',
 		load: async (): Promise<LoadedSet> => {
+			const zod = await import('zod');
 			const theirs = (await import('./bench_results/bench_results_zod.ts')).BenchResults;
 			const { create_bench_results } = await import('./bench_results/bench_results_fuz_schema.ts');
 			const ours = create_bench_results(s).BenchResults;
@@ -446,9 +529,9 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 			broken.cells.at(-1).bytes = 1.5;
 			return {
 				rows: [
-					to_zod_row('a fixture run', theirs, ours, fixture),
-					to_zod_row('a fixture run, last cell bad', theirs, ours, broken, false),
-					to_zod_guard_row('a fixture run, as a guard', theirs, ours, fixture)
+					to_zod_row(zod, 'a fixture run', theirs, ours, fixture),
+					to_zod_row(zod, 'a fixture run, last cell bad', theirs, ours, broken, false),
+					to_zod_guard_row(zod, 'a fixture run, as a guard', theirs, ours, fixture)
 				]
 			};
 		},
@@ -494,11 +577,12 @@ export const load_rows: LoadTimingRows = async (of: HarvestRowsOf) => {
 	}
 	const mode = reference.modes.indexOf(of.side);
 	if (mode < 0 && of.side !== HARVEST_OURS) throw new Error(`${set.name} has no side ${of.side}`);
-	const rows: Array<TimingRow> = loaded.rows.map((row) => ({
-		name: row.name,
-		run: mode < 0 ? row.ours : row.theirs[mode]!
-	}));
+	const rows: Array<TimingRow> = [];
+	// makes this side of every row, and calls each once
 	const run_rows = (): void => {
+		for (const row of loaded.rows) {
+			rows.push({ name: row.name, run: (mode < 0 ? row.ours : row.theirs[mode]!)() });
+		}
 		for (const [i, row] of rows.entries()) {
 			const { valid } = loaded.rows[i]!;
 			if ((row.run() !== undefined) !== valid) {
