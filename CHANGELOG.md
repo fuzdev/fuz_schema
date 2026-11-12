@@ -1,5 +1,38 @@
 # @fuzdev/fuz_schema
 
+## 0.6.0
+
+### Minor Changes
+
+- **breaking** fix: an inferred object type decides each key by its own entry, and is never `readonly` ([bda2da3](https://github.com/fuzdev/fuz_schema/commit/bda2da3))
+  
+  - a known key beside an index signature is optional exactly where its own entry is: `{a: StringSchema} & Record<string, OptionalSchema<NumberSchema>>` gives `a: string`, and `{a: OptionalSchema<NumberSchema>} & Record<string, StringSchema>` gives `a?: number | undefined`, where 0.5.7 gave the reverse of each
+  - entries typed `readonly`, by `as const` or a `const` type parameter, give properties that can be assigned, in the output and the input, as before 0.5.7
+  - `loose_object` and `object_with_rest` over a union of entries give one type for each member of the union, as `object` and `strip_object` do, where 0.5.7 gave every combination of the members' keys
+  - in a generic function, a known key of `SchemaObjectOutput<{error: StringSchema} & T>` or `SchemaObjectInput<…>`, or of a `loose_object`'s output over the same entries, is read with its entry's type, where 0.5.7 refused the read or gave `unknown`
+  - a correction to the notes of 0.5.7, which said its object types were as before: it typed a known key beside an index signature, which earlier versions left out of the type, and spread `loose_object` and `object_with_rest` over a union of entries, which earlier versions typed by the keys every member shares and the index signature
+
+### Patch Changes
+
+- feat: add `keyed_record(key, value)`, a record whose keys are checked by a schema ([8714333](https://github.com/fuzdev/fuz_schema/commit/8714333))
+  
+  - every own key is run through `key`, a schema of strings, and what it gives is the output's key: `s.keyed_record(Uuid, Cover)` outputs `Record<Uuid, Cover>`, each key lowercase where `Uuid` lowercases
+  - no key is needed: a `one_of` or a `literal` key types each key as optional, as Valibot's `record` of a `picklist` and Zod's `partialRecord`
+  - a key `key` refuses is an issue of kind `invalid_key` at the key, with the key schema's `expected` and `received`, `'string'` unless a step of `key` changed the type, and `value` is not run on its value; `get_issue_value` gives the last key of its path, the key unless `key` added to the path with a `check_at`, so `format_issue_with_value` writes the key
+  - a failed `union` names an option of a kind defined outside the library whose name holds `object`, `record`, or `variant`, as `invariant`, as `object` in its `expected`, where it named it by its kind
+  - `to_json_schema` writes it as Zod's `partialRecord`, with the key schema as `propertyNames`, and `to_schema_json` refuses it, as it refuses `object_with_rest`
+- fix: `to_schema_json` names where a schema that nests too far or comes back to itself is ([5fed330](https://github.com/fuzdev/fuz_schema/commit/5fed330))
+  
+  - a schema with more wrappers, lazies, unions, and pipes around one value than `SCHEMA_JSON_MAX_NESTING` is named at its own path, such as `/schema/def/deep/def`, and not at `/schema`
+  - a schema that comes back to itself without reading into the value is named at the definition it comes back through, such as `/defs/$0`, and not at `/schema`
+- feat: add `to_integer(options?)`, an action that reads an integer from a string ([b52446c](https://github.com/fuzdev/fuz_schema/commit/b52446c))
+  
+  - `s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))` takes `'42'` and gives `42`: an optional sign and ASCII digits, Rust's `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s, so `''`, white space, `1e3`, `0x10`, and `1.0` fail
+  - the digits must spell a safe integer, so no string rounds to another, and a `-0` gives `0`
+  - `unsigned: true` refuses a `-`, and `trim: true` takes Unicode white space around the digits, as Rust's `str::trim` drops it
+  - its issue is of kind `to_integer`, expected `a safe integer in decimal digits` or `an unsigned safe integer in decimal digits`
+  - `to_json_schema` writes it as an `integer` within the bounds after it, and on the input side as a `pattern` of exactly the strings it reads within them; `to_schema_json` refuses it
+
 ## 0.5.7
 
 ### Patch Changes
