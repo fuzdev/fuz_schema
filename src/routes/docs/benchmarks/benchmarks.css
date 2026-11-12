@@ -2,10 +2,25 @@
    can't reach across. Imported by the benchmarks page and the landing page rather
    than the root stylesheet, so they ship with those routes and not every one. */
 
-/* a wide table scrolls in its own container, so the page body never scrolls sideways */
+/* a wide table scrolls in its own container, so the page body never scrolls sideways; a
+   long one scrolls inside it too, which is what lets its column headers stay in view,
+   since a sticky cell sticks to the nearest scrolling container */
 .benchmarks-table-scroll {
-	overflow-x: auto;
+	overflow: auto;
+	max-height: 85svh;
 	margin-bottom: var(--space_lg);
+}
+/* the container has the margin, so the table's own doesn't give a short one a scrollbar */
+.benchmarks-table-scroll > table {
+	margin-bottom: 0;
+}
+/* the column headers stay in view while the rows scroll under them, and are opaque,
+   so a tinted cell doesn't show through */
+.benchmarks-table-scroll thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background-color: var(--shade_00);
 }
 
 /* a right-aligned numeric table cell */
