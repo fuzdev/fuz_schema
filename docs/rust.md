@@ -440,11 +440,11 @@ and Node it ran on, and the size of the `.wasm`.
 | Input | wasm over JS |
 |---|---|
 | 4 MB of bytes, bad first element | 0.02x ASCII, 0.17-0.18x mostly not ASCII |
-| 4 MB of bytes, both sides read the whole text | 0.54-0.65x ASCII, 0.61-0.75x mostly not ASCII |
-| 10 KB of bytes, both sides read the whole text | 0.55-0.66x |
-| one item, about 130 bytes, valid | 0.40-0.47x |
-| 4 MB held as a string, `matches_json(text)`, valid or bad last element | 0.89-0.99x ASCII, 0.66-0.80x mostly not ASCII |
-| 4 MB held as a string, `encodeInto`, then `matches_json_input`, valid or bad last element | 0.59-0.68x ASCII, 0.81-0.94x mostly not ASCII |
+| 4 MB of bytes, both sides read the whole text | 0.54-0.64x ASCII, 0.59-0.78x mostly not ASCII |
+| 10 KB of bytes, both sides read the whole text | 0.54-0.65x |
+| one item, about 130 bytes, valid | 0.41-0.47x |
+| 4 MB held as a string, `matches_json(text)`, valid or bad last element | 0.89-0.98x ASCII, 0.66-0.80x mostly not ASCII |
+| 4 MB held as a string, `encodeInto`, then `matches_json_input`, valid or bad last element | 0.58-0.67x ASCII, 0.79-0.93x mostly not ASCII |
 
 It buys a verdict on bytes, most where it can stop early. The byte entry
 points validate the whole text as UTF-8 first, so on mostly non-ASCII text

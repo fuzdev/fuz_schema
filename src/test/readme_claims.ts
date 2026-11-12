@@ -435,8 +435,8 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.",
-		others: ['valibot', 'zod', 'zod_compiled', 'arktype'],
+			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.",
+		others: ['valibot', 'zod', 'zod_mini', 'zod_compiled', 'arktype'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
 			const data = to_section_data(results, 'types');
 			if (!data) return 'the file has no type-checking cost';

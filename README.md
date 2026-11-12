@@ -65,7 +65,7 @@ which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` 
 - **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario.
 - **Cold start:** a bundled entry imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
 - **Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.
-- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.
+- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.
 
 <!-- /claims -->
 
@@ -74,7 +74,7 @@ except where something makes a new value: a copy where an entry changed or a key
 `to_lower_case` the string it returns whatever its case,
 `to_integer` the number it gives where the engine boxes one, as past `2 ** 31 - 1` either way, the `-0` it reads before giving `0`, and with `trim` a copy of a string that holds U+0085,
 and a `memo_union` its memo when it is probed.
-Against Zod Mini and TypeBox, which has fewer instantiations turns on whether a consumer reads the inferred types.
+Against TypeBox, which has fewer instantiations turns on whether a consumer reads the inferred types.
 The exact bytes of this library's bundles, per scenario and per export, are in [`src/benchmarks/sizes.json`](src/benchmarks/sizes.json), which `src/test/sizes.test.ts` keeps current.
 
 Caveats:
