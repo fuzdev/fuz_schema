@@ -24,7 +24,7 @@
 		</header>
 		<p>
 			Valibot's strategy pushed on bundle size, speed, and memory with simpler internals. It is
-			published as <code>@fuzdev/fuz_schema</code> and unstable.
+			published as <code>@fuzdev/fuz_schema</code> and is pre-1.0: its API still changes.
 		</p>
 		<p>
 			<a href={resolve('/about')}>about</a> · <a href={resolve('/docs')}>docs</a> ·

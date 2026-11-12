@@ -29,7 +29,7 @@ and it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox
 Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 [Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
-fuz_schema is published as `@fuzdev/fuz_schema`, has no stable API, and is missing a lot.
+fuz_schema is published as `@fuzdev/fuz_schema` and is pre-1.0: its API still changes, in minor releases, and [Status](#status) lists what it lacks.
 
 ```bash
 npm i @fuzdev/fuz_schema
@@ -708,7 +708,7 @@ Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema
 
 ## Status
 
-> **status**: early — the API is unstable and incomplete
+> **status**: pre-1.0 — the schema library of the Fuz stack's packages, with an API that still changes and the gaps listed below
 
 Before 1.0 a breaking change is a minor release.
 A change to an inferred type that can stop a consumer's code compiling,
