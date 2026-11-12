@@ -191,3 +191,166 @@ describe('pipe and actions', () => {
 		]);
 	});
 });
+
+describe('to_integer', () => {
+	// the grammar of `docs/formats.md`, the digits and the white space `trim` takes
+	const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
+	const [, DIGITS, SPACE] = /### `to_integer`\n\n```\n(.*)\n```[\s\S]*?```\n(.*)\n```/.exec(
+		formats
+	)!;
+	const MAX = BigInt(Number.MAX_SAFE_INTEGER);
+	const OPTIONS = [{}, { unsigned: true }, { trim: true }, { unsigned: true, trim: true }] as const;
+	const grammar = (unsigned: boolean, trim: boolean): RegExp =>
+		RegExp(
+			DIGITS!
+				.replaceAll('<space>', trim ? `(${SPACE!})` : '()')
+				.replace('[+-]?', unsigned ? '(\\+?)' : '([+-]?)'),
+			'u'
+		);
+	// what the grammar reads, by `BigInt` of the sign and the digits it matched,
+	// or `undefined` where it reads no safe integer
+	const read = (value: string, unsigned: boolean, trim: boolean): number | undefined => {
+		const match = grammar(unsigned, trim).exec(value);
+		if (!match) return undefined;
+		const n = BigInt(value.slice(match[1]!.length, value.length - match[3]!.length));
+		return n > MAX || n < -MAX ? undefined : Number(n);
+	};
+	const assert_as_grammar = (value: string): void => {
+		for (const options of OPTIONS) {
+			const unsigned = 'unsigned' in options;
+			const trim = 'trim' in options;
+			const result = s.parse(s.pipe(s.string, s.to_integer(options)), value);
+			const expected = read(value, unsigned, trim);
+			// a `-0` gives `0`, so the result is compared by `Object.is`
+			assert.ok(
+				expected === undefined
+					? !result.ok
+					: result.ok && Object.is(result.value, expected === 0 ? 0 : expected),
+				JSON.stringify({ value, options })
+			);
+		}
+	};
+	const BASES = ['5', '-12', '+007', '0', '-0', '9007199254740991', '-9007199254740991'];
+	// ASCII and Latin-1, every white space of Unicode and some that aren't, and
+	// digits of other scripts
+	const CHARS = [
+		...Array.from({ length: 0x100 }, (_, c) => String.fromCharCode(c)),
+		...['\u1680', '\u2000', '\u200a', '\u2028', '\u2029', '\u202f', '\u205f', '\u3000'],
+		...['\ufeff', '\u180e', '\u200b', '\u0660', '\u0663', '\uff10', '\uff15', '\ud800'],
+		String.fromCodePoint(0x1d7ce)
+	];
+
+	test('reads as its grammar with any char at any position', () => {
+		for (const base of BASES) {
+			for (let i = 0; i <= base.length; i++) {
+				for (const c of CHARS) {
+					assert_as_grammar(base.slice(0, i) + c + base.slice(i + 1));
+					assert_as_grammar(base.slice(0, i) + c + base.slice(i));
+				}
+				assert_as_grammar(base.slice(0, i) + base.slice(i + 1));
+			}
+		}
+	});
+
+	test('with trim, takes every white space of Unicode around it, and no other', () => {
+		const White_Space = /^\p{White_Space}$/u;
+		for (let c = 0; c <= 0xffff; c++) {
+			const space = String.fromCharCode(c);
+			// a digit or a sign is of the integer
+			if (/[\d+-]/.test(space)) continue;
+			const takes = White_Space.test(space);
+			for (const value of [space + '5', '5' + space, space + space + '-5' + space]) {
+				assert.strictEqual(s.is(s.pipe(s.string, s.to_integer({ trim: true })), value), takes);
+				assert(!s.is(s.pipe(s.string, s.to_integer()), value), JSON.stringify(value));
+			}
+		}
+		// Rust's `str::trim` takes U+0085, which `Number` reads as no number, and
+		// neither U+FEFF, U+180E, nor U+200B, which `Number` or `\s` read as space
+		assert.strictEqual(
+			s.parse_or_throw(s.pipe(s.string, s.to_integer({ trim: true })), '\u00855'),
+			5
+		);
+		for (const space of ['\ufeff', '\u180e', '\u200b']) {
+			assert(!s.is(s.pipe(s.string, s.to_integer({ trim: true })), space + '5'));
+		}
+	});
+
+	test('reads the safe integers, leading zeros taken, and none past them', () => {
+		const Integer = s.pipe(s.string, s.to_integer());
+		for (const [value, expected] of [
+			['9007199254740991', 9007199254740991],
+			['-9007199254740991', -9007199254740991],
+			['+0009007199254740991', 9007199254740991],
+			['-0009007199254740991', -9007199254740991],
+			['0000000000000000000000000000001', 1],
+			['9007199254740992', undefined],
+			['-9007199254740992', undefined],
+			// rounds to 2 ** 53 as a double
+			['9007199254740993', undefined],
+			['99999999999999999999', undefined],
+			['1' + '0'.repeat(400), undefined]
+		] as const) {
+			const result = s.parse(Integer, value);
+			assert.deepEqual(result.ok ? result.value : undefined, expected, value);
+		}
+	});
+
+	test('reads the inputs of its table, under each option', () => {
+		const MAX = Number.MAX_SAFE_INTEGER;
+		// the output of `to_integer()`, `{unsigned: true}`, `{trim: true}`, and both
+		for (const [value, ...outputs] of [
+			['5', 5, 5, 5, 5],
+			['+5', 5, 5, 5, 5],
+			['007', 7, 7, 7, 7],
+			['-5', -5, undefined, -5, undefined],
+			['-0', 0, undefined, 0, undefined],
+			['-000', 0, undefined, 0, undefined],
+			['', undefined, undefined, undefined, undefined],
+			[' 5', undefined, undefined, 5, 5],
+			['\t5\n', undefined, undefined, 5, 5],
+			['\u30005 ', undefined, undefined, 5, 5],
+			['\u00855', undefined, undefined, 5, 5],
+			['\ufeff5', undefined, undefined, undefined, undefined],
+			[' ', undefined, undefined, undefined, undefined],
+			['- 5', undefined, undefined, undefined, undefined],
+			['1e3', undefined, undefined, undefined, undefined],
+			['0x10', undefined, undefined, undefined, undefined],
+			['1.0', undefined, undefined, undefined, undefined],
+			['5.', undefined, undefined, undefined, undefined],
+			['1_000', undefined, undefined, undefined, undefined],
+			['+', undefined, undefined, undefined, undefined],
+			['+-5', undefined, undefined, undefined, undefined],
+			['\u0663', undefined, undefined, undefined, undefined],
+			['\uff15', undefined, undefined, undefined, undefined],
+			['Infinity', undefined, undefined, undefined, undefined],
+			['9007199254740991', MAX, MAX, MAX, MAX],
+			['9007199254740992', undefined, undefined, undefined, undefined]
+		] as const) {
+			OPTIONS.forEach((options, i) => {
+				const result = s.parse(s.pipe(s.string, s.to_integer(options)), value);
+				const output = result.ok ? result.value : undefined;
+				assert.ok(Object.is(output, outputs[i]), JSON.stringify({ value, options, output }));
+			});
+		}
+	});
+
+	test('its issue, of the grammar and of the range alike', () => {
+		const at = (expected: string, received = 'string') => [
+			{ kind: 'to_integer', expected, received, path: [], message: undefined }
+		];
+		const signed = 'a safe integer in decimal digits';
+		const unsigned = 'an unsigned safe integer in decimal digits';
+		assert.deepEqual(issues_of(s.pipe(s.string, s.to_integer()), '1e3'), at(signed));
+		assert.deepEqual(issues_of(s.pipe(s.string, s.to_integer()), '9007199254740992'), at(signed));
+		assert.deepEqual(
+			issues_of(s.pipe(s.string, s.to_integer({ unsigned: true, trim: true })), '-5'),
+			at(unsigned)
+		);
+		// alone it fails any value that isn't a string, where its grammar would convert it
+		assert.deepEqual(issues_of(s.to_integer(), 5), at(signed, 'number'));
+		assert.deepEqual(issues_of(s.to_integer(), ['5']), at(signed, 'array'));
+		assert.deepEqual(issues_of(s.to_integer(), { toString: () => '5' }), at(signed, 'object'));
+		assert.deepEqual(issues_of(s.to_integer(), undefined), at(signed, 'undefined'));
+		assert.strictEqual(s.parse_or_throw(s.to_integer(), '5'), 5);
+	});
+});

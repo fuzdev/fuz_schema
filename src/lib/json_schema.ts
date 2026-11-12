@@ -7,7 +7,8 @@
  * `undefined`, a `bigint`, or a number past the finite ones, an action outside
  * a `pipe` or of another type than its step, a step after a `transform` on
  * the input side, a step but a `uuid` after a `to_lower_case` on the input
- * side and before one on the output side, a `regex` with flags beyond `d`
+ * side and before one on the output side, a step that asserts something of
+ * the string before a `to_integer` on the output side, a `regex` with flags beyond `d`
  * and `u` or whose source is no pattern under `u` or means something else
  * there, a bound that isn't finite, a `variant` option whose discriminator is
  * no `literal` entry, and a kind defined outside the library.
@@ -98,6 +99,52 @@ const ISO_DATETIME_PATTERN =
 		.source;
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+
+// Unicode `White_Space`, written out, as a validator's `\s` is its engine's
+const WHITE_SPACE =
+	'[\\t-\\r \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]*';
+
+// pushes to `out` the alternatives of the digit strings from `lo` to `hi`,
+// both of one length, each after `before` and the digits they share
+const span = (lo: string, hi: string, before: string, out: Array<string>): void => {
+	let p = 0;
+	while (lo[p] !== undefined && lo[p] === hi[p]) p++;
+	const prefix = before + lo.slice(0, p);
+	const n = lo.length - p - 1;
+	if (n < 0) return void out.push(prefix);
+	let a = +lo[p]!;
+	let b = +hi[p]!;
+	const low = lo.slice(p + 1);
+	const high = hi.slice(p + 1);
+	// a digit whose rest is of every digit string is one of a class
+	if (/[1-9]/.test(low)) span(low, '9'.repeat(n), prefix + a++, out);
+	const top = /[0-8]/.test(high);
+	if (top) b--;
+	if (a <= b) out.push(prefix + (a === b ? a : a || b < 9 ? `[${a}-${b}]` : '\\d') + digits(n, n));
+	if (top) span('0'.repeat(n), high, prefix + (b + 1), out);
+};
+
+// from `m` to `n` digits
+const digits = (m: number, n: number): string =>
+	n ? `\\d${m < n ? `{${m},${n}}` : n > 1 ? `{${n}}` : ''}` : '';
+
+// the alternatives of the decimal of every integer from `lo` to `hi`, with no
+// leading zero, `0 <= lo <= hi`: of `lo`'s length unless it is a power of
+// ten, of every length from there to the one before `hi`'s, and of `hi`'s
+const range = (lo: number, hi: number): string => {
+	const a = String(lo);
+	const b = String(hi);
+	const out: Array<string> = [];
+	let m = a.length;
+	if (m === b.length) span(a, b, '', out);
+	else {
+		if (lo !== 10 ** (m - 1)) span(a, '9'.repeat(m), '', out);
+		else m--;
+		if (b.length > m + 1) out.push('[1-9]' + digits(m, b.length - 2));
+		span('1' + '0'.repeat(b.length - 1), b, '', out);
+	}
+	return out.join('|');
+};
 
 // what a run can do with the `undefined` of a missing key, as bits of a set
 const REFUSES = 1;
@@ -284,6 +331,13 @@ const put = (node: Node, key: string, value: unknown): void => {
  *   `to_lower_case` writes none, and the keyword of a step that reads another
  *   string than the document's, after it on the input side or before it on
  *   the output side, is unrepresentable, but a `uuid`'s, which holds of both.
+ * - A `to_integer` is an `integer` within the bounds after it on the output
+ *   side, with nothing of the string, its metadata included, and on the input
+ *   side a `pattern` of exactly the strings it reads within them, `not: {}`
+ *   where none is. On the output side a step before it
+ *   that asserts something of the string is unrepresentable, as the output
+ *   can't be narrowed by it, and on the input side its default is left out,
+ *   as for a `transform`.
  * - A `with_default` writes `default`, unless its schema transforms on the
  *   input side. A `with_default_fn` writes none, as its `make` is never called,
  *   and drops one of the schema it holds.
@@ -361,13 +415,15 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 		return targets.get(s.def);
 	};
 
-	// whether a parse of `s` runs a `transform`, as zod reads it
+	// whether a parse of `s` runs a `transform`, as zod reads it, or a
+	// `to_integer`, whose output is no string, so its default is of no input
 	const transforms = (s: SchemaNode, seen: Set<SchemaNode> = new Set()): boolean => {
 		if (!is_schema(s) || seen.has(s)) return false;
 		seen.add(s);
 		const t = (x: unknown): boolean => transforms(x as SchemaNode, seen);
 		switch (s.kind) {
 			case 'transform':
+			case 'to_integer':
 				return true;
 			case 'optional':
 			case 'nullable':
@@ -611,7 +667,7 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 		}
 		const base = emit(head, path);
 		const kind = (head as SchemaNode).kind;
-		const type =
+		let type =
 			kind === 'string' || kind === 'uuid' || kind === 'iso_datetime'
 				? 'string'
 				: kind === 'number' || kind === 'integer' || kind === 'safe_integer'
@@ -628,9 +684,35 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 					: [];
 		delete node.pattern;
 		delete node.allOf;
+		// on the output side a `to_integer` starts the integer the steps after it
+		// are of, and the schemas before it are of the string it was read from,
+		// which only a `transform` or a `to_lower_case` after a `string` says nothing of
+		const reads =
+			type === 'string' ? steps.findIndex((x) => (x as SchemaNode)?.kind === 'to_integer') : -1;
+		if (reads >= 0 && !input) {
+			for (const step of [head, ...steps.slice(0, reads)] as Array<SchemaNode>) {
+				if (!is_schema(step)) error('pipe', path, 'a step is not a schema');
+				if (!/^(string|to_lower_case|transform)$/.test(step.kind)) {
+					unrepresentable(step.kind, path, 'it reads the string the integer was read from');
+				}
+			}
+			// nothing of the string, its metadata included, is of the integer
+			node = { type: 'integer' };
+			patterns.length = 0;
+			// an unsigned grammar spells no integer below `0`, a `-0` included
+			node.minimum = (steps[reads] as SchemaNode<'to_integer'>).def.unsigned ? 0 : -MAX_SAFE;
+			node.maximum = MAX_SAFE;
+			steps = steps.slice(reads);
+			type = 'number';
+		}
+		// the node the keywords of a number are written to: on the input side,
+		// after a `to_integer`, the bounds its pattern is made of
+		let num = node;
+		// where that `to_integer` is
+		let integer_at = -1;
 		const narrow = (key: string, value: number, lower: boolean): void => {
-			const current = node[key] as number | undefined;
-			if (current === undefined || (lower ? value > current : value < current)) node[key] = value;
+			const current = num[key] as number | undefined;
+			if (current === undefined || (lower ? value > current : value < current)) num[key] = value;
 		};
 		// a step after a `to_lower_case` is given the lowercase, which the input
 		// is not, and one before the last reads what the output is the lowercase
@@ -732,7 +814,7 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				case 'integer':
 				case 'safe_integer':
 					if (fits('number')) {
-						node.type = 'integer';
+						num.type = 'integer';
 						if (action.kind === 'safe_integer') {
 							narrow('minimum', -MAX_SAFE, true);
 							narrow('maximum', MAX_SAFE, false);
@@ -742,6 +824,18 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				case 'to_lower_case':
 					// no keyword, as zod writes none for its `toLowerCase`
 					fits('string');
+					break;
+				case 'to_integer':
+					// on the output side the steps start with it, above
+					if (!input && !i && reads >= 0) break;
+					// no character lowercases into or out of what the grammar reads, so
+					// a `to_lower_case` before it changes nothing it reads
+					if (!fits('string')) break;
+					type = 'number';
+					// on the input side the bounds after it are of the integer, which
+					// its pattern takes, written after the steps
+					num = { minimum: -MAX_SAFE, maximum: MAX_SAFE };
+					integer_at = i;
 					break;
 				case 'uuid':
 				case 'iso_datetime':
@@ -785,6 +879,22 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 				default:
 					unrepresentable(action.kind, at, "only actions follow a pipe's first schema");
 			}
+		}
+		if (integer_at >= 0) {
+			const { unsigned, trim } = (steps[integer_at] as SchemaNode<'to_integer'>).def;
+			const lo = Math.ceil(num.minimum!);
+			const hi = Math.floor(num.maximum!);
+			// a `-0` reads as `0`, so the `-` takes `0` where the range has it
+			const branches: Array<string> = [];
+			if (lo <= hi) {
+				if (hi >= 0) branches.push(`\\+?0*(?:${range(Math.max(lo, 0), hi)})`);
+				if (lo <= 0 && !unsigned) branches.push(`-0*(?:${range(Math.max(-hi, 0), -lo)})`);
+			}
+			const space = trim ? WHITE_SPACE : '';
+			if (branches.length) patterns.push(`^${space}(?:${branches.join('|')})${space}$`);
+			else node.not = {};
+			// the steps after it are of the integer, and so is their metadata
+			steps.length = integer_at + 1;
 		}
 		const sources = patterns.map((p) => (typeof p === 'string' ? p : (p as RegExp).source));
 		if (sources.length === 1) node.pattern = sources[0];
@@ -904,6 +1014,7 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 			case 'max_value':
 			case 'regex':
 			case 'to_lower_case':
+			case 'to_integer':
 			case 'check':
 			case 'transform':
 				unrepresentable(s.kind, path, 'it means something only in a pipe after a schema it fits');

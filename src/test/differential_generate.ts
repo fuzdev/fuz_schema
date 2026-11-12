@@ -238,6 +238,10 @@ const BIGINT_BOUNDS: Array<bigint> = [0n, 1n, -1n];
 // TODO: `to_lower_case` is held by the conformance matrix and the JSON
 // fixtures, not generated here: it is a step that changes the value, which the
 // rules read as only a `map` does, and needs strings whose lowercase differs
+// TODO: `to_integer` is held by the conformance matrix and the JSON Schema
+// differential's family of its own, not generated here: it is a step that
+// changes the value too, and needs texts of its grammar's pieces, on which
+// both declared differences of its grammar and of `-0` would need rules
 const LEAF_KINDS: Array<DifferentialKind> = [
 	'string',
 	'string',

@@ -1279,9 +1279,9 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `					fits('string');
 					break;
-				case 'uuid':`,
+				case 'to_integer':`,
 				replace: `					break;
-				case 'uuid':`
+				case 'to_integer':`
 			}
 		]
 	},
@@ -2908,8 +2908,226 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `			case 'keyed_record':
-				return refuse(kind, path, 'it is not portable, as the Rust crate does not carry it');`,
-				replace: `				return refuse(kind, path, 'it is not portable, as the Rust crate does not carry it');`
+			case 'to_integer':`,
+				replace: `			case 'to_integer':`
+			}
+		]
+	},
+	{
+		name: 'to_integer_negative_zero_kept',
+		edits: [
+			{
+				find: `Number.isSafeInteger(n) ? n || 0 :`,
+				replace: `Number.isSafeInteger(n) ? n :`
+			}
+		]
+	},
+	{
+		name: 'to_integer_past_safe',
+		edits: [
+			{
+				find: `return Number.isSafeInteger(n) ? n || 0`,
+				replace: `return Number.isInteger(n) ? n || 0`
+			}
+		]
+	},
+	{
+		name: 'to_integer_trim_ignored',
+		edits: [
+			{
+				find: `INTEGER_PATTERNS[+unsigned + 2 * +trim]`,
+				replace: `INTEGER_PATTERNS[+unsigned]`
+			}
+		]
+	},
+	{
+		name: 'to_integer_unsigned_ignored',
+		edits: [
+			{
+				find: `INTEGER_PATTERNS[+unsigned + 2 * +trim]`,
+				replace: `INTEGER_PATTERNS[2 * +trim]`
+			}
+		]
+	},
+	{
+		name: 'to_integer_next_line_dropped',
+		edits: [
+			{
+				find: `if (n !== n) n = +value.replace(`,
+				replace: `if (false) n = +value.replace(`
+			}
+		]
+	},
+	{
+		name: 'to_integer_converts_any_value',
+		edits: [
+			{
+				find: `if (typeof value === 'string' && pattern.test(value)) {`,
+				replace: `if (pattern.test(value)) {`
+			}
+		]
+	},
+	{
+		name: 'to_integer_grammars_swapped',
+		edits: [
+			{
+				find: `INTEGER_PATTERNS[+unsigned + 2 * +trim]`,
+				replace: `INTEGER_PATTERNS[2 * +unsigned + +trim]`
+			}
+		]
+	},
+	{
+		name: 'to_integer_expected_swapped',
+		edits: [
+			{
+				find: `unsigned ? UNSIGNED_INTEGER_EXPECTED : INTEGER_EXPECTED`,
+				replace: `unsigned ? INTEGER_EXPECTED : UNSIGNED_INTEGER_EXPECTED`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_string_metadata_kept',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			node = { type: 'integer' };`,
+				replace: `			node.type = 'integer';`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_bounds_ignored',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `const lo = Math.ceil(num.minimum!);
+			const hi = Math.floor(num.maximum!);`,
+				replace: `const lo = -MAX_SAFE;
+			const hi = MAX_SAFE;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_no_leading_zeros',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `0*(?:\${range(Math.max(lo, 0), hi)})`,
+				replace: `(?:\${range(Math.max(lo, 0), hi)})`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_minus_when_unsigned',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `lo <= 0 && !unsigned)`,
+				replace: `lo <= 0)`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_negative_zero_refused',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `if (lo <= 0 && !unsigned)`,
+				replace: `if (lo < 0 && !unsigned)`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_string_step_kept',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `if (!/^(string|to_lower_case|transform)$/.test(step.kind)) {`,
+				replace: `if (false) {`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_unsigned_minimum',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `.def.unsigned ? 0 : -MAX_SAFE;`,
+				replace: `.def.unsigned ? -MAX_SAFE : -MAX_SAFE;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_default_on_input',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			case 'transform':
+			case 'to_integer':
+				return true;`,
+				replace: `			case 'transform':
+				return true;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_white_space_without_next_line',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `\\\\x85\\\\xa0\\\\u1680`,
+				replace: `\\\\xa0\\\\u1680`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_metadata_of_bounds_kept',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `			steps.length = integer_at + 1;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_digit_class',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `a || b < 9 ?`,
+				replace: `a && b < 9 ?`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_low_digits_dropped',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `if (/[1-9]/.test(low)) span(low, '9'.repeat(n), prefix + a++, out);`,
+				replace: `if (/[1-9]/.test(low)) a++;`
+			}
+		]
+	},
+	{
+		name: 'json_schema_to_integer_power_of_ten_whole',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `if (lo !== 10 ** (m - 1)) span(`,
+				replace: `if (lo === 10 ** (m - 1)) span(`
+			}
+		]
+	},
+	{
+		name: 'schema_json_to_integer_in_a_pipe',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: ` || step.kind === 'to_integer'))`,
+				replace: `))`
 			}
 		]
 	}

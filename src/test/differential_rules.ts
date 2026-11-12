@@ -246,6 +246,10 @@ export const DIFFERENTIAL_UNRULED: Partial<Record<ConformanceDifferencesRow, str
 	'entry named __proto__, own / *': 'the generator names no entry `__proto__`',
 	'union of one option, which fails':
 		'the generator gives a union two or three options, and the minimizer leaves it two',
+	'to_integer, empty':
+		'the generator makes no `to_integer`, a step that changes the value, which the rules read as only a `map` does: the conformance matrix holds its grammar, and the JSON Schema differential its documents',
+	'to_integer, -0':
+		'the generator makes no `to_integer`, a step that changes the value, which the rules read as only a `map` does: the conformance matrix holds what a `-0` gives',
 	'array of strings, a hundred and one items wrong':
 		'the generated inputs are small: over eight seeds of a hundred thousand cases none failed more than fourteen times, short of the hundred'
 };

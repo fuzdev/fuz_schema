@@ -509,6 +509,7 @@ describe('def', () => {
 		uuid: s.uuid,
 		iso_datetime: s.iso_datetime,
 		to_lower_case: s.to_lower_case,
+		to_integer: s.to_integer({ unsigned: true }),
 		check: s.check(check_fn),
 		transform: s.transform(transform_fn)
 	};
@@ -563,6 +564,7 @@ describe('def', () => {
 			uuid: undefined,
 			iso_datetime: undefined,
 			to_lower_case: undefined,
+			to_integer: { unsigned: true, trim: false },
 			check: check_fn,
 			transform: transform_fn
 		};
@@ -1286,6 +1288,9 @@ describe('types', () => {
 					break;
 				case 'regex':
 					expectTypeOf(schema.def).toEqualTypeOf<RegExp>();
+					break;
+				case 'to_integer':
+					expectTypeOf(schema.def).toEqualTypeOf<s.SchemaToIntegerDef>();
 					break;
 				case 'check':
 					expectTypeOf(schema.def).toEqualTypeOf<(value: any) => boolean>();

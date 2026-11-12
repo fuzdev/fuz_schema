@@ -1,7 +1,8 @@
 import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
-import { issues_of } from './schema_test_helpers.ts';
+import { meta } from '#lib/meta.ts';
+import { assert_schema_error, issues_of } from './schema_test_helpers.ts';
 
 describe('pipe and actions', () => {
 	test('runs actions in order and stops at the first failure', () => {
@@ -188,6 +189,147 @@ describe('pipe and actions', () => {
 			assert.strictEqual(s.parse_or_throw(s.to_lower_case, 'A'), 'a');
 			assert.throws(() => s.parse(s.to_lower_case, 1), TypeError);
 			assert.throws(() => s.parse(s.object({ a: s.to_lower_case }), {}), TypeError);
+		});
+	});
+
+	describe('to_integer', () => {
+		const SIGNED = 'a safe integer in decimal digits';
+
+		test('the bounds after it are of the integer', () => {
+			const Limit = s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000));
+			assert.strictEqual(s.parse_or_throw(Limit, '1'), 1);
+			assert.strictEqual(s.parse_or_throw(Limit, '+01000'), 1000);
+			assert.deepEqual(issues_of(Limit, '0'), [
+				{ kind: 'min_value', expected: '>= 1', received: 'number', path: [], message: undefined }
+			]);
+			assert.deepEqual(
+				issues_of(Limit, '1001').map((i) => i.kind),
+				['max_value']
+			);
+			// the string's steps before it, and the grammar before the bounds
+			const Short = s.pipe(s.pipe(s.string, s.max_length(3)), s.to_integer(), s.min_value(5));
+			assert.deepEqual(
+				issues_of(Short, '1000').map((i) => i.kind),
+				['max_length']
+			);
+			assert.deepEqual(
+				issues_of(Short, 'x').map((i) => i.kind),
+				['to_integer']
+			);
+			assert.strictEqual(
+				s.parse_or_throw(s.pipe(s.pipe(s.string, s.to_integer()), s.max_value(9)), '9'),
+				9
+			);
+			// a `to_lower_case` before it changes nothing it reads
+			assert.strictEqual(
+				s.parse_or_throw(s.pipe(s.string, s.to_lower_case, s.to_integer()), '7'),
+				7
+			);
+		});
+
+		test('as an entry, with a default, and in a container', () => {
+			const Query = s.object({
+				offset: s.with_default(s.pipe(s.string, s.to_integer(), s.min_value(0)), 0),
+				limit: s.with_default(s.pipe(s.string, s.to_integer(), s.max_value(1000)), 100)
+			});
+			assert.deepEqual(s.parse_or_throw(Query, {}), { offset: 0, limit: 100 });
+			const input = { offset: '20', limit: '5' };
+			const output = s.parse_or_throw(Query, input);
+			// a new value, so a copy, and the input as it was
+			assert.deepEqual(output, { offset: 20, limit: 5 });
+			assert.notStrictEqual<unknown>(output, input);
+			assert.deepEqual(input, { offset: '20', limit: '5' });
+			assert.deepEqual(issues_of(Query, { offset: '-0', limit: '1e3' }), [
+				{
+					kind: 'to_integer',
+					expected: SIGNED,
+					received: 'string',
+					path: ['limit'],
+					message: undefined
+				}
+			]);
+			// a `-0` is a `0`, which the bound takes
+			assert.deepEqual(s.parse_or_throw(Query, { offset: '-0' }), { offset: 0, limit: 100 });
+			assert.deepEqual(
+				issues_of(s.array(s.pipe(s.string, s.to_integer())), ['1', 2, 'x']).map((i) => [
+					i.kind,
+					i.received,
+					i.path
+				]),
+				[
+					['string', 'number', [1]],
+					['to_integer', 'string', [2]]
+				]
+			);
+			// a missing key is the string's to refuse
+			assert.deepEqual(
+				issues_of(s.object({ n: s.pipe(s.string, s.to_integer()) }), {}).map((i) => i.kind),
+				['string']
+			);
+		});
+
+		test('message and meta wrap it, and a union probes it', () => {
+			const Labeled = s.pipe(s.string, s.message(s.to_integer(), 'digits, please'));
+			assert.strictEqual(issues_of(Labeled, 'x')[0]!.message, 'digits, please');
+			assert.strictEqual(s.parse_or_throw(Labeled, '3'), 3);
+			const Described = s.pipe(
+				s.string,
+				meta(s.to_integer({ unsigned: true }), { description: 'd' })
+			);
+			assert.strictEqual(s.parse_or_throw(Described, '3'), 3);
+			assert(!s.is(Described, '-3'));
+			// a failed option is only probed: one issue, of the union, naming the pipe by its first schema
+			const Either = s.union([s.pipe(s.string, s.to_integer()), s.literal(true)]);
+			assert.strictEqual(s.parse_or_throw(Either, '5'), 5);
+			assert.strictEqual(s.parse_or_throw(Either, true), true);
+			assert.deepEqual(issues_of(Either, 'x'), [
+				{
+					kind: 'union',
+					expected: 'string | true',
+					received: 'string',
+					path: [],
+					message: undefined
+				}
+			]);
+			assert(s.is(s.pipe(s.string, s.to_integer()), '5'));
+			assert(!s.is(s.pipe(s.string, s.to_integer()), 'x'));
+		});
+
+		test('past the cap it counts and builds no issue', () => {
+			const List = s.array(s.pipe(s.string, s.to_integer()));
+			const bad = Array.from({ length: 150 }, () => 'x');
+			assert.strictEqual(issues_of(List, bad).length, 100);
+			assert.match(
+				assert_schema_error(() => s.parse_or_throw(List, bad)).message,
+				/\nand 140 more$/
+			);
+		});
+
+		test('reads a string and outputs a number, so only a string comes before it', () => {
+			const _Limit = s.pipe(s.string, s.to_integer(), s.min_value(1));
+			expectTypeOf<s.Infer<typeof _Limit>>().toEqualTypeOf<number>();
+			expectTypeOf<s.InferInput<typeof _Limit>>().toEqualTypeOf<string>();
+			const _literal = s.pipe(s.one_of(['1', '2']), s.to_integer());
+			expectTypeOf<s.Infer<typeof _literal>>().toEqualTypeOf<number>();
+			// @ts-expect-error `to_integer` takes a string
+			s.pipe(s.number, s.to_integer());
+			// @ts-expect-error `undefined` would reach it
+			s.pipe(s.optional(s.string), s.to_integer());
+			// @ts-expect-error a string's action after it is given a number
+			s.pipe(s.string, s.to_integer(), s.min_length(1));
+			// a wrapper of the action is typed from the step before it, and one around the pipe marks the integer
+			const _wrapped = s.pipe(
+				s.string,
+				s.message(meta(s.to_integer(), { description: 'd' }), 'm'),
+				s.max_value(65535)
+			);
+			expectTypeOf<s.Infer<typeof _wrapped>>().toEqualTypeOf<number>();
+			const _Port = s.brand(s.pipe(s.string, s.to_integer({ unsigned: true })), 'Port');
+			expectTypeOf<s.Infer<typeof _Port>>().toEqualTypeOf<s.Branded<number, 'Port'>>();
+			expectTypeOf<s.InferInput<typeof _Port>>().toEqualTypeOf<string>();
+			const _defaulted = s.with_default(s.pipe(s.string, s.to_integer()), 100);
+			expectTypeOf<s.Infer<typeof _defaulted>>().toEqualTypeOf<number>();
+			expectTypeOf<s.InferInput<typeof _defaulted>>().toEqualTypeOf<string | undefined>();
 		});
 	});
 });

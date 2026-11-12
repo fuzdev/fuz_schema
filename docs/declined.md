@@ -29,7 +29,7 @@ The parts, by what they change:
 - Object schemas: [Object loops](#object-loops), [Dropping keys](#dropping-keys), [The copy's second read](#the-copys-second-read), [`record`](#record), [Object operations](#object-operations), [`variant`](#variant)
 - Missing keys: [Passing the object and the key on](#passing-the-object-and-the-key-on), [Writing a missing key](#writing-a-missing-key)
 - Recursion: [`lazy`](#lazy), [A recursive `union`](#a-recursive-union)
-- Primitives and formats: [`number`](#number), [The format tests](#the-format-tests)
+- Primitives and formats: [`number`](#number), [The format tests](#the-format-tests), [`to_integer`](#to_integer)
 - The engine: [The parse context](#the-parse-context)
 - Types and opt-in modules: [Types](#types), [Metadata](#metadata), [Standard Schema](#standard-schema)
 - Not guarded: [Degenerate schemas](#degenerate-schemas), [Values that throw when read](#values-that-throw-when-read)
@@ -1269,6 +1269,30 @@ uppercase ASCII letter or a code past 127, and the same with
 - **Reopens**: a test of a string's case as fast as `toLowerCase`'s own, or
   a consumer whose strings are mostly a few chars.
 - **Measured**: before v0.5.7, on Node 26.13.
+
+## `to_integer`
+
+### The input side of the grammar alone
+
+On the input side of `to_json_schema`, the pattern of `to_integer`'s grammar
+alone, `^[+-]?\d+$` with its white space under `trim`, and a bound after it
+refused, or left out with `'any'`, as Zod writes the string's own node and
+leaves the bounds out, in place of the pattern of exactly the strings it reads
+within the bounds after it.
+
+- **Gave**: `json_schema.ts` 4501 gzip added to the library, against 4836
+  for the exact pattern, 335 fewer, with no generator of the digits of a
+  range, and a pattern a reader reads at a glance.
+- **Cost**: the document takes a string past the safe integers, which
+  `to_integer` refuses, a looseness the input side would declare, and no
+  bound after it is written: a query's `limit` from 1 to 1000 is refused, or
+  with `'any'` written as any integer's digits.
+- **Why**: the input side is held to `is` exactly, and the bounds are much of
+  what a parameter's document is read for. The bytes are opt-in, of a module
+  only a consumer that writes JSON Schema bundles.
+- **Reopens**: a consumer whose validator or documents can't take a long
+  pattern, as the one of every safe integer, about 535 characters signed.
+- **Measured**: before v0.5.8, on Node 26.13.
 
 ## The parse context
 

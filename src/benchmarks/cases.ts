@@ -898,6 +898,19 @@ const create: CaseGroup = (s) => [
 				s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number)
 			)
 	},
+	// built on its own, as a baseline may lack `to_integer`
+	{
+		name: 'create/to_integer/valid',
+		build: () =>
+			to_create_case(s, 'create/to_integer/valid', () =>
+				s.pipe(
+					s.string,
+					s.to_integer({ unsigned: true, trim: true }),
+					s.min_value(1),
+					s.max_value(65535)
+				)
+			)
+	},
 	to_create_case(s, 'create/union/valid', () =>
 		s.union([
 			to_object(s)({ type: s.literal('click'), x: s.number, y: s.number }),
@@ -1904,6 +1917,29 @@ const keyed_record: CaseGroup = (s) => {
 	];
 };
 
+// an integer read from a string: a group of its own, as a baseline may lack
+// `to_integer`. A query's parameters, as fuz_app reads them, the digits alone,
+// the white space `trim` takes, U+0085 among it, which `Number` doesn't read,
+// and a text past the safe integers and one of an exponent, which it refuses
+const digits: CaseGroup = (s) => {
+	const Digits = s.pipe(s.string, s.to_integer());
+	const Port = s.pipe(s.string, s.to_integer({ unsigned: true, trim: true }), s.max_value(65535));
+	const Query = s.object({
+		offset: s.with_default(s.pipe(s.string, s.to_integer(), s.min_value(0)), 0),
+		limit: s.with_default(s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000)), 100)
+	});
+	return [
+		to_case(s, 'digits/query/valid', Query, { offset: '200', limit: '50' }, 'copy'),
+		to_case(s, 'digits/query_defaults/valid', Query, {}, 'copy'),
+		to_case(s, 'digits/small/valid', Digits, '12345', 'copy'),
+		to_case(s, 'digits/past_int32/valid', Digits, '-4294967296', 'copy'),
+		to_case(s, 'digits/trim/valid', Port, ' 8080\n', 'copy'),
+		to_case(s, 'digits/trim_next_line/valid', Port, '\u00858080', 'copy'),
+		to_case(s, 'digits/past_safe/invalid', Digits, '9007199254740993', 'issues'),
+		to_case(s, 'digits/exponent/invalid', Digits, '1e3', 'issues')
+	];
+};
+
 //
 // Scale
 //
@@ -2114,6 +2150,7 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	array,
 	record,
 	keyed_record,
+	digits,
 	scale,
 	create
 ];

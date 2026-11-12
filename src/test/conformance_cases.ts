@@ -2191,6 +2191,150 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		entries: (l) => ({ id: l.to_lower_case(l.string) }),
 		input: () => ({ id: 'a' })
 	},
+	{ name: 'to_integer, digits', schema: (l) => l.to_integer(l.string), input: () => '5' },
+	{ name: 'to_integer, a plus', schema: (l) => l.to_integer(l.string), input: () => '+5' },
+	{ name: 'to_integer, leading zeros', schema: (l) => l.to_integer(l.string), input: () => '007' },
+	{ name: 'to_integer, a minus', schema: (l) => l.to_integer(l.string), input: () => '-5' },
+	{ name: 'to_integer, -0', schema: (l) => l.to_integer(l.string), input: () => '-0' },
+	{ name: 'to_integer, -000', schema: (l) => l.to_integer(l.string), input: () => '-000' },
+	{ name: 'to_integer, +0', schema: (l) => l.to_integer(l.string), input: () => '+0' },
+	{ name: 'to_integer, empty', schema: (l) => l.to_integer(l.string), input: () => '' },
+	{ name: 'to_integer, a space before', schema: (l) => l.to_integer(l.string), input: () => ' 5' },
+	{
+		name: 'to_integer, a tab and a newline around',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '\t5\n'
+	},
+	{
+		name: 'to_integer, U+0085 before',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '\u00855'
+	},
+	{
+		name: 'to_integer, U+FEFF before',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '\ufeff5'
+	},
+	{ name: 'to_integer, an exponent', schema: (l) => l.to_integer(l.string), input: () => '1e3' },
+	{ name: 'to_integer, hex', schema: (l) => l.to_integer(l.string), input: () => '0x10' },
+	{ name: 'to_integer, binary', schema: (l) => l.to_integer(l.string), input: () => '0b1' },
+	{ name: 'to_integer, octal', schema: (l) => l.to_integer(l.string), input: () => '0o7' },
+	{ name: 'to_integer, a space alone', schema: (l) => l.to_integer(l.string), input: () => ' ' },
+	{
+		name: 'to_integer, a fraction of 0',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '1.0'
+	},
+	{
+		name: 'to_integer, a trailing point',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '5.'
+	},
+	{ name: 'to_integer, a leading point', schema: (l) => l.to_integer(l.string), input: () => '.5' },
+	{
+		name: 'to_integer, an underscore',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '1_000'
+	},
+	{ name: 'to_integer, a sign alone', schema: (l) => l.to_integer(l.string), input: () => '+' },
+	{ name: 'to_integer, two signs', schema: (l) => l.to_integer(l.string), input: () => '+-5' },
+	{
+		name: 'to_integer, an Arabic-Indic digit',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '\u0663'
+	},
+	{
+		name: 'to_integer, a fullwidth digit',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '\uff15'
+	},
+	{ name: 'to_integer, Infinity', schema: (l) => l.to_integer(l.string), input: () => 'Infinity' },
+	{
+		name: 'to_integer, the greatest safe integer',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '9007199254740991'
+	},
+	{
+		name: 'to_integer, the greatest safe integer, leading zeros',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '00009007199254740991'
+	},
+	{
+		name: 'to_integer, one past the safe integers',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '9007199254740992'
+	},
+	{
+		name: 'to_integer, twenty digits',
+		schema: (l) => l.to_integer(l.string),
+		input: () => '99999999999999999999'
+	},
+	{ name: 'to_integer, a number', schema: (l) => l.to_integer(l.string), input: () => 5 },
+	{
+		name: 'to_integer with trim, spaces around',
+		schema: (l) => l.to_integer(l.string, { trim: true }),
+		input: () => '\u3000 5 '
+	},
+	{
+		name: 'to_integer with trim, a space alone',
+		schema: (l) => l.to_integer(l.string, { trim: true }),
+		input: () => ' '
+	},
+	{
+		name: 'to_integer with trim, empty',
+		schema: (l) => l.to_integer(l.string, { trim: true }),
+		input: () => ''
+	},
+	{
+		name: 'to_integer with trim, U+0085 before',
+		schema: (l) => l.to_integer(l.string, { trim: true }),
+		input: () => '\u00855'
+	},
+	{
+		name: 'to_integer with trim, U+FEFF before',
+		schema: (l) => l.to_integer(l.string, { trim: true }),
+		input: () => '\ufeff5'
+	},
+	{
+		name: 'to_integer unsigned, a minus',
+		schema: (l) => l.to_integer(l.string, { unsigned: true }),
+		input: () => '-5'
+	},
+	{
+		name: 'to_integer unsigned, -0',
+		schema: (l) => l.to_integer(l.string, { unsigned: true }),
+		input: () => '-0'
+	},
+	{
+		name: 'to_integer unsigned, +0',
+		schema: (l) => l.to_integer(l.string, { unsigned: true }),
+		input: () => '+0'
+	},
+	{
+		name: 'to_integer, then a bound',
+		schema: (l) => l.max_value(l.to_integer(l.string), 10),
+		input: () => '11'
+	},
+	{
+		name: 'to_integer entry',
+		entries: (l) => ({ n: l.to_integer(l.string), m: l.optional(l.to_integer(l.string)) }),
+		input: () => ({ n: '12' })
+	},
+	{
+		name: 'to_integer entry, wrong',
+		entries: (l) => ({ n: l.to_integer(l.string) }),
+		input: () => ({ n: '1e3' })
+	},
+	{
+		name: 'to_integer entry, key missing',
+		entries: (l) => ({ n: l.to_integer(l.string) }),
+		input: () => ({})
+	},
+	{
+		name: 'array of to_integer, an item wrong',
+		schema: (l) => l.array(l.to_integer(l.string)),
+		input: () => ['1', 'x', '3']
+	},
 	{
 		name: 'uuid entry and iso_datetime entry',
 		entries: (l) => ({ id: l.uuid, at: l.optional(l.iso_datetime) }),

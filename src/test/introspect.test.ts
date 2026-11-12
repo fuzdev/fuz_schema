@@ -139,6 +139,7 @@ describe('find_schema_meta', () => {
 		uuid: [() => s.uuid, 'none'],
 		iso_datetime: [() => s.iso_datetime, 'none'],
 		to_lower_case: [() => s.to_lower_case, 'none'],
+		to_integer: [() => s.to_integer(), 'none'],
 		check: [() => s.check(() => true), 'none'],
 		transform: [() => s.transform((v) => v), 'none']
 	};
@@ -531,6 +532,7 @@ describe('format_schema_type', () => {
 		uuid: [s.uuid, 'uuid', false],
 		iso_datetime: [s.iso_datetime, 'iso_datetime', false],
 		to_lower_case: [s.to_lower_case, 'to_lower_case', false],
+		to_integer: [s.to_integer(), 'to_integer', false],
 		check: [s.check(() => true), 'check', false],
 		transform: [s.transform((v) => v), 'transform', false]
 	};

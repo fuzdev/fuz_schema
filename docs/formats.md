@@ -40,6 +40,47 @@ A date and time of RFC 3339 in UTC: ASCII digits, an uppercase `T` and `Z`,
 seconds always, a fraction of 1 to 9 digits or none, no offset, no leap
 second. Zod's default `iso.datetime()`, with the fraction capped.
 
+## Integers
+
+`to_integer` reads an integer from a string, in a `pipe` after one, and
+outputs the `number`:
+
+```ts
+const Limit = s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000));
+const Port = s.pipe(s.string, s.to_integer({ unsigned: true, trim: true }), s.max_value(65535));
+```
+
+### `to_integer`
+
+```
+^<space>[+-]?\d+<space>$
+```
+
+where `<space>` is nothing, or with `trim` a run of Unicode `White_Space`:
+
+```
+[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*
+```
+
+and with `unsigned` the sign is a `+` alone. The digits are ASCII, leading
+zeros taken, and must spell a safe integer, from `-(2 ** 53 - 1)` to
+`2 ** 53 - 1`, so no string rounds to another integer. A `-0` gives `0`.
+
+The grammar is Rust's: `str::parse::<i64>`, and with `unsigned`
+`str::parse::<u64>`, and `trim` drops what `str::trim` drops before either,
+held to the safe integers. Zod and Valibot agree here, on `Number`'s
+grammar, and this library departs from both: what decides it is parity with
+the Rust side, so that a value read here and by a Rust twin, as a query
+parameter or an environment variable, reads as the same integer or fails in
+both. So it
+refuses `''`, which `Number` reads as `0`, an exponent, hex, binary, octal,
+a fraction, `_`, and digits of other scripts, takes U+0085 with `trim`, and
+refuses U+FEFF, where `Number` does the reverse.
+
+Its issue is of kind `to_integer`, whether the grammar or the range failed,
+`expected` `a safe integer in decimal digits` or, with `unsigned`, `an
+unsigned safe integer in decimal digits`.
+
 ## Not formats
 
 There is no `email` or `url`. An email address has no one grammar, and zod's
@@ -92,3 +133,10 @@ valibot both accept it.
 - **The JSON fixtures**, `src/test/fixtures/json/format_*`, hold the edges as
   texts, so the Rust crate's matchers, byte scans in `format.rs`, give the
   library's verdict and issues on each.
+- **`to_integer`** is held to its grammar above by
+  `src/test/schema.formats.test.ts`, with every char at every position of a
+  set of integers, under each option, and every white space each takes and
+  refuses. `to_json_schema` writes on the input side a pattern of exactly the
+  strings it reads within the bounds after it, which
+  `src/test/json_schema.test.ts` holds to `is`. The Rust crate doesn't carry
+  it yet.

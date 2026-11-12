@@ -71,7 +71,9 @@ which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` 
 
 A valid parse that returns its input allocates the same few bytes for a list of records as for one record, as the page's allocation table shows,
 except where something makes a new value: a copy where an entry changed or a key is dropped,
-`to_lower_case` the string it returns whatever its case, and a `memo_union` its memo when it is probed.
+`to_lower_case` the string it returns whatever its case,
+`to_integer` the number it gives where the engine boxes one, as past `2 ** 31 - 1` either way, the `-0` it reads before giving `0`, and with `trim` a copy of a string that holds U+0085,
+and a `memo_union` its memo when it is probed.
 Against Zod Mini and TypeBox, which has fewer instantiations turns on whether a consumer reads the inferred types.
 The exact bytes of this library's bundles, per scenario and per export, are in [`src/benchmarks/sizes.json`](src/benchmarks/sizes.json), which `src/test/sizes.test.ts` keeps current.
 
@@ -176,6 +178,10 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   takes a UUID in either case and gives it lowercase, as RFC 9562 asks.
   A `brand` or `flavor` goes outside a step that changes the value, as there:
   one on a step before it is dropped, as the output is a new string.
+- `pipe(string, to_integer())` reads Rust's integer grammar, `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s:
+  an optional sign and ASCII digits, and nothing else, so it refuses `''`, white space, an exponent, hex, and a fraction, which `Number` takes,
+  and the digits must spell a safe integer. `unsigned` refuses the `-`, `trim` takes Unicode white space around it as Rust's `str::trim` drops it,
+  and a `-0` gives `0`, where both give `-0`. See [`docs/formats.md`](docs/formats.md#integers).
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -200,6 +206,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `optional(schema, value)` | `.default(value)` | `with_default`, and `with_default_fn` for an array or object |
 | `record(key, value)` | `record(key, value)`, `partialRecord(key, value)` | `keyed_record(key, value)`, and `record(value)` where any string is a key |
 | `finite` | | nothing: `number` refuses what isn't finite |
+| `toNumber` | `z.coerce.number()` | `to_integer`, of Rust's integer grammar and not `Number`'s |
 | `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
 | `description`, `metadata` | `.describe()`, `.meta()` | `meta`, in `meta.ts` |
 | `parse` | `.parse()` | `parse_or_throw` |
@@ -224,7 +231,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `keyed_record`, `array`, `union`, `memo_union`, `variant` |
-| refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
+| refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `to_integer`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
@@ -244,6 +251,8 @@ The rest of the types, the `*Def` types of `def`, `Flavor` and `Brand`, and thos
 // refinement: a pipe runs its steps in order and stops at the first that fails
 const Port = s.pipe(s.number, s.integer, s.min_value(1), s.max_value(65535));
 const Tags = s.pipe(s.string, s.transform((text) => text.split(',')));
+// an integer read from a string, as a query parameter or an environment variable is
+const Limit = s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000));
 
 // a discriminated union, recursive through `lazy`
 interface Tree {
@@ -730,6 +739,7 @@ unwrap(User.def.age).kind; // 'number'
 - no options: `def` is `undefined`
 - one option: `def` is that value — a `literal`'s value, a `one_of`'s array, a `regex`'s pattern,
   the function given to `check`, `transform`, or `lazy`
+- `to_integer` holds its grammar, `{unsigned, trim}`, both written
 - `optional` and `nullable` hold `{schema}`, `with_default` holds `{schema, value}`,
   and `with_default_fn` holds `{schema, make}`
 - the object schemas hold their entries, and `object_with_rest` holds `{entries, rest}`,
@@ -849,7 +859,7 @@ to_schema_json(s.array(s.optional(s.number)));
 It throws on a schema the form can't hold, saying where:
 among them `regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
 (`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`),
-and `object_with_rest` and `keyed_record`, which the crate doesn't carry yet.
+and `object_with_rest`, `keyed_record`, and `to_integer`, which the crate doesn't carry yet.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
 [`docs/rust.md`](docs/rust.md#what-is-refused) has the form and everything refused.
 
@@ -873,6 +883,9 @@ a `regex` with flags other than `d` and `u` or whose source isn't a pattern unde
 With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
 `to_lower_case` writes nothing, as Zod writes nothing for its `toLowerCase`,
 and `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
+`to_integer` is an `integer` within the bounds after it on the output side, with nothing of the string, its metadata included,
+and on the input side a `pattern` of exactly the strings it reads within them, where Zod writes the bare string:
+`s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))` takes `^(?:\+?0*(?:[1-9]\d{0,2}|1000))$`.
 Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema) has the mapping and where it differs from Zod's.
 
 ## Status
@@ -966,7 +979,7 @@ npm run build:wasm      # needs wasm-pack
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
 - [`docs/declined.md`](docs/declined.md) — trades that were measured and not taken, each with
   what it gave, what it cost, and what would reopen it
-- [`docs/formats.md`](docs/formats.md) — the grammars of `uuid` and `iso_datetime`,
+- [`docs/formats.md`](docs/formats.md) — the grammars of `uuid`, `iso_datetime`, and `to_integer`,
   and what decides a grammar where Zod and Valibot disagree
 - [`docs/rust.md`](docs/rust.md) — the Rust side: the model, the interchange form,
   the two evaluators, the issues, where they differ from this library, what is

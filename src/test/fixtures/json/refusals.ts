@@ -129,6 +129,16 @@ export const JSON_REFUSALS: ReadonlyArray<JsonRefusal> = [
 		message: '`keyed_record` at /schema: it is not portable, as the Rust crate does not carry it'
 	},
 	{
+		name: 'to_integer',
+		schema: s.pipe(s.string, s.to_integer()),
+		document: doc(
+			`{"kind":"pipe","def":[${STRING},{"kind":"to_integer","def":{"unsigned":false,"trim":false}}]}`
+		),
+		refused: 'unknown_kind',
+		message:
+			'`to_integer` at /schema/def/1: it is not portable, as the Rust crate does not carry it'
+	},
+	{
 		name: 'length_at_the_root',
 		schema: s.min_length(1),
 		document: doc('{"kind":"min_length","def":1}'),

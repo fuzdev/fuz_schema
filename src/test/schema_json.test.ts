@@ -916,6 +916,14 @@ describe('to_schema_json of every kind', () => {
 			s.pipe(s.string, s.to_lower_case),
 			{ kind: 'pipe', def: [STRING, { kind: 'to_lower_case' }] }
 		],
+		to_integer: [
+			s.pipe(s.string, s.to_integer()),
+			refused(
+				'to_integer',
+				'/schema/def/1',
+				'it is not portable, as the Rust crate does not carry it'
+			)
+		],
 		check: [
 			s.pipe(
 				s.string,

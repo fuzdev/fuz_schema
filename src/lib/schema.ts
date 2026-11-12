@@ -13,8 +13,11 @@
  *   `ctx.fails`. A valid value that comes back as it was given allocates
  *   nothing per node but where a step makes a new value: a container
  *   allocates only for a copy, when something in it changed, `to_lower_case`
- *   allocates the string it returns whatever its case, and a `memo_union`
- *   allocates its memo when it is probed.
+ *   allocates the string it returns whatever its case, `to_integer` the
+ *   number it gives where the engine boxes one, past `2 ** 31 - 1` either
+ *   way, the `-0` it reads before giving `0`, and with `trim` a copy of a
+ *   string that holds U+0085, and a `memo_union` allocates its memo when it is
+ *   probed.
  *   `npm run benchmark:allocations` measures the bytes of a parse, which
  *   are the same for a nested object as for a flat one when nothing is copied.
  * - Output is copy-on-write: a container returns its input when nothing in it
@@ -242,6 +245,8 @@ export interface SchemaDefs {
 	uuid: undefined;
 	iso_datetime: undefined;
 	to_lower_case: undefined;
+	/** The grammar read: whether a `-` is refused, and whether white space around the digits is taken. */
+	to_integer: SchemaToIntegerDef;
 	check: (value: any) => boolean;
 	transform: (value: any) => unknown;
 }
@@ -342,8 +347,8 @@ export interface SchemaAction<
  * An action whose `run` returns the value it is given or fails, so a `pipe`
  * types the step's output as the output of the step before it:
  * `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` alone is a
- * `number`. Every action the library makes but `transform` and
- * `to_lower_case`, which change the value, is typed as one.
+ * `number`. Every action the library makes but `transform`, `to_lower_case`,
+ * and `to_integer`, which change the value, is typed as one.
  * `message` and `meta` give one back for one. `brand` and `flavor` give a
  * `SchemaAction` back, so a pipe types a step under them by its own output,
  * branded or flavored.
@@ -2836,6 +2841,87 @@ export const to_lower_case: SchemaAction<string, string, 'to_lower_case', undefi
 	kind: 'to_lower_case',
 	def: undefined,
 	run: (value) => value.toLowerCase()
+};
+
+/** The `def` of `to_integer`: the grammar it reads, both options written. */
+export interface SchemaToIntegerDef {
+	/** Whether a `-` is refused, so only an optional `+` comes before the digits. */
+	readonly unsigned: boolean;
+	/** Whether Unicode `White_Space` before and after the integer is taken and dropped. */
+	readonly trim: boolean;
+}
+
+/** Options of `to_integer`. */
+export interface ToIntegerOptions {
+	/** Refuse a `-`, as Rust's `str::parse::<u64>` does. Defaults to `false`. */
+	unsigned?: boolean;
+	/**
+	 * Take Unicode `White_Space` before and after the integer, the characters
+	 * Rust's `str::trim` drops: JavaScript's `\s` and U+0085, but U+FEFF.
+	 * Defaults to `false`.
+	 */
+	trim?: boolean;
+}
+
+// the grammars of `to_integer`, by `unsigned` and twice `trim`. Unicode
+// `White_Space`, which Rust's `str::trim` drops, is `\s` but U+FEFF, and U+0085
+const INTEGER_PATTERNS = [
+	/^[+-]?\d+$/,
+	/^\+?\d+$/,
+	/^(?:[^\S\ufeff]|\x85)*[+-]?\d+(?:[^\S\ufeff]|\x85)*$/,
+	/^(?:[^\S\ufeff]|\x85)*\+?\d+(?:[^\S\ufeff]|\x85)*$/
+];
+const INTEGER_EXPECTED = 'a safe integer in decimal digits';
+const UNSIGNED_INTEGER_EXPECTED = 'an unsigned safe integer in decimal digits';
+
+/**
+ * Replaces a string of decimal digits with the integer it spells, a `number`,
+ * and fails a string that spells none or one past the safe integers. The
+ * grammar is Rust's `str::parse::<i64>`: an optional `+` or `-`, then one or
+ * more ASCII digits, leading zeros taken, and nothing else, so `''`, a space,
+ * an exponent, a fraction, `0x10`, and `1_000` fail. `unsigned` refuses the
+ * `-`, as `str::parse::<u64>` does, and `trim` takes Unicode `White_Space`
+ * around it, as `str::trim` drops it. A `-0` gives `0`.
+ *
+ * In a `pipe` it follows a string and outputs a `number`, so the bounds after
+ * it are of the integer: `pipe(string, to_integer(), min_value(1), max_value(1000))`.
+ * Its issue is of kind `to_integer`, expected `'a safe integer in decimal
+ * digits'`, or `'an unsigned safe integer in decimal digits'`, whether the
+ * grammar or the range failed, and received the string in a `pipe` and the
+ * type of the value given outside one. Outside a `pipe` it fails any value
+ * that isn't a string, where a test of its grammar alone would convert it.
+ *
+ * `to_json_schema` writes it on the output side as an `integer` within the
+ * bounds after it, and on the input side as a `pattern` of exactly the
+ * strings those bounds take. `to_schema_json` refuses it, as the Rust crate
+ * does not carry it.
+ *
+ * @param options - `unsigned` refuses a `-`, and `trim` takes white space around the integer
+ */
+// @__NO_SIDE_EFFECTS__
+export const to_integer = (
+	options?: ToIntegerOptions
+): SchemaAction<string, number, 'to_integer', SchemaToIntegerDef> => {
+	const unsigned = !!options?.unsigned;
+	const trim = !!options?.trim;
+	const pattern = INTEGER_PATTERNS[+unsigned + 2 * +trim]!;
+	const expected = unsigned ? UNSIGNED_INTEGER_EXPECTED : INTEGER_EXPECTED;
+	return {
+		kind: 'to_integer',
+		def: { unsigned, trim },
+		run: (value, ctx) => {
+			let n;
+			if (typeof value === 'string' && pattern.test(value)) {
+				n = +value;
+				// `Number` reads the digits inside every white space the pattern takes
+				// but U+0085, which only `trim` takes
+				// eslint-disable-next-line no-self-compare
+				if (n !== n) n = +value.replace(/\x85/g, '');
+			}
+			// `|| 0` makes a `-0` a `0`, and gives any other integer as it is
+			return Number.isSafeInteger(n) ? n || 0 : fail(ctx, 'to_integer', value, expected);
+		}
+	};
 };
 
 /**

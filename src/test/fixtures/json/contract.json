@@ -64,6 +64,11 @@
 			"refused": "unknown_kind"
 		},
 		{
+			"name": "to_integer",
+			"document": "{\"schema\":{\"kind\":\"pipe\",\"def\":[{\"kind\":\"string\"},{\"kind\":\"to_integer\",\"def\":{\"unsigned\":false,\"trim\":false}}]}}",
+			"refused": "unknown_kind"
+		},
+		{
 			"name": "length_at_the_root",
 			"document": "{\"schema\":{\"kind\":\"min_length\",\"def\":1}}",
 			"refused": "action_outside_pipe"

@@ -65,6 +65,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
 | `{key, value}` | `keyed_record` |
+| `{unsigned, trim}`, both written | `to_integer` |
 
 - **`lazy` holds the function it was given**, not a schema. Nothing is held
   until it's called, and it is where a recursive schema comes back to itself,
@@ -813,7 +814,7 @@ it is given is taken:
 `pipe(nullable(string), union([regex(/n/)]))` compiles, and matches `null`,
 which `regex` reads as `'null'`.
 
-Every action but `transform` and `to_lower_case` is a `SchemaRefinement` too, whose type-only
+Every action but `transform`, `to_lower_case`, and `to_integer` is a `SchemaRefinement` too, whose type-only
 `~refines` is `true`, where `Schema` declares it a `boolean`: its `run` returns
 the value it is given, so a `pipe` outputs the type of the step before it
 there. `pipe(one_of([1, 2]), integer)` outputs `1 | 2`, where `integer` is
@@ -832,6 +833,23 @@ string, so a brand or a flavor goes outside it, around the `pipe`, as in
 after it is given the lowercase, which can be longer than the input, as a
 dotted capital I's is. The keys are never set, so an action keeps the one
 shape.
+
+`to_integer` takes a string and outputs a `number`, a `SchemaAction<string,
+number>`, so a `pipe` refuses it after a step that isn't a string, as
+`pipe(number, to_integer())` and `pipe(optional(string), to_integer())`,
+and refuses a string's action after it. The bounds after it are of the
+integer: `pipe(string, to_integer(), min_value(1), max_value(1000))`. It
+fails with one issue, of kind `to_integer`, whether the grammar or the range
+failed, received the type of what it was given. Its grammar, and why it is
+Rust's and not `Number`'s, are in [formats.md](formats.md#integers). It
+reads the string with one of four `RegExp`s of the module, one for each
+pair of options, so a schema compiles and holds none of its own, and then `+value`,
+which reads every white space the grammar takes but U+0085: where it gives
+`NaN`, only with `trim`, the string is read again without U+0085, which
+allocates the string. Measured against `pipe(string, regex(/^[+-]?\d+$/),
+transform(Number))` and `safe_integer` after it, a valid parse allocated the
+same bytes on each positive integer measured, a process each, nothing past
+the parse's own up to `2 ** 31 - 1` and 32 bytes past it, on Node 26.13.
 
 ## Actions outside a pipe
 
@@ -859,9 +877,9 @@ annotates its parameter. `src/test/schema.inference.test.ts` asserts what
 every schema and action infers in each position, and the
 `src/test/schema.*.test.ts` files pin the runtime behavior above.
 
-`uuid` and `iso_datetime` differ: each asks `typeof` first, so
+`uuid`, `iso_datetime`, and `to_integer` differ: each asks `typeof` first, so
 alone they refuse any value that isn't a string, an array holding a UUID
-included, where a test of their grammar alone would convert it.
+or the number `5` included, where a test of their grammar alone would convert it.
 `to_lower_case` doesn't: alone it calls `toLowerCase` on what it is given,
 and throws on `undefined`, a missing key included, and on any value that has
 no such method.
@@ -1020,7 +1038,7 @@ each.
   it can pick, one whose discriminator a later option shares never picked;
   the actions of
   a `pipe` are keywords of its first schema's node, the tightest bound
-  winning; the metadata of every layer is copied into its node, the outer
+  winning, but a `to_integer`, below; the metadata of every layer is copied into its node, the outer
   winning, over a `with_default`'s `default` too; a `lazy` is written in
   place unless it comes back to itself, when it is in `$defs`, or `#` at the
   root.
@@ -1090,6 +1108,28 @@ each.
   lowercase of what isn't one being none, so
   `brand(pipe(string, uuid, to_lower_case), 'Uuid')` is the document of a
   `uuid`.
+- **A `to_integer` reads one string and gives another type.** On the output
+  side it is an `integer` within the bounds after it, the least `0` with
+  `unsigned`, as zod writes `z.coerce.number().int()`, with nothing of the
+  string, its metadata included, and a step before it
+  that asserts something of the string is refused, as it narrows the output
+  in a way the document can't say, or left out with `'any'`: a `transform`
+  or a `to_lower_case` there says nothing. On the input side the string's
+  steps before it are written as for any string, and then one `pattern` of
+  exactly the strings it reads within the bounds after it, folded in, as
+  alternatives of digits a length at a time, after `\+?0*` and `-0*`, the
+  `-` taking `0` where the range has it, as a `-0` reads as `0`, or `not: {}`
+  where no integer is in the range. A bound with a fraction is the integer
+  past it, and `integer` and `safe_integer` after it are no keyword. Its
+  white space is the class of [formats.md](formats.md#integers) written out,
+  not `\s`, so a validator of another engine reads the same set. No
+  character lowercases into or out of what it reads, so a `to_lower_case`
+  before it is written as if it weren't, which
+  `src/test/json_schema.test.ts` holds over every code point. A step after it
+  but a bound, `integer`, `safe_integer`, or a `transform` is refused on the
+  input side, a `check` as everywhere, and the metadata of the steps after
+  it, of the integer, is not copied there, nor its own `examples` and
+  `default`, as for a `transform`.
 - **`minLength` and `maxLength` count code points** in JSON Schema, where
   `min_length` and `max_length` count UTF-16 code units, so a validator
   reading the document takes a string of surrogate pairs this library
@@ -1159,6 +1199,15 @@ Where zod writes something else, this library:
 - a `keyed_record` of a finite key set writes no `required`, as it needs none
   of its keys, where zod's `record` of an enum or a literal requires every
   key, and its `partialRecord` writes what this library does.
+- a `to_integer` writes on the input side the pattern of exactly the strings it
+  reads within the bounds after it, where zod writes the string's node for a
+  `z.coerce.number()` after a string and leaves the bounds out.
+- a default of a `to_integer` is left out on the input side, as it is of the
+  integer and not of the string read, as for a `transform`, where zod writes it
+  on the string's node.
+- a step that asserts something of the string before a `to_integer` is refused
+  on the output side, or dropped with `'any'`, as the output can't be
+  narrowed by it, where zod writes the integer alone.
 
 ## Behavior that differs from Valibot and Zod
 
@@ -1294,6 +1343,16 @@ issues. These it holds:
   where both report every one. By design: an issue's path is as long as the
   failing value is deep, so issues without a bound hold memory in the product of the
   input's size and its depth, see [Issues](#issues).
+- `to_integer` reads Rust's integer grammar, where both read `Number`'s, as
+  Zod's `z.coerce.number()` and Valibot's `toNumber` do, before a check of a
+  safe integer. It refuses `''` and a string of white space, which both read
+  as `0`, white space without `trim`, U+FEFF with it, an exponent, hex,
+  binary, and octal, a fraction even of `0`, and a trailing `.`, and with
+  `unsigned` a `-0`. It takes U+0085 with `trim`, which `Number` doesn't. By
+  design: it reads what a consumer's Rust twin reads, see
+  [formats.md](formats.md#integers), and `''` is no integer.
+- `to_integer` gives `0` for a `-0`, where both give `-0`. By design: as Rust
+  reads an integer, and as JSON writes one.
 
 Where the two agree only because two of their disagreements below cancel,
 this library, on one side of each, differs from both. These follow from the

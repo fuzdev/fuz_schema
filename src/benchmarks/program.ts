@@ -176,6 +176,12 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		invalid: 'A'
 	},
 	{
+		name: 'to_integer',
+		create: (s) => s.pipe(s.string, s.to_integer(), s.min_value(1)),
+		valid: '42',
+		invalid: '0x10'
+	},
+	{
 		name: 'check',
 		create: (s) =>
 			s.pipe(

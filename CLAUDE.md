@@ -94,7 +94,8 @@ dev server.
   behavior and type inference: `schema.test.ts` holds the primitives, the
   wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
 - `src/test/schema.formats.test.ts` - the format tests: `uuid` against its
-  grammar in `docs/formats.md`, and `uuid` and `iso_datetime` in a `pipe`
+  grammar in `docs/formats.md`, `uuid` and `iso_datetime` in a `pipe`, and
+  `to_integer` against its grammar there under each option
 - `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
   are not objects, copy on write, object keys, `loose_object`'s copy,
   `object_with_rest`, and composing them by spreading `def`
@@ -119,8 +120,8 @@ dev server.
   exported schemas write every factory's type by its name, and every export
   of `schema.ts` that is or makes a schema declares a named type
 - `src/test/schema.invariants.test.ts` - every factory of `schema.ts` and
-  `meta.ts` carries `// @__NO_SIDE_EFFECTS__`, and the package has no
-  dependencies, with `schema_exports_test_helpers.ts`, the exports that are or
+  `meta.ts` carries `// @__NO_SIDE_EFFECTS__`, every export of the library
+  has a doc comment of its own, and the package has no dependencies, with `schema_exports_test_helpers.ts`, the exports that are or
   make a schema, which `schema.emit.test.ts` reads too
 - `src/test/schema.docs.test.ts` - a property of a type inferred from an
   object schema has its entry's doc comment and the entry as its definition,
@@ -160,7 +161,8 @@ dev server.
 - `src/test/json_schema.differential.test.ts` - the documents `to_json_schema`
   writes, read by a checker, against `is` on the input side and `parse`'s
   output on the output side, and those of `unrepresentable: 'any'` one way,
-  over generated schemas and JSON inputs from fixed seeds, each disagreement
+  over generated schemas and JSON inputs from fixed seeds, a family of
+  `to_integer` pipes over texts of its grammar among them, each disagreement
   explained by an entry of
   `JSON_SCHEMA_DIFFERENCES`, with a pinned case for each. Its modules, each
   importing only those before it: `json_schema_check.ts`, a validator of
@@ -374,8 +376,8 @@ dev server.
   conformance, the differential, the JSON fixtures, and mutants
 - `docs/declined.md` - trades that were built, measured, and not taken: what
   each gave and cost, why it was declined, and what would reopen it
-- `docs/formats.md` - the grammars of the format tests, what decides one
-  where zod and valibot disagree, and how a grammar is held
+- `docs/formats.md` - the grammars of the format tests and of `to_integer`,
+  what decides one where zod and valibot disagree, and how a grammar is held
 - `docs/rust.md` - the Rust side: the model, the interchange form, the two
   evaluators, the issues, the declared divergences, what is refused, the
   fixtures, and the wasm build

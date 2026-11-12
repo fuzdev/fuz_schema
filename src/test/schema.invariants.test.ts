@@ -1,6 +1,7 @@
 import { test, assert } from 'vitest';
 import ts from 'typescript';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { SCHEMA_EXPORT_PATHS, get_schema_exports } from './schema_exports_test_helpers.ts';
 
@@ -35,6 +36,43 @@ test('every factory carries the annotation a bundler drops an unused call by', (
 	}
 	// and no constant, which needs none
 	assert(!names.has('string'));
+}, 60_000);
+
+test('every export of the library has a doc comment of its own', () => {
+	const lib = fileURLToPath(new URL('../lib/', import.meta.url));
+	const paths = readdirSync(lib)
+		.filter((f) => f.endsWith('.ts'))
+		.map((f) => lib + f);
+	const program = ts.createProgram(paths, {
+		target: ts.ScriptTarget.ESNext,
+		module: ts.ModuleKind.NodeNext,
+		moduleResolution: ts.ModuleResolutionKind.NodeNext,
+		allowImportingTsExtensions: true,
+		strict: true,
+		noEmit: true,
+		skipLibCheck: true,
+		types: []
+	});
+	const checker = program.getTypeChecker();
+	const failures: Array<string> = [];
+	const seen: Array<string> = [];
+	for (const path of paths) {
+		const module_symbol = checker.getSymbolAtLocation(program.getSourceFile(path)!)!;
+		for (const exported of checker.getExportsOfModule(module_symbol)) {
+			// `void` is exported as an alias of `void_`
+			const symbol =
+				exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
+			seen.push(exported.name);
+			// what an editor shows for it, which a statement between the comment and the
+			// export takes away
+			if (!symbol.getDocumentationComment(checker).length) failures.push(exported.name);
+		}
+	}
+	assert.deepEqual(failures, [], `without a doc comment: ${failures.join(', ')}`);
+	// the walk saw a constant, a factory, an alias, a type, and each module
+	for (const name of ['string', 'to_integer', 'void', 'Schema', 'meta', 'to_json_schema']) {
+		assert.include(seen, name);
+	}
 }, 60_000);
 
 test('the library has no dependencies', () => {

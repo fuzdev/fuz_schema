@@ -120,6 +120,7 @@ export const Doc = s.object({
 	tags: s.with_default_fn(s.array(s.string), () => []),
 	counts: s.record(s.number),
 	scores: s.keyed_record(s.one_of(['a', 'b']), s.number),
+	port: s.pipe(s.string, s.to_integer({ unsigned: true }), s.max_value(65535)),
 	value: s.union([s.number, s.boolean, s.literal(null)]),
 	memo: s.memo_union([s.string, s.bigint]),
 	data: s.unknown,
@@ -177,12 +178,18 @@ test(
 		for (const name of NAMES) assert.include(emitted, `s.${name}`, `${name} missing\n\n${emitted}`);
 		// `Schema` itself written with type arguments is an output and an input written out,
 		// and so is any of the types that compute one, or the union of every kind. A
-		// `PipeSchema`'s output is written out too, which here is a `string`, see below
+		// `PipeSchema`'s output is written out too, which here is a `string`, or the
+		// `number` of a `to_integer`, see below
 		assert.notMatch(emitted, /\bSchema</, emitted);
 		const pipes = emitted.match(/PipeSchema<[^>]*>/g) ?? [];
 		assert.isNotEmpty(pipes);
-		for (const pipe of pipes)
-			assert.strictEqual(pipe, 'PipeSchema<string, s.StringSchema>', emitted);
+		for (const pipe of pipes) {
+			assert.include(
+				['PipeSchema<string, s.StringSchema>', 'PipeSchema<number, s.StringSchema>'],
+				pipe,
+				emitted
+			);
+		}
 		assert.notMatch(
 			emitted,
 			/Schema(?:Strict|Strip)?Object(?:Output|Input)|SchemaNode|SchemaOfKind|Branded<|Flavored</,

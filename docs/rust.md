@@ -16,8 +16,8 @@ once it has failed, which takes no part in whether two schemas are equal.
 
 - **One `SchemaNode` variant per kind** of the `SchemaDefs` contract that can be
   carried across, which is all but `regex`, `check`, `transform`,
-  `with_default_fn`, `object_with_rest`, and `keyed_record`, the last two not
-  carried yet. A
+  `with_default_fn`, `object_with_rest`, `keyed_record`, and `to_integer`,
+  the last three not carried yet. A
   node holds what the kind's `def` holds, with schemas as `NodeId`s.
 - **`lazy` is a node**, holding the id it defers to. It is where a schema
   comes back to itself, so the arena has no cycle of ownership, and a `Schema`
@@ -267,7 +267,7 @@ it in the interchange form. Nothing is guessed at.
 | Refused | `SchemaBuildErrorKind` |
 |---|---|
 | `regex`, `check`, `transform` | `UnsupportedKind` |
-| `with_default_fn`, which holds a function, `object_with_rest` and `keyed_record`, which the crate doesn't carry yet, and a kind that isn't the library's | `UnknownKind` |
+| `with_default_fn`, which holds a function, `object_with_rest`, `keyed_record`, and `to_integer`, which the crate doesn't carry yet, and a kind that isn't the library's | `UnknownKind` |
 | an `undefined` or bigint literal, or one that isn't a scalar | `UnsupportedLiteral` |
 | a literal or bound that isn't finite, which only a builder can be given: a document has no such number, and `to_schema_json` refuses the one `JSON.stringify` would write as `null`, which the crate would load as a `null` | `NonFiniteNumber` |
 | an entry, or the key of a `variant`, named like a member of `Object.prototype`, which the library reads through the prototype | `PrototypeKey` |
@@ -292,12 +292,17 @@ The format tests (`uuid`, `iso_datetime`) follow a `string`, and are held to a
 regular expression. For a UUID or a date and time in UTC, write `uuid` or
 `iso_datetime` in place of a `regex`.
 
-`to_lower_case` follows a `string` too, and is the one action that changes
-the value: the evaluators give the actions after it the string lowercase, by
-`str::to_lowercase`, whose mappings are those of JavaScript's `toLowerCase`
+`to_lower_case` follows a `string` too, and is the one action the crate
+carries that changes the value: the evaluators give the actions after it the
+string lowercase, by `str::to_lowercase`, whose mappings are those of
+JavaScript's `toLowerCase`
 where the two read one version of Unicode's tables, as the pinned toolchain
 and Node do: `contract.json` holds Node's, and a test fails where
 `char::UNICODE_VERSION` is another. It never fails, and has no issue kind.
+
+`to_integer` is not carried yet, though its grammar is Rust's own,
+`str::parse::<i64>` or `str::parse::<u64>` after `str::trim`, held to the safe
+integers, see [formats.md](formats.md#integers): carrying it is exact.
 
 ## Fixtures
 

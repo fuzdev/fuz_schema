@@ -134,7 +134,10 @@ script checks for that and runs Node directly otherwise.
 
 Not generated, as no counterpart in Zod and Valibot exists or as they have no
 run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
-`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. A
+`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Nor are
+`to_lower_case` and `to_integer`, which change the value, as the rules read
+only a `map` doing so: the matrix holds both, and the JSON Schema
+differential's family of its own holds `to_integer`. A
 `union` has two or three options, so a union of one option is held to Zod
 and Valibot by the matrix alone. Each
 declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
@@ -147,9 +150,11 @@ The JSON Schema differential holds what `to_json_schema` writes to the library's
 verdicts. `src/test/json_schema_check.ts` validates by draft 2020-12 for exactly
 the keywords the emitter writes, and throws on any other keyword anywhere in a
 document, so a new one fails the run until the checker learns it.
-`src/test/json_schema_differential.ts` draws schemas from this generator and
-from the JSON fixtures' (`json_generate.ts`, recursive `lazy` schemas and
-defaults of any JSON among them), writes each on both sides in `'throw'` mode,
+`src/test/json_schema_differential.ts` draws schemas from this generator, from
+the JSON fixtures' (`json_generate.ts`, recursive `lazy` schemas and
+defaults of any JSON among them), and from a family of its own of a
+`to_integer` under each option, with steps of the string before it and bounds
+after, over texts of its grammar's pieces, writes each on both sides in `'throw'` mode,
 counts and skips the refused, and compares JSON inputs: on the input side the
 document takes exactly what `is` takes, on the output side it takes what `parse`
 returns, a one-way check, so a looser output document is caught by the unit and
@@ -176,7 +181,8 @@ npm run differential -- --json-schema --seed 1 --count 100000
 ```
 
 `--count` is the differential generator's schemas, with a tenth as many
-generated JSON groups, and `--focus` and `--limit` apply.
+generated JSON groups and a tenth as many of the `to_integer` family, and
+`--focus` and `--limit` apply.
 
 ## Mutants
 

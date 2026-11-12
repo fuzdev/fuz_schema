@@ -279,6 +279,16 @@ export const SHAPE_SAMPLES: Record<
 		}
 	],
 	to_lower_case: () => [{ action: true, schema: s.to_lower_case, valid: ['A', 'a'], invalid: [] }],
+	to_integer: () => [
+		{ action: true, schema: s.to_integer(), valid: ['5', '-0'], invalid: ['1e3', 5] },
+		{
+			// a U+0085 takes the second read
+			action: true,
+			schema: s.to_integer({ unsigned: true, trim: true }),
+			valid: [' 5\u0085', '9007199254740991'],
+			invalid: ['-5', '9007199254740992']
+		}
+	],
 	check: () => [
 		{
 			action: true,

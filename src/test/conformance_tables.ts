@@ -599,6 +599,41 @@ const differences = [
 	},
 	{
 		reason:
+			"`to_integer` reads Rust's integer grammar, where both read `Number`'s: it refuses `''`, white space without `trim` and U+FEFF with it, an exponent, hex, binary, and octal, a fraction even of `0`, and a trailing `.`, takes U+0085 with `trim`, and with `unsigned` refuses `-0`. By design: it reads what its consumers' Rust twins read, and `''` is no integer",
+		status: 'declared',
+		docs: "`to_integer` reads Rust's integer grammar, where both read `Number`'s",
+		rows: {
+			'to_integer, empty': { both: 'ok 0', ours: 'fail at <root>' },
+			'to_integer, a space before': { both: 'ok 5', ours: 'fail at <root>' },
+			'to_integer, a tab and a newline around': { both: 'ok 5', ours: 'fail at <root>' },
+			'to_integer, U+FEFF before': { both: 'ok 5', ours: 'fail at <root>' },
+			'to_integer, an exponent': { both: 'ok 1000', ours: 'fail at <root>' },
+			'to_integer, hex': { both: 'ok 16', ours: 'fail at <root>' },
+			'to_integer, binary': { both: 'ok 1', ours: 'fail at <root>' },
+			'to_integer, octal': { both: 'ok 7', ours: 'fail at <root>' },
+			'to_integer, a space alone': { both: 'ok 0', ours: 'fail at <root>' },
+			'to_integer, a fraction of 0': { both: 'ok 1', ours: 'fail at <root>' },
+			'to_integer, a trailing point': { both: 'ok 5', ours: 'fail at <root>' },
+			'to_integer with trim, a space alone': { both: 'ok 0', ours: 'fail at <root>' },
+			'to_integer with trim, empty': { both: 'ok 0', ours: 'fail at <root>' },
+			'to_integer with trim, U+0085 before': { both: 'fail at <root>', ours: 'ok 5' },
+			'to_integer with trim, U+FEFF before': { both: 'ok 5', ours: 'fail at <root>' },
+			'to_integer unsigned, -0': { both: 'ok -0', ours: 'fail at <root>' },
+			'to_integer entry, wrong / *': { both: 'ok {n: 1000}', ours: 'fail at n' }
+		}
+	},
+	{
+		reason:
+			'`to_integer` gives `0` for a `-0`, where both give `-0`. By design: as Rust reads an integer, and as JSON writes one',
+		status: 'declared',
+		docs: '`to_integer` gives `0` for a `-0`',
+		rows: {
+			'to_integer, -0': { both: 'ok -0', ours: 'ok 0' },
+			'to_integer, -000': { both: 'ok -0', ours: 'ok 0' }
+		}
+	},
+	{
+		reason:
 			'a parse reports its first hundred failures as issues and counts the rest, where both report every one. By design: issues without a bound hold memory in the product of the input size and its depth',
 		status: 'declared',
 		docs: 'A parse reports its first hundred failures as issues',

@@ -92,6 +92,13 @@ export interface ConformanceLib {
 	regex: (schema: any, pattern: RegExp) => any;
 	/** `schema`, then its output, a string, lowercase, for the steps after. */
 	to_lower_case: (schema: any) => any;
+	/**
+	 * `schema`, then its output, a string, read as a safe integer, by this
+	 * library's grammar and by the others' `Number`, which takes white space
+	 * whatever `trim` says. `unsigned` refuses below 0, which the others read
+	 * after `Number`.
+	 */
+	to_integer: (schema: any, options?: { unsigned?: boolean; trim?: boolean }) => any;
 	/** A string that is a UUID, as the library's own check has it. */
 	uuid: any;
 	/** A string that is a date and time in ISO 8601, as the library's own check has it. */
@@ -147,6 +154,10 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		max_value: (schema, max) => schema.check(z.lte(max)),
 		regex: (schema, pattern) => schema.check(z.regex(pattern)),
 		to_lower_case: (schema) => schema.check(z.toLowerCase()),
+		to_integer: (schema, options) =>
+			schema.pipe(
+				options?.unsigned ? z.coerce.number().int().nonnegative() : z.coerce.number().int()
+			),
 		uuid: z.uuid(),
 		iso_datetime: z.iso.datetime(),
 		strip: (entries) => z.object(entries),
@@ -202,6 +213,10 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		max_value: (schema, max) => v.pipe(schema, v.maxValue(max)),
 		regex: (schema, pattern) => v.pipe(schema, v.regex(pattern)),
 		to_lower_case: (schema) => v.pipe(schema, v.toLowerCase()),
+		to_integer: (schema, options) =>
+			options?.unsigned
+				? v.pipe(schema, v.toNumber(), v.safeInteger(), v.minValue(0))
+				: v.pipe(schema, v.toNumber(), v.safeInteger()),
 		uuid: v.pipe(v.string(), v.uuid()),
 		iso_datetime: v.pipe(v.string(), v.isoTimestamp()),
 		strip: (entries) => v.object(entries),
@@ -260,6 +275,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		max_value: (schema, max) => s.pipe(schema, s.max_value(max)),
 		regex: (schema, pattern) => s.pipe(schema, s.regex(pattern)),
 		to_lower_case: (schema) => s.pipe(schema, s.to_lower_case),
+		to_integer: (schema, options) => s.pipe(schema, s.to_integer(options)),
 		uuid: s.pipe(s.string, s.uuid),
 		iso_datetime: s.pipe(s.string, s.iso_datetime),
 		strip: (entries) => s.strip_object(entries),

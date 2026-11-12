@@ -15,6 +15,14 @@ const $schema = 'https://json-schema.org/draft/2020-12/schema';
 // eslint-disable-next-line no-useless-escape
 const NO_U_PATTERN = /^\-$/;
 
+// the decimal of every integer from 0 to `Number.MAX_SAFE_INTEGER`, with no leading zero
+const SAFE_DIGITS =
+	'\\d|[1-9]\\d{1,14}|[1-8]\\d{15}|900[0-6]\\d{12}|90070\\d{11}|90071[0-8]\\d{10}|900719[0-8]\\d{9}|9007199[0-1]\\d{8}|90071992[0-4]\\d{7}|900719925[0-3]\\d{6}|9007199254[0-6]\\d{5}|90071992547[0-3]\\d{4}|9007199254740[0-8]\\d{2}|90071992547409[0-8]\\d|900719925474099[0-1]';
+
+// Unicode `White_Space`, as `to_json_schema` writes it
+const WHITE_SPACE =
+	'[\\t-\\r \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]*';
+
 const OUTPUT: JsonSchemaOptions = { io: 'output' };
 const INPUT: JsonSchemaOptions = { io: 'input' };
 const ANY: JsonSchemaOptions = { unrepresentable: 'any' };
@@ -710,6 +718,310 @@ describe('to_json_schema', () => {
 			);
 		});
 
+		test('to_integer is an integer on the output side, within the bounds after it', () => {
+			const MAX = Number.MAX_SAFE_INTEGER;
+			const all = { type: 'integer', minimum: -MAX, maximum: MAX };
+			assert.deepEqual(write(s.pipe(s.string, s.to_integer())), all);
+			// an unsigned grammar spells no integer below 0
+			assert.deepEqual(write(s.pipe(s.string, s.to_integer({ unsigned: true, trim: true }))), {
+				...all,
+				minimum: 0
+			});
+			assert.deepEqual(write(s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))), {
+				type: 'integer',
+				minimum: 1,
+				maximum: 1000
+			});
+			// a bound with a fraction is as tight as the integers it leaves
+			assert.deepEqual(
+				write(s.pipe(s.string, s.to_integer(), s.min_value(-2.5), s.max_value(2.5))),
+				{ type: 'integer', minimum: -2.5, maximum: 2.5 }
+			);
+			assert.deepEqual(
+				write(s.pipe(s.string, s.to_integer(), s.safe_integer, s.integer, s.min_value(1))),
+				{ ...all, minimum: 1 }
+			);
+			assert.deepEqual(write(s.pipe(s.pipe(s.string, s.to_integer()), s.max_value(9))), {
+				...all,
+				maximum: 9
+			});
+			// nothing of the string is of the integer, its metadata included, which
+			// the input side keeps
+			const head = s.pipe(
+				meta(s.string, { description: 's', examples: ['5'] }),
+				s.to_integer(),
+				s.max_value(9)
+			);
+			assert.deepEqual(write(head), { ...all, maximum: 9 });
+			assert.deepEqual(write(head, INPUT).examples, ['5']);
+			assert.strictEqual(write(head, INPUT).description, 's');
+			// a step that changes the string says nothing of the integer
+			assert.deepEqual(write(s.pipe(s.string, s.to_lower_case, s.to_integer())), all);
+			assert.deepEqual(
+				write(
+					s.pipe(
+						s.string,
+						s.transform((v: string) => v.trim()),
+						s.to_integer()
+					)
+				),
+				all
+			);
+			// one that asserts something of the string narrows what the output can be
+			for (const [schema, kind] of [
+				[s.pipe(s.string, s.max_length(4), s.to_integer()), 'max_length'],
+				[s.pipe(s.string, s.regex(/^1/), s.to_integer()), 'regex'],
+				[s.pipe(s.pipe(s.string, s.min_length(2)), s.to_integer()), 'min_length'],
+				[s.pipe(s.uuid, s.to_integer()), 'uuid']
+			] as const) {
+				assert_throws(
+					() => to_json_schema(schema),
+					`cannot express \`${kind}\` at #: it reads the string the integer was read from`
+				);
+				assert.deepEqual(write(schema, ANY), all);
+			}
+			// after it, the steps are of a number
+			assert_throws(
+				() => to_json_schema(s.pipe(s.string, s.to_integer(), s.min_length(1) as any)),
+				'cannot express `min_length` at #: the action is not for numbers'
+			);
+			assert_throws(
+				() => to_json_schema(s.pipe(s.string, s.to_integer(), s.to_integer() as any)),
+				'cannot express `to_integer` at #: the action is not for numbers'
+			);
+			assert_throws(
+				() =>
+					to_json_schema(
+						s.pipe(
+							s.string,
+							s.to_integer(),
+							s.check((n) => n > 0)
+						)
+					),
+				'cannot express `check` at #: it holds a function'
+			);
+			assert_throws(
+				() => to_json_schema(s.pipe(s.string, s.to_integer(), s.transform(String))),
+				'cannot express `transform` at #: its output is not known'
+			);
+			// a default is the integer's, and the key is required
+			assert.deepEqual(
+				write(s.object({ a: s.with_default(s.pipe(s.string, s.to_integer()), 5) })),
+				{
+					type: 'object',
+					properties: { a: { ...all, default: 5 } },
+					required: ['a'],
+					additionalProperties: false
+				}
+			);
+		});
+
+		test('to_integer is a pattern of the strings it reads on the input side', () => {
+			const pattern = (schema: s.Schema, options = INPUT): unknown =>
+				write(schema, options).pattern;
+			assert.deepEqual(write(s.pipe(s.string, s.to_integer()), INPUT), {
+				type: 'string',
+				pattern: `^(?:\\+?0*(?:${SAFE_DIGITS})|-0*(?:${SAFE_DIGITS}))$`
+			});
+			// a `-0` reads as 0, so the `-` takes only zeros where 0 is the least
+			assert.strictEqual(
+				pattern(s.pipe(s.string, s.to_integer(), s.min_value(0))),
+				`^(?:\\+?0*(?:${SAFE_DIGITS})|-0*(?:0))$`
+			);
+			assert.strictEqual(
+				pattern(s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))),
+				'^(?:\\+?0*(?:[1-9]\\d{0,2}|1000))$'
+			);
+			assert.strictEqual(
+				pattern(
+					s.pipe(
+						s.string,
+						s.to_integer({ unsigned: true, trim: true }),
+						s.min_value(1),
+						s.max_value(65535)
+					)
+				),
+				`^${WHITE_SPACE}(?:\\+?0*(?:[1-9]\\d{0,3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5]))${WHITE_SPACE}$`
+			);
+			assert.strictEqual(
+				pattern(s.pipe(s.string, s.to_integer(), s.max_value(-3), s.min_value(-12))),
+				'^(?:-0*(?:[3-9]|1[0-2]))$'
+			);
+			assert.strictEqual(
+				pattern(s.pipe(s.string, s.to_integer(), s.min_value(-2.5), s.max_value(2.5))),
+				'^(?:\\+?0*(?:[0-2])|-0*(?:[0-2]))$'
+			);
+			// no string reads as an integer of an empty range
+			for (const schema of [
+				s.pipe(s.string, s.to_integer(), s.min_value(5), s.max_value(3)),
+				s.pipe(s.string, s.to_integer({ unsigned: true }), s.max_value(-1))
+			]) {
+				assert.deepEqual(write(schema, INPUT), { type: 'string', not: {} });
+			}
+			// the steps before it are of the string
+			const safe = `^(?:\\+?0*(?:${SAFE_DIGITS})|-0*(?:${SAFE_DIGITS}))$`;
+			assert.deepEqual(write(s.pipe(s.string, s.max_length(4), s.to_integer()), INPUT), {
+				type: 'string',
+				maxLength: 4,
+				pattern: safe
+			});
+			assert.deepEqual(
+				write(
+					s.pipe(s.string, s.regex(/^1/), s.to_integer(), s.min_value(0), s.max_value(20)),
+					INPUT
+				),
+				{
+					type: 'string',
+					allOf: [{ pattern: '^1' }, { pattern: '^(?:\\+?0*(?:\\d|1\\d|20)|-0*(?:0))$' }]
+				}
+			);
+			// no character lowercases into or out of the grammar, so a `to_lower_case`
+			// before it changes nothing it reads
+			assert.deepEqual(
+				write(s.pipe(s.string, s.to_lower_case, s.to_integer()), INPUT),
+				write(s.pipe(s.string, s.to_integer()), INPUT)
+			);
+			assert_throws(
+				() =>
+					to_json_schema(
+						s.pipe(
+							s.string,
+							s.transform((v: string) => v.trim()),
+							s.to_integer()
+						),
+						INPUT
+					),
+				'cannot express `to_integer` at #: it reads the output of a transform, which is not known'
+			);
+			// a check after it is no pattern, and the bounds past it still are
+			const checked = s.pipe(
+				s.string,
+				s.to_integer(),
+				s.check((n) => n % 2 === 0),
+				s.min_value(0),
+				s.max_value(9)
+			);
+			assert_throws(
+				() => to_json_schema(checked, INPUT),
+				'cannot express `check` at #: it holds a function'
+			);
+			assert.strictEqual(pattern(checked, INPUT_ANY), '^(?:\\+?0*(?:\\d)|-0*(?:0))$');
+			// the strings a transform after it is given are those it reads
+			const mapped = s.pipe(
+				s.string,
+				s.to_integer(),
+				s.max_value(9),
+				s.min_value(0),
+				s.transform(String)
+			);
+			assert.strictEqual(pattern(mapped), '^(?:\\+?0*(?:\\d)|-0*(?:0))$');
+			assert_throws(
+				() => to_json_schema(s.pipe(mapped, s.min_length(1)), INPUT),
+				'cannot express `min_length` at #: it reads the output of a transform, which is not known'
+			);
+			// a default is the integer's, so the input leaves it out and the key optional
+			assert.deepEqual(
+				write(s.object({ a: s.with_default(s.pipe(s.string, s.to_integer()), 5) }), INPUT),
+				{
+					type: 'object',
+					properties: { a: { type: 'string', pattern: safe } },
+					additionalProperties: false
+				}
+			);
+			// its own metadata but `examples` and `default`, which are the integer's,
+			// and none of the bounds folded in
+			const described = s.pipe(
+				s.string,
+				meta(s.to_integer(), { description: 'digits', examples: [5] }),
+				meta(s.min_value(0), { description: 'not negative' })
+			);
+			assert.deepEqual(write(described, INPUT), {
+				type: 'string',
+				pattern: `^(?:\\+?0*(?:${SAFE_DIGITS})|-0*(?:0))$`,
+				description: 'digits'
+			});
+			assert.deepEqual(write(described), {
+				type: 'integer',
+				minimum: 0,
+				maximum: Number.MAX_SAFE_INTEGER,
+				description: 'not negative',
+				examples: [5]
+			});
+			// alone, or after another type, it means nothing
+			for (const options of [OUTPUT, INPUT]) {
+				assert_throws(
+					() => to_json_schema(s.to_integer(), options),
+					'cannot express `to_integer` at #: it means something only in a pipe after a schema it fits'
+				);
+				assert_throws(
+					() => to_json_schema(s.pipe(s.number, s.to_integer() as any), options),
+					'cannot express `to_integer` at #: the action is not for numbers'
+				);
+			}
+		});
+
+		test('no character lowercases into or out of what to_integer reads', () => {
+			// so a `to_lower_case` before it changes nothing it reads, which its
+			// pattern on the input side rests on
+			const alphabet = /[0-9+\-\p{White_Space}]/u;
+			const moved: Array<number> = [];
+			for (let cp = 0; cp <= 0x10ffff; cp++) {
+				if (cp >= 0xd800 && cp <= 0xdfff) continue;
+				const c = String.fromCodePoint(cp);
+				const lower = c.toLowerCase();
+				if (lower !== c && (alphabet.test(c) || alphabet.test(lower))) {
+					moved.push(cp);
+				}
+			}
+			assert.deepEqual(moved, []);
+			// nor in the context a final sigma reads
+			for (const x of ['0', '+', '-', ' ', '\u0085', '\u3000']) {
+				for (const text of ['\u03a3' + x, 'A\u03a3' + x, x + '\u03a3A']) {
+					assert.strictEqual(
+						text.toLowerCase().replace(/[^0-9+\-\p{White_Space}]/gu, ''),
+						text.replace(/[^0-9+\-\p{White_Space}]/gu, '')
+					);
+				}
+			}
+		});
+
+		test('the pattern of to_integer takes exactly the strings is takes', () => {
+			const MAX = Number.MAX_SAFE_INTEGER;
+			const bounds = [undefined, -MAX, -1001, -10, -1, -0.5, 0, 1, 9, 10, 99, 1000, MAX - 1, MAX];
+			const texts = ['', '+', '-', '+-1', ' ', '1e3', '0x10', '1.0', '1_0', '\u0663', '\uff15'];
+			for (const n of [0, 1, 9, 10, 11, 99, 100, 999, 1000, 1001, MAX - 1, MAX, MAX + 1]) {
+				for (const sign of ['', '+', '-'])
+					for (const zeros of ['', '0', '00']) {
+						texts.push(sign + zeros + n);
+					}
+			}
+			for (const space of [' ', '\t\n', '\u0085', '\u3000', '\ufeff', '\u200b', '\u180e']) {
+				texts.push(space + '5', '5' + space, space + '-0' + space);
+			}
+			for (const unsigned of [false, true]) {
+				for (const trim of [false, true]) {
+					for (const lo of bounds) {
+						for (const hi of bounds) {
+							const steps: Array<any> = [s.to_integer({ unsigned, trim })];
+							if (lo !== undefined) steps.push(s.min_value(lo));
+							if (hi !== undefined) steps.push(s.max_value(hi));
+							const schema = (s.pipe as any)(s.string, ...steps);
+							const doc = write(schema, INPUT);
+							// a validator reads a pattern with the flag `u`
+							const re = doc.not ? undefined : new RegExp(doc.pattern, 'u');
+							for (const text of texts) {
+								assert.strictEqual(
+									re ? re.test(text) : false,
+									s.is(schema, text),
+									JSON.stringify({ unsigned, trim, lo, hi, text })
+								);
+							}
+						}
+					}
+				}
+			}
+		});
+
 		test('a regex object is written once, and a format each time, as zod does', () => {
 			const re = /a/;
 			assert.deepEqual(write(s.pipe(s.string, s.regex(re), s.regex(re))), {
@@ -1260,6 +1572,12 @@ describe('to_json_schema of every kind', () => {
 			{ type: 'string', format: 'date-time', pattern: ISO_DATETIME }
 		],
 		to_lower_case: [s.pipe(s.string, s.to_lower_case), STRING],
+		// the integer, and the strings read as one
+		to_integer: [
+			s.pipe(s.string, s.to_integer({ unsigned: true })),
+			{ type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+			{ type: 'string', pattern: `^(?:\\+?0*(?:${SAFE_DIGITS}))$` }
+		],
 		check: [
 			s.pipe(
 				s.string,

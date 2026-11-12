@@ -2,8 +2,8 @@
 //!
 //! The kinds are those of the TypeScript library's `SchemaDefs` contract that
 //! can be carried across: everything but `regex`, `check`, `transform`, and
-//! `with_default_fn`, which hold JavaScript values, and `object_with_rest` and
-//! `keyed_record`, which the crate doesn't carry yet.
+//! `with_default_fn`, which hold JavaScript values, and `object_with_rest`,
+//! `keyed_record`, and `to_integer`, which the crate doesn't carry yet.
 
 use std::fmt;
 use std::sync::OnceLock;

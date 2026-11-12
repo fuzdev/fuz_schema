@@ -54,6 +54,10 @@ const PATTERNS: Record<string, string> = {
 	[to_json_schema(s.iso_datetime).pattern!]: '<date-time>'
 };
 
+// the shape of the pattern a `to_integer` writes on the input side: white space
+// or none, then a group of a branch of a `+` or a `-`, then zeros
+const INTEGER_PATTERN = /^\^(?:\[\\t-\\r [^\]]*\]\*)?\(\?:(?:\\\+\?|-)0\*\(\?:/;
+
 const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 	formats: {
 		reason: "the patterns of `uuid` and `iso_datetime` are this library's grammars",
@@ -325,6 +329,43 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			message: /: it reads the output of a transform, which is not known$/
 		}
 	},
+	to_integer_pattern: {
+		reason:
+			"a `to_integer` writes on the input side the pattern of exactly the strings it reads within the bounds after it, where zod writes the string's node and leaves the bounds out",
+		docs: 'a `to_integer` writes on the input side the pattern of exactly the strings it reads',
+		// this library's document, without the pattern of the integer, or the `not` of an empty range
+		rewrite: (node, side, options) => {
+			if (side !== 'ours' || options.io !== 'input' || node.type !== 'string') return;
+			if (typeof node.pattern === 'string' && INTEGER_PATTERN.test(node.pattern)) {
+				delete node.pattern;
+			} else if (Array.isArray(node.allOf)) {
+				node.allOf = node.allOf.filter((p: Doc) => !INTEGER_PATTERN.test(p.pattern));
+				if (node.allOf.length === 1) node.pattern = node.allOf[0].pattern;
+				if (node.allOf.length < 2) delete node.allOf;
+			}
+			// the `not` of an empty range, on a node of nothing else
+			const keys = Object.keys(node).filter((key) => key !== '$schema');
+			if (keys.length === 2 && keys.includes('type') && node.not && !Object.keys(node.not).length) {
+				delete node.not;
+			}
+		}
+	},
+	to_integer_default: {
+		reason:
+			"a default of a `to_integer` is left out on the input side, as it is of the integer and not of the string read, where zod writes it on the string's node",
+		docs: 'a default of a `to_integer` is left out on the input side',
+		rewrite: (node, side, options) => {
+			if (side === 'zod' && options.io === 'input' && node[MARK + 'integer_default']) {
+				delete node.default;
+			}
+		}
+	},
+	to_integer_string_step: {
+		reason:
+			'a step that asserts something of the string before a `to_integer` is refused on the output side, where zod writes the integer alone',
+		docs: 'a step that asserts something of the string before a `to_integer` is refused on the output side',
+		refusal: { side: 'ours', message: /: it reads the string the integer was read from$/ }
+	},
 	finite_record: {
 		reason:
 			"a `keyed_record` of a finite key set writes no `required`, as it needs none of its keys, where zod's `record` of an enum requires every key",
@@ -417,9 +458,30 @@ const zod_regex = (schema: any, pattern: RegExp): any => {
 		: checked;
 };
 
+// the pipes of zod's adapter of `to_integer`, whose bounds go in the pipe's
+// `out`, where zod writes them: the matrix's adapter checks the pipe, which zod
+// leaves out of a document
+const INTEGER_PIPES: WeakSet<object> = new WeakSet();
+const integer_pipe = (pipe: any): any => {
+	INTEGER_PIPES.add(pipe);
+	return pipe;
+};
+const zod_bound = (schema: any, check: any): any =>
+	INTEGER_PIPES.has(schema)
+		? integer_pipe(schema.in.pipe(schema.out.check(check)))
+		: schema.check(check);
+
 // zod's adapter, marking what a declared difference needs to find in its document
 const ZOD: JsonSchemaLib = {
 	...CONFORMANCE_LIBS.zod,
+	to_integer: (schema, options) => integer_pipe(CONFORMANCE_LIBS.zod.to_integer(schema, options)),
+	// marked where it holds an integer pipe, whose default zod writes on the input side too
+	with_default: (schema, value) =>
+		INTEGER_PIPES.has(schema)
+			? schema.default(value).meta(mark('integer_default'))
+			: schema.default(value),
+	min_value: (schema, min) => zod_bound(schema, z.gte(min)),
+	max_value: (schema, max) => zod_bound(schema, z.lte(max)),
 	meta: (schema, data) => schema.meta(data),
 	literal: (value) => {
 		const schema = z.literal(value);
@@ -608,6 +670,34 @@ const CASES: Array<JsonSchemaCase> = [
 	{
 		name: 'meta, an id inside',
 		schema: (l) => l.strict({ a: l.meta(l.string, { id: 'x' }), b: l.number })
+	},
+	{
+		name: 'to_integer, bounds',
+		schema: (l) => l.max_value(l.min_value(l.to_integer(l.string), 1), 1000)
+	},
+	{
+		name: 'to_integer unsigned with trim, bounds',
+		schema: (l) =>
+			l.max_value(l.min_value(l.to_integer(l.string, { unsigned: true, trim: true }), 1), 65535)
+	},
+	{
+		name: 'to_integer, an empty range',
+		schema: (l) => l.max_value(l.min_value(l.to_integer(l.string), 5), 3)
+	},
+	{ name: 'to_integer, a length before', schema: (l) => l.to_integer(l.max_length(l.string, 4)) },
+	{
+		name: 'to_integer, metadata of the string',
+		schema: (l) => l.max_value(l.to_integer(l.meta(l.string, { description: 'd' })), 9)
+	},
+	{
+		name: 'to_integer entries with defaults',
+		schema: (l) =>
+			l.strict({
+				offset: l.with_default(l.min_value(l.to_integer(l.string), 0), 0),
+				limit: l.meta(l.with_default(l.max_value(l.to_integer(l.string), 1000), 100), {
+					description: 'd'
+				})
+			})
 	},
 	{ name: 'record of optional', schema: (l) => l.record(l.optional(l.string)) },
 	{

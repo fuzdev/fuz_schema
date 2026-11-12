@@ -42,7 +42,7 @@ import {
 	type DifferentialSpec
 } from './differential_generate.ts';
 import { generate_random_json_fixture } from './fixtures/json/json_generate.ts';
-import { create_seeded_rng } from './seeded_rng.ts';
+import { create_seeded_rng, type SeededRng } from './seeded_rng.ts';
 
 /** Which side of a parse a document describes. */
 export type JsonSchemaSide = 'input' | 'output';
@@ -264,6 +264,8 @@ export interface JsonSchemaDifferentialOptions {
 	count: number;
 	/** Groups from the JSON fixtures' generator, `count / 10` when omitted. */
 	groups?: number;
+	/** Schemas of a `to_integer`, `count / 10` when omitted. */
+	integers?: number;
 	/** Inputs drawn for each schema of the differential's generator. */
 	inputs?: number;
 	focus?: DifferentialKind | null;
@@ -652,6 +654,7 @@ export const run_json_schema_differential = (
 ): JsonSchemaDifferentialReport => {
 	const { seed, count, focus = null, minimize_limit = 5, any = true } = options;
 	const groups = options.groups ?? Math.ceil(count / 10);
+	const integers = options.integers ?? Math.ceil(count / 10);
 	const per = options.inputs ?? 8;
 	const report: JsonSchemaDifferentialReport = {
 		seed,
@@ -742,7 +745,122 @@ export const run_json_schema_differential = (
 			inputs
 		);
 	}
+	// draws of its own, so the cases above are a seed's whatever this makes
+	const integer_rng = create_seeded_rng(seed + 0x2545f491);
+	for (let i = 0; i < integers; i++) {
+		const { schema, label, inputs } = gen_integer_case(integer_rng);
+		run_case({ schema, spec: null, label }, inputs);
+	}
 	return report;
+};
+
+// what a text `to_integer` reads is made of: signs, zeros, white space it takes
+// with `trim` and some no grammar takes, and what no grammar reads
+const INTEGER_SPACES = [
+	' ',
+	'\t',
+	'\n',
+	'\r',
+	'\u0085',
+	'\u00a0',
+	'\u2028',
+	'\u3000',
+	'\ufeff',
+	'\u180e',
+	'\u200b'
+];
+const INTEGER_JUNK = ['', '', '', '.', '.0', 'e3', 'x', '_0', '\u0663', '\uff15', '+', '-'];
+// bounds, and integers near which texts are drawn
+const INTEGER_BOUNDS = [0, 1, -1, 7, 9, 10, 99, 100, 1000, -1000, 65535, 2 ** 31, 1e15, 0.5, -2.5];
+const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+
+const gen_integer_text = (rng: SeededRng): string => {
+	const r = rng.int(10);
+	const n =
+		r < 3
+			? rng.int(2000) - 1000
+			: r < 6
+				? Math.trunc(rng.pick(INTEGER_BOUNDS)) + rng.int(3) - 1
+				: r < 8
+					? rng.pick([MAX_SAFE, -MAX_SAFE, 2 ** 53, 1e20]) + rng.int(3) - 1
+					: rng.int(2 ** 30);
+	const digits = String(Math.abs(n)).replace(/e\+?/, '');
+	const sign = n < 0 ? '-' : rng.chance(0.15) ? '+' : rng.chance(0.05) ? '-' : '';
+	const zeros = rng.chance(0.2) ? '0'.repeat(1 + rng.int(3)) : '';
+	const space = (): string => (rng.chance(0.2) ? rng.pick(INTEGER_SPACES) : '');
+	return space() + space() + sign + zeros + digits + rng.pick(INTEGER_JUNK) + space();
+};
+
+/**
+ * A `pipe` of a `to_integer`, its options drawn, with steps of the string
+ * before it and bounds and steps of the integer after, under a wrapper or in
+ * an object, and JSON inputs of texts of the grammar's pieces.
+ */
+const gen_integer_case = (
+	rng: SeededRng
+): { schema: s.AnySchema; label: string; inputs: Array<unknown> } => {
+	const unsigned = rng.chance(0.5);
+	const trim = rng.chance(0.5);
+	const before: Array<[s.AnySchema, string]> = [];
+	if (rng.chance(0.15)) before.push([s.to_lower_case, 'to_lower_case']);
+	if (rng.chance(0.1)) {
+		const n = 1 + rng.int(6);
+		before.push([s.max_length(n), `max_length(${n})`]);
+	}
+	if (rng.chance(0.1)) before.push([s.regex(/^\S/), 'regex(/^\\S/)']);
+	const after: Array<[s.AnySchema, string]> = [];
+	for (let k = rng.int(4); k--;) {
+		const bound = rng.pick([...INTEGER_BOUNDS, -MAX_SAFE, MAX_SAFE]);
+		const r = rng.int(20);
+		after.push(
+			r < 8
+				? [s.min_value(bound), `min_value(${bound})`]
+				: r < 16
+					? [s.max_value(bound), `max_value(${bound})`]
+					: r < 17
+						? [s.integer, 'integer']
+						: r < 18
+							? [s.safe_integer, 'safe_integer']
+							: r < 19
+								? [s.check((x: number) => x % 2 === 0), 'check(even)']
+								: [s.transform(String), 'transform(String)']
+		);
+	}
+	const head = before.length ? (s.pipe as any)(s.string, ...before.map(([x]) => x)) : s.string;
+	let schema: s.AnySchema = (s.pipe as any)(
+		head,
+		s.to_integer({ unsigned, trim }),
+		...after.map(([x]) => x)
+	);
+	let label = `pipe(${before.length ? `pipe(string, ${before.map(([, l]) => l).join(', ')})` : 'string'}, to_integer(${JSON.stringify({ unsigned, trim })})${after.map(([, l]) => `, ${l}`).join('')})`;
+	const texts = (): unknown =>
+		rng.chance(0.05) ? rng.pick([5, null, true]) : gen_integer_text(rng);
+	let input: () => unknown = texts;
+	const r = rng.int(10);
+	if (r < 2) {
+		const fill = rng.chance(0.7) ? Math.trunc(rng.pick(INTEGER_BOUNDS)) : 'x';
+		schema = s.object({ a: s.with_default(schema, fill) });
+		label = `object({a: with_default(${label}, ${JSON.stringify(fill)})})`;
+		input = () => (rng.chance(0.3) ? {} : { a: texts() });
+	} else if (r < 4) {
+		schema = s.object({ a: s.optional(schema), b: s.string });
+		label = `object({a: optional(${label}), b: string})`;
+		input = () => (rng.chance(0.3) ? { b: 'b' } : { a: texts(), b: 'b' });
+	} else if (r < 5) {
+		schema = s.array(schema);
+		label = `array(${label})`;
+		input = () => Array.from({ length: rng.int(3) }, texts);
+	} else if (r < 6) {
+		schema = s.union([s.number, schema]);
+		label = `union([number, ${label}])`;
+	} else if (r < 7) {
+		schema = s.nullable(schema);
+		label = `nullable(${label})`;
+		input = () => (rng.chance(0.2) ? null : texts());
+	}
+	const inputs: Array<unknown> = [];
+	for (let j = 0; j < 8; j++) inputs.push(input());
+	return { schema, label, inputs };
 };
 
 const show_json = (value: unknown): string => {
