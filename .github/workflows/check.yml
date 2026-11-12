@@ -67,5 +67,27 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
-      # the wasm crate compiles natively too, so only this proves the target builds
-      - run: cargo check -p fuz_schema_wasm --target wasm32-unknown-unknown
+      # the wasm crate compiles natively too, so only this proves the target
+      # builds. The module carries the verdicts and not the issues, and its
+      # size is a figure no test reads: a build that reaches more, such as the
+      # issues' text and the float formatting behind it, fails the ceiling
+      - name: Build the wasm and check its size
+        run: |
+          cargo build -p fuz_schema_wasm --target wasm32-unknown-unknown --release
+          wasm="${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/fuz_schema_wasm.wasm"
+          ceiling_file=crates/fuz_schema_wasm/wasm_size_ceiling.txt
+          size=$(wc -c < "$wasm")
+          # the one line that is not a comment, which may be indented, or blank;
+          # a second keeps its newline, which the number check refuses
+          ceiling=$(grep -vE '^[[:space:]]*(#|$)' "$ceiling_file" | tr -d ' \t\r' || true)
+          case $ceiling in
+            '' | *[!0-9]*)
+              echo "::error file=$ceiling_file::no ceiling read from $ceiling_file: it holds one number of bytes, and # comments"
+              exit 1
+              ;;
+          esac
+          echo "fuz_schema_wasm.wasm: $size bytes, ceiling $ceiling"
+          if [ "$size" -gt "$ceiling" ]; then
+            echo "::error file=$ceiling_file::fuz_schema_wasm.wasm is $size bytes, over the ceiling of $ceiling. The build reaches code it didn't: diff an unstripped build (CARGO_PROFILE_RELEASE_STRIP=false) against one under the ceiling with twiggy diff, and keep what the wasm reaches from reaching the issues. Raise the ceiling in $ceiling_file only for growth that is meant."
+            exit 1
+          fi

@@ -6,10 +6,11 @@
 //! which the crate doesn't carry yet.
 
 use std::fmt;
+use std::sync::OnceLock;
 
 use crate::bits::Bits;
 use crate::js;
-use crate::json::{Json, LINEAR_MAX, Value};
+use crate::json::{Json, LINEAR_MAX, Value, sort_positions};
 
 /// The most wrappers, `lazy`, `union` options, and starts of a `pipe` that
 /// may be around one value.
@@ -468,9 +469,8 @@ impl SchemaEntries {
         let schemas = std::mem::take(&mut self.schemas).into_vec();
         *self = Self::new(js::key_order(keys.into_iter().zip(schemas).collect()));
         if self.keys.len() > LINEAR_MAX {
-            let mut sorted: Vec<usize> = (0..self.keys.len()).collect();
-            sorted.sort_unstable_by(|&a, &b| self.keys[a].cmp(&self.keys[b]));
-            self.sorted = sorted.into_boxed_slice();
+            let keys = &self.keys;
+            self.sorted = sort_positions(keys.len(), &mut |a, b| keys[a].cmp(&keys[b]));
         }
     }
 
@@ -574,11 +574,10 @@ impl VariantDef {
     pub(crate) fn index(&mut self) {
         self.sorted = Box::default();
         if self.table.len() > LINEAR_MAX {
-            let mut sorted: Vec<usize> = (0..self.table.len()).collect();
-            sorted.sort_unstable_by(|&a, &b| {
-                compare_literal(&self.table[a].0, self.table[b].0.as_value())
+            let table = &self.table;
+            self.sorted = sort_positions(table.len(), &mut |a, b| {
+                compare_literal(&table[a].0, table[b].0.as_value())
             });
-            self.sorted = sorted.into_boxed_slice();
         }
     }
 }
@@ -626,11 +625,39 @@ pub enum Candidates {
     Many,
 }
 
+/// The `expected` text of each `union`'s issue, written at its first failure
+/// and kept, as the TypeScript library's `union` keeps it.
+///
+/// What it holds is a function of the nodes, so it takes no part in whether
+/// two schemas are equal: one that has reported a union's issue equals one
+/// that hasn't.
+#[derive(Debug, Clone)]
+pub struct UnionTexts(Box<[OnceLock<Box<str>>]>);
+
+impl UnionTexts {
+    /// A slot for each of `len` nodes, none written.
+    pub fn new(len: usize) -> Self {
+        Self((0..len).map(|_| OnceLock::new()).collect())
+    }
+
+    /// The text of the `union` with `id`, written by `write` the first time.
+    pub fn get_or_write(&self, id: NodeId, write: impl FnOnce() -> Box<str>) -> &str {
+        self.0[id.index()].get_or_init(write)
+    }
+}
+
+impl PartialEq for UnionTexts {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
 /// A schema: an arena of nodes and the one validation starts at.
 ///
 /// Made by `SchemaBuilder`, or loaded from the interchange form with
-/// `Schema::from_json`. It owns everything it refers to, holds no interior
-/// state, and can be shared between threads.
+/// `Schema::from_json`. It owns everything it refers to and can be shared
+/// between threads. The nodes are plain data, and a `union` keeps the text of
+/// its `expected` once it has failed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Schema {
     pub(crate) nodes: Box<[SchemaNode]>,
@@ -646,9 +673,8 @@ pub struct Schema {
     /// take one reach a cycle, and for objects, no `literal` entry tells
     /// those options apart before they reach one. Any other node keeps none.
     pub(crate) memoized: Box<[[bool; 2]]>,
-    /// For each `union`, the `expected` of its issue, written when it is
-    /// built. Any other node has none.
-    pub(crate) union_expected: Box<[Option<Box<str>>]>,
+    /// For each `union`, the `expected` of its issue once it has failed.
+    pub(crate) union_texts: UnionTexts,
 }
 
 impl Schema {
@@ -683,14 +709,6 @@ impl Schema {
     /// objects, no `literal` tells them apart first.
     pub(crate) fn memoizes_on(&self, id: NodeId, container: Container) -> bool {
         self.memoized[id.index()][container as usize]
-    }
-
-    /// The `expected` of an issue of the `union` with `id`.
-    pub(crate) fn union_expected(&self, id: NodeId) -> &str {
-        let expected = self.union_expected[id.index()].as_deref();
-        // every union `build` reached has one, and no other is evaluated
-        debug_assert!(expected.is_some(), "a union with no `expected`");
-        expected.unwrap_or_default()
     }
 
     /// The same schema with no union keeping its verdicts, to hold the ones
@@ -784,6 +802,48 @@ mod tests {
     fn a_schema_is_shared_between_threads() {
         const fn shared<T: Send + Sync>() {}
         shared::<Schema>();
+    }
+
+    #[test]
+    fn a_union_keeps_its_text_from_its_first_failure_and_stays_equal() {
+        let union_of = |b: &mut SchemaBuilder| {
+            let string = b.string();
+            let x = b.literal(1.5);
+            let union = b.union([string, x]);
+            b.array(union)
+        };
+        let failed = built(union_of);
+        let fresh = built(union_of);
+        let union = failed
+            .nodes()
+            .position(|node| matches!(node, SchemaNode::Union(_)));
+        let union = NodeId::new(union.unwrap());
+        // `build` writes no text, and a match writes none
+        assert!(failed.union_texts.0[union.index()].get().is_none());
+        assert!(failed.validate_json(r#"["a", 1.5]"#).unwrap().is_empty());
+        assert!(failed.union_texts.0[union.index()].get().is_none());
+        let issues = failed.validate_json("[true, null]").unwrap();
+        assert_eq!(issues.len(), 2);
+        assert!(
+            issues
+                .iter()
+                .all(|issue| issue.expected() == "string | 1.5")
+        );
+        assert_eq!(
+            failed.union_texts.0[union.index()]
+                .get()
+                .map(|text| &**text),
+            Some("string | 1.5")
+        );
+        assert_eq!(
+            failed.validate_json("[0]").unwrap()[0].expected(),
+            "string | 1.5"
+        );
+        // a clone keeps the text, and equality reads none of it
+        let copy = failed.clone();
+        assert!(copy.union_texts.0[union.index()].get().is_some());
+        assert_eq!(copy, fresh);
+        assert_eq!(failed, fresh);
     }
 
     #[test]

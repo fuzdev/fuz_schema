@@ -19,6 +19,15 @@
 //! glue writes U+FFFD in its place, so `matches_json` reads a text with one as
 //! though U+FFFD were there, and can accept what `JSON.parse` followed by the
 //! TypeScript library would reject.
+//!
+//! The module carries the verdicts and not the issues: nothing these entry
+//! points reach, `Schema::from_json` and `SchemaBuilder::build` included, may
+//! reach `Schema::validate_json`'s side, its `expected` texts and the number
+//! formatting behind them, which would bring core's float formatting into the
+//! module. CI fails a release build of the module over the ceiling in
+//! `wasm_size_ceiling.txt`, beside this crate's `Cargo.toml`: a build over it
+//! reaches code it didn't, which a `twiggy diff` against the last build under
+//! it names. Raise the ceiling only for growth that is meant.
 
 use fuz_schema::Schema;
 use wasm_bindgen::prelude::*;

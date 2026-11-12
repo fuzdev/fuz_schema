@@ -17,6 +17,23 @@ use crate::js;
 /// many values, are searched in order, and larger ones through a sorted index.
 pub const LINEAR_MAX: usize = 8;
 
+/// The positions `0..len` in the order `compare` gives two of them: the
+/// sorted index of an object, of an object schema, and of a `variant`'s table,
+/// and the builder's search for a key given twice.
+///
+/// They share it, and it takes the comparison as a `dyn` and is never
+/// inlined, so the standard library's unstable sort, kilobytes of the wasm for
+/// each comparison it is instantiated with, is instantiated once.
+#[inline(never)]
+pub fn sort_positions(
+    len: usize,
+    compare: &mut dyn FnMut(usize, usize) -> std::cmp::Ordering,
+) -> Box<[usize]> {
+    let mut positions: Vec<usize> = (0..len).collect();
+    positions.sort_unstable_by(|&a, &b| compare(a, b));
+    positions.into_boxed_slice()
+}
+
 /// The deepest that arrays and objects can be nested in a text the crate
 /// reads: one level short of `serde_json`'s recursion limit.
 pub const MAX_DEPTH: usize = 127;
@@ -103,9 +120,7 @@ impl JsonObject {
     pub(crate) fn from_entries(entries: Vec<(Box<str>, Json)>) -> Self {
         let entries = js::key_order(dedupe(entries)).into_boxed_slice();
         let sorted = if entries.len() > LINEAR_MAX {
-            let mut sorted: Vec<usize> = (0..entries.len()).collect();
-            sorted.sort_unstable_by(|&a, &b| entries[a].0.cmp(&entries[b].0));
-            sorted.into_boxed_slice()
+            sort_positions(entries.len(), &mut |a, b| entries[a].0.cmp(&entries[b].0))
         } else {
             Box::default()
         };
@@ -185,7 +200,9 @@ fn dedupe(entries: Vec<(Box<str>, Json)>) -> Vec<(Box<str>, Json)> {
     if entries.len() < 2 {
         return entries;
     }
-    // positions sorted by key, a stable sort so equal keys stay in input order
+    // positions sorted by key, a stable sort so equal keys stay in input order.
+    // Its own, not `sort_positions`: an indirect call a comparison costs every
+    // parsed object of two keys or more
     let mut order: Vec<usize> = (0..entries.len()).collect();
     order.sort_by(|&a, &b| entries[a].0.cmp(&entries[b].0));
     if order

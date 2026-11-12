@@ -1,0 +1,10 @@
+# The most bytes the release build of this crate for wasm32-unknown-unknown,
+# target/wasm32-unknown-unknown/release/fuz_schema_wasm.wasm, before wasm-opt,
+# may have. The `rust` job of .github/workflows/check.yml fails over it.
+#
+# It is there to catch the build reaching code the wasm doesn't need, above
+# all the issues' text and core's float formatting behind it, which is tens of
+# kilobytes, with room left for ordinary work on the verdict path. Raise it
+# deliberately, for growth that is meant, after reading a twiggy diff of what
+# the build reaches that it didn't.
+275000

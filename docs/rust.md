@@ -11,7 +11,8 @@ Output is not built. `crates/fuz_schema_wasm` is the crate compiled to wasm,
 ## The model
 
 A `Schema` is an arena of `SchemaNode`s and the id of the one validation starts
-at.
+at. The nodes are plain data, and a `union` keeps the text of its `expected`
+once it has failed, which takes no part in whether two schemas are equal.
 
 - **One `SchemaNode` variant per kind** of the `SchemaDefs` contract that can be
   carried across, which is all but `regex`, `check`, `transform`,
@@ -201,8 +202,8 @@ the same order. A `SchemaIssue` owns what it holds:
   and otherwise the issue of the entry's schema. It is at the entry's place
   in the order.
 - **A failed `union` is one issue**, at the union's value, naming its options
-  as the library does, in a text written once for each union when the schema
-  is built, each part once by its text: a `union` among them by
+  as the library does, in a text written at the union's first failure and
+  kept with the schema, each part once by its text: a `union` among them by
   its own options, at any depth, a `pipe` by its first schema, a `nullable`
   by its schema's and then `null`, an `optional` or a `with_default` by its
   schema's, a `literal` or a `one_of` by its values, an object schema, a
@@ -379,7 +380,11 @@ npm run benchmark:wasm # against the library, see benchmarks.md
 It exports one class. `new CompiledSchema(schema_json)` loads a schema from its
 interchange form, and throws an `Error` with the `SchemaBuildError`'s message.
 The handle answers with a boolean, and everything `matches_json` reports as an
-error is `false`.
+error is `false`. The wasm carries the verdicts and not the issues, so its size
+holds only while nothing the loader, `SchemaBuilder::build`, or the verdicts
+reach touches an issue's text, whose numbers bring core's float formatting
+along: CI fails a release build over the ceiling in
+`crates/fuz_schema_wasm/wasm_size_ceiling.txt`.
 
 | Entry point | How the text gets into the module's memory |
 |---|---|

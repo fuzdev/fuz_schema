@@ -598,9 +598,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
 ```
 
-CI runs these in the `rust` job of `.github/workflows/check.yml`, and checks
-that `fuz_schema_wasm` compiles for `wasm32-unknown-unknown`, the target
-`rust-toolchain.toml` installs.
+CI runs these in the `rust` job of `.github/workflows/check.yml`, and builds
+`fuz_schema_wasm` in release for `wasm32-unknown-unknown`, the target
+`rust-toolchain.toml` installs, holding the `.wasm`'s size to
+`crates/fuz_schema_wasm/wasm_size_ceiling.txt`.
 
 `crates/fuz_schema` is the Rust side of the library: its schema model,
 whether a JSON text matches a schema, and the issues of one that doesn't.
@@ -688,6 +689,13 @@ Things that are easy to break without a test noticing:
 - **`wasm-bindgen` is pinned to an exact version**, the one the wasm-bindgen
   CLI that wasm-pack runs has. It is the wasm crate's only dependency beyond
   the Rust side.
+- **The wasm carries the verdicts and not the issues.** Nothing
+  `Schema::from_json`, `SchemaBuilder::build`, or a verdict reaches may reach
+  an issue's text (`expected`, `js::number_to_string`, `js::quote`) or format
+  an `f64`, which brings core's float formatting into the wasm. A union's
+  `expected` text is written at its first failure, never at `build`. CI
+  fails a release build over `crates/fuz_schema_wasm/wasm_size_ceiling.txt`;
+  raise it only for growth that is meant, after a `twiggy diff`.
 - **A new kind** needs a `SchemaNode` variant, a `SchemaKind`, both evaluators,
   its `SchemaIssueKind` and `expected` text when it can fail, the builder's
   reading of which kinds could match an array or an object, the loader,

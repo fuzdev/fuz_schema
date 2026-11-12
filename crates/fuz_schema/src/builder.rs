@@ -9,7 +9,7 @@ use crate::js;
 use crate::json::{self, Json, Value};
 use crate::schema::{
     Candidates, MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaKind, SchemaLiteral, SchemaNode,
-    VariantDef, WithDefaultDef,
+    UnionTexts, VariantDef, WithDefaultDef,
 };
 use crate::walk;
 
@@ -265,6 +265,14 @@ impl SchemaBuilder {
     /// Checks the nodes reachable from `root` and from every defined `lazy`,
     /// and makes the schema that starts at `root`.
     ///
+    /// It reaches nothing of the issues: no `expected` text, no
+    /// `js::number_to_string` or `js::quote`, no formatting of an `f64`. The
+    /// wasm build carries `build`, the loader, and the verdicts, and not the
+    /// issues, so what this reaches is in its bytes: an issue's text brings
+    /// core's float formatting and its tables along. What an issue needs is
+    /// made where the issue is, in `walk::Collect`, and a union's `expected`
+    /// is written at its first failure into the slot `build` leaves for it.
+    ///
     /// # Errors
     ///
     /// When the schema is one the crate refuses, with the reason and a path to
@@ -333,19 +341,14 @@ impl SchemaBuilder {
                 memoized[id.index()] = union_memoized(&nodes, &reaches, options, &mut memo);
             }
         }
-        let mut union_expected = vec![None; nodes.len()];
-        for &id in &order {
-            if let SchemaNode::Union(options) = &nodes[id.index()] {
-                union_expected[id.index()] = Some(walk::union_expected(&nodes, options));
-            }
-        }
+        let union_texts = UnionTexts::new(nodes.len());
         let mut schema = Schema {
             nodes: nodes.into_boxed_slice(),
             root,
             any,
             candidates: candidates.into_boxed_slice(),
             memoized: memoized.into_boxed_slice(),
-            union_expected: union_expected.into_boxed_slice(),
+            union_texts,
         };
         // an entry is required when a missing key fails it, which the tree
         // evaluator is asked
@@ -868,12 +871,12 @@ impl<'a> Checker<'a> {
                     }
                     outside_pipe(Step::Entry(position), schema)?;
                 }
-                let mut keys: Vec<&str> = entries.iter().map(|(key, _)| key).collect();
-                keys.sort_unstable();
-                if let Some(pair) = keys.windows(2).find(|pair| pair[0] == pair[1]) {
+                let keys: Vec<&str> = entries.iter().map(|(key, _)| key).collect();
+                let order = json::sort_positions(keys.len(), &mut |a, b| keys[a].cmp(keys[b]));
+                if let Some(pair) = order.windows(2).find(|pair| keys[pair[0]] == keys[pair[1]]) {
                     return Err((
                         SchemaBuildErrorKind::DuplicateKey {
-                            key: pair[0].into(),
+                            key: keys[pair[0]].into(),
                         },
                         id,
                         None,

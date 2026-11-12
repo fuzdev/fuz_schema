@@ -266,7 +266,8 @@ impl Report for Collect<'_> {
 
 /// The `expected` of the issue the TypeScript library reports for `failure`
 /// of `node`, whose id is `id`: the kind's name where the library gives `fail`
-/// no other text.
+/// no other text. A union's is written at its first failure and kept with the
+/// schema.
 fn expected(schema: &Schema, id: NodeId, node: &SchemaNode, failure: Failure) -> String {
     match (failure, node) {
         (Failure::UnknownKey, _) => "no unknown keys".to_owned(),
@@ -284,7 +285,10 @@ fn expected(schema: &Schema, id: NodeId, node: &SchemaNode, failure: Failure) ->
         ) => "object".to_owned(),
         (_, SchemaNode::Literal(literal)) => format_literals([literal]),
         (_, SchemaNode::OneOf(literals)) => format_literals(literals.iter()),
-        (_, SchemaNode::Union(_)) => schema.union_expected(id).to_owned(),
+        (_, SchemaNode::Union(options)) => schema
+            .union_texts
+            .get_or_write(id, || union_expected(&schema.nodes, options))
+            .to_owned(),
         (_, SchemaNode::MinLength(min)) => format!("length >= {}", js::number_to_string(*min)),
         (_, SchemaNode::MaxLength(max)) => format!("length <= {}", js::number_to_string(*max)),
         (_, SchemaNode::MinValue(min)) => format!(">= {}", js::number_to_string(*min)),
@@ -296,10 +300,14 @@ fn expected(schema: &Schema, id: NodeId, node: &SchemaNode, failure: Failure) ->
 /// The `expected` of a failed `union` with `options`: what each option adds,
 /// joined by ` | `, as the library's `union` writes it.
 ///
-/// `SchemaBuilder::build` writes it once for each union, as the library writes
-/// it once for each and keeps it, so a union that fails many times, or names
-/// many values, costs its text once.
-pub fn union_expected(nodes: &[SchemaNode], options: &[NodeId]) -> Box<str> {
+/// `Collect` writes it at a union's first failure and the schema keeps it, as
+/// the library writes it at the first and keeps it on the union, so a union
+/// that fails many times, or names many values, costs its text once. It is
+/// never written in `SchemaBuilder::build` or on the way to a verdict: the
+/// text formats numbers, which brings core's float formatting into a build,
+/// and the wasm, which carries the verdicts and not the issues, would carry
+/// it.
+fn union_expected(nodes: &[SchemaNode], options: &[NodeId]) -> Box<str> {
     let mut parts = Parts::default();
     for &option in options {
         describe_option(nodes, option, &mut parts);
