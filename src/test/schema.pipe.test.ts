@@ -5,6 +5,109 @@ import { meta } from '#lib/meta.ts';
 import { assert_schema_error, issues_of } from './schema_test_helpers.ts';
 
 describe('pipe and actions', () => {
+	test('stops at the first failure whatever it starts with, as an entry and alone', () => {
+		// each of a pipe's three closures: one that starts with an `optional`,
+		// one whose first schema takes the object and the key, and the other
+		const firsts: Array<[string, s.Schema]> = [
+			['optional', s.optional(s.string)],
+			[
+				'a pipe that starts with an optional',
+				s.pipe(
+					s.optional(s.string),
+					s.check(() => true)
+				)
+			],
+			['unknown', s.unknown],
+			['string', s.string]
+		];
+		for (const [name, first] of firsts) {
+			let ran = 0;
+			const Entry = s.pipe(
+				first,
+				s.check(() => false),
+				s.check(() => {
+					ran++;
+					return true;
+				})
+			);
+			assert.deepEqual(
+				issues_of(Entry, 'abc').map((i) => i.kind),
+				['check'],
+				name
+			);
+			assert.deepEqual(
+				issues_of(s.object({ a: Entry }), { a: 'abc' }).map((i) => [i.kind, i.path]),
+				[['check', ['a']]],
+				name
+			);
+			assert.strictEqual(ran, 0, name);
+		}
+	});
+
+	test('runs its first schema once, and no step after one that fails', () => {
+		// a first schema that changes the value, under each closure a string reaches
+		const firsts: Array<[string, s.Schema]> = [
+			[
+				'optional',
+				s.optional(
+					s.pipe(
+						s.string,
+						s.transform((v) => v + '!')
+					)
+				)
+			],
+			[
+				'string',
+				s.pipe(
+					s.string,
+					s.transform((v) => v + '!')
+				)
+			],
+			[
+				'lazy',
+				s.lazy(() =>
+					s.pipe(
+						s.string,
+						s.transform((v) => v + '!')
+					)
+				)
+			]
+		];
+		for (const [name, first] of firsts) {
+			let ran = 0;
+			const Entry = s.pipe(
+				first,
+				s.check(() => {
+					ran++;
+					return true;
+				})
+			);
+			assert.strictEqual(s.parse_or_throw(Entry, 'abc'), 'abc!', name);
+			assert.deepEqual(s.parse_or_throw(s.object({ a: Entry }), { a: 'abc' }), { a: 'abc!' }, name);
+			assert.strictEqual(ran, 2, name);
+			// the first schema fails, and the step after it would report again
+			ran = 0;
+			const Failing = s.pipe(
+				first,
+				s.check(() => {
+					ran++;
+					return false;
+				})
+			);
+			assert.deepEqual(
+				issues_of(Failing, 5).map((i) => i.kind),
+				['string'],
+				name
+			);
+			assert.deepEqual(
+				issues_of(s.object({ a: Failing }), { a: 5 }).map((i) => [i.kind, i.path]),
+				[['string', ['a']]],
+				name
+			);
+			assert.strictEqual(ran, 0, name);
+		}
+	});
+
 	test('runs actions in order and stops at the first failure', () => {
 		const Name = s.pipe(s.string, s.min_length(2), s.max_length(4));
 		assert.strictEqual(s.parse_or_throw(Name, 'abc'), 'abc');

@@ -997,35 +997,34 @@ through, and not only after the ones the pipe has the object for.
   nothing.
 - **Measured**: before v0.2.0.
 
-### A `pipe` that starts with an `optional` with a loop of its own
+### A `pipe` that starts with an `optional` calling the closure of two
 
-The closure of a pipe that starts with an `optional` running its steps in a
-loop of its own once it has looked for the key, in place of calling the
-closure of two parameters, which it shares them with.
+The closure of a pipe that starts with an `optional` calling the closure of
+two parameters once it has looked for the key, which shares the steps with
+it, in place of running them in a loop of its own.
 
-- **Gave**: with the key there, a pipe of an `optional` and a `check` 0.88x
-  in the matrix, and the same under a `message` 0.89x, and alone the same as
-  the shared closure. That is the path that calling the shared closure costs
-  in the matrix, 1.14x and 1.16x against a pipe that hands its `optional` the
-  object and the key and loops itself.
-- **Cost**: +8 gzip on all the scenarios together, which at 2126 was over
-  the ceiling of 0.75 rule 5 had then, and +11 on the `pipe` scenario.
-  Without the key, alone, 1.16x, allocating 48 bytes a parse where the shared
-  closure allocates none.
-- **Why**: over the ceiling of 0.75 rule 5 had then. The present-key path
-  keeps the cost of the call.
-- **Reopens**: a grade under the rules as they are, which price its +11 on
-  the `pipe` scenario by class, against its speed with the key and its 1.16x
-  without. The ceiling it was declined under is gone, so what is left of the
-  ruling is those figures, taken again on the library as it is.
-- **Measured**: before v0.2.0.
+- **Gave**: −10 gzip on the `pipe` scenario, −8 on `pipe` alone and −6 last
+  in, −5 on `app` and on all the scenarios together.
+- **Cost**: with the key there, a pipe of an `optional` and a `check` 1.13x
+  in the matrix, where a process holds every case's schemas, and the same
+  under a `message`. Timed apart, a version to a process, and alone, a case
+  to a process, 1.00x, and without the key 1.00x in all three. Every `pipe`,
+  whatever it starts with, retains 40 bytes more once made, and making one
+  allocates about 40 more.
+- **Why**: slower in a process of many schemas, which is where a consumer's
+  pipes run, and more memory for every pipe. It was the form taken while
+  rule 5 had a ceiling on all the scenarios together, which the loop went
+  over.
+- **Reopens**: a need for those bytes on the `pipe` scenario.
+- **Measured**: before v0.6.1, on Node 26.13.
 
 ### The steps of a `pipe` in one loop from its first schema
 
 The closure of two parameters running every schema of the pipe in one loop,
 the output starting as the value, in place of calling the first schema apart
-from the rest. It is the closure a pipe that starts with an `optional` calls
-once it has looked for the key.
+from the rest. A pipe that starts with an `optional` called it then, once it
+had looked for the key, and its own loop calls the first schema apart in the
+same way.
 
 - **Gave**: 1 gzip fewer on all the scenarios together.
 - **Cost**: with the key there, a pipe of an `optional` and a `check` 1.545x

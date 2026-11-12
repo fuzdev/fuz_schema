@@ -2597,12 +2597,21 @@ export const pipe: SchemaPipeFactory = (
 		// missing, so it gives `undefined`, which keeps the key out, and nothing
 		// runs. Not the value it was handed, which is `undefined` for every object
 		// but a `Proxy` that says the key is missing and gives a value for it, and
-		// which would reach the output unchecked. It shares the steps with `run`,
-		// which a pipe it starts with is called with
+		// which would reach the output unchecked. With the key it runs the steps
+		// in a loop of its own, its first schema handed neither the object nor
+		// the key: a call to `run` there measured slower in a process of many
+		// schemas, and level in one that timed the pipe apart
 		run:
 			first.kind === 'optional'
-				? (value, ctx, parent, key, entry) =>
-						entry && !((key as string) in parent!) ? undefined : run(value, ctx)
+				? (value, ctx, parent, key, entry) => {
+						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 1; i < schemas.length && ctx.fails === count; i++) {
+							output = schemas[i]!.run(output, ctx);
+						}
+						return output;
+					}
 				: schemas[0]!.run.length > 2 || schemas[0]!.kind === 'lazy'
 					? (value, ctx, parent, key) => {
 							const count = ctx.fails;

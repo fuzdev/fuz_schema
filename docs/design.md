@@ -400,11 +400,11 @@ all a missing key costs an object that has no schema asking.
   through every pipe it starts with: it reads the kind of that schema when it
   is made. This closure looks for the key when it is handed the `1`, see
   below, so it has five parameters though an
-  `optional` takes two. Past that it runs the steps as the closure of two
-  does, which it shares, so a pipe it starts with is handed neither the object
-  nor the key. The call costs the path with the key there, and a loop of its
-  own is an open trade, see
-  [declined.md](declined.md#a-pipe-that-starts-with-an-optional-with-a-loop-of-its-own).
+  `optional` takes two. Past that it runs the steps in a loop of its own, as
+  the closure of two does, so a pipe it starts with is handed neither the
+  object nor the key. A call to the closure of two there was fewer bytes and
+  slower with the key there, see
+  [declined.md](declined.md#a-pipe-that-starts-with-an-optional-calling-the-closure-of-two).
   The closure that passes them on to an `unknown` or a `lazy` looks for no
   key: the forms that had one closure for both are in
   [declined.md](declined.md#a-pipe-that-looks-for-the-key-wherever-it-has-the-object).

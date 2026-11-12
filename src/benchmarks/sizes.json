@@ -4,34 +4,34 @@
 		"object_flat": 841,
 		"extra_keys": 841,
 		"strict_nested": 921,
-		"pipe": 1113,
+		"pipe": 1123,
 		"union": 951,
 		"list": 972,
 		"type_json": 1710,
-		"app": 2179
+		"app": 2184
 	},
-	"all": 2945,
+	"all": 2950,
 	"valibot_all": 3508,
 	"vs_valibot": {
 		"string": 0.4658,
 		"object_flat": 0.6469,
 		"extra_keys": 0.6469,
 		"strict_nested": 0.6732,
-		"pipe": 0.7035,
+		"pipe": 0.7099,
 		"union": 0.7488,
 		"list": 0.6626,
 		"type_json": 0.711,
-		"app": 0.7553
+		"app": 0.757
 	},
 	"parse": 168,
-	"library": 4466,
+	"library": 4472,
 	"exports": {
 		"SchemaError": {
 			"last_in": 6,
 			"alone": 201
 		},
 		"array": {
-			"last_in": 88,
+			"last_in": 85,
 			"alone": 343
 		},
 		"bigint": {
@@ -39,7 +39,7 @@
 			"alone": 173
 		},
 		"boolean": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 177
 		},
 		"brand": {
@@ -51,15 +51,15 @@
 			"alone": 216
 		},
 		"check_at": {
-			"last_in": 104,
+			"last_in": 103,
 			"alone": 336
 		},
 		"fail": {
-			"last_in": 4,
+			"last_in": 3,
 			"alone": 142
 		},
 		"flavor": {
-			"last_in": 10,
+			"last_in": 11,
 			"alone": 45
 		},
 		"format_issue": {
@@ -67,7 +67,7 @@
 			"alone": 108
 		},
 		"format_issue_with_value": {
-			"last_in": 119,
+			"last_in": 118,
 			"alone": 403
 		},
 		"get_issue_value": {
@@ -75,11 +75,11 @@
 			"alone": 170
 		},
 		"integer": {
-			"last_in": 20,
+			"last_in": 17,
 			"alone": 182
 		},
 		"is": {
-			"last_in": 16,
+			"last_in": 15,
 			"alone": 20
 		},
 		"is_schema": {
@@ -91,19 +91,19 @@
 			"alone": 343
 		},
 		"keyed_record": {
-			"last_in": 156,
+			"last_in": 155,
 			"alone": 475
 		},
 		"lazy": {
-			"last_in": 52,
+			"last_in": 49,
 			"alone": 104
 		},
 		"literal": {
-			"last_in": 61,
+			"last_in": 60,
 			"alone": 327
 		},
 		"loose_object": {
-			"last_in": 165,
+			"last_in": 164,
 			"alone": 481
 		},
 		"max_length": {
@@ -111,15 +111,15 @@
 			"alone": 231
 		},
 		"max_value": {
-			"last_in": 18,
+			"last_in": 17,
 			"alone": 225
 		},
 		"memo_union": {
-			"last_in": 126,
+			"last_in": 125,
 			"alone": 696
 		},
 		"message": {
-			"last_in": 178,
+			"last_in": 176,
 			"alone": 264
 		},
 		"min_length": {
@@ -131,7 +131,7 @@
 			"alone": 224
 		},
 		"nullable": {
-			"last_in": 31,
+			"last_in": 30,
 			"alone": 115
 		},
 		"number": {
@@ -143,7 +143,7 @@
 			"alone": 534
 		},
 		"object_with_rest": {
-			"last_in": 206,
+			"last_in": 205,
 			"alone": 642
 		},
 		"one_of": {
@@ -151,47 +151,47 @@
 			"alone": 350
 		},
 		"optional": {
-			"last_in": 19,
+			"last_in": 20,
 			"alone": 84
 		},
 		"parse_or_throw": {
-			"last_in": 37,
+			"last_in": 36,
 			"alone": 237
 		},
 		"pipe": {
-			"last_in": 131,
-			"alone": 206
+			"last_in": 137,
+			"alone": 214
 		},
 		"record": {
-			"last_in": 101,
+			"last_in": 98,
 			"alone": 414
 		},
 		"regex": {
-			"last_in": 28,
+			"last_in": 29,
 			"alone": 222
 		},
 		"safe_integer": {
-			"last_in": 20,
+			"last_in": 16,
 			"alone": 192
 		},
 		"string": {
-			"last_in": 19,
+			"last_in": 18,
 			"alone": 174
 		},
 		"strip_object": {
-			"last_in": 101,
+			"last_in": 99,
 			"alone": 525
 		},
 		"to_integer": {
-			"last_in": 187,
+			"last_in": 186,
 			"alone": 394
 		},
 		"to_lower_case": {
-			"last_in": 32,
+			"last_in": 31,
 			"alone": 46
 		},
 		"transform": {
-			"last_in": 22,
+			"last_in": 21,
 			"alone": 68
 		},
 		"union": {
@@ -199,15 +199,15 @@
 			"alone": 545
 		},
 		"unknown": {
-			"last_in": 18,
+			"last_in": 17,
 			"alone": 206
 		},
 		"uuid": {
-			"last_in": 165,
+			"last_in": 164,
 			"alone": 324
 		},
 		"variant": {
-			"last_in": 91,
+			"last_in": 88,
 			"alone": 436
 		},
 		"void": {
@@ -215,19 +215,19 @@
 			"alone": 217
 		},
 		"with_default": {
-			"last_in": 17,
+			"last_in": 16,
 			"alone": 91
 		},
 		"with_default_fn": {
-			"last_in": 25,
+			"last_in": 24,
 			"alone": 98
 		}
 	},
 	"modules": {
-		"meta.ts": 51,
-		"standard_schema.ts": 85,
-		"schema_json.ts": 2280,
+		"meta.ts": 52,
+		"standard_schema.ts": 86,
+		"schema_json.ts": 2281,
 		"json_schema.ts": 4836,
-		"introspect.ts": 861
+		"introspect.ts": 864
 	}
 }

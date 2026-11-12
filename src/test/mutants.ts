@@ -563,8 +563,53 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'pipe_optional_runs_steps',
 		edits: [
 			{
-				find: `						entry && !((key as string) in parent!) ? undefined : run(value, ctx)`,
-				replace: `						run(value, ctx)`
+				find: `						if (entry && !((key as string) in parent!)) return;\n`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'pipe_optional_runs_first_twice',
+		edits: [
+			{
+				find: `						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 1; i < schemas.length && ctx.fails === count; i++) {`,
+				replace: `						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 0; i < schemas.length && ctx.fails === count; i++) {`
+			}
+		]
+	},
+	{
+		name: 'pipe_optional_counts_after_first',
+		edits: [
+			{
+				find: `						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 1; i < schemas.length && ctx.fails === count; i++) {`,
+				replace: `						if (entry && !((key as string) in parent!)) return;
+						let output = schemas[0]!.run(value, ctx);
+						const count = ctx.fails;
+						for (let i = 1; i < schemas.length && ctx.fails === count; i++) {`
+			}
+		]
+	},
+	{
+		name: 'pipe_optional_runs_past_failure',
+		edits: [
+			{
+				find: `						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 1; i < schemas.length && ctx.fails === count; i++) {`,
+				replace: `						if (entry && !((key as string) in parent!)) return;
+						const count = ctx.fails;
+						let output = schemas[0]!.run(value, ctx);
+						for (let i = 1; i < schemas.length && count === count; i++) {`
 			}
 		]
 	},
@@ -1238,8 +1283,8 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'pipe_optional_missing_gives_value',
 		edits: [
 			{
-				find: `entry && !((key as string) in parent!) ? undefined : run(value, ctx)`,
-				replace: `entry && !((key as string) in parent!) ? value : run(value, ctx)`
+				find: `if (entry && !((key as string) in parent!)) return;`,
+				replace: `if (entry && !((key as string) in parent!)) return value;`
 			}
 		]
 	},
