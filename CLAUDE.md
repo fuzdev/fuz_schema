@@ -603,14 +603,15 @@ processes that measure their bytes.
 
 The repo doubles as a Rust workspace: root `Cargo.toml` with the fuz
 ecosystem's canonical lints (`unsafe_code = "forbid"`, clippy
-pedantic/nursery at warn) and release profile, crates under `crates/`, and
-the toolchain pinned in `rust-toolchain.toml`. Do not use Gro for the Rust
-side — run cargo directly:
+pedantic/nursery at warn, rustdoc link and markup lints at deny) and release
+profile, crates under `crates/`, and the toolchain pinned in
+`rust-toolchain.toml`. Do not use Gro for the Rust side — run cargo directly:
 
 ```bash
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --check
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features --document-private-items
 ```
 
 CI runs these in the `rust` job of `.github/workflows/check.yml`, and builds

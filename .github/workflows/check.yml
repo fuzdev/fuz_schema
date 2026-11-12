@@ -67,6 +67,12 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      # rustdoc lints fire only under `cargo doc`, which checks only the docs it
+      # renders: `--document-private-items` covers private items' comments, and
+      # `--all-features` the whole doc surface
+      - run: cargo doc --workspace --no-deps --all-features --document-private-items
+        env:
+          RUSTDOCFLAGS: -D warnings
       # the wasm crate compiles natively too, so only this proves the target
       # builds. The module carries the verdicts and not the issues, and its
       # size is a figure no test reads: a build that reaches more, such as the
