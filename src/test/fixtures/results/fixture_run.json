@@ -2245,10 +2245,10 @@
 							"spread": 0.03
 						},
 						"zod": {
-							"ns": 17100,
-							"batch_ns": 16245,
-							"min_ns": 16587,
-							"max_ns": 17613,
+							"ns": 7200,
+							"batch_ns": 6840,
+							"min_ns": 6984,
+							"max_ns": 7416,
 							"spread": 0.03
 						},
 						"zod_compiled": {
@@ -2273,10 +2273,10 @@
 							"spread": 0.03
 						},
 						"arktype": {
-							"ns": 54000,
-							"batch_ns": 51300,
-							"min_ns": 52380,
-							"max_ns": 55620,
+							"ns": 7200,
+							"batch_ns": 6840,
+							"min_ns": 6984,
+							"max_ns": 7416,
 							"spread": 0.03
 						}
 					}
@@ -2355,10 +2355,10 @@
 							"spread": 0.03
 						},
 						"zod": {
-							"ns": 14400,
-							"batch_ns": 13680,
-							"min_ns": 13968,
-							"max_ns": 14832,
+							"ns": 7200,
+							"batch_ns": 6840,
+							"min_ns": 6984,
+							"max_ns": 7416,
 							"spread": 0.03
 						},
 						"zod_compiled": {
@@ -2428,10 +2428,10 @@
 							"spread": 0.03
 						},
 						"typebox": {
-							"ns": 300,
-							"batch_ns": 285,
-							"min_ns": 291,
-							"max_ns": 309,
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
 							"spread": 0.03
 						},
 						"arktype": {
@@ -2532,17 +2532,17 @@
 							"spread": 0.03
 						},
 						"typebox": {
-							"ns": 270,
-							"batch_ns": 256.5,
-							"min_ns": 261.9,
-							"max_ns": 278.1,
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
 							"spread": 0.03
 						},
 						"arktype": {
-							"ns": 285,
-							"batch_ns": 270.75,
-							"min_ns": 276.45,
-							"max_ns": 293.55,
+							"ns": 1950,
+							"batch_ns": 1852.5,
+							"min_ns": 1891.5,
+							"max_ns": 2008.5,
 							"spread": 0.03
 						}
 					}

@@ -154,11 +154,19 @@ Given up:
   read is in the output as it was read then, and no schema was given it.
   A snapshot is a clone the caller makes, `parse(schema, structuredClone(input))`:
   the two ways to a copy that reads nothing twice were declined, see
-  [declined.md](declined.md#the-copys-second-read).
+  [declined.md](declined.md#the-copys-second-read). The clone reads each
+  getter once, throws a `DataCloneError` on a `Proxy` or a function rather
+  than returning issues, and drops prototypes, so a class instance arrives as
+  a plain object.
+- A revoked `Proxy` makes `parse` throw a `TypeError` rather than return
+  issues, and `is` too on a schema of objects or arrays, see
+  [declined.md](declined.md#a-guard-for-a-revoked-proxy-in-fail).
 - A class instance that matches comes back as that instance. An input that
   comes back keeps its prototype, whatever that is.
 - Non-enumerable and symbol keys survive, and the keys are in the input's
-  order, not the schema's.
+  order, not the schema's. A copy has the schema's keys first, in its order,
+  so two inputs that are equal as data can parse to outputs `JSON.stringify`
+  writes differently.
 - Entries are read through the prototype, which is what lets a class instance
   match. An entry named like a member of `Object.prototype`, such as
   `toString` or `constructor`, therefore sees that member when the input

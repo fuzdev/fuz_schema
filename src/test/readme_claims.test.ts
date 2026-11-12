@@ -4,6 +4,11 @@ import {
 	README_CLAIMS,
 	README_CLAIMS_CLOSE,
 	README_CLAIMS_EVERY_OTHER,
+	README_CLAIMS_FASTER_AS_GUARD,
+	README_CLAIMS_FASTER_ON_SOME_GUARD,
+	README_CLAIMS_FASTER_ON_SOME_VALID,
+	README_CLAIMS_FASTER_ON_VALID,
+	README_CLAIMS_RECURSIVE_SCENARIO,
 	README_CLAIMS_OPEN,
 	README_CLAIMS_SUBJECT,
 	README_SECTION_HEADING,
@@ -92,8 +97,12 @@ const scale_times = (
  */
 const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: string) => void]> = [
 	['**Size:**', (results, lib) => (to_measured(results, 'bundle').rows[2]!.libs[lib]!.gzip = 1)],
-	['**Warm speed against Valibot:**', (results, lib) => scale_times(results, 'guard', lib, 0.5)],
-	['**Not the fastest on valid input:**', (results, lib) => scale_times(results, 'valid', lib, 3)],
+	[
+		'**On valid input:**',
+		// a library said to be slower made faster, and one said to be faster made slower
+		(results, lib) =>
+			scale_times(results, 'valid', lib, README_CLAIMS_FASTER_ON_VALID.includes(lib) ? 3 : 0.5)
+	],
 	[
 		'**On invalid input:**',
 		// one row is enough, and so is a gap that is inside the two spreads together; TypeBox
@@ -111,7 +120,29 @@ const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: str
 			row.libs[lib] = { ...ours, ns: ours.ns * 1.02, min_ns: ours.ns, max_ns: ours.ns * 1.1 };
 		}
 	],
-	['**As a guard:**', (results, lib) => scale_times(results, 'guard', lib, 3)],
+	[
+		'**As a guard,**',
+		(results, lib) =>
+			scale_times(results, 'guard', lib, README_CLAIMS_FASTER_AS_GUARD.includes(lib) ? 3 : 0.5)
+	],
+	[
+		'**On the recursive scenario,**',
+		// the one row made faster for the library
+		(results, lib) => {
+			const row = to_measured(results, 'run').rows.find(
+				(r) => r.input === 'valid' && r.scenario === README_CLAIMS_RECURSIVE_SCENARIO
+			)!;
+			const ours = row.libs[README_CLAIMS_SUBJECT]!;
+			if ('none' in ours) throw new Error('the fixture times this library on every row');
+			row.libs[lib] = {
+				...ours,
+				ns: ours.ns * 0.5,
+				batch_ns: ours.batch_ns * 0.5,
+				min_ns: ours.min_ns * 0.5,
+				max_ns: ours.max_ns * 0.5
+			};
+		}
+	],
 	[
 		'**Allocation:**',
 		(results, lib) => (to_measured(results, 'allocations').rows[1]!.libs[lib]!.valid_bytes = 0)
@@ -130,8 +161,7 @@ const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: str
 	[
 		'**Type-checking cost:**',
 		(results, lib) => {
-			const modules = to_measured(results, 'types').modules;
-			modules[lib]!.instantiations = lib === 'typebox' ? 10_000_000 : 1;
+			to_measured(results, 'types').modules[lib]!.instantiations = 1;
 		}
 	]
 ];
@@ -241,7 +271,7 @@ describe('the claims', () => {
 	});
 
 	test("two means inside each other's bands bear out neither direction", () => {
-		const claim = README_CLAIMS.find((c) => c.sentence.startsWith('**As a guard:**'))!;
+		const claim = README_CLAIMS.find((c) => c.sentence.startsWith('**As a guard,**'))!;
 		const results = load_fixture();
 		// TypeBox a little faster as a mean, with passes that range past this library's
 		for (const row of to_measured(results, 'run').rows) {
@@ -315,6 +345,34 @@ describe('the claims', () => {
 		const failure = claim.check(results, ['typebox']);
 		assert.isString(failure);
 		assert.include(failure, 'as a geometric mean');
+	});
+
+	test('a library a mean claim says is faster on some scenario fails it when it is faster on none', () => {
+		for (const [starts, input, libs] of [
+			['**On valid input:**', 'valid', README_CLAIMS_FASTER_ON_SOME_VALID],
+			['**As a guard,**', 'guard', README_CLAIMS_FASTER_ON_SOME_GUARD]
+		] as const) {
+			const claim = README_CLAIMS.find((c) => c.sentence.startsWith(starts))!;
+			for (const lib of libs) {
+				const results = load_fixture();
+				scale_times(results, input, lib, 3);
+				const failure = claim.check(results, to_claim_others(claim, results));
+				assert.isString(failure, `${starts} ${lib}`);
+				assert.include(failure, `no row has ${lib} faster`);
+			}
+		}
+	});
+
+	test("the cold start claim reads the hundredth parse, and the types claim a consumer's reads", () => {
+		const cold = README_CLAIMS.find((c) => c.sentence.startsWith('**Cold start:**'))!;
+		const results = load_fixture();
+		const row = to_measured(results, 'coldstart').rows.find((r) => r.form === 'bundled')!;
+		row.libs.valibot!.stages.parse_100.work_ms = 0.01;
+		assert.include(cold.check(results, ['valibot']), 'valibot');
+		const types = README_CLAIMS.find((c) => c.sentence.startsWith('**Type-checking cost:**'))!;
+		const typed = load_fixture();
+		to_measured(typed, 'types').with_reads.zod!.instantiations = 1;
+		assert.include(types.check(typed, ['zod']), 'zod');
 	});
 
 	test('retained memory is the least only by more than what a total repeats to', () => {

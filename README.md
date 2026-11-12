@@ -24,12 +24,10 @@ if (result.ok) result.value;
 else result.issues; // [{kind, expected, received, path, message}]
 ```
 
-On this repo's benchmarks it is smaller than Valibot gzipped on every scenario,
-faster on every scenario measured,
-and a valid parse that returns its input allocates a fixed amount, whatever the input's size.
-Those numbers come from one workstation and a small set of scenarios,
-and Valibot's bytes pay for features this doesn't have.
-See [Measurements](#measurements) for what backs each claim and how to rerun it.
+Of the libraries it is measured against, it has the smallest bundle, the quickest bundled cold start, and the least memory held,
+and it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster.
+Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
+[Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
 fuz_schema is published as `@fuzdev/fuz_schema`, has no stable API, and is missing a lot.
 
@@ -44,6 +42,62 @@ both in Node 20. The repo's own tests and benchmarks need Node 24.14, for its ty
 
 AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code)
 using Claude Opus 5.5, with a human steering the design.
+
+## Measurements
+
+The benchmarks in `src/benchmarks/` compare this library with Valibot, Zod (as it is imported,
+with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, and ArkType.
+[The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has every number, rendered from one published results file,
+[`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
+A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
+which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
+
+<!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
+
+- **Size:** the smallest bundle of the libraries compared, minified and gzipped, for every scenario and for all of them together.
+- **On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on some of them;
+  Zod with its roots compiled ahead of time by `z.compile` is faster over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues.
+- **On invalid input:** faster than Valibot, ArkType, and Zod in each of its modes on every scenario each has a figure of;
+  TypeBox, whose check stops at the first failure and builds no issues, is faster as a geometric mean.
+- **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
+  though Zod as it is imported is faster on some of them; TypeBox, ArkType, and compiled Zod are faster over the scenarios each has a figure of.
+- **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, TypeBox, and ArkType.
+- **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario.
+- **Cold start:** a bundled entry imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
+- **Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.
+- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.
+
+<!-- /claims -->
+
+A valid parse that returns its input allocates the same few bytes for a list of records as for one record, as the page's allocation table shows,
+except where something makes a new value: a copy where an entry changed or a key is dropped,
+`to_lower_case` the string it returns whatever its case, and a `memo_union` its memo when it is probed.
+Against Zod Mini and TypeBox, which has fewer instantiations turns on whether a consumer reads the inferred types.
+The exact bytes of this library's bundles, per scenario and per export, are in [`src/benchmarks/sizes.json`](src/benchmarks/sizes.json), which `src/test/sizes.test.ts` keeps current.
+
+Caveats:
+
+- The scenarios are few and small. `type_json` is a real schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
+  the rest are synthetic.
+- Timings come from one machine, which the page names with its state as the run started and ended, and nothing is pinned or isolated.
+  Bundle sizes are exact. Allocation is exact for the code the engine is running when it is sampled,
+  which a process settles and not always the same way, so a figure repeats within about a percent.
+- It isn't like-for-like. Valibot does more, TypeBox's check builds no output and no issues,
+  and where this library returns its input Valibot and Zod return a copy of it.
+  A guard row sets the copy aside only where the guard builds no output: Valibot's `is`,
+  and Zod's `z.validate` where a schema has no compiled path, run the parser, which still copies what it reads.
+- `src/test/benchmarks.test.ts` holds every library to the same answer on every scenario's valid and invalid input,
+  so the benchmarks at least compare the same question.
+
+[`docs/benchmarks.md`](docs/benchmarks.md) has the method behind every number.
+
+## When not to use it
+
+- Where the fastest check of valid input matters most, and code generated at runtime is allowed: see [Measurements](#measurements).
+- Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
+- For async validation or a registry of translated messages, neither designed yet: custom text is per schema, through [`message`](#issues).
+- For `tuple` or `intersect`, which it doesn't have, or for a failed `union`'s nested issues.
+- Where the API must be stable: it [isn't yet](#status).
 
 ## Priorities
 
@@ -86,39 +140,25 @@ This is deliberate, for speed, and it's the main thing to know before using it.
 - Validation is not a snapshot. A value that can change between reads
   (a getter, a proxy, an object someone else holds) can pass and then differ.
   Parsed JSON can't do this; objects from untrusted in-process code can.
-  A copy is not a snapshot either: it is made after the entries have run and reads the keys
-  it keeps a second time, so a getter that gives another value then puts one in the output
-  that no schema was given, from `strip_object` too.
-  A caller who needs a snapshot parses a clone, `s.parse(schema, structuredClone(input))`:
-  it reads each getter once, throws a `DataCloneError` on a `Proxy` or a function rather than returning issues,
-  and drops prototypes, so a class instance arrives as a plain object.
-  Making a copy that reads nothing twice was declined, see [`docs/declined.md`](docs/declined.md#the-copys-second-read).
-  A revoked `Proxy` makes `parse` throw a `TypeError` rather than return issues,
-  and `is` too on a schema of objects or arrays,
-  see [`docs/declined.md`](docs/declined.md#a-guard-for-a-revoked-proxy-in-fail).
+  A caller who needs a snapshot parses a clone, `s.parse(schema, structuredClone(input))`.
 - A class instance that matches comes back as that instance, not a plain object.
-- An object that comes back has its keys in the input's order, and a copy in the schema's,
-  so two inputs that are equal as data can parse to outputs `JSON.stringify` writes differently.
 
 What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
 and the input is never mutated.
+The rest, a copy's second read, key order, prototypes, and what a clone and a revoked `Proxy` do, is in [`docs/design.md`](docs/design.md#copy-on-write-output).
+Against a `strip_object` that always copies, an input with a key to drop parses slower and one with nothing to drop faster,
+see [Always a copy](docs/declined.md#always-a-copy) and the [other ways tried](docs/declined.md#dropping-keys),
+and a default applied late in a wide object reads the keys before it a second time,
+which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default) avoided and was declined for.
 
 ### Other differences in behavior
 
 - `pipe` stops at its first failing step.
-- A failed `union` reports one issue, not its options' issues.
-  It names its options as `received` names values, each once:
-  a `union` among them by its own options, a `pipe` by its first schema,
-  a `nullable` by its schema's and then `null`, an `optional` or a default by its schema's,
-  a `literal` or a `one_of` by its values, an object schema, a `record`, or a `variant` as `object`,
-  and any other schema by its kind:
-  `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])`
-  reads `expected string | null | "a" | "b" | number`.
-- A missing object key is the `undefined` it reads as, except to an `unknown`, a `literal(undefined)`,
-  and a `one_of` with `undefined` among its values, which need their key
-  wherever their entry reaches them, as in Valibot and Zod.
-  Valibot and Zod also need the key of a bare `check` entry (their `custom`),
-  which here accepts a missing key. See [`docs/design.md`](docs/design.md#missing-keys).
+- A failed `union` reports one issue, not its options' issues, and names each option once, as `received` names values:
+  `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])` reads `expected string | null | "a" | "b" | number`,
+  by the rule in [`docs/design.md`](docs/design.md#issues).
+- A missing object key is the `undefined` it reads as, except to the schemas [Missing keys](#missing-keys) names,
+  which need their key as in Valibot and Zod.
 - `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities.
   An infinity reaches a parse from JSON too: `JSON.parse('1e999')` is `Infinity`.
   `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
@@ -184,69 +224,23 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
-| introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs` |
-| types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
+| introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
+| types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaContext`, `SchemaAction`, `SchemaRefinement`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
 | types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
 | types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput` |
 
-`Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
-A helper generic over this library's schemas and another's reads the output behind a test,
-`T extends s.Schema ? s.Infer<T> : ...`: `s.Infer<T & s.Schema>` is `unknown` whatever `T` is,
-as the intersection's `run` is an overload whose last signature, `Schema`'s, returns `unknown`.
-A `pipe` takes one to four actions; a pipe of more starts with a pipe, `s.pipe(s.pipe(schema, a, b, c, d), e)`.
-
-The object schemas differ only on keys the schema doesn't name:
-`object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
-`strip_object` drops them and pays for a copy when there are any,
-and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
-as Zod's `catchall` and Valibot's `objectWithRest` do.
-None of them accepts an array, and neither do `record` and `variant`.
-With no entries, `object` and `strip_object` output `Record<string, never>`, not `{}`,
-which TypeScript reads as any value but `null` and `undefined`.
-
-A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
-`optional`, `with_default`, and `with_default_fn` do, which is how a key is made optional.
-`unknown` accepts `undefined` and still needs its key, own or inherited:
-`{}` doesn't match `s.object({a: s.unknown})` and `{a: undefined}` does.
-It needs it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
-so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either.
-A `union` with an option that lets the key be missing makes the key optional.
-Where the first option that matches a missing key fills it in, as `s.with_default` does,
-the options before it are tried again on `undefined`, without the object and the key,
-so an `unknown` among them matches, and the first that matches is the union's.
-Write `s.optional(s.unknown)` for a key that may be missing.
-`s.literal(undefined)` and an `s.one_of` with `undefined` among its values need their key the same way.
-
-`s.void` is `s.literal(undefined)` typed `void`, in and out, so a parameter typed from it can be left out:
-`(input: s.Infer<typeof s.void>) => ...` is called as `f()`. Every reader of a schema takes it as that literal,
-and as an entry it needs its key the same way.
-
-A `pipe` that starts with an `optional` runs none of its steps for a key that is missing,
-and leaves the key out, as in Valibot:
-`{}` matches `s.object({a: s.pipe(s.optional(s.string), s.check(...))})` whatever the check says,
-and a `transform` there writes no key. `s.with_default` is what fills a missing key in.
-With the key there, as `undefined` too, every step runs,
-and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schema that is the entry.
-
-A recursive `union` whose options walk a node's children before an entry tells them apart
-takes time exponential in the input's depth, as each option walks them again:
-with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#unions-and-recursion).
-On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
-Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
-and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
-and an object the input holds twice gets one output object in both places.
-
-A schema runs its children by calling them, so input nested past the engine's stack makes
-`parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a `RangeError`:
-on Node's default stack a plain recursive object schema can throw from about 1300 levels,
-see [`docs/design.md`](docs/design.md#running), and `JSON.parse` reads far deeper.
-On untrusted JSON that can nest without bound, catch it or bound the depth first.
+The rest of the types, the `*Def` types of `def`, `Flavor` and `Brand`, and those of the other modules
+(`SchemaMeta`, `SchemaField`, `SchemaJson`, `JsonSchema`, the `Standard*` types), are in the API docs.
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing the first ten of its issues and how many more failures there were.
 `is` answers yes or no without building issues.
 
 ```ts
+// refinement: a pipe runs its steps in order and stops at the first that fails
+const Port = s.pipe(s.number, s.integer, s.min_value(1), s.max_value(65535));
+const Tags = s.pipe(s.string, s.transform((text) => text.split(',')));
+
 // a discriminated union, recursive through `lazy`
 interface Tree {
 	kind: 'leaf' | 'branch';
@@ -267,6 +261,7 @@ const email: s.Infer<typeof Email> = 'a@b.c'; // ok
 const uuid: s.Infer<typeof Uuid> = 'abc'; // error, parse it instead
 ```
 
+A `pipe` takes one to four actions; a pipe of more starts with a pipe, `s.pipe(s.pipe(schema, a, b, c, d), e)`.
 A recursive schema needs its type written, and annotated as `s.Schema<Tree>` it has no `kind` or `def` in its type,
 and its input type is its output's: where it holds a default, give the input too, `s.Schema<Tree, TreeInput>`.
 
@@ -277,6 +272,59 @@ and a branded value comes from parsing or a cast.
 Marks compose: a brand of a branded schema, `s.brand(Path, 'DirPath')`, is assignable to `Path` and not the reverse, and so is a flavor of a flavored one.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
+
+The object schemas differ only on keys the schema doesn't name:
+`object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
+`strip_object` drops them and pays for a copy when there are any,
+and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
+as Zod's `catchall` and Valibot's `objectWithRest` do.
+None of them accepts an array, and neither do `record` and `variant`.
+With no entries, `object` and `strip_object` output `Record<string, never>`, not `{}`,
+which TypeScript reads as any value but `null` and `undefined`.
+
+`s.void` is `s.literal(undefined)` typed `void`, in and out, so a parameter typed from it can be left out:
+`(input: s.Infer<typeof s.void>) => ...` is called as `f()`. Every reader of a schema takes it as that literal.
+
+### Missing keys
+
+A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
+`optional`, `with_default`, and `with_default_fn` do, which is how a key is made optional,
+and a `union` with an option that lets the key be missing makes the key optional.
+
+`unknown`, `literal(undefined)` (and so `s.void`), and a `one_of` with `undefined` among its values
+accept `undefined` and still need their key, own or inherited, as in Valibot and Zod:
+`{}` doesn't match `s.object({a: s.unknown})` and `{a: undefined}` does.
+They need it under `nullable`, `lazy`, `message`, a `union`, and at the start of a `pipe` too,
+so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either: write `s.optional(s.unknown)` for a key that may be missing.
+Their missing key is a `missing_key` issue, `a: expected a required key, received undefined`, except under a `union`, whose own issue it is,
+and one whose schema refuses `undefined` has that schema's issue.
+Valibot and Zod also need the key of a bare `check` entry (their `custom`), which here accepts a missing key.
+
+A `pipe` that starts with an `optional` runs none of its steps for a key that is missing, and leaves the key out, as in Valibot:
+`{}` matches `s.object({a: s.pipe(s.optional(s.string), s.check(...))})` whatever the check says,
+and a `transform` there writes no key. `s.with_default` is what fills a missing key in.
+With the key there, as `undefined` too, every step runs,
+and so do they under a `nullable`, a `lazy`, or a `union`, as steps of the schema that is the entry.
+
+Where the first option of a `union` that matches a missing key fills it in, as `s.with_default` does,
+the options before it are tried again on `undefined`, without the object and the key,
+so an `unknown` among them matches, and the first that matches is the union's.
+[`docs/design.md`](docs/design.md#missing-keys) has how the object schemas tell a missing key.
+
+### Recursion and deep input
+
+A recursive `union` whose options walk a node's children before an entry tells them apart
+takes time exponential in the input's depth, as each option walks them again:
+with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#unions-and-recursion).
+On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
+Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
+and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
+and an object the input holds twice gets one output object in both places.
+
+A schema runs its children by calling them, so input nested past the engine's stack makes
+`parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a `RangeError`,
+at a depth far short of what `JSON.parse` reads, see [`docs/design.md`](docs/design.md#running).
+On untrusted JSON that can nest without bound, catch it or bound the depth first.
 
 ### Composing object schemas
 
@@ -365,6 +413,11 @@ so the entries are where a field is documented.
 `strip_object` has `SchemaStripObjectInput` for its input, and `loose_object` has
 `SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`.
 
+`Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
+A helper generic over this library's schemas and another's reads the output behind a test,
+`T extends s.Schema ? s.Infer<T> : ...`: `s.Infer<T & s.Schema>` is `unknown` whatever `T` is,
+as the intersection's `run` is an overload whose last signature, `Schema`'s, returns `unknown`.
+
 ### Issues
 
 A failing parse reports its first hundred issues, and builds no issue for the rest.
@@ -426,23 +479,13 @@ and for a child's issue it is still that input, with the issue's `path` relative
 so `s.get_issue_value(issue, value)` finds the child's.
 
 `get_issue_value(issue, input)` follows `issue.path` through `input`
-and returns `{ok: true, value}` or `{ok: false}`. It refuses where it would have to guess:
-when the path leads through something that isn't an object or array,
-and when what it finds isn't of the type in `issue.received`.
-It reads own keys only, so it never returns an inherited value,
-and a missing key is found as `undefined`, which is what the schema saw.
-`get_issue_value` compares types, not values.
-When an earlier step of a `pipe` replaced the value with another of the same type —
-a `transform`, or a container that applied a default or dropped a key —
+and returns `{ok: true, value}` or `{ok: false}`, refusing where it would have to guess.
+It compares types, not values: when an earlier step of a `pipe` replaced the value with another of the same type,
 the issue is about the replacement, and `get_issue_value` returns the input's value at that path.
-
 `format_issue_with_value(issue, input)` writes an issue as `format_issue` does,
-with the value `get_issue_value` finds in place of its type when it is a string, a number, or a boolean:
+with the value it finds in place of its type when it is a string, a number, or a boolean:
 `kind: expected "function" | "variable", received "funtion"`.
-A string is quoted as JSON and cut at 32 code units, with `…` after the quote when it is longer.
-An `unknown_key` or a `missing_key` issue is written as `format_issue` writes it, with no value:
-what failed is the key, and an unknown key's value is the field most likely sent by mistake.
-Anything else, and an issue with a `message`, is written as `format_issue` writes it too.
+[`docs/design.md`](docs/design.md#issues) has the rest of both.
 A `SchemaError` never holds the input, so the caller that does builds this text:
 
 ```ts
@@ -472,9 +515,26 @@ so `s.check_at('confrim', ...)` fails to compile.
 It is a `check` to every reader, and a `pipe` stops at the first step that fails,
 so of several `check_at`s, one per field, one reports its issue at a time.
 
-A key an `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` needs and the input lacks is a `missing_key`, which reads
-`a: expected a required key, received undefined`, except under a `union`, whose own issue it is.
-A missing key whose schema refuses `undefined` has that schema's issue.
+### Writing a schema
+
+Most validation the library lacks is a `check` in a `pipe`.
+A schema of its own is the one shape, `{kind, def, run}` in that order,
+whose `run` returns the output or reports a failure with `fail`:
+
+```ts
+const Even: s.Schema<number> = {
+	kind: 'even',
+	def: undefined,
+	run: (value, ctx) =>
+		typeof value === 'number' && value % 2 === 0 ? value : s.fail(ctx, 'even', value, 'an even number')
+};
+```
+
+As an entry, `run` is also handed the object, the key, and `1`, so a schema that accepts `undefined`
+can tell a missing key: `Schema`'s doc comment says who passes them on,
+and a `run` that reads them declares them as plain parameters.
+`to_schema_json` and `to_json_schema` refuse a kind the library doesn't define.
+[`docs/design.md`](docs/design.md#running) has what a `run` may read of its `SchemaContext`.
 
 ### Introspection
 
@@ -512,8 +572,7 @@ unwrap(User.def.age).kind; // 'number'
 
 `is_schema(value)` checks for the shape — an object with a string `kind`, a `def`, and a `run` function —
 and narrows to `SchemaNode`. It is structural: it doesn't check that the kind is known
-or that `def` matches it. It is also the way in for a schema typed as a bare `Schema`,
-as a recursive one is.
+or that `def` matches it.
 The narrowed type is for reading a schema as data: a schema typed with its kind keeps its own type,
 while one typed as a bare `Schema` or `AnySchema` (as recursive schemas usually are) reads as `SchemaNode`,
 whose output type is `unknown`.
@@ -619,18 +678,11 @@ to_schema_json(s.array(s.optional(s.number)));
 ```
 
 It throws on a schema the form can't hold, saying where:
-`regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
-(`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`);
-`object_with_rest`, which the crate doesn't carry yet;
-a `bigint` or `undefined` literal; a default that isn't a JSON value;
-an entry named like a member of `Object.prototype`;
-a length, bound, or format action, or `to_lower_case`, outside a `pipe`;
-a `pipe` that doesn't start with a schema that fixes its value's type, or a step that isn't an action for that type;
-a `variant` option without a `literal` entry at its key;
-a schema that comes back to itself without reading into the value;
-a schema nested past the crate's limits; a string that isn't well-formed Unicode.
+among them `regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
+(`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`),
+and `object_with_rest`, which the crate doesn't carry yet.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
-[`docs/rust.md`](docs/rust.md) has the form and everything refused.
+[`docs/rust.md`](docs/rust.md#what-is-refused) has the form and everything refused.
 
 ### JSON Schema
 
@@ -651,9 +703,7 @@ It throws on what JSON Schema can't say, saying where, among them: a `bigint`, a
 a `regex` with flags other than `d` and `u` or whose source isn't a pattern under `u`, a literal of `undefined`.
 With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
 `to_lower_case` writes nothing, as Zod writes nothing for its `toLowerCase`,
-and a step that reads another string than the document's is refused, as Zod's is not:
-after it on the input side, which takes the input and not its lowercase, and before it on the output side.
-A `uuid` holds of both cases, so `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
+and `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
 Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema) has the mapping and where it differs from Zod's.
 
 ## Status
@@ -680,90 +730,7 @@ which its changeset says. An added export is not.
 - [ ] abort-early as a caller option
 - [x] a published package
 - [ ] the Rust side: the schema model, whether a JSON text matches, its issues, and a wasm build to measure are built, output is not
-
-Not designed yet: async validation, i18n.
-
-What copy-on-write costs: the copy is made after the fact, so the keys it keeps are read a second time, and finding a key to drop means enumerating the input's keys.
-Against a version that always copies, measured roughly and not by the grader (a graded study is [Always a copy](docs/declined.md#always-a-copy)), `strip_object` dropping a key takes about 1.2 to 1.6x as long as there, and a default applied late in a wide object about 1.2 to 1.3x.
-In exchange, an input that comes back as it is parses about 1.3 to 1.4x faster at six keys, and nearly three times at twenty.
-The ways tried to recover the rest were declined, see [`docs/declined.md`](docs/declined.md#dropping-keys) and [the copy filled from the start](docs/declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default).
-
-## Measurements
-
-The measurements below come from the benchmarks in `src/benchmarks/`,
-run against Valibot, Zod, Zod Mini, TypeBox, and ArkType.
-
-```bash
-npm run benchmark             # parse time, every library on every scenario
-npm run benchmark:bundle      # bundle size per scenario and per export, minified and gzipped
-npm run benchmark:allocations # heap bytes per parse and per schema built
-npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
-npm run benchmark:heap        # memory still held after building and parsing
-npm run benchmark:types       # what each library costs the TypeScript checker
-npm run benchmark:survey      # many small shapes against Valibot and Zod, by what a parse does
-```
-
-What they've shown so far, read with the caveats below:
-
-- **Size:** about 0.84x Valibot gzipped with the scenarios bundled together, and far below the rest.
-  The gap is about 0.6 kB with every scenario together and about 0.4 kB on a lone string schema,
-  so most of it is fixed cost, which is small in absolute terms.
-- **Warm speed:** faster than Valibot on every scenario,
-  by about 2x on a flat object, 3x on a list of records, and more on recursive and union-heavy ones,
-  and by about a tenth where an object's unknown keys are dropped.
-  Not the fastest: Zod's generated object parser wins on flat objects, slightly, and by about 2.5x where keys are dropped,
-  and TypeBox and ArkType, which compile validators, win flat shapes by a wide margin.
-- **Allocation:** a valid parse that returns its input allocates a small fixed amount whatever the size of the value,
-  the same for a hundred records as for one, unless a step makes a new value, as `to_lower_case` does.
-  One that drops keys allocates its copy as well.
-- **Cold start:** under a millisecond to import, build a schema, and parse once, bundled.
-  The libraries that compile validators pay here, by one to two orders of magnitude.
-  The first hundred parses of a fresh process, before the engine has optimized them, are several times faster than Valibot's on a recursive schema.
-- **Retained memory:** the lowest of the six.
-- **Type-checking cost:** in instantiations, below Valibot, Zod, and ArkType, and above Zod Mini and TypeBox.
-
-Caveats:
-
-- The scenarios are few and small.
-  One is a real recursive schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
-  the rest are synthetic.
-- Timings come from one desktop (a Ryzen 7 5800X) on Node 26, quieted but not isolated. Bundle sizes are exact, and allocation is exact for the code the engine is running when it is sampled.
-- It's V8 only. The one-shape design is tuned to V8's hidden classes.
-- It isn't like-for-like. Valibot does more, and TypeBox's check doesn't build an output.
-- A test holds every library to the same answer on every scenario's valid and invalid input,
-  so the benchmarks at least compare the same work.
-
-### Grading a change
-
-```bash
-npm run grade                       # the working tree against HEAD
-npm run grade -- --against HEAD~2 --filter real/
-```
-
-`grade` compares two versions of the library over a matrix of cases
-(realistic shapes, one case per code path, and the same shapes at scale):
-time, heap bytes allocated, and whether the output is the input itself.
-Each version is loaded several times over, in fresh processes, several runs of them,
-so every time is printed beside what copies of one version differed by, its A/A.
-A few cases are also timed with each version in processes of its own,
-where a cost one version puts on everything in a process shows.
-It then compares bundle size, retained heap, and cold start,
-and checks the result against the rules a change is accepted by:
-
-- speed is judged on the realistic cases, valid input first
-- a time difference is read against its A/A, and inside it is noise
-- bytes that tree-shake away unless imported only have to pay for themselves
-- bytes every user pays need a return: roughly 10% on the realistic cases per 50 gzipped bytes
-- a fix of correctness or conformance has a price instead: 4 gzipped bytes every user pays, 50 on any one export or scenario
-- every scenario of one schema stays at or under 0.75 of Valibot's gzipped size for the same scenario,
-  or at a size the user pinned it at
-- a fix of security (an input that should fail and doesn't, denial of service on data-shaped input, input leaking into issues) comes first, at the correctness price, and past that 0.75 the user rules
-- the valid path is never slowed to speed up the invalid one
-- anything that generates code at runtime is opt-in, because of CSP
-- what each further schema holds may grow by 16 bytes, of a scenario or of one export alone
-
-[`docs/grading.md`](docs/grading.md) has the rules in full,
-and [`docs/benchmarks.md`](docs/benchmarks.md) the method behind every number.
+- [ ] async validation, i18n: not designed yet
 
 ## Develop
 
@@ -773,18 +740,48 @@ gro check  # typecheck, test, gen check, format check, lint
 gro test
 ```
 
-The repo is also a Rust workspace. `crates/fuz_schema` is the Rust side of the
-library: the same schema model, loaded from a schema serialized in TypeScript,
-whether a JSON text matches it, and the issues of one that doesn't, tested
-against this library on shared fixtures. `crates/fuz_schema_wasm` compiles it
-to wasm, to measure against this library. Neither crate is published; the npm
-package is the TypeScript library. Run them with cargo, and the measurement
-with npm:
+The benchmarks, which [Measurements](#measurements) reads, and the deeper tests:
+
+```bash
+npm run benchmark             # parse time, every library on every scenario, and each as a guard
+npm run benchmark:bundle      # bundle size per scenario and per export, minified and gzipped
+npm run benchmark:allocations # heap bytes per parse and per schema built
+npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
+npm run benchmark:heap        # memory still held after building and parsing
+npm run benchmark:types       # what each library costs the TypeScript checker
+npm run benchmark:survey      # many small shapes against Valibot and Zod, by what a parse does
+npm run benchmark:harvest     # consumers' own schemas and data, in their library and in this one
+npm run benchmark:wasm        # the Rust crate as wasm against this library, after npm run build:wasm
+npm run results -- --smoke    # every one of them into one results file, briefly
+npm run results:publish -- results/<file>.json # make a full run the published one
+npm run differential          # generated schemas and inputs against Zod and Valibot, see docs/testing.md
+npm run mutate                # break the library on purpose and check the tests fail
+npm run fixtures:deep         # many generated JSON fixtures through the Rust fixture tests, see docs/rust.md
+```
+
+[`results/README.md`](results/README.md) has how a run is taken and published.
+
+### Grading a change
+
+```bash
+npm run grade                       # the working tree against HEAD
+npm run grade -- --against HEAD~2 --filter real/
+npm run grade:aa -- .gro/grade/      # what saved grades of one version against itself say of each A/A
+```
+
+`grade` compares two versions of the library over a matrix of cases (realistic shapes, one case per code path, and the same shapes at scale):
+time, each beside what copies of one version differed by, its A/A, heap bytes allocated, whether the output is the input itself,
+and then bundle size, retained heap, and cold start. It checks the result against the rules a change is accepted by:
+among them, bytes every user pays need a speedup in return, every scenario of one schema stays at or under 0.75 of Valibot's gzipped size,
+or at the size a ruling pinned it at, and the valid path is never slowed to speed up the invalid one.
+[`docs/grading.md`](docs/grading.md) has the rules in full.
+
+The repo is also a Rust workspace, whose crates are the library's [Rust side](docs/rust.md)
+and its wasm build. Neither is published; the npm package is the TypeScript library.
 
 ```bash
 cargo test --workspace
 npm run build:wasm      # needs wasm-pack
-npm run benchmark:wasm
 ```
 
 ## Docs

@@ -99,6 +99,20 @@ const TYPES: Factors = {
 	arktype: 6.5
 };
 
+/**
+ * Where a library's factor on one row is not its factor on the rest, by
+ * scenario and input: a library that is the slower as a mean and the faster
+ * on a row, as plain Zod and ArkType are on a list, and the recursive
+ * scenario, where TypeBox and ArkType are the slower on valid input and as
+ * guards.
+ */
+const ROW_FACTORS: Readonly<Record<string, Partial<Factors>>> = {
+	'list:valid': { zod: 0.8, arktype: 0.8 },
+	'list:guard': { zod: 0.8 },
+	'type_json:valid': { typebox: 1.2 },
+	'type_json:guard': { typebox: 1.2, arktype: 1.3 }
+};
+
 const UNCOMPILED: BenchmarkMissing = {
 	none: 'uncompiled',
 	why: '`z.compile` hands the root back uncompiled'
@@ -157,7 +171,9 @@ const create_run = (): BenchmarkData['run'] => ({
 					: // one spread made wide: ArkType's guard of a flat object, level with the row's best
 						lib === 'arktype' && scenario.name === 'object_flat' && input === 'guard'
 						? to_timing(scenario.ns * GUARD.typebox * 1.04, 0.08)
-						: to_timing(scenario.ns * factors[lib])
+						: to_timing(
+								scenario.ns * (ROW_FACTORS[`${scenario.name}:${input}`]?.[lib] ?? factors[lib])
+							)
 			)
 		}))
 	)

@@ -58,7 +58,7 @@ import type { BenchmarkResults } from '../benchmarks/results_schema.ts';
  * until this is `true`, and from then a missing published run, a missing
  * block, and a claim the results don't bear out each fail.
  */
-export const README_CLAIMS_HELD = false;
+export const README_CLAIMS_HELD = true;
 
 /** The heading of the README section the claims are in. */
 export const README_SECTION_HEADING = '## Measurements';
@@ -246,6 +246,67 @@ const check_least = <T>(
 	return null;
 };
 
+/** The libraries the valid-input claim says are faster than this one, as a geometric mean. */
+export const README_CLAIMS_FASTER_ON_VALID: ReadonlyArray<string> = ['zod_compiled', 'typebox'];
+
+/** The libraries the valid-input claim says are slower as a mean and faster on some scenario. */
+export const README_CLAIMS_FASTER_ON_SOME_VALID: ReadonlyArray<string> = ['zod', 'arktype'];
+
+/** The libraries the guard claim says are faster than this one, as a geometric mean. */
+export const README_CLAIMS_FASTER_AS_GUARD: ReadonlyArray<string> = [
+	'typebox',
+	'arktype',
+	'zod_compiled'
+];
+
+/** The libraries the guard claim says are slower as a mean and faster on some scenario. */
+export const README_CLAIMS_FASTER_ON_SOME_GUARD: ReadonlyArray<string> = ['zod'];
+
+/** The scenario the claim about the one real recursive schema is of. */
+export const README_CLAIMS_RECURSIVE_SCENARIO = 'type_json';
+
+/**
+ * Checks that another library is the faster on at least one row, by the rule a
+ * table marks a difference by: the half of a claim that a mean is not every row.
+ */
+const check_other_faster_on_some_row = (
+	rows: ReadonlyArray<MatrixRow> | string,
+	other: string
+): string | null => {
+	if (typeof rows === 'string') return rows;
+	for (const row of rows) {
+		const ratio = to_matrix_ratios(row, [SUBJECT, other], other)[SUBJECT];
+		if (
+			ratio !== undefined &&
+			ratio.level !== 'floor' &&
+			ratio.level !== 'spread' &&
+			ratio.ratio > 1
+		) {
+			return null;
+		}
+	}
+	return `no row has ${other} faster than ${SUBJECT}`;
+};
+
+/**
+ * Checks a mean claim of one input: this library faster than each of `others`
+ * as a geometric mean but those of `faster`, which are the faster, and each of
+ * `some` the faster on at least one row.
+ */
+const check_input_means = (
+	results: BenchmarkResults,
+	input: TimeInput,
+	others: ReadonlyArray<string>,
+	faster: ReadonlyArray<string>,
+	some: ReadonlyArray<string>
+): string | null =>
+	first_failure([
+		...others.map((other) => check_geomean(results, input, other, !faster.includes(other))),
+		...others
+			.filter((other) => some.includes(other))
+			.map((other) => check_other_faster_on_some_row(to_time_rows(results, input), other))
+	]);
+
 /**
  * The claims, in the order the README makes them. Each sentence states a
  * direction and no figure: the numbers are on the benchmarks page, rendered
@@ -272,23 +333,16 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**Warm speed against Valibot:** faster as a geometric mean over the scenarios, on valid input, on invalid input, and as a guard.',
-		others: ['valibot'],
+			'**On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on some of them; Zod with its roots compiled ahead of time by `z.compile` is faster over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues.',
+		others: ['valibot', 'zod', 'zod_mini', 'arktype', 'zod_compiled', 'typebox'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			first_failure(
-				others.flatMap((other) =>
-					(['valid', 'invalid', 'guard'] as const).map((input) =>
-						check_geomean(results, input, other, true)
-					)
-				)
+			check_input_means(
+				results,
+				'valid',
+				others,
+				README_CLAIMS_FASTER_ON_VALID,
+				README_CLAIMS_FASTER_ON_SOME_VALID
 			)
-	},
-	{
-		sentence:
-			'**Not the fastest on valid input:** Zod with its roots compiled ahead of time by `z.compile` is faster as a geometric mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues.',
-		others: ['zod_compiled', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			first_failure(others.map((other) => check_geomean(results, 'valid', other, false)))
 	},
 	{
 		sentence:
@@ -308,10 +362,35 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**As a guard:** TypeBox and compiled Zod are faster as a geometric mean over the scenarios each has a figure of, where a library only answers whether a valid input matches.',
-		others: ['typebox', 'zod_compiled'],
+			'**As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on some of them; TypeBox, ArkType, and compiled Zod are faster over the scenarios each has a figure of.',
+		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'arktype', 'zod_compiled'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			first_failure(others.map((other) => check_geomean(results, 'guard', other, false)))
+			check_input_means(
+				results,
+				'guard',
+				others,
+				README_CLAIMS_FASTER_AS_GUARD,
+				README_CLAIMS_FASTER_ON_SOME_GUARD
+			)
+	},
+	{
+		sentence:
+			'**On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, TypeBox, and ArkType.',
+		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'arktype'],
+		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
+			const rows = (['valid', 'guard'] as const).flatMap((input) => {
+				const found = to_time_rows(results, input);
+				return typeof found === 'string'
+					? []
+					: found.filter((row) => row.key === `time:${input}:${README_CLAIMS_RECURSIVE_SCENARIO}`);
+			});
+			return check_faster_on_every_row(
+				rows.length === 2
+					? rows
+					: `the file has no ${README_CLAIMS_RECURSIVE_SCENARIO} parse times`,
+				others
+			);
+		}
 	},
 	{
 		sentence:
@@ -326,13 +405,16 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**Cold start:** a bundled entry imports, builds its schema, and parses once in less time than Zod in each of its modes, TypeBox, or ArkType, on every scenario measured.',
-		others: ['zod', 'zod_compiled', 'zod_mini', 'typebox', 'arktype'],
+			'**Cold start:** a bundled entry imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.',
+		others: README_CLAIMS_EVERY_OTHER,
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
 			const rows = to_coldstart_groups(results)
 				.filter((group) => group.key.endsWith(':bundled'))
 				.flatMap((group) =>
-					group.rows.filter((row) => row.key.endsWith(`:${COLDSTART_SUMMARY_STAGE}`))
+					group.rows.filter(
+						(row) =>
+							row.key.endsWith(`:${COLDSTART_SUMMARY_STAGE}`) || row.key.endsWith(':parse_100')
+					)
 				);
 			return check_faster_on_every_row(
 				rows.length ? rows : 'the file has no cold start of a bundled entry',
@@ -353,29 +435,20 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**Type-checking cost:** fewer instantiations than Valibot, Zod in each of its modes, and ArkType for a module of every scenario, and more than TypeBox.',
-		others: ['valibot', 'zod', 'zod_compiled', 'zod_mini', 'arktype', 'typebox'],
+			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.",
+		others: ['valibot', 'zod', 'zod_compiled', 'arktype'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
 			const data = to_section_data(results, 'types');
 			if (!data) return 'the file has no type-checking cost';
-			const row = [{ name: 'a module of every scenario', libs: data.modules }];
-			const more = others.filter((other) => other === 'typebox');
-			const fewer = check_least(
-				row,
+			return check_least(
+				[
+					{ name: 'a module of every scenario', libs: data.modules },
+					{ name: "the same with a consumer's reads", libs: data.with_reads }
+				],
 				(cost) => cost.instantiations,
 				'instantiations',
-				others.filter((other) => other !== 'typebox')
+				others
 			);
-			if (fewer !== null) return fewer;
-			const ours = data.modules[SUBJECT];
-			for (const other of more) {
-				const theirs = data.modules[other];
-				if (!ours || !theirs) return `the file has no instantiations of ${other}`;
-				if (!(ours.instantiations > theirs.instantiations)) {
-					return `${SUBJECT}'s instantiations are no longer over ${other}'s`;
-				}
-			}
-			return more.length ? null : 'the claim names no library with fewer instantiations';
 		}
 	}
 ];
