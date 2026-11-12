@@ -1330,6 +1330,36 @@ an object whose keys are the names.
 - **Reopens**: nothing known.
 - **Measured**: before v0.5.6.
 
+### Each key's answer in a map both halves read
+
+An object's output type working out whether each key may be missing once, in
+a mapped type handed to both halves, in place of each half asking again in
+its `as` clause.
+
+- **Cost**: more type instantiations, not fewer: 671 against 642 for a read
+  of an object of five keys.
+- **Why**: the checker counts the map and each read of it, and the second
+  asking it was to save is answered from a cache.
+- **Reopens**: nothing known.
+- **Measured**: before v0.6.1, on TypeScript 6.0.
+
+### One mapped type for an object with no optional key
+
+An object's output and input types asking first whether any key may be
+missing, and writing one mapped type where none may, with no second half and
+no `Flatten`, behind a test that the entries have no index signature.
+
+- **Gave**: 335 type instantiations against 604 for a read of an object of
+  five required keys, and 174 against 360 for each one after the first.
+- **Cost**: 901 against 685 for an object of five optional keys, which pays
+  the first asking and then both halves. The module of every scenario 10723
+  against 10431, and 9085 against 9217 with a consumer's reads.
+- **Why**: more for the module of every scenario, and a second form of the
+  type that an index signature and each modifier must be held equal across.
+- **Reopens**: a consumer whose objects are mostly without an optional key,
+  measured.
+- **Measured**: before v0.6.1, on TypeScript 6.0.
+
 ### Entries constrained by a mapped type
 
 The object schemas constraining their entries as `{[K in keyof T]: Schema}`

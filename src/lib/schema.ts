@@ -374,6 +374,18 @@ export type SchemaEntries = Record<string, Schema>;
 
 type Flatten<T> = { [K in keyof T]: T[K] } & {};
 
+// The kinds `EntryTakesMissing` and `EntryLeavesMissingOut` can answer `true`
+// for, which each tests first: an entry of any other kind is decided by that
+// one test, which costs the checker fewer instantiations than the chain alone.
+// A kind its chain answers for and its list leaves out answers `false`
+type EntryMayTakeMissing = {
+	readonly kind:
+		'optional' | 'with_default' | 'with_default_fn' | 'nullable' | 'lazy' | 'union' | 'pipe';
+};
+type EntryMayLeaveMissingOut = {
+	readonly kind: 'optional' | 'nullable' | 'lazy' | 'pipe' | 'union';
+};
+
 /**
  * Whether a missing key can match the entry `T`, as its `run` reads one,
  * which makes the key optional in an object schema's input type. An
@@ -389,19 +401,21 @@ type Flatten<T> = { [K in keyof T]: T[K] } & {};
  */
 export type EntryTakesMissing<T> = 0 extends 1 & T
 	? true
-	: T extends { readonly kind: 'optional' | 'with_default' | 'with_default_fn' }
-		? true
-		: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
-			? EntryTakesMissing<U>
-			: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+	: T extends EntryMayTakeMissing
+		? T extends { readonly kind: 'optional' | 'with_default' | 'with_default_fn' }
+			? true
+			: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
 				? EntryTakesMissing<U>
-				: T extends { readonly kind: 'union'; readonly def: ReadonlyArray<infer U> }
-					? true extends EntryTakesMissing<U>
-						? true
-						: false
-					: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
-						? EntryTakesMissing<U>
-						: false;
+				: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+					? EntryTakesMissing<U>
+					: T extends { readonly kind: 'union'; readonly def: ReadonlyArray<infer U> }
+						? true extends EntryTakesMissing<U>
+							? true
+							: false
+						: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
+							? EntryTakesMissing<U>
+							: false
+		: false;
 
 /**
  * Whether `T` is an `optional`, or a `pipe` that starts with one, through
@@ -427,19 +441,21 @@ export type PipeStartsOptional<T> = T extends { readonly kind: 'optional' }
  */
 export type EntryLeavesMissingOut<T, TEntry extends boolean = true> = 0 extends 1 & T
 	? true
-	: T extends { readonly kind: 'optional' }
-		? true
-		: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
-			? EntryLeavesMissingOut<U, false>
-			: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+	: T extends EntryMayLeaveMissingOut
+		? T extends { readonly kind: 'optional' }
+			? true
+			: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
 				? EntryLeavesMissingOut<U, false>
-				: T extends { readonly kind: 'pipe' | 'union'; readonly run: (...args: any) => infer O }
-					? [TEntry] extends [true]
-						? [PipeStartsOptional<T>] extends [true]
-							? true
+				: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
+					? EntryLeavesMissingOut<U, false>
+					: T extends { readonly kind: 'pipe' | 'union'; readonly run: (...args: any) => infer O }
+						? [TEntry] extends [true]
+							? [PipeStartsOptional<T>] extends [true]
+								? true
+								: EntryGivesUndefined<T, O>
 							: EntryGivesUndefined<T, O>
-						: EntryGivesUndefined<T, O>
-					: false;
+						: false
+		: false;
 
 // whether `T`, which outputs `O`, takes a missing key and can give `undefined` for it
 type EntryGivesUndefined<T, O> = [EntryTakesMissing<T>] extends [true]
