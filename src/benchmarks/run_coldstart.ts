@@ -9,20 +9,32 @@
  * @module
  */
 
-import { stats_median } from '@fuzdev/fuz_util/stats.ts';
+import { stats_median, stats_percentile } from '@fuzdev/fuz_util/stats.ts';
 
-import { LibNamesArg, ScenarioNamesArg, meta, parse_args, s, to_count_arg } from './args.ts';
+import {
+	DataArg,
+	LibNamesArg,
+	ScenarioNamesArg,
+	meta,
+	parse_args,
+	s,
+	to_count_arg,
+	write_benchmark_data
+} from './args.ts';
 import { ENTRY_FORMS, type EntryForm } from './child.ts';
 import {
 	COLDSTART_STAGES,
 	plan_coldstart,
 	sample_coldstart,
 	summarize_coldstart,
-	to_bare_band_ms
+	to_bare_band_ms,
+	type ColdstartProcess,
+	type ColdstartStage
 } from './coldstart.ts';
 import { LIB_NAMES } from './lib_names.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table } from './measure.ts';
+import type { ColdstartFigures } from './results_schema.ts';
 import type { ScenarioName } from './scenarios.ts';
 
 const Args = s.object({
@@ -52,7 +64,8 @@ const Args = s.object({
 		{ description: 'bundled, unbundled, or both' }
 	),
 	samples: meta(to_count_arg(15), { description: 'kept rounds' }),
-	discard: meta(to_count_arg(2, 0), { description: 'rounds thrown away first' })
+	discard: meta(to_count_arg(2, 0), { description: 'rounds thrown away first' }),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -121,4 +134,57 @@ for (const scenario of args.scenario) {
 			])
 		);
 	}
+}
+
+if (args.data !== undefined) {
+	// the p10 to p90 band of a figure's samples, as `summarize_coldstart` takes a stage's
+	const to_band = (samples: Array<number>): number =>
+		stats_percentile(samples, 0.9) - stats_percentile(samples, 0.1);
+	// what the tables above were printed from, unformatted
+	write_benchmark_data(args.data, 'coldstart', {
+		samples: args.samples,
+		discard: args.discard,
+		bare: {
+			ms: stats_median(bare.ms),
+			band_ms: bare_band_ms,
+			rss_kb: stats_median(bare.rss_kb)
+		},
+		rows: args.scenario.flatMap((scenario) =>
+			args.form.flatMap((form) => {
+				const group = plan.processes.filter((p) => p.scenario === scenario && p.form === form);
+				if (!group.length) return [];
+				const to_figures = (lib: string): ColdstartFigures => {
+					const stages = COLDSTART_STAGES.map((stage) =>
+						summarize_coldstart(group.find((p) => p.target === lib && p.stage === stage)!, bare)
+					);
+					const first = stages[COLDSTART_STAGES.indexOf('first_parse')]!;
+					// the samples the two figures below are medians of, for the band of each
+					const to_process = (stage: ColdstartStage): ColdstartProcess =>
+						group.find((p) => p.target === lib && p.stage === stage)!;
+					const later = to_process('parse_100').later_ms;
+					const rss = to_process('first_parse').rss_kb;
+					return {
+						stages: Object.fromEntries(
+							COLDSTART_STAGES.map((stage, i) => [
+								stage,
+								{ work_ms: stages[i]!.work_ms, band_ms: stages[i]!.work_band_ms }
+							])
+						) as ColdstartFigures['stages'],
+						later_ms: stages[COLDSTART_STAGES.indexOf('parse_100')]!.later_ms,
+						later_band_ms: to_band(later),
+						added_ms: first.added_ms,
+						added_rss_kb: first.added_rss_kb,
+						rss_band_kb: to_band(rss)
+					};
+				};
+				return [
+					{
+						scenario,
+						form,
+						libs: Object.fromEntries(args.lib.map((lib) => [lib, to_figures(lib)]))
+					}
+				];
+			})
+		)
+	});
 }

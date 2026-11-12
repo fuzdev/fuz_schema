@@ -42,7 +42,17 @@ import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
-import { meta, parse_args, s, to_count_arg, to_duration_arg, to_names_arg } from './args.ts';
+import {
+	DataArg,
+	meta,
+	parse_args,
+	s,
+	to_count_arg,
+	to_duration_arg,
+	to_names_arg,
+	write_benchmark_data
+} from './args.ts';
+import type { HarvestData } from './results_schema.ts';
 import { build_bundle, to_bundle_size, type BundleSize } from './bundle_size.ts';
 import {
 	HARVEST_ASIDES,
@@ -99,7 +109,8 @@ const Args = s.object({
 	}),
 	passes: meta(to_count_arg(5), {
 		description: 'how many times the timing is repeated, in fresh processes'
-	})
+	}),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -137,7 +148,14 @@ const to_port_module = (set: HarvestSet): string => {
 const measure_bundle = async (entry: string, port: string): Promise<BundleSize> =>
 	to_bundle_size(await build_bundle(entry, SCHEMA_PATH, 'a harvested set', { [PORT_ID]: port }));
 
-const format_bundles = async (set: HarvestSet): Promise<string> => {
+/** The bundles of a set: the consumer's library, each mode of it with a bundle of its own, and this library. */
+interface SetBundles {
+	theirs: BundleSize;
+	their_modes: Array<{ mode: string; size: BundleSize }>;
+	ours: BundleSize;
+}
+
+const measure_bundles = async (set: HarvestSet): Promise<SetBundles> => {
 	const { reference, root } = set;
 	const port = to_port_module(set);
 	const their_path = to_path(`./${set.name}/${set.name}_${reference.name}.ts`);
@@ -154,6 +172,11 @@ import { ${root} } from ${JSON.stringify(PORT_ID)};
 export const run = (value) => parse(${root}, value);`,
 		port
 	);
+	return { theirs, their_modes, ours };
+};
+
+const format_bundles = (set: HarvestSet, { theirs, their_modes, ours }: SetBundles): string => {
+	const { reference, root } = set;
 	return (
 		`bundle: a module that parses one \`${root}\`, minified, in bytes\n\n` +
 		format_table([
@@ -233,6 +256,7 @@ const METHOD_NOTES = [
 interface TimedSet {
 	set: HarvestSet;
 	bundles: string;
+	bundle_sizes: SetBundles;
 	rows: Array<HarvestRow>;
 	/** The rows `HARVEST_ZOD_COMPILED` has no figure of, which it times none of. */
 	uncompiled: Array<string>;
@@ -246,7 +270,8 @@ interface TimedSet {
 const to_bytes_id = (set: HarvestSet, side: string): string => `${set.name}/${side}`;
 
 const time_set = async (set: HarvestSet): Promise<TimedSet> => {
-	const bundles = await format_bundles(set);
+	const bundle_sizes = await measure_bundles(set);
+	const bundles = format_bundles(set, bundle_sizes);
 
 	// held to one answer here, in a process that times nothing
 	const { rows, asides = [] } = await set.load();
@@ -278,7 +303,7 @@ const time_set = async (set: HarvestSet): Promise<TimedSet> => {
 			`${args.passes === 1 ? 'pass' : 'passes'}, about ${format_seconds(pass_seconds * args.passes)}...`
 	);
 	const times = await time_units(units, plan, args.passes);
-	return { set, bundles, rows, uncompiled, asides, sides, units, times };
+	return { set, bundles, bundle_sizes, rows, uncompiled, asides, sides, units, times };
 };
 
 // the libraries whose notes have been said, under the first of their sets
@@ -390,3 +415,70 @@ for (const timed of timed_sets) {
 
 console.log('\n\nhow every set above was measured');
 for (const note of METHOD_NOTES) console.log(`\n${note}`);
+
+if (args.data !== undefined) {
+	// what the tables above were printed from, unformatted
+	type HarvestSetData = HarvestData['sets'][number];
+	type HarvestCell = HarvestSetData['rows'][number]['sides'][string];
+	// a side's name as an id, as `zod jitless` is `zod_jitless`
+	const to_side_id = (side: string): string => side.replaceAll(' ', '_');
+	const to_spread = (spread: number): number | null => (Number.isNaN(spread) ? null : spread);
+	write_benchmark_data(args.data, 'harvest', {
+		passes: args.passes,
+		duration_ms: args.duration,
+		warm_ms: WARM_MS,
+		sets: timed_sets.map(
+			({ set, bundle_sizes, rows, uncompiled, asides, sides, times }): HarvestSetData => {
+				const to_cell = (side: string, row: string): HarvestCell => {
+					if (side === HARVEST_ZOD_COMPILED && uncompiled.includes(row)) {
+						const none = {
+							none: 'uncompiled' as const,
+							why: '`z.compile` hands the root back uncompiled'
+						};
+						return { time: none, bytes: none };
+					}
+					const { ns, median_ns } = times.get(side)!.get(row)!;
+					const { median, spread } = to_pooled_timing(ns);
+					return {
+						time: {
+							ns: median,
+							batch_ns: to_pooled_timing(median_ns).median,
+							spread: to_spread(spread)
+						},
+						bytes: { bytes: bytes.get(to_bytes_id(set, side))!.get(row)! }
+					};
+				};
+				return {
+					name: set.name,
+					title: set.title,
+					reference: set.reference.name,
+					root: set.root,
+					sides: sides.map((side) => ({ id: to_side_id(side), label: side })),
+					bundles: Object.fromEntries([
+						[to_side_id(set.reference.name), bundle_sizes.theirs],
+						...bundle_sizes.their_modes.map(({ mode, size }) => [to_side_id(mode), size]),
+						[to_side_id(HARVEST_OURS), bundle_sizes.ours]
+					]),
+					rows: rows.map((row) => ({
+						name: row.name,
+						valid: row.valid,
+						sides: Object.fromEntries(
+							sides.map((side) => [to_side_id(side), to_cell(side, row.name)])
+						)
+					})),
+					asides: asides.map((aside) => {
+						const { ns, median_ns } = times.get(HARVEST_ASIDES)!.get(aside.name)!;
+						const { median, spread } = to_pooled_timing(ns);
+						return {
+							name: aside.name,
+							ns: median,
+							batch_ns: to_pooled_timing(median_ns).median,
+							spread: to_spread(spread),
+							bytes: bytes.get(to_bytes_id(set, HARVEST_ASIDES))!.get(aside.name)!
+						};
+					})
+				};
+			}
+		)
+	});
+}

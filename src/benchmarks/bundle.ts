@@ -18,7 +18,7 @@
  * @module
  */
 
-import { meta, parse_args, s } from './args.ts';
+import { DataArg, meta, parse_args, s, write_benchmark_data } from './args.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { BASELINE_LIB, LIBS } from './libs.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
@@ -30,15 +30,17 @@ import {
 	type BundleSize
 } from './bundle_size.ts';
 import { format_table } from './measure.ts';
+import type { BundleSizes } from './results_schema.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
 	raw: meta(s.with_default(s.boolean, false), {
 		description: 'minified bytes in place of gzip, and no brotli table'
-	})
+	}),
+	data: DataArg
 });
 
-const { raw } = parse_args(Args);
+const { raw, data: data_path } = parse_args(Args);
 
 console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'rolldown']));
 
@@ -48,13 +50,20 @@ const columns = [...SCENARIOS.map((s) => [s.name]), SCENARIOS.map((s) => s.name)
 const headers = [...SCENARIOS.map((s) => s.name), 'all'];
 
 const rows: Array<{ lib: string; sizes: Array<number>; brotli: Array<number> }> = [];
+// every measure of every bundle, by library then column, for `--data`
+const measured: Record<string, Array<BundleSizes>> = {};
 for (const lib of LIBS) {
 	const sizes: Array<number> = [];
 	const brotli: Array<number> = [];
+	measured[lib.name] = [];
 	for (const column of columns) {
 		const code = await build_scenario_bundle(lib.name, column);
-		sizes.push(to_bundle_size(code)[metric]);
+		const size = to_bundle_size(code);
+		sizes.push(size[metric]);
 		if (!raw) brotli.push(to_brotli_size(code));
+		if (data_path !== undefined) {
+			measured[lib.name]!.push({ ...size, brotli: raw ? to_brotli_size(code) : brotli.at(-1)! });
+		}
 	}
 	rows.push({ lib: lib.name, sizes, brotli });
 }
@@ -108,3 +117,20 @@ console.log(
 		...library.modules.map((m) => [m.name, format_signed(m.added)])
 	])
 );
+
+if (data_path !== undefined) {
+	// what the tables above were printed from, unformatted, in every measure
+	const to_libs = (column: number): Record<string, BundleSizes> =>
+		Object.fromEntries(LIBS.map((lib) => [lib.name, measured[lib.name]![column]!]));
+	write_benchmark_data(data_path, 'bundle', {
+		rows: SCENARIOS.map((scenario, i) => ({ scenario: scenario.name, libs: to_libs(i) })),
+		all: to_libs(SCENARIOS.length),
+		library: {
+			measure: metric,
+			parse: library.parse,
+			library: library.library,
+			exports: library.exports,
+			modules: library.modules
+		}
+	});
+}

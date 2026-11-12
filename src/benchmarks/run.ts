@@ -44,14 +44,17 @@
 import { fileURLToPath } from 'node:url';
 
 import {
+	DataArg,
 	LibNamesArg,
 	ScenarioNamesArg,
 	meta,
 	parse_args,
 	s,
 	to_count_arg,
-	to_duration_arg
+	to_duration_arg,
+	write_benchmark_data
 } from './args.ts';
+import type { RunData } from './results_schema.ts';
 import { SCENARIOS } from './scenarios.ts';
 import { to_scenario_guard } from './scenario_schemas.ts';
 import { find_uncompiled_scenarios } from './libs/schemas/zod_compiled.ts';
@@ -101,7 +104,8 @@ const Args = s.object({
 	}),
 	alone: meta(s.with_default(s.boolean, false), {
 		description: 'a process for each scenario and input, not one for each library'
-	})
+	}),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -311,3 +315,41 @@ console.log(
 			? "Each row had a process of\nits own: the engine specialized the library to that row's schema."
 			: "Each library's process ran every\nscenario before it timed any: `--alone` gives each row a process of its own.")
 );
+
+if (args.data !== undefined) {
+	// what the tables above were printed from, unformatted
+	type RunCell = RunData['rows'][number]['libs'][string];
+	const to_cell = (lib: string, row: string, guard: boolean): RunCell => {
+		if (!has_figure(lib, row)) {
+			return { none: 'uncompiled', why: '`z.compile` hands the root back uncompiled' };
+		}
+		const { ns, median_ns } = readings.get(to_unit_id(lib, row, guard))!.get(row)!;
+		const { median, spread } = to_pooled_timing(ns);
+		return {
+			ns: median,
+			batch_ns: to_pooled_timing(median_ns).median,
+			min_ns: Math.min(...ns),
+			max_ns: Math.max(...ns),
+			spread: Number.isNaN(spread) ? null : spread
+		};
+	};
+	write_benchmark_data(args.data, 'run', {
+		regime,
+		passes: args.passes,
+		duration_ms: args.duration,
+		warm_ms: plan.warm_ms,
+		call: { min_ns: Math.min(...call_ns), max_ns: Math.max(...call_ns) },
+		rows: scenarios.flatMap((scenario) =>
+			[
+				...validities.map((input) => ({ input, row: to_run_row_name(scenario.name, input) })),
+				...(args.guard ? [{ input: 'guard' as const, row: to_guard_row_name(scenario.name) }] : [])
+			].map(({ input, row }) => ({
+				scenario: scenario.name,
+				input,
+				libs: Object.fromEntries(
+					libs.map((lib) => [lib.name, to_cell(lib.name, row, input === 'guard')])
+				)
+			}))
+		)
+	});
+}

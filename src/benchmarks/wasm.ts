@@ -51,7 +51,16 @@ import { gzipSync } from 'node:zlib';
 
 import * as s from '#lib/schema.ts';
 import { to_schema_json } from '#lib/schema_json.ts';
-import { s as args_s, meta, parse_args, to_count_arg, to_duration_arg } from './args.ts';
+import {
+	DataArg,
+	s as args_s,
+	meta,
+	parse_args,
+	to_count_arg,
+	to_duration_arg,
+	write_benchmark_data
+} from './args.ts';
+import type { WasmData } from './results_schema.ts';
 import {
 	load_json_fixture,
 	load_json_fixture_names,
@@ -67,7 +76,8 @@ import { format_table, median, refuse_timing_node_flags } from './measure.ts';
 const Args = args_s.object({
 	_: args_s.with_default_fn(args_s.array(args_s.string), () => []),
 	rounds: meta(to_count_arg(15), { description: 'timings per row, the median is reported' }),
-	'round-ms': meta(to_duration_arg(20), { description: 'ms one timing of a row aims to take' })
+	'round-ms': meta(to_duration_arg(20), { description: 'ms one timing of a row aims to take' }),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -565,6 +575,9 @@ const format_ratio = (ratio: number): string => `${ratio.toFixed(2)}x`;
 /** A wasm row's median over the fastest JS row's of the same holding. */
 type Ratios = Map<string, number>;
 
+// every payload's rows as they were timed, for `--data`
+const payload_data: WasmData['payloads'] = [];
+
 const report_payload = (payload: Payload): Ratios => {
 	const rows = make_rows(payload);
 	check_rows(payload, rows);
@@ -594,6 +607,21 @@ const report_payload = (payload: Payload): Ratios => {
 		`\n${name_payload(payload)}: ${items}, ${payload.bytes.length} bytes of UTF-8, ${payload.text.length} UTF-16 code units\n`
 	);
 	console.log(format_table(table, 2));
+	payload_data.push({
+		size: payload.size,
+		outcome: payload.outcome,
+		items: payload.items,
+		bytes: payload.bytes.length,
+		code_units: payload.text.length,
+		rows: rows.map((row, i) => ({
+			holding: row.holding,
+			side: row.side,
+			label: row.label,
+			ns: medians[i]! * 1e6,
+			min_ns: Math.min(...samples[i]!) * 1e6,
+			vs_js: row.side === 'wasm' && row.holding ? ratios.get(row.label)! : null
+		}))
+	});
 	return ratios;
 };
 
@@ -684,6 +712,16 @@ console.log(
 		])
 	])
 );
-console.log(
-	`\nwasm size: ${wasm_file.length} bytes, ${gzipSync(wasm_file, { level: 9 }).length} gzipped`
-);
+const wasm_gzip_bytes = gzipSync(wasm_file, { level: 9 }).length;
+console.log(`\nwasm size: ${wasm_file.length} bytes, ${wasm_gzip_bytes} gzipped`);
+
+if (args.data !== undefined) {
+	// what the tables above were printed from, unformatted
+	write_benchmark_data(args.data, 'wasm', {
+		rounds: args.rounds,
+		round_ms: args['round-ms'],
+		wasm_bytes: wasm_file.length,
+		wasm_gzip_bytes,
+		payloads: payload_data
+	});
+}

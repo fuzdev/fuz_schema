@@ -1,0 +1,21 @@
+/* Styles shared across the benchmarks components, which Svelte's scoped `<style>`
+   can't reach across. Imported by the benchmarks page and the landing page rather
+   than the root stylesheet, so they ship with those routes and not every one. */
+
+/* a wide table scrolls in its own container, so the page body never scrolls sideways */
+.benchmarks-table-scroll {
+	overflow-x: auto;
+	margin-bottom: var(--space_lg);
+}
+
+/* a right-aligned numeric table cell */
+.benchmarks-num {
+	text-align: right;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+/* the column or bar every ratio of a row is currently taken against */
+.benchmarks-anchor {
+	box-shadow: inset var(--border_width_3) 0 0 var(--ink_50);
+}

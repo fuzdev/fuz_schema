@@ -20,7 +20,15 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { LibNamesArg, ScenarioNamesArg, meta, parse_args, s } from './args.ts';
+import {
+	DataArg,
+	LibNamesArg,
+	ScenarioNamesArg,
+	meta,
+	parse_args,
+	s,
+	write_benchmark_data
+} from './args.ts';
 import {
 	INTERNED_MARK,
 	INTERNING_LIBS,
@@ -51,7 +59,8 @@ const Args = s.object({
 		description:
 			'measure the one library `--lib` names and print its rows as JSON: the process this ' +
 			'script starts for each library'
-	})
+	}),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -165,4 +174,28 @@ if (args.child) {
 				? `, and its figures are\nmarked ${INTERNED_MARK}, where ${INTERNING_LIBS.join(', ')} hands back the schema it built before.`
 				: '.')
 	);
+
+	if (args.data !== undefined) {
+		// what the table above was printed from, unformatted
+		write_benchmark_data(args.data, 'allocations', {
+			rows: scenarios.map((scenario) => ({
+				scenario: scenario.name,
+				libs: Object.fromEntries(
+					libs.map((lib) => {
+						const row = measured.find((r) => r.scenario === scenario.name && r.lib === lib)!;
+						return [
+							lib,
+							{
+								valid_bytes: row.valid_bytes,
+								invalid_bytes: row.invalid_bytes,
+								create_bytes: row.create_bytes,
+								create_ns: row.create_ns,
+								interned: row.kept && INTERNING_LIBS.includes(lib)
+							}
+						];
+					})
+				)
+			}))
+		});
+	}
 }

@@ -30,12 +30,17 @@ npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_w
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
 npm run benchmark:survey      # many small shapes against valibot, zod, and zod compiled, by what a parse does
+npm run results               # every benchmark in turn into one results file, see results/README.md
+npm run results:publish       # copy a publishable run to results/latest.json, which the site renders
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
+npm run grade:aa              # what saved grades of one file against itself say of each line's A/A
 npm run differential          # generated schemas and inputs against zod and valibot, memory-capped where systemd-run can
 npm run mutate                # break the library on purpose and check the tests fail, see docs/testing.md
 npm run fixtures:deep         # generated JSON fixtures, many seeds, through the Rust fixture tests, see docs/rust.md
 gro task src/test/fixtures/json/update.task.ts # regenerate the JSON fixtures' expected.json
 gro task src/benchmarks/update_sizes.task.ts   # regenerate src/benchmarks/sizes.json
+gro task src/test/fixtures/results/update.task.ts # regenerate the fixture results file
+BENCH_RESULTS_FIXTURE=1 gro build # build the site over the fixture run (invented numbers, marked on every page)
 ```
 
 `npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`, `--no-guard`,
@@ -45,11 +50,16 @@ and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
 `--samples`, and `--discard`, `npm run benchmark:types` takes `--lib` and `--runs`,
 `npm run benchmark:bundle` takes `--raw`, and `npm run benchmark:wasm` takes
 `--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every script takes
-`--help`.
+`--help`, and each of those above and of `benchmark:harvest` and
+`benchmark:survey` takes `--data`, a path to also write what it measured to
+as JSON. `npm run results` takes `--machine`, `--smoke`, `--only`
+(repeatable), `--wasm`, and `--plan`, and `npm run results:publish` the path
+of a run, see `results/README.md`.
 `npm run grade` takes `--against`, `--against-file`, `--against-libs-file`,
 `--new-file`, `--filter`, `--runs`, `--alone`, `--no-alone`, `--apart`,
 `--no-apart`, `--slice`, `--bundle`, `--no-bundle`, `--process`,
-`--no-process`, `--samples`, and `--class`, see `docs/grading.md`. `npm run benchmark:harvest` takes `--set`,
+`--no-process`, `--samples`, `--class`, and `--replay`, see `docs/grading.md`.
+`npm run grade:aa` takes the directories of grades. `npm run benchmark:harvest` takes `--set`,
 `--passes`, and `--duration`. `npm run benchmark:survey` takes `--filter`,
 `--lib`, `--passes`, `--duration`, and `--alone`. `npm run differential` takes
 `--seed` (repeatable), `--count`, `--focus`, `--limit`, `--neither`, and
@@ -80,15 +90,18 @@ dev server.
   `format_schema_type`, reading a schema as data, separate so the core never
   carries it
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
-  behavior and type inference: `schema.test.ts` holds the primitives, `uuid`
-  against its grammar in `docs/formats.md`, the wrappers, the context, `def`,
-  `is_schema`, flavor and brand, and the types
+  behavior and type inference: `schema.test.ts` holds the primitives, the
+  wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
+- `src/test/schema.formats.test.ts` - the format tests: `uuid` against its
+  grammar in `docs/formats.md`, and `uuid` and `iso_datetime` in a `pipe`
 - `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
   are not objects, copy on write, object keys, `loose_object`'s copy,
   `object_with_rest`, and composing them by spreading `def`
 - `src/test/schema.missing_keys.test.ts` - what a missing key does in every
   schema and flavor
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
+- `src/test/schema.memo_union.test.ts` - `memo_union` against `union`: its
+  verdicts, issues, memo, and the inputs it walks once
 - `src/test/schema.pipe.test.ts` - `pipe` and actions, `check_at`, and `message`
 - `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
   issues, `format_issue`, `get_issue_value`, and `format_issue_with_value`
@@ -101,6 +114,10 @@ dev server.
   generic helpers over the library compile where they are read, those of its
   exported schemas write every factory's type by its name, and every export
   of `schema.ts` that is or makes a schema declares a named type
+- `src/test/schema.invariants.test.ts` - every factory of `schema.ts` and
+  `meta.ts` carries `// @__NO_SIDE_EFFECTS__`, and the package has no
+  dependencies, with `schema_exports_test_helpers.ts`, the exports that are or
+  make a schema, which `schema.emit.test.ts` reads too
 - `src/test/schema.docs.test.ts` - a property of a type inferred from an
   object schema has its entry's doc comment and the entry as its definition,
   asked of TypeScript's language service
@@ -194,16 +211,51 @@ dev server.
     outside the repo and run through the Rust fixture tests
 - `src/test/json.fixtures.test.ts` - fails when a generated file is stale
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
+- `src/test/results_schema.test.ts` - the results schema: the fixture run,
+  what it refuses and where, what is publishable, and a stale
+  `fixtures/results/fixture_run.json`, which `fixture_results.ts` builds from
+  invented numbers and `update.task.ts` beside it writes
+- `src/test/results_plan.test.ts`, `results_run.test.ts`,
+  `results_publish.test.ts`, `results_docs.test.ts` - a run's steps against
+  `package.json` and the scripts' `--data`, a whole run with every script
+  standing in and the tree read as it starts and as it ends, the reading of
+  the commit against a repository made for the test, publishing, and
+  `results/README.md` against the commands
+- `src/test/benchmark_*.test.ts`, `site_benchmarks.test.ts` - the
+  benchmarks page's derivations over the fixture run, and which file the
+  site renders
+- `src/test/results_test_helpers.ts` - what the tests of the results file and
+  the site share: the fixture as a fresh copy, the same under the kind of a
+  full run, a section's data, and a parse that must fail where it is told
+- `src/test/site_imports.test.ts` - the library imports nothing of the
+  benchmarks or the site, and only a server load loads the results schema,
+  a results file, or the fixture
+- `src/test/site_render.test.ts` - what the site's components render on the
+  server, as the text a reader sees without a pointer: the banner of a build
+  over the fixture or an unpublished run, what was measured of each library
+  under a chart, the marks of what is not a difference, a harvested set
+  folded, and the provenance, with `SiteHarness.svelte`, the context the root
+  layout gives
+- `src/test/readme_claims.ts`, `readme_claims.test.ts`,
+  `readme_measurements.test.ts` - the README's claims, each its sentence, the
+  libraries it names, and a predicate over a results file that reads a
+  difference as the benchmarks page does; the checker over the fixture, with
+  a change that fails each claim for every library it names; and the README
+  itself against `results/latest.json`
 - `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
   of bytes and of retained heap, over figures made up for them
 - `src/test/grade_stats.test.ts` - the grader's statistics over made-up
   samples: floors, marks, and the A/A, and how often two copies fail rule 6
   under noise of the shape a grade reads
+- `src/test/grade_read.test.ts`, `grade_plan.test.ts` - the grader's reading
+  over grades made up for it, and the names it plans with held to the cases and
+  scenarios they name
 - `src/test/measure.test.ts` - a median of the byte measurement starts with
   the young generation free, by allocating until it is collected
 - `src/test/coldstart.test.ts` - the order cold start runs a round's
   processes in moves on each round, in who leads and who follows whom
-- `src/benchmarks/` - the benchmarks; never imported by the library or the site
+- `src/benchmarks/` - the benchmarks; never imported by the library, and by
+  the site only for the results schema, at runtime in its server loads alone
   - `scenarios.ts`, `libs/`, `libs.ts`, `lib_names.ts` - the cross-library
     scenarios, one module per library, and the libraries' names, which import
     none of them
@@ -241,9 +293,14 @@ dev server.
     against its floor, and a set of cases as one figure against its A/A
   - `grade_heap.ts` - how the grader prices retained heap: the figure per
     further schema, of each scenario and each export alone, and its allowance
+  - `grade_read.ts`, `grade_plan.ts`, `grade_aa.ts` - how the grader reads a
+    grade, its rules and lists from a record and its jobs, for a grade and
+    for `--replay`; what it plans before a process runs, the arms, the jobs
+    apart, and the lock; and the A/A of every line rule 6 and the warning
+    read, over saved grades of two copies of one file
   - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
     grader, what it loads once for each instance of a version, and what the
-    grader and its processes share
+    grader and its processes share, the paths of a case among it
   - `program.ts` - one schema of every kind, built and run: what a process of
     the grader's `apart` regime runs before it times a case
   - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/`,
@@ -260,12 +317,38 @@ dev server.
   - `measure.ts`, `bundle_size.ts` - shared measurement helpers, the second
     with the bundling: a library's scenarios, and this library whole and
     export by export
+  - `results_schema.ts` - the schema of a results file, one run of every
+    benchmark, written in this library: each script's data, the sections, the
+    roster, what is publishable, and `parse_benchmark_results`, which every
+    reader goes through
+  - `results_plan.ts`, `results_run.ts`, `results_publish.ts` -
+    `npm run results`, which starts each script through its npm script with
+    `--data` and composes one file, what it plans, and
+    `npm run results:publish`
   - `sizes.ts`, `sizes.json`, `update_sizes.task.ts` - the committed snapshot
     of this library's gzipped sizes, generated and never hand-edited: what it
     holds, the file, and the task that regenerates it
 - `src/routes/` - the static SvelteKit site, with API docs generated by the
   `svelte-docinfo` Vite plugin under `src/routes/docs/`, deployed to
   schema.fuz.dev (`static/CNAME`)
+  - `+layout.server.ts`, `+page.server.ts` - the server loads of the root:
+    where the rendered results came from, for the banner every page of a
+    build over the fixture or an unpublished run carries, and the landing
+    page's headline figures, worked out from the file at build time
+  - `docs/benchmarks/` - the `benchmarks` tome and its modules, which the
+    landing page's summary imports too: `site_benchmarks.server.ts` (which
+    results file is rendered, read in the server loads), `benchmark_matrix.ts`
+    (the rows every table and chart share, their baseline, ratios, and means,
+    and when two numbers are level: a row's inside its spreads, two means
+    where their bands overlap),
+    `benchmark_sections.ts` (each section's rows from a results file, and the
+    tolerance a figure with no spread of its own is compared by),
+    `benchmark_headline.ts` (the landing page's figures),
+    `benchmark_ratio.ts`, `benchmark_format.ts`, `benchmark_provenance.ts`,
+    and the `Benchmarks*.svelte` components
+- `results/` - the published run, `latest.json`, which the site renders, the
+  dated runs it was copied from, and `scratch/`, git-ignored, for every run
+  that isn't publishable; `README.md` has the steps of a published run
 - `docs/` - the written docs, below
 - `crates/fuz_schema/`, `crates/fuz_schema_wasm/` - the Rust side and its wasm
   build, see [Rust workspace](#rust-workspace)
@@ -314,7 +397,8 @@ Things that are easy to break without a test noticing:
   The types don't force a new kind to be added there. Once it is, they force
   a row for it in the kind tables of `src/test/introspect.test.ts`.
 - **Every factory carries `// @__NO_SIDE_EFFECTS__`**, so an unused schema
-  definition is dropped by the bundler.
+  definition is dropped by the bundler. `src/test/schema.invariants.test.ts`
+  fails on a factory of `schema.ts` or `meta.ts` without it.
 - **Every schema's factory or constant but `pipe` returns an interface named
   for it**, `ObjectSchema<T>` and the rest, whose type arguments are only what
   it was given, extending `Schema` with the output and input it computes. A
@@ -418,6 +502,8 @@ Things that are easy to break without a test noticing:
   in the matrix.
 - **The library has no dependencies.** The comparison libraries and the
   bundler are devDependencies of the benchmarks only.
+  `src/test/schema.invariants.test.ts` fails on a `dependencies`,
+  `peerDependencies`, or `optionalDependencies`.
 - **A generated process module holds nothing of the harness** but what
   cancels between the readings a figure is taken from, as an export's
   `PROGRAM` does in `heap.ts`. The bare baseline is that module with no
@@ -431,9 +517,12 @@ the change targets a path no case isolates. Every summary time `grade` prints
 is beside its A/A, what instances of one version differed by in the same
 processes: a time inside its A/A is not a difference. A case's time is beside
 its floor, and only a case marked `*` is a finding: one outside its floor or
-marked `?` is not. Give a small change `--runs 5` or more, and a quiet machine, which
+marked `?` is not. Give a small change `--runs 6` or more, an even count, so each
+version is loaded first equally often, and a quiet machine, which
 narrows the A/A. Bundle bytes are exact, and allocations are exact for the
 code the engine is running, see `docs/benchmarks.md`.
+`npm run grade -- --replay .gro/grade/<start>` reads a finished grade again,
+by the rules as they are, measuring nothing.
 
 A change's diff of `src/benchmarks/sizes.json` is its byte cost across the
 library, every export, last in and alone, and not only the scenarios:
@@ -465,16 +554,18 @@ priced while core stays at +0, and speed by default, see `docs/grading.md`.
   `.changeset/README.md`.
 
 Easy to break in the grader without a test noticing: an instance shares no
-function with another, every instance is called the same number of times in
-the same way, each cycling through copies of its input (`inputs.ts`) as
-every other does, both versions load from the same directory, and a timing
-process is started under no flags of its own and no `NODE_OPTIONS`. A bytes
-process holds two instances of each version, and a case allocates more only
-where both of the graded version's say so. For `apart`: a
-process holds one version and no module of the other, its program runs
-through an instance that is not timed, and a process does the same whichever
-version it holds. `docs/benchmarks.md`
-says what each of those guards against.
+function with another, every instance gets the same checks and the same time,
+in the same way, each cycling through copies of its input (`inputs.ts`) as
+every other does, and a case allocates more only where both of the graded
+version's instances say so. For `apart`: a process holds no module of the
+other version, its program runs through an instance that is not timed, and a
+process does the same whichever version it holds. Four more are checked by
+every process of the grader as it starts, before it loads an instance, so a
+break of one fails the grade and not only a reading of it: the arms of a job
+load from one directory, a timing runs under no flags of its own and no
+`NODE_OPTIONS`, a bytes process holds two instances of each version, and a
+process apart holds one version. `docs/benchmarks.md` says what each of those
+guards against.
 
 The flat namespace is enforced: `svelte_docinfo({onDuplicates: 'throw'})` in
 `vite.config.ts` fails the build when two modules in `src/lib/` export the

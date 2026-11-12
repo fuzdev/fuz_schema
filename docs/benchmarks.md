@@ -15,6 +15,8 @@ Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
 | `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot, Zod, and Zod compiled, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
+| `npm run results` | every script above but `grade`, in turn, into one results file ([below](#one-results-file)) |
+| `npm run results:publish` | copies a publishable run to `results/latest.json`, which the site renders |
 
 `npm run differential` and `npm run mutate` are tests and not measurements, see
 [testing.md](testing.md).
@@ -56,7 +58,9 @@ end (`machine.ts`), so a saved output can be read on its own.
   gzipped figure by a few bytes at most, and on most scenarios by none. The guard regime of
   `npm run benchmark` and the type benchmark's reads use the builders, and
   `src/test/benchmarks.test.ts` holds each builder to its factory's text, less
-  comments, whitespace, and the runner, `zod_compiled`'s factories to Zod's,
+  comments, whitespace outside its string and regex literals, and the runner,
+  and each constant the two modules' definitions share to the other's,
+  `zod_compiled`'s factories to Zod's,
   each library's guard to its factory's verdicts, and the outputs of every
   library that returns one to this library's, deeply and strictly.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
@@ -355,7 +359,10 @@ whoever runs it.
   `--round-ms` what one timing of a row aims to take, 20 by default.
 - **Args**: every script takes `--help`, which prints its args with their
   defaults and descriptions, and refuses an arg it doesn't have and a name of
-  a library, scenario, or set it doesn't know, saying which there are. The
+  a library, scenario, or set it doesn't know, saying which there are. Each
+  script that `npm run results` starts takes `--data`, see
+  [one results file](#one-results-file), and `grade` doesn't: it keeps what
+  it measured in a directory of its own. The
   scripts parse their command-line args with this library,
   through instances no measurement uses: the schemas are built with
   `schema.ts` and `meta.ts` imported under `?args` by `args.ts`, and
@@ -530,8 +537,10 @@ version of Node.
 
 ### Grading
 
-`grade.ts` plans processes and reads them together, `grade_child.ts` is one
-process, `grade_arm.ts` and `timing.ts` are what a process loads once for
+`grade.ts` plans processes and measures, `grade_plan.ts` is what it plans
+with, `grade_read.ts` reads what they measured into the verdict,
+`grade_child.ts` is one process, `grade_arm.ts` and `timing.ts` are what a
+process loads once for
 each instance, the case matrix and the loops, `program.ts` is what a process
 of the `apart` regime runs before its case, and `grade_job.ts` is what the
 first two share. [grading.md](grading.md) says what is measured and how a
@@ -554,6 +563,9 @@ difference is decided, and the module comments of `grade_child.ts` and
   one, so the engine never inlines a case into its loop.
 - **Both versions load from one directory**, `.gro/grade/`, see
   [grading.md](grading.md#apart).
+- **Every process checks its job** before it loads an instance: one directory
+  for every arm, no flags and no `NODE_OPTIONS` on a timing, two instances of
+  each version in a bytes process, one version in a process apart.
 - **Order is rotated.** Which instance is loaded first moves on by a run, so
   at an odd count of runs one version is loaded first once more than the
   other, and the default count is even. Which instance runs a case first, and
@@ -580,6 +592,92 @@ With all of that held, two instances of one file can still settle apart on a
 case for the life of a process, whatever the warmup or the order. So that is
 measured and not removed: several instances of each version, and whole runs
 repeated.
+
+## One results file
+
+The site's [benchmarks page](https://schema.fuz.dev/docs/benchmarks) renders
+one file, `results/latest.json`: one run of every script on one named machine.
+[results/README.md](../results/README.md) has the files and the steps of a
+published run.
+
+- **Each script a run starts takes `--data <path>`**, the ones in the table
+  of [results/README.md](../results/README.md) and not `grade`, and writes
+  what it measured there as JSON, beside the text it prints, which is the same
+  with the arg and without: the figures themselves, each in its unit, with its
+  spread or band where it has one, and never text formatted for a table. A cell that is not
+  a number is an entry that says why: `uncompiled` where `z.compile` hands a
+  root back, `no_equivalent` for a survey shape a library can't express, and
+  `differs` for an input it answers otherwise. A figure of one kept
+  definition repeated carries `interned`.
+- **`npm run results`** (`results_run.ts`, with what it plans in
+  `results_plan.ts`) starts each script through its npm script, so under the
+  node flags that script gives it, one at a time, each in a process that has
+  exited before the next starts, its output going to a file. It measures
+  nothing itself. It composes the sections with the machine's name
+  (`--machine`, required for a full run), the machine's state as the run
+  started and ended, Node's and V8's versions, every library's and tool's
+  installed version, the commit and whether the tree was clean, read as the
+  run starts and again as it ends, since a run is long enough for an edit or a
+  commit to land in it, and what each script was started with and how long it
+  took. `--smoke` runs each script as
+  briefly as it goes, `--only` narrows the run to the sections it names,
+  `--wasm` adds the wasm section, which is left out by default since it needs
+  a build of its own and compares no library with another, and `--plan`
+  prints what a run would do and measures nothing. A script that fails
+  doesn't stop the run: its section says so.
+- **The file has one schema**, `results_schema.ts`, written in this library
+  and strict, and every reader goes through `parse_benchmark_results`: the
+  run before it writes, the publish step, and the site's build. Beyond each
+  section's shape it holds the sections to the roster the file carries.
+- **A run is publishable** when its kind is `full`, it has every section but
+  an optional one, none failed, each script was started with the args a full
+  run gives it and no other, and the tree was clean at one commit as the run
+  started and as it ended (`benchmark_results_is_publishable`). A file says
+  what it is in `meta.kind`: `full`, `smoke`, or `fixture`, and the fixture's
+  kind is never publishable. Every timed section of a publishable run took
+  more than one pass, since one pass has no spread, and the publish step
+  refuses a run whose commit the repository doesn't have. These guard against
+  accident and not forgery. Such a run is written to
+  `results/<UTC date>_<machine>.json`, and any other to `results/scratch/`,
+  which git ignores. `npm run results:publish` copies a publishable run to
+  `results/latest.json` and refuses any other with the reasons.
+- **The site reads the file at build time**, in server loads, and fails the
+  build on a published file that doesn't parse or isn't publishable, whatever
+  the build was asked to render. With no published run it shows no measured
+  number and says so. `BENCH_RESULTS_FIXTURE=1` builds over the fixture,
+  `src/test/fixtures/results/fixture_run.json`, whose numbers are invented,
+  and `BENCH_RESULTS_FILE=<path>` over a run that need not be publishable, a
+  smoke run among them: each puts a banner on every page.
+- **The page reads a difference against what the numbers range over.** Two
+  numbers of a row are level when the gap is inside their two spreads
+  together, as the survey marks a row. A geometric mean is no more exact than
+  its rows: it carries a band, from the mean of its rows' fastest passes to
+  the mean of their slowest, and two means whose bands overlap are level. A
+  time at or under twice what an empty call took is at the call floor, which
+  is the survey's rule applied to the scenarios too, and its row is in no
+  mean. A level number is marked and not ranked, in a table and in a chart,
+  and so is the least of a row where another is level with it. Where a script
+  takes one figure a process, the page compares with what this document says
+  such a figure repeats within, [below](#reading-the-numbers): a percent
+  either side of the heap bytes a parse allocates, a kilobyte either side of a
+  retained total, and two bytes either side of a figure per further schema,
+  each a named constant of `benchmark_sections.ts`. The parses after a cold
+  start's first, and its peak memory, carry the p10 to p90 band of their own
+  samples. A figure with no measure of what it ranges over, as the one timing
+  of building a schema is, or either of those two in a file from before the
+  script recorded its band, is shown and not compared.
+- **What sets a library's figure apart is said under it.** The roster a file
+  carries has notes for each library, each with the kinds of figure it
+  qualifies, from `RESULTS_LIB_INFO` in `results_plan.ts`, and a chart or
+  table prints the ones about what it measures: that this library returns its
+  input on a valid parse where Valibot and Zod return a copy is under a valid
+  parse, and not under the bytes of a bundle.
+- **The README's claims are held to the file.** The comparative sentences of
+  its Measurements section are rows of `README_CLAIMS`
+  (`src/test/readme_claims.ts`), each with the libraries it names and a
+  predicate over a results file that reads a difference as the page does, and
+  `src/test/readme_measurements.test.ts` holds the README to the published
+  run once `README_CLAIMS_HELD` is set.
 
 ## Reading the numbers
 
@@ -755,7 +853,10 @@ and never a table.
   drops the whole group from the baseline, and its other cases compare on
   nothing. A case the baseline lacks is measured for the new version alone,
   see [grading.md](grading.md). Grade the export with `--class feature`, and
-  give it a scenario, which compares it with the other libraries.
+  give it a scenario, which compares it with the other libraries. A `build`
+  whose export, where a version lacks it, is made without a throw, as a step
+  of a `pipe` or the item of an `array`, checks for it itself, or the
+  version's process fails at the case's first parse.
 - Add no harness imports or work to a generated process module but what
   cancels between the readings a figure is taken from, as an export's
   `PROGRAM` does in [retained heap](#retained-heap). The bare baseline is

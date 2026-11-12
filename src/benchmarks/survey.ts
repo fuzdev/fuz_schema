@@ -28,7 +28,17 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { meta, parse_args, s, to_count_arg, to_duration_arg, to_names_arg } from './args.ts';
+import {
+	DataArg,
+	meta,
+	parse_args,
+	s,
+	to_count_arg,
+	to_duration_arg,
+	to_names_arg,
+	write_benchmark_data
+} from './args.ts';
+import type { SurveyData } from './results_schema.ts';
 import { format_benchmark_header } from './machine.ts';
 import {
 	format_number,
@@ -48,6 +58,7 @@ import {
 	SURVEY_DOES,
 	SURVEY_LIBS,
 	SURVEY_SHAPES,
+	to_survey_builder_name,
 	to_survey_row_name,
 	type SurveyDoes,
 	type SurveyLibName,
@@ -83,7 +94,8 @@ const Args = s.object({
 	}),
 	alone: meta(s.with_default(s.boolean, false), {
 		description: 'a process for each row of each library, not one for each library'
-	})
+	}),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -339,3 +351,49 @@ console.log(
 			? "Each row had a process\nof its own: the engine specialized the library to that row's schema."
 			: "Each library's process ran\nevery row before it timed any: `--alone` gives each row a process of its own.")
 );
+
+if (args.data !== undefined) {
+	// what the tables above were printed from, unformatted
+	type SurveyCell = SurveyData['rows'][number]['libs'][string];
+	const timed_rows = new Map(compared_rows.map((c) => [c.row.name, c]));
+	write_benchmark_data(args.data, 'survey', {
+		regime,
+		passes: args.passes,
+		duration_ms: args.duration,
+		warm_ms: plan.warm_ms,
+		subject: SUBJECT_LIB,
+		others,
+		call: { min_ns: Math.min(...call_ns), max_ns: Math.max(...call_ns) },
+		call_floor_ns,
+		kinds: [...SURVEY_DOES],
+		rows: SURVEY_SHAPES.flatMap((shape) =>
+			Object.entries(shape.inputs).flatMap(([input_name, input]) => {
+				const compared = timed_rows.get(to_survey_row_name(shape.name, input_name));
+				if (!compared) return [];
+				const to_cell = (lib: SurveyLibName, timed: Timed | undefined): SurveyCell => {
+					if (timed) {
+						return { ns: timed.ns, spread: Number.isNaN(timed.spread) ? null : timed.spread };
+					}
+					const builder = to_survey_builder_name(lib);
+					if (!shape[builder])
+						return { none: 'no_equivalent', why: shape.skips?.[builder] ?? null };
+					const differs = input.differs?.[builder];
+					if (differs !== undefined) return { none: 'differs', why: differs };
+					return { none: 'uncompiled', why: '`z.compile` hands the root back uncompiled' };
+				};
+				return [
+					{
+						shape: shape.name,
+						input: input_name,
+						does: input.does,
+						valid: input.valid,
+						libs: Object.fromEntries([
+							[SUBJECT_LIB, to_cell(SUBJECT_LIB, compared.subject)],
+							...others.map((lib, i) => [lib, to_cell(lib, compared.timed[i])])
+						])
+					}
+				];
+			})
+		)
+	});
+}

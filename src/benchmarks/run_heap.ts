@@ -8,8 +8,16 @@
  * @module
  */
 
-import { LibNamesArg, ScenarioNamesArg, meta, parse_args, s } from './args.ts';
-import { HEAP_COUNTS, measure_retained_heap } from './heap.ts';
+import {
+	DataArg,
+	LibNamesArg,
+	ScenarioNamesArg,
+	meta,
+	parse_args,
+	s,
+	write_benchmark_data
+} from './args.ts';
+import { HEAP_COUNTS, measure_retained_heap, type RetainedHeap } from './heap.ts';
 import { INTERNED_MARK, INTERNING_LIBS, LIB_NAMES, format_interned_figure } from './lib_names.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table } from './measure.ts';
@@ -25,7 +33,8 @@ const Args = s.object({
 	scenario: meta(
 		s.with_default_fn(ScenarioNamesArg, (): Array<ScenarioName> => ['object_flat', 'type_json']),
 		{ description: 'scenario names to run' }
-	)
+	),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -48,9 +57,14 @@ for (const lib of args.lib.filter((name) => INTERNING_LIBS.includes(name))) {
 	}
 }
 
+// every reading, by scenario then library, for `--data`
+const measured: Record<string, Record<string, RetainedHeap>> = {};
+
 for (const scenario of args.scenario) {
+	measured[scenario] = {};
 	for (const lib of args.lib) {
 		const heap = await measure_retained_heap(lib, scenario);
+		measured[scenario][lib] = heap;
 		rows.push([
 			scenario,
 			lib,
@@ -78,3 +92,19 @@ console.log(
 			? `, and its figures\nthere are marked ${INTERNED_MARK}, where ${INTERNING_LIBS.join(', ')} hands back the schema it built before.`
 			: '.')
 );
+
+if (args.data !== undefined) {
+	// what the table above was printed from, unformatted
+	write_benchmark_data(args.data, 'heap', {
+		counts: HEAP_COUNTS,
+		rows: args.scenario.map((scenario) => ({
+			scenario,
+			libs: Object.fromEntries(
+				args.lib.map((lib) => [
+					lib,
+					{ ...measured[scenario]![lib]!, interned: kept.has(`${lib} ${scenario}`) }
+				])
+			)
+		}))
+	});
+}

@@ -1,0 +1,3488 @@
+{
+	"meta": {
+		"generated_at": "2026-01-01T00:00:00.000Z",
+		"kind": "fixture",
+		"only": null,
+		"machine": {
+			"name": "fixture",
+			"cpu": "Fixture CPU (invented numbers)"
+		},
+		"machine_start": {
+			"node": "v24.14.1",
+			"load": [
+				0.1,
+				0.2,
+				0.3
+			],
+			"cpu_mhz": [
+				4000,
+				4100,
+				4200,
+				4300
+			],
+			"governor": "performance",
+			"scaling_driver": "fixture-pstate",
+			"energy_performance_preference": "performance",
+			"boost": true
+		},
+		"machine_end": {
+			"node": "v24.14.1",
+			"load": [
+				1,
+				0.8,
+				0.5
+			],
+			"cpu_mhz": [
+				4000,
+				4100,
+				4200,
+				4300
+			],
+			"governor": "performance",
+			"scaling_driver": "fixture-pstate",
+			"energy_performance_preference": "performance",
+			"boost": true
+		},
+		"node": "v24.14.1",
+		"v8": "13.6.0-fixture",
+		"commit": "0000000000000000000000000000000000000000",
+		"dirty": false,
+		"commit_end": "0000000000000000000000000000000000000000",
+		"dirty_end": false,
+		"duration_ms": 1800000,
+		"libs": [
+			{
+				"id": "fuz_schema",
+				"label": "fuz_schema",
+				"package": "@fuzdev/fuz_schema",
+				"version": "0.0.0",
+				"by_maintainer": true,
+				"note": "This repository's source at the run's commit, not the published package of that version.",
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"allocation"
+						],
+						"text": "A strict or identity parse of valid input returns the input itself, where Valibot and Zod return a copy."
+					}
+				]
+			},
+			{
+				"id": "valibot",
+				"label": "Valibot",
+				"package": "valibot",
+				"version": "0.0.1",
+				"by_maintainer": false,
+				"note": null,
+				"notes": [
+					{
+						"about": [
+							"guard"
+						],
+						"text": "Its guard, `is`, runs the parser, which copies what it reads, and drops the copy."
+					}
+				]
+			},
+			{
+				"id": "zod",
+				"label": "Zod",
+				"package": "zod",
+				"version": "0.0.2",
+				"by_maintainer": false,
+				"note": null,
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"invalid",
+							"coldstart"
+						],
+						"text": "Classic `zod` generates a parser for each object schema on its first parse where the environment allows eval."
+					},
+					{
+						"about": [
+							"guard"
+						],
+						"text": "Its guard, `z.validate`, runs the parser where a schema has no compiled path, which copies what it reads, and drops the copy."
+					}
+				]
+			},
+			{
+				"id": "zod_compiled",
+				"label": "Zod compiled",
+				"package": "zod",
+				"version": "0.0.3",
+				"by_maintainer": false,
+				"note": "Zod with each root through `z.compile`, its ahead-of-time mode.",
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"guard"
+						],
+						"text": "Each root through `z.compile`, which generates its parser and its validator ahead of time. A root it hands back uncompiled has no timed figure."
+					},
+					{
+						"about": [
+							"invalid"
+						],
+						"text": "Each root through `z.compile`, which hands an invalid input to Zod's regular parser. A root it hands back uncompiled has no timed figure."
+					},
+					{
+						"about": [
+							"bundle",
+							"coldstart",
+							"creation",
+							"heap"
+						],
+						"text": "It carries the compiler `z.compile` needs, and compiles while the schema is built."
+					}
+				]
+			},
+			{
+				"id": "zod_mini",
+				"label": "Zod Mini",
+				"package": "zod",
+				"version": "0.0.4",
+				"by_maintainer": false,
+				"note": "`zod/mini`.",
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"invalid"
+						],
+						"text": "Its objects never compile: `zod/mini` has no generated parser."
+					},
+					{
+						"about": [
+							"guard"
+						],
+						"text": "Its guard, `z.validate`, runs the parser where a schema has no compiled path, which copies what it reads, and drops the copy."
+					}
+				]
+			},
+			{
+				"id": "typebox",
+				"label": "TypeBox",
+				"package": "typebox",
+				"version": "0.0.5",
+				"by_maintainer": false,
+				"note": "The `Check` of its compiled validator.",
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"invalid",
+							"guard",
+							"allocation"
+						],
+						"text": "Every row is a `Check` of its compiled validator, which stops at the first failure and builds no issues and no output."
+					}
+				]
+			},
+			{
+				"id": "arktype",
+				"label": "ArkType",
+				"package": "arktype",
+				"version": "0.0.6",
+				"by_maintainer": false,
+				"note": null,
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"invalid",
+							"allocation"
+						],
+						"text": "A parse that drops keys deep-clones its input before it runs."
+					},
+					{
+						"about": [
+							"creation",
+							"heap"
+						],
+						"text": "It keeps one schema of a definition and hands it back when the same definition is built again, which a figure marked `†` is of."
+					}
+				]
+			}
+		],
+		"tools": {
+			"rolldown": "0.0.0",
+			"typescript": "0.0.0"
+		}
+	},
+	"bundle": {
+		"status": "measured",
+		"script": "benchmark:bundle",
+		"command": "node src/benchmarks/fixture.ts bundle",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"rows": [
+				{
+					"scenario": "string",
+					"libs": {
+						"fuz_schema": {
+							"minified": 780,
+							"gzip": 300,
+							"brotli": 270
+						},
+						"valibot": {
+							"minified": 1300,
+							"gzip": 500,
+							"brotli": 450
+						},
+						"zod": {
+							"minified": 24700,
+							"gzip": 9500,
+							"brotli": 8550
+						},
+						"zod_compiled": {
+							"minified": 31980,
+							"gzip": 12300,
+							"brotli": 11070
+						},
+						"zod_mini": {
+							"minified": 5460,
+							"gzip": 2100,
+							"brotli": 1890
+						},
+						"typebox": {
+							"minified": 39260,
+							"gzip": 15100,
+							"brotli": 13590
+						},
+						"arktype": {
+							"minified": 47580,
+							"gzip": 18300,
+							"brotli": 16470
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"libs": {
+						"fuz_schema": {
+							"minified": 2080,
+							"gzip": 800,
+							"brotli": 720
+						},
+						"valibot": {
+							"minified": 2600,
+							"gzip": 1000,
+							"brotli": 900
+						},
+						"zod": {
+							"minified": 26000,
+							"gzip": 10000,
+							"brotli": 9000
+						},
+						"zod_compiled": {
+							"minified": 33280,
+							"gzip": 12800,
+							"brotli": 11520
+						},
+						"zod_mini": {
+							"minified": 6760,
+							"gzip": 2600,
+							"brotli": 2340
+						},
+						"typebox": {
+							"minified": 40560,
+							"gzip": 15600,
+							"brotli": 14040
+						},
+						"arktype": {
+							"minified": 48880,
+							"gzip": 18800,
+							"brotli": 16920
+						}
+					}
+				},
+				{
+					"scenario": "list",
+					"libs": {
+						"fuz_schema": {
+							"minified": 2470,
+							"gzip": 950,
+							"brotli": 855
+						},
+						"valibot": {
+							"minified": 2990,
+							"gzip": 1150,
+							"brotli": 1035
+						},
+						"zod": {
+							"minified": 26390,
+							"gzip": 10150,
+							"brotli": 9135
+						},
+						"zod_compiled": {
+							"minified": 33670,
+							"gzip": 12950,
+							"brotli": 11655
+						},
+						"zod_mini": {
+							"minified": 7150,
+							"gzip": 2750,
+							"brotli": 2475
+						},
+						"typebox": {
+							"minified": 40950,
+							"gzip": 15750,
+							"brotli": 14175
+						},
+						"arktype": {
+							"minified": 49270,
+							"gzip": 18950,
+							"brotli": 17055
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"libs": {
+						"fuz_schema": {
+							"minified": 4420,
+							"gzip": 1700,
+							"brotli": 1530
+						},
+						"valibot": {
+							"minified": 4940,
+							"gzip": 1900,
+							"brotli": 1710
+						},
+						"zod": {
+							"minified": 28340,
+							"gzip": 10900,
+							"brotli": 9810
+						},
+						"zod_compiled": {
+							"minified": 35620,
+							"gzip": 13700,
+							"brotli": 12330
+						},
+						"zod_mini": {
+							"minified": 9100,
+							"gzip": 3500,
+							"brotli": 3150
+						},
+						"typebox": {
+							"minified": 42900,
+							"gzip": 16500,
+							"brotli": 14850
+						},
+						"arktype": {
+							"minified": 51220,
+							"gzip": 19700,
+							"brotli": 17730
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"libs": {
+						"fuz_schema": {
+							"minified": 5720,
+							"gzip": 2200,
+							"brotli": 1980
+						},
+						"valibot": {
+							"minified": 6240,
+							"gzip": 2400,
+							"brotli": 2160
+						},
+						"zod": {
+							"minified": 29640,
+							"gzip": 11400,
+							"brotli": 10260
+						},
+						"zod_compiled": {
+							"minified": 36920,
+							"gzip": 14200,
+							"brotli": 12780
+						},
+						"zod_mini": {
+							"minified": 10400,
+							"gzip": 4000,
+							"brotli": 3600
+						},
+						"typebox": {
+							"minified": 44200,
+							"gzip": 17000,
+							"brotli": 15300
+						},
+						"arktype": {
+							"minified": 52520,
+							"gzip": 20200,
+							"brotli": 18180
+						}
+					}
+				}
+			],
+			"all": {
+				"fuz_schema": {
+					"minified": 7800,
+					"gzip": 3000,
+					"brotli": 2700
+				},
+				"valibot": {
+					"minified": 8320,
+					"gzip": 3200,
+					"brotli": 2880
+				},
+				"zod": {
+					"minified": 31720,
+					"gzip": 12200,
+					"brotli": 10980
+				},
+				"zod_compiled": {
+					"minified": 39000,
+					"gzip": 15000,
+					"brotli": 13500
+				},
+				"zod_mini": {
+					"minified": 12480,
+					"gzip": 4800,
+					"brotli": 4320
+				},
+				"typebox": {
+					"minified": 46280,
+					"gzip": 17800,
+					"brotli": 16020
+				},
+				"arktype": {
+					"minified": 54600,
+					"gzip": 21000,
+					"brotli": 18900
+				}
+			},
+			"library": {
+				"measure": "gzip",
+				"parse": 170,
+				"library": 4100,
+				"exports": [
+					{
+						"name": "object",
+						"alone": 530,
+						"last_in": 90
+					},
+					{
+						"name": "pipe",
+						"alone": 210,
+						"last_in": 130
+					},
+					{
+						"name": "union",
+						"alone": 420,
+						"last_in": 80
+					}
+				],
+				"modules": [
+					{
+						"name": "meta.ts",
+						"added": 50
+					},
+					{
+						"name": "json_schema.ts",
+						"added": 4100
+					}
+				]
+			}
+		}
+	},
+	"types": {
+		"status": "measured",
+		"script": "benchmark:types",
+		"command": "node src/benchmarks/fixture.ts types",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"runs": 3,
+			"empty": {
+				"instantiations": 0,
+				"types": 85,
+				"memory_kb": 120000,
+				"check_s": 0
+			},
+			"modules": {
+				"fuz_schema": {
+					"instantiations": 14000,
+					"types": 4752,
+					"memory_kb": 127000,
+					"check_s": 0.14
+				},
+				"valibot": {
+					"instantiations": 26600,
+					"types": 8952,
+					"memory_kb": 133300,
+					"check_s": 0.27
+				},
+				"zod": {
+					"instantiations": 107800,
+					"types": 36018,
+					"memory_kb": 173900,
+					"check_s": 1.08
+				},
+				"zod_compiled": {
+					"instantiations": 109200,
+					"types": 36485,
+					"memory_kb": 174600,
+					"check_s": 1.09
+				},
+				"zod_mini": {
+					"instantiations": 16800,
+					"types": 5685,
+					"memory_kb": 128400,
+					"check_s": 0.17
+				},
+				"typebox": {
+					"instantiations": 7000,
+					"types": 2418,
+					"memory_kb": 123500,
+					"check_s": 0.07
+				},
+				"arktype": {
+					"instantiations": 91000,
+					"types": 30418,
+					"memory_kb": 165500,
+					"check_s": 0.91
+				}
+			},
+			"reads": [
+				"t.string.length",
+				"t.object_flat.name"
+			],
+			"with_reads": {
+				"fuz_schema": {
+					"instantiations": 12000,
+					"types": 4085,
+					"memory_kb": 126000,
+					"check_s": 0.12,
+					"reads_add": 700
+				},
+				"valibot": {
+					"instantiations": 22800,
+					"types": 7685,
+					"memory_kb": 131400,
+					"check_s": 0.23,
+					"reads_add": 368
+				},
+				"zod": {
+					"instantiations": 92400,
+					"types": 30885,
+					"memory_kb": 166200,
+					"check_s": 0.92,
+					"reads_add": 91
+				},
+				"zod_compiled": {
+					"instantiations": 93600,
+					"types": 31285,
+					"memory_kb": 166800,
+					"check_s": 0.94,
+					"reads_add": 90
+				},
+				"zod_mini": {
+					"instantiations": 14400,
+					"types": 4885,
+					"memory_kb": 127200,
+					"check_s": 0.14,
+					"reads_add": 583
+				},
+				"typebox": {
+					"instantiations": 6000,
+					"types": 2085,
+					"memory_kb": 123000,
+					"check_s": 0.06,
+					"reads_add": 1400
+				},
+				"arktype": {
+					"instantiations": 78000,
+					"types": 26085,
+					"memory_kb": 159000,
+					"check_s": 0.78,
+					"reads_add": 108
+				}
+			}
+		}
+	},
+	"allocations": {
+		"status": "measured",
+		"script": "benchmark:allocations",
+		"command": "node src/benchmarks/fixture.ts allocations",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"rows": [
+				{
+					"scenario": "string",
+					"libs": {
+						"fuz_schema": {
+							"valid_bytes": 2,
+							"invalid_bytes": 30,
+							"create_bytes": 300,
+							"create_ns": 45,
+							"interned": false
+						},
+						"valibot": {
+							"valid_bytes": 14,
+							"invalid_bytes": 100,
+							"create_bytes": 420,
+							"create_ns": 63,
+							"interned": false
+						},
+						"zod": {
+							"valid_bytes": 11,
+							"invalid_bytes": 560,
+							"create_bytes": 6600,
+							"create_ns": 990,
+							"interned": false
+						},
+						"zod_compiled": {
+							"valid_bytes": 2,
+							"invalid_bytes": 200,
+							"create_bytes": 7500,
+							"create_ns": 1125,
+							"interned": false
+						},
+						"zod_mini": {
+							"valid_bytes": 25,
+							"invalid_bytes": 320,
+							"create_bytes": 1500,
+							"create_ns": 225,
+							"interned": false
+						},
+						"typebox": {
+							"valid_bytes": 0,
+							"invalid_bytes": 0,
+							"create_bytes": 9600,
+							"create_ns": 1440,
+							"interned": false
+						},
+						"arktype": {
+							"valid_bytes": 36,
+							"invalid_bytes": 1800,
+							"create_bytes": 141000,
+							"create_ns": 21150,
+							"interned": true
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"libs": {
+						"fuz_schema": {
+							"valid_bytes": 10,
+							"invalid_bytes": 150,
+							"create_bytes": 800,
+							"create_ns": 120,
+							"interned": false
+						},
+						"valibot": {
+							"valid_bytes": 72,
+							"invalid_bytes": 500,
+							"create_bytes": 1120,
+							"create_ns": 168,
+							"interned": false
+						},
+						"zod": {
+							"valid_bytes": 57,
+							"invalid_bytes": 2800,
+							"create_bytes": 17600,
+							"create_ns": 2640,
+							"interned": false
+						},
+						"zod_compiled": {
+							"valid_bytes": 12,
+							"invalid_bytes": 1000,
+							"create_bytes": 20000,
+							"create_ns": 3000,
+							"interned": false
+						},
+						"zod_mini": {
+							"valid_bytes": 126,
+							"invalid_bytes": 1600,
+							"create_bytes": 4000,
+							"create_ns": 600,
+							"interned": false
+						},
+						"typebox": {
+							"valid_bytes": 0,
+							"invalid_bytes": 0,
+							"create_bytes": 25600,
+							"create_ns": 3840,
+							"interned": false
+						},
+						"arktype": {
+							"valid_bytes": 180,
+							"invalid_bytes": 9000,
+							"create_bytes": 376000,
+							"create_ns": 56400,
+							"interned": true
+						}
+					}
+				},
+				{
+					"scenario": "list",
+					"libs": {
+						"fuz_schema": {
+							"valid_bytes": 900,
+							"invalid_bytes": 13500,
+							"create_bytes": 950,
+							"create_ns": 142.5,
+							"interned": false
+						},
+						"valibot": {
+							"valid_bytes": 6480,
+							"invalid_bytes": 45000,
+							"create_bytes": 1330,
+							"create_ns": 199.5,
+							"interned": false
+						},
+						"zod": {
+							"valid_bytes": 5130,
+							"invalid_bytes": 252000,
+							"create_bytes": 20900,
+							"create_ns": 3135,
+							"interned": false
+						},
+						"zod_compiled": {
+							"valid_bytes": 1080,
+							"invalid_bytes": 90000,
+							"create_bytes": 23750,
+							"create_ns": 3562.5,
+							"interned": false
+						},
+						"zod_mini": {
+							"valid_bytes": 11340,
+							"invalid_bytes": 144000,
+							"create_bytes": 4750,
+							"create_ns": 712.5,
+							"interned": false
+						},
+						"typebox": {
+							"valid_bytes": 0,
+							"invalid_bytes": 0,
+							"create_bytes": 30400,
+							"create_ns": 4560,
+							"interned": false
+						},
+						"arktype": {
+							"valid_bytes": 16200,
+							"invalid_bytes": 810000,
+							"create_bytes": 446500,
+							"create_ns": 66975,
+							"interned": true
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"libs": {
+						"fuz_schema": {
+							"valid_bytes": 150,
+							"invalid_bytes": 2250,
+							"create_bytes": 1700,
+							"create_ns": 255,
+							"interned": false
+						},
+						"valibot": {
+							"valid_bytes": 1080,
+							"invalid_bytes": 7500,
+							"create_bytes": 2380,
+							"create_ns": 357,
+							"interned": false
+						},
+						"zod": {
+							"valid_bytes": 855,
+							"invalid_bytes": 42000,
+							"create_bytes": 37400,
+							"create_ns": 5610,
+							"interned": false
+						},
+						"zod_compiled": {
+							"valid_bytes": 180,
+							"invalid_bytes": 15000,
+							"create_bytes": 42500,
+							"create_ns": 6375,
+							"interned": false
+						},
+						"zod_mini": {
+							"valid_bytes": 1890,
+							"invalid_bytes": 24000,
+							"create_bytes": 8500,
+							"create_ns": 1275,
+							"interned": false
+						},
+						"typebox": {
+							"valid_bytes": 0,
+							"invalid_bytes": 0,
+							"create_bytes": 54400,
+							"create_ns": 8160,
+							"interned": false
+						},
+						"arktype": {
+							"valid_bytes": 2700,
+							"invalid_bytes": 135000,
+							"create_bytes": 799000,
+							"create_ns": 119850,
+							"interned": false
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"libs": {
+						"fuz_schema": {
+							"valid_bytes": 180,
+							"invalid_bytes": 2700,
+							"create_bytes": 2200,
+							"create_ns": 330,
+							"interned": false
+						},
+						"valibot": {
+							"valid_bytes": 1296,
+							"invalid_bytes": 9000,
+							"create_bytes": 3080,
+							"create_ns": 462,
+							"interned": false
+						},
+						"zod": {
+							"valid_bytes": 1026,
+							"invalid_bytes": 50400,
+							"create_bytes": 48400,
+							"create_ns": 7260,
+							"interned": false
+						},
+						"zod_compiled": {
+							"valid_bytes": 216,
+							"invalid_bytes": 18000,
+							"create_bytes": 55000,
+							"create_ns": 8250,
+							"interned": false
+						},
+						"zod_mini": {
+							"valid_bytes": 2268,
+							"invalid_bytes": 28800,
+							"create_bytes": 11000,
+							"create_ns": 1650,
+							"interned": false
+						},
+						"typebox": {
+							"valid_bytes": 0,
+							"invalid_bytes": 0,
+							"create_bytes": 70400,
+							"create_ns": 10560,
+							"interned": false
+						},
+						"arktype": {
+							"valid_bytes": 3240,
+							"invalid_bytes": 162000,
+							"create_bytes": 1034000,
+							"create_ns": 155100,
+							"interned": false
+						}
+					}
+				}
+			]
+		}
+	},
+	"heap": {
+		"status": "measured",
+		"script": "benchmark:heap",
+		"command": "node src/benchmarks/fixture.ts heap",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"counts": {
+				"few": 50,
+				"many": 250
+			},
+			"rows": [
+				{
+					"scenario": "object_flat",
+					"libs": {
+						"fuz_schema": {
+							"heap_bytes": 24000,
+							"code_bytes": 8000,
+							"external_bytes": 0,
+							"total_bytes": 32000,
+							"further_schema_bytes": 720,
+							"interned": false
+						},
+						"valibot": {
+							"heap_bytes": 33600,
+							"code_bytes": 11200,
+							"external_bytes": 0,
+							"total_bytes": 44800,
+							"further_schema_bytes": 1008,
+							"interned": false
+						},
+						"zod": {
+							"heap_bytes": 528000,
+							"code_bytes": 176000,
+							"external_bytes": 0,
+							"total_bytes": 704000,
+							"further_schema_bytes": 15840,
+							"interned": false
+						},
+						"zod_compiled": {
+							"heap_bytes": 600000,
+							"code_bytes": 200000,
+							"external_bytes": 0,
+							"total_bytes": 800000,
+							"further_schema_bytes": 18000,
+							"interned": false
+						},
+						"zod_mini": {
+							"heap_bytes": 120000,
+							"code_bytes": 40000,
+							"external_bytes": 0,
+							"total_bytes": 160000,
+							"further_schema_bytes": 3600,
+							"interned": false
+						},
+						"typebox": {
+							"heap_bytes": 768000,
+							"code_bytes": 256000,
+							"external_bytes": 0,
+							"total_bytes": 1024000,
+							"further_schema_bytes": 23040,
+							"interned": false
+						},
+						"arktype": {
+							"heap_bytes": 11280000,
+							"code_bytes": 3760000,
+							"external_bytes": 2400000,
+							"total_bytes": 17440000,
+							"further_schema_bytes": 130,
+							"interned": true
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"libs": {
+						"fuz_schema": {
+							"heap_bytes": 51000,
+							"code_bytes": 17000,
+							"external_bytes": 0,
+							"total_bytes": 68000,
+							"further_schema_bytes": 1530,
+							"interned": false
+						},
+						"valibot": {
+							"heap_bytes": 71400,
+							"code_bytes": 23800,
+							"external_bytes": 0,
+							"total_bytes": 95200,
+							"further_schema_bytes": 2142,
+							"interned": false
+						},
+						"zod": {
+							"heap_bytes": 1122000,
+							"code_bytes": 374000,
+							"external_bytes": 0,
+							"total_bytes": 1496000,
+							"further_schema_bytes": 33660,
+							"interned": false
+						},
+						"zod_compiled": {
+							"heap_bytes": 1275000,
+							"code_bytes": 425000,
+							"external_bytes": 0,
+							"total_bytes": 1700000,
+							"further_schema_bytes": 38250,
+							"interned": false
+						},
+						"zod_mini": {
+							"heap_bytes": 255000,
+							"code_bytes": 85000,
+							"external_bytes": 0,
+							"total_bytes": 340000,
+							"further_schema_bytes": 7650,
+							"interned": false
+						},
+						"typebox": {
+							"heap_bytes": 1632000,
+							"code_bytes": 544000,
+							"external_bytes": 0,
+							"total_bytes": 2176000,
+							"further_schema_bytes": 48960,
+							"interned": false
+						},
+						"arktype": {
+							"heap_bytes": 23970000,
+							"code_bytes": 7990000,
+							"external_bytes": 2400000,
+							"total_bytes": 34360000,
+							"further_schema_bytes": 719100,
+							"interned": false
+						}
+					}
+				}
+			]
+		}
+	},
+	"coldstart": {
+		"status": "measured",
+		"script": "benchmark:coldstart",
+		"command": "node src/benchmarks/fixture.ts coldstart",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"samples": 15,
+			"discard": 2,
+			"bare": {
+				"ms": 16.5,
+				"band_ms": 2.3,
+				"rss_kb": 47900
+			},
+			"rows": [
+				{
+					"scenario": "object_flat",
+					"form": "bundled",
+					"libs": {
+						"fuz_schema": {
+							"stages": {
+								"import": {
+									"work_ms": 0.4,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.47,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 0.57,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 0.62,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 0.75,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.17,
+							"later_band_ms": 0.017,
+							"added_ms": 0.57,
+							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"valibot": {
+							"stages": {
+								"import": {
+									"work_ms": 0.45,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.52,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 0.76,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 0.81,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 0.94,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.41,
+							"later_band_ms": 0.041,
+							"added_ms": 0.76,
+							"added_rss_kb": 1592,
+							"rss_band_kb": 120
+						},
+						"zod": {
+							"stages": {
+								"import": {
+									"work_ms": 2.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 2.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2.96,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 3.01,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.14,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.32,
+							"later_band_ms": 0.032,
+							"added_ms": 2.96,
+							"added_rss_kb": 6369,
+							"rss_band_kb": 120
+						},
+						"zod_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 3.4,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 3.47,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 3.51,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 3.56,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.69,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.07,
+							"later_band_ms": 0.007,
+							"added_ms": 3.51,
+							"added_rss_kb": 7238,
+							"rss_band_kb": 120
+						},
+						"zod_mini": {
+							"stages": {
+								"import": {
+									"work_ms": 0.85,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.92,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 1.34,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 1.39,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 1.52,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.71,
+							"later_band_ms": 0.071,
+							"added_ms": 1.34,
+							"added_rss_kb": 3049,
+							"rss_band_kb": 120
+						},
+						"typebox": {
+							"stages": {
+								"import": {
+									"work_ms": 4.1,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 4.17,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 4.19,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 4.24,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 4.37,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.03,
+							"later_band_ms": 0.003,
+							"added_ms": 4.19,
+							"added_rss_kb": 8014,
+							"rss_band_kb": 120
+						},
+						"arktype": {
+							"stages": {
+								"import": {
+									"work_ms": 4.9,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 4.97,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 5.57,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 5.62,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 5.75,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 1.02,
+							"later_band_ms": 0.102,
+							"added_ms": 5.57,
+							"added_rss_kb": 8817,
+							"rss_band_kb": 120
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"form": "unbundled",
+					"libs": {
+						"fuz_schema": {
+							"stages": {
+								"import": {
+									"work_ms": 1.5,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.57,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 1.67,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 1.72,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 1.85,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.17,
+							"later_band_ms": 0.017,
+							"added_ms": 1.67,
+							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"valibot": {
+							"stages": {
+								"import": {
+									"work_ms": 1.69,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.76,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 2.05,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 2.18,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.41,
+							"later_band_ms": 0.041,
+							"added_ms": 2,
+							"added_rss_kb": 1592,
+							"rss_band_kb": 120
+						},
+						"zod": {
+							"stages": {
+								"import": {
+									"work_ms": 10.13,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 10.2,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 10.39,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 10.44,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 10.57,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.32,
+							"later_band_ms": 0.032,
+							"added_ms": 10.39,
+							"added_rss_kb": 6369,
+							"rss_band_kb": 120
+						},
+						"zod_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 12.75,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 12.82,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 12.86,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 12.91,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 13.04,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.07,
+							"later_band_ms": 0.007,
+							"added_ms": 12.86,
+							"added_rss_kb": 7238,
+							"rss_band_kb": 120
+						},
+						"zod_mini": {
+							"stages": {
+								"import": {
+									"work_ms": 3.19,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 3.26,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 3.68,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 3.73,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.86,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.71,
+							"later_band_ms": 0.071,
+							"added_ms": 3.68,
+							"added_rss_kb": 3049,
+							"rss_band_kb": 120
+						},
+						"typebox": {
+							"stages": {
+								"import": {
+									"work_ms": 15.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 15.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 15.47,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 15.52,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 15.65,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.03,
+							"later_band_ms": 0.003,
+							"added_ms": 15.47,
+							"added_rss_kb": 8014,
+							"rss_band_kb": 120
+						},
+						"arktype": {
+							"stages": {
+								"import": {
+									"work_ms": 18.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 18.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 19.05,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 19.1,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 19.23,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 1.02,
+							"later_band_ms": 0.102,
+							"added_ms": 19.05,
+							"added_rss_kb": 8817,
+							"rss_band_kb": 120
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"form": "bundled",
+					"libs": {
+						"fuz_schema": {
+							"stages": {
+								"import": {
+									"work_ms": 0.4,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.47,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2.27,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 2.32,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 2.45,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.17,
+							"later_band_ms": 0.017,
+							"added_ms": 2.27,
+							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"valibot": {
+							"stages": {
+								"import": {
+									"work_ms": 0.45,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.52,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 4.84,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 4.89,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 5.02,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.41,
+							"later_band_ms": 0.041,
+							"added_ms": 4.84,
+							"added_rss_kb": 1592,
+							"rss_band_kb": 120
+						},
+						"zod": {
+							"stages": {
+								"import": {
+									"work_ms": 2.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 2.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 6.19,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 6.24,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 6.37,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.32,
+							"later_band_ms": 0.032,
+							"added_ms": 6.19,
+							"added_rss_kb": 6369,
+							"rss_band_kb": 120
+						},
+						"zod_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 3.4,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 3.47,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 4.19,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 4.24,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 4.37,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.07,
+							"later_band_ms": 0.007,
+							"added_ms": 4.19,
+							"added_rss_kb": 7238,
+							"rss_band_kb": 120
+						},
+						"zod_mini": {
+							"stages": {
+								"import": {
+									"work_ms": 0.85,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.92,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 8.48,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 8.53,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 8.66,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.71,
+							"later_band_ms": 0.071,
+							"added_ms": 8.48,
+							"added_rss_kb": 3049,
+							"rss_band_kb": 120
+						},
+						"typebox": {
+							"stages": {
+								"import": {
+									"work_ms": 4.1,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 4.17,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 4.53,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 4.58,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 4.71,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.03,
+							"later_band_ms": 0.003,
+							"added_ms": 4.53,
+							"added_rss_kb": 8014,
+							"rss_band_kb": 120
+						},
+						"arktype": {
+							"stages": {
+								"import": {
+									"work_ms": 4.9,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 4.97,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 15.77,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 15.82,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 15.95,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 1.02,
+							"later_band_ms": 0.102,
+							"added_ms": 15.77,
+							"added_rss_kb": 8817,
+							"rss_band_kb": 120
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"form": "unbundled",
+					"libs": {
+						"fuz_schema": {
+							"stages": {
+								"import": {
+									"work_ms": 1.5,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.57,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 3.37,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 3.42,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.55,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.17,
+							"later_band_ms": 0.017,
+							"added_ms": 3.37,
+							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"valibot": {
+							"stages": {
+								"import": {
+									"work_ms": 1.69,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.76,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 6.08,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 6.13,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 6.26,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.41,
+							"later_band_ms": 0.041,
+							"added_ms": 6.08,
+							"added_rss_kb": 1592,
+							"rss_band_kb": 120
+						},
+						"zod": {
+							"stages": {
+								"import": {
+									"work_ms": 10.13,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 10.2,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 13.62,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 13.67,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 13.8,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.32,
+							"later_band_ms": 0.032,
+							"added_ms": 13.62,
+							"added_rss_kb": 6369,
+							"rss_band_kb": 120
+						},
+						"zod_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 12.75,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 12.82,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 13.54,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 13.59,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 13.72,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.07,
+							"later_band_ms": 0.007,
+							"added_ms": 13.54,
+							"added_rss_kb": 7238,
+							"rss_band_kb": 120
+						},
+						"zod_mini": {
+							"stages": {
+								"import": {
+									"work_ms": 3.19,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 3.26,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 10.82,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 10.87,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 11,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.71,
+							"later_band_ms": 0.071,
+							"added_ms": 10.82,
+							"added_rss_kb": 3049,
+							"rss_band_kb": 120
+						},
+						"typebox": {
+							"stages": {
+								"import": {
+									"work_ms": 15.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 15.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 15.81,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 15.86,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 15.99,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.03,
+							"later_band_ms": 0.003,
+							"added_ms": 15.81,
+							"added_rss_kb": 8014,
+							"rss_band_kb": 120
+						},
+						"arktype": {
+							"stages": {
+								"import": {
+									"work_ms": 18.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 18.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 29.25,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 29.3,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 29.43,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 1.02,
+							"later_band_ms": 0.102,
+							"added_ms": 29.25,
+							"added_rss_kb": 8817,
+							"rss_band_kb": 120
+						}
+					}
+				}
+			]
+		}
+	},
+	"run": {
+		"status": "measured",
+		"script": "benchmark",
+		"command": "node src/benchmarks/fixture.ts run",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"regime": "shared",
+			"passes": 5,
+			"duration_ms": 500,
+			"warm_ms": 100,
+			"call": {
+				"min_ns": 4,
+				"max_ns": 4.4
+			},
+			"rows": [
+				{
+					"scenario": "string",
+					"input": "valid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 20,
+							"batch_ns": 19,
+							"min_ns": 19.4,
+							"max_ns": 20.6,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 48,
+							"batch_ns": 45.6,
+							"min_ns": 46.56,
+							"max_ns": 49.44,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 38,
+							"batch_ns": 36.1,
+							"min_ns": 36.86,
+							"max_ns": 39.14,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 8,
+							"batch_ns": 7.6,
+							"min_ns": 7.76,
+							"max_ns": 8.24,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 84,
+							"batch_ns": 79.8,
+							"min_ns": 81.48,
+							"max_ns": 86.52,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 4,
+							"batch_ns": 3.8,
+							"min_ns": 3.88,
+							"max_ns": 4.12,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 120,
+							"batch_ns": 114,
+							"min_ns": 116.4,
+							"max_ns": 123.6,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "string",
+					"input": "invalid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 30,
+							"batch_ns": 28.5,
+							"min_ns": 29.1,
+							"max_ns": 30.9,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 100,
+							"batch_ns": 95,
+							"min_ns": 97,
+							"max_ns": 103,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 560,
+							"batch_ns": 532,
+							"min_ns": 543.2,
+							"max_ns": 576.8,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 200,
+							"batch_ns": 190,
+							"min_ns": 194,
+							"max_ns": 206,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 320,
+							"batch_ns": 304,
+							"min_ns": 310.4,
+							"max_ns": 329.6,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 4,
+							"batch_ns": 3.8,
+							"min_ns": 3.88,
+							"max_ns": 4.12,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "string",
+					"input": "guard",
+					"libs": {
+						"fuz_schema": {
+							"ns": 20,
+							"batch_ns": 19,
+							"min_ns": 19.4,
+							"max_ns": 20.6,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 130,
+							"batch_ns": 123.5,
+							"min_ns": 126.1,
+							"max_ns": 133.9,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 32,
+							"batch_ns": 30.4,
+							"min_ns": 31.04,
+							"max_ns": 32.96,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 5,
+							"batch_ns": 4.75,
+							"min_ns": 4.85,
+							"max_ns": 5.15,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 86,
+							"batch_ns": 81.7,
+							"min_ns": 83.42,
+							"max_ns": 88.58,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 3.6,
+							"batch_ns": 3.42,
+							"min_ns": 3.49,
+							"max_ns": 3.71,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 3.8,
+							"batch_ns": 3.61,
+							"min_ns": 3.69,
+							"max_ns": 3.91,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"input": "valid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 100,
+							"batch_ns": 95,
+							"min_ns": 97,
+							"max_ns": 103,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 240,
+							"batch_ns": 228,
+							"min_ns": 232.8,
+							"max_ns": 247.2,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 190,
+							"batch_ns": 180.5,
+							"min_ns": 184.3,
+							"max_ns": 195.7,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 40,
+							"batch_ns": 38,
+							"min_ns": 38.8,
+							"max_ns": 41.2,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 420,
+							"batch_ns": 399,
+							"min_ns": 407.4,
+							"max_ns": 432.6,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 20,
+							"batch_ns": 19,
+							"min_ns": 19.4,
+							"max_ns": 20.6,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 600,
+							"batch_ns": 570,
+							"min_ns": 582,
+							"max_ns": 618,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"input": "invalid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 150,
+							"batch_ns": 142.5,
+							"min_ns": 145.5,
+							"max_ns": 154.5,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 500,
+							"batch_ns": 475,
+							"min_ns": 485,
+							"max_ns": 515,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2800,
+							"batch_ns": 2660,
+							"min_ns": 2716,
+							"max_ns": 2884,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 1000,
+							"batch_ns": 950,
+							"min_ns": 970,
+							"max_ns": 1030,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 1600,
+							"batch_ns": 1520,
+							"min_ns": 1552,
+							"max_ns": 1648,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 20,
+							"batch_ns": 19,
+							"min_ns": 19.4,
+							"max_ns": 20.6,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 9000,
+							"batch_ns": 8550,
+							"min_ns": 8730,
+							"max_ns": 9270,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "object_flat",
+					"input": "guard",
+					"libs": {
+						"fuz_schema": {
+							"ns": 100,
+							"batch_ns": 95,
+							"min_ns": 97,
+							"max_ns": 103,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 650,
+							"batch_ns": 617.5,
+							"min_ns": 630.5,
+							"max_ns": 669.5,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 160,
+							"batch_ns": 152,
+							"min_ns": 155.2,
+							"max_ns": 164.8,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 25,
+							"batch_ns": 23.75,
+							"min_ns": 24.25,
+							"max_ns": 25.75,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 430,
+							"batch_ns": 408.5,
+							"min_ns": 417.1,
+							"max_ns": 442.9,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 18,
+							"batch_ns": 17.1,
+							"min_ns": 17.46,
+							"max_ns": 18.54,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 18.72,
+							"batch_ns": 17.78,
+							"min_ns": 17.22,
+							"max_ns": 20.22,
+							"spread": 0.08
+						}
+					}
+				},
+				{
+					"scenario": "list",
+					"input": "valid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 9000,
+							"batch_ns": 8550,
+							"min_ns": 8730,
+							"max_ns": 9270,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 21600,
+							"batch_ns": 20520,
+							"min_ns": 20952,
+							"max_ns": 22248,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 17100,
+							"batch_ns": 16245,
+							"min_ns": 16587,
+							"max_ns": 17613,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 3600,
+							"batch_ns": 3420,
+							"min_ns": 3492,
+							"max_ns": 3708,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 37800,
+							"batch_ns": 35910,
+							"min_ns": 36666,
+							"max_ns": 38934,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 54000,
+							"batch_ns": 51300,
+							"min_ns": 52380,
+							"max_ns": 55620,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "list",
+					"input": "invalid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 13500,
+							"batch_ns": 12825,
+							"min_ns": 13095,
+							"max_ns": 13905,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 45000,
+							"batch_ns": 42750,
+							"min_ns": 43650,
+							"max_ns": 46350,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 252000,
+							"batch_ns": 239400,
+							"min_ns": 244440,
+							"max_ns": 259560,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 90000,
+							"batch_ns": 85500,
+							"min_ns": 87300,
+							"max_ns": 92700,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 144000,
+							"batch_ns": 136800,
+							"min_ns": 139680,
+							"max_ns": 148320,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 810000,
+							"batch_ns": 769500,
+							"min_ns": 785700,
+							"max_ns": 834300,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "list",
+					"input": "guard",
+					"libs": {
+						"fuz_schema": {
+							"ns": 9000,
+							"batch_ns": 8550,
+							"min_ns": 8730,
+							"max_ns": 9270,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 58500,
+							"batch_ns": 55575,
+							"min_ns": 56745,
+							"max_ns": 60255,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 14400,
+							"batch_ns": 13680,
+							"min_ns": 13968,
+							"max_ns": 14832,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 2250,
+							"batch_ns": 2137.5,
+							"min_ns": 2182.5,
+							"max_ns": 2317.5,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 38700,
+							"batch_ns": 36765,
+							"min_ns": 37539,
+							"max_ns": 39861,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 1620,
+							"batch_ns": 1539,
+							"min_ns": 1571.4,
+							"max_ns": 1668.6,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 1710,
+							"batch_ns": 1624.5,
+							"min_ns": 1658.7,
+							"max_ns": 1761.3,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"input": "valid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 1500,
+							"batch_ns": 1425,
+							"min_ns": 1455,
+							"max_ns": 1545,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 3600,
+							"batch_ns": 3420,
+							"min_ns": 3492,
+							"max_ns": 3708,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2850,
+							"batch_ns": 2707.5,
+							"min_ns": 2764.5,
+							"max_ns": 2935.5,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"none": "uncompiled",
+							"why": "`z.compile` hands the root back uncompiled"
+						},
+						"zod_mini": {
+							"ns": 6300,
+							"batch_ns": 5985,
+							"min_ns": 6111,
+							"max_ns": 6489,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 300,
+							"batch_ns": 285,
+							"min_ns": 291,
+							"max_ns": 309,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 9000,
+							"batch_ns": 8550,
+							"min_ns": 8730,
+							"max_ns": 9270,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"input": "invalid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 2250,
+							"batch_ns": 2137.5,
+							"min_ns": 2182.5,
+							"max_ns": 2317.5,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 7500,
+							"batch_ns": 7125,
+							"min_ns": 7275,
+							"max_ns": 7725,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 42000,
+							"batch_ns": 39900,
+							"min_ns": 40740,
+							"max_ns": 43260,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"none": "uncompiled",
+							"why": "`z.compile` hands the root back uncompiled"
+						},
+						"zod_mini": {
+							"ns": 24000,
+							"batch_ns": 22800,
+							"min_ns": 23280,
+							"max_ns": 24720,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 300,
+							"batch_ns": 285,
+							"min_ns": 291,
+							"max_ns": 309,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 135000,
+							"batch_ns": 128250,
+							"min_ns": 130950,
+							"max_ns": 139050,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "type_json",
+					"input": "guard",
+					"libs": {
+						"fuz_schema": {
+							"ns": 1500,
+							"batch_ns": 1425,
+							"min_ns": 1455,
+							"max_ns": 1545,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 9750,
+							"batch_ns": 9262.5,
+							"min_ns": 9457.5,
+							"max_ns": 10042.5,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2400,
+							"batch_ns": 2280,
+							"min_ns": 2328,
+							"max_ns": 2472,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"none": "uncompiled",
+							"why": "`z.compile` hands the root back uncompiled"
+						},
+						"zod_mini": {
+							"ns": 6450,
+							"batch_ns": 6127.5,
+							"min_ns": 6256.5,
+							"max_ns": 6643.5,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 270,
+							"batch_ns": 256.5,
+							"min_ns": 261.9,
+							"max_ns": 278.1,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 285,
+							"batch_ns": 270.75,
+							"min_ns": 276.45,
+							"max_ns": 293.55,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"input": "valid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 4320,
+							"batch_ns": 4104,
+							"min_ns": 4190.4,
+							"max_ns": 4449.6,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 3420,
+							"batch_ns": 3249,
+							"min_ns": 3317.4,
+							"max_ns": 3522.6,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 720,
+							"batch_ns": 684,
+							"min_ns": 698.4,
+							"max_ns": 741.6,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 7560,
+							"batch_ns": 7182,
+							"min_ns": 7333.2,
+							"max_ns": 7786.8,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 360,
+							"batch_ns": 342,
+							"min_ns": 349.2,
+							"max_ns": 370.8,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 10800,
+							"batch_ns": 10260,
+							"min_ns": 10476,
+							"max_ns": 11124,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"input": "invalid",
+					"libs": {
+						"fuz_schema": {
+							"ns": 2700,
+							"batch_ns": 2565,
+							"min_ns": 2619,
+							"max_ns": 2781,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 9000,
+							"batch_ns": 8550,
+							"min_ns": 8730,
+							"max_ns": 9270,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 50400,
+							"batch_ns": 47880,
+							"min_ns": 48888,
+							"max_ns": 51912,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 18000,
+							"batch_ns": 17100,
+							"min_ns": 17460,
+							"max_ns": 18540,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 28800,
+							"batch_ns": 27360,
+							"min_ns": 27936,
+							"max_ns": 29664,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 360,
+							"batch_ns": 342,
+							"min_ns": 349.2,
+							"max_ns": 370.8,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 162000,
+							"batch_ns": 153900,
+							"min_ns": 157140,
+							"max_ns": 166860,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"scenario": "app",
+					"input": "guard",
+					"libs": {
+						"fuz_schema": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 11700,
+							"batch_ns": 11115,
+							"min_ns": 11349,
+							"max_ns": 12051,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2880,
+							"batch_ns": 2736,
+							"min_ns": 2793.6,
+							"max_ns": 2966.4,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 450,
+							"batch_ns": 427.5,
+							"min_ns": 436.5,
+							"max_ns": 463.5,
+							"spread": 0.03
+						},
+						"zod_mini": {
+							"ns": 7740,
+							"batch_ns": 7353,
+							"min_ns": 7507.8,
+							"max_ns": 7972.2,
+							"spread": 0.03
+						},
+						"typebox": {
+							"ns": 324,
+							"batch_ns": 307.8,
+							"min_ns": 314.28,
+							"max_ns": 333.72,
+							"spread": 0.03
+						},
+						"arktype": {
+							"ns": 342,
+							"batch_ns": 324.9,
+							"min_ns": 331.74,
+							"max_ns": 352.26,
+							"spread": 0.03
+						}
+					}
+				}
+			]
+		}
+	},
+	"survey": {
+		"status": "measured",
+		"script": "benchmark:survey",
+		"command": "node src/benchmarks/fixture.ts survey",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"regime": "shared",
+			"passes": 3,
+			"duration_ms": 150,
+			"warm_ms": 60,
+			"subject": "fuz_schema",
+			"others": [
+				"valibot",
+				"zod",
+				"zod_compiled"
+			],
+			"call": {
+				"min_ns": 4.2,
+				"max_ns": 4.4
+			},
+			"call_floor_ns": 8.8,
+			"kinds": [
+				"primitive",
+				"guard",
+				"array",
+				"object identity",
+				"object copy",
+				"union",
+				"lazy",
+				"issue at the root",
+				"issue at depth 1",
+				"many issues"
+			],
+			"rows": [
+				{
+					"shape": "string",
+					"input": "valid",
+					"does": "primitive",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 18,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 23.4,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 43.2,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 30.6,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "string",
+					"input": "invalid",
+					"does": "issue at the root",
+					"valid": false,
+					"libs": {
+						"fuz_schema": {
+							"ns": 32,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 80,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 640,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 768,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "is_string",
+					"input": "valid",
+					"does": "guard",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 8,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 12,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 12.8,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 8.8,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "object",
+					"input": "valid",
+					"does": "object identity",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 110,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 286,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 198,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 55,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "object",
+					"input": "one_bad",
+					"does": "issue at depth 1",
+					"valid": false,
+					"libs": {
+						"fuz_schema": {
+							"ns": 150,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 510,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 1350,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 1275,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "strip_object",
+					"input": "valid",
+					"does": "object copy",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 210,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 336,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 168,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 75.6,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "array_numbers",
+					"input": "valid_100",
+					"does": "array",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 700,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 2100,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2450,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 154,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "union",
+					"input": "second",
+					"does": "union",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 60,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 216,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 198,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 42,
+							"spread": 0.03
+						}
+					}
+				},
+				{
+					"shape": "lazy_tree",
+					"input": "valid",
+					"does": "lazy",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 940,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 2820,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 4888,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"none": "uncompiled",
+							"why": "`z.compile` hands the root back uncompiled"
+						}
+					}
+				},
+				{
+					"shape": "memo_union",
+					"input": "valid",
+					"does": "union",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 85,
+							"spread": 0.03
+						},
+						"valibot": {
+							"none": "no_equivalent",
+							"why": "it has no union that keeps what it probed"
+						},
+						"zod": {
+							"none": "no_equivalent",
+							"why": "it has no union that keeps what it probed"
+						},
+						"zod_compiled": {
+							"none": "no_equivalent",
+							"why": "it has no union that keeps what it probed"
+						}
+					}
+				},
+				{
+					"shape": "number",
+					"input": "nan",
+					"does": "issue at the root",
+					"valid": false,
+					"libs": {
+						"fuz_schema": {
+							"ns": 36,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 82.8,
+							"spread": 0.03
+						},
+						"zod": {
+							"none": "differs",
+							"why": "it takes NaN as a number"
+						},
+						"zod_compiled": {
+							"none": "differs",
+							"why": "it takes NaN as a number"
+						}
+					}
+				},
+				{
+					"shape": "form",
+					"input": "all_bad",
+					"does": "many issues",
+					"valid": false,
+					"libs": {
+						"fuz_schema": {
+							"ns": 210,
+							"spread": 0.03
+						},
+						"valibot": {
+							"ns": 735,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 2100,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 2205,
+							"spread": 0.03
+						}
+					}
+				}
+			]
+		}
+	},
+	"harvest": {
+		"status": "measured",
+		"script": "benchmark:harvest",
+		"command": "node src/benchmarks/fixture.ts harvest",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"passes": 5,
+			"duration_ms": 1000,
+			"warm_ms": 200,
+			"sets": [
+				{
+					"name": "status_report",
+					"title": "an invented consumer's status report, in zod and in this library",
+					"reference": "zod",
+					"root": "StatusReport",
+					"sides": [
+						{
+							"id": "zod",
+							"label": "zod"
+						},
+						{
+							"id": "zod_jitless",
+							"label": "zod jitless"
+						},
+						{
+							"id": "zod_compiled",
+							"label": "zod compiled"
+						},
+						{
+							"id": "fuz_schema",
+							"label": "fuz_schema"
+						}
+					],
+					"bundles": {
+						"zod": {
+							"minified": 99000,
+							"gzip": 27000
+						},
+						"zod_compiled": {
+							"minified": 129000,
+							"gzip": 34000
+						},
+						"fuz_schema": {
+							"minified": 16000,
+							"gzip": 4000
+						}
+					},
+					"rows": [
+						{
+							"name": "a report",
+							"valid": true,
+							"sides": {
+								"zod": {
+									"time": {
+										"ns": 130000,
+										"batch_ns": 124800,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 310000
+									}
+								},
+								"zod_jitless": {
+									"time": {
+										"ns": 480000,
+										"batch_ns": 460800,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 780000
+									}
+								},
+								"zod_compiled": {
+									"time": {
+										"ns": 48000,
+										"batch_ns": 46080,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 50000
+									}
+								},
+								"fuz_schema": {
+									"time": {
+										"ns": 86000,
+										"batch_ns": 82560,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 88
+									}
+								}
+							}
+						},
+						{
+							"name": "an error",
+							"valid": true,
+							"sides": {
+								"zod": {
+									"time": {
+										"ns": 2400,
+										"batch_ns": 2304,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 7000
+									}
+								},
+								"zod_jitless": {
+									"time": {
+										"ns": 7000,
+										"batch_ns": 6720,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 15500
+									}
+								},
+								"zod_compiled": {
+									"time": {
+										"none": "uncompiled",
+										"why": "`z.compile` hands the root back uncompiled"
+									},
+									"bytes": {
+										"none": "uncompiled",
+										"why": "`z.compile` hands the root back uncompiled"
+									}
+								},
+								"fuz_schema": {
+									"time": {
+										"ns": 1300,
+										"batch_ns": 1248,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 88
+									}
+								}
+							}
+						},
+						{
+							"name": "a report, last presence unknown",
+							"valid": false,
+							"sides": {
+								"zod": {
+									"time": {
+										"ns": 140000,
+										"batch_ns": 134400,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 316000
+									}
+								},
+								"zod_jitless": {
+									"time": {
+										"ns": 477000,
+										"batch_ns": 457920,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 788000
+									}
+								},
+								"zod_compiled": {
+									"time": {
+										"ns": 240000,
+										"batch_ns": 230400,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 331000
+									}
+								},
+								"fuz_schema": {
+									"time": {
+										"ns": 82000,
+										"batch_ns": 78720,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 240
+									}
+								}
+							}
+						}
+					],
+					"asides": [
+						{
+							"name": "the URL checks of a report",
+							"ns": 470,
+							"batch_ns": 440,
+							"spread": 0.03,
+							"bytes": 168
+						}
+					]
+				},
+				{
+					"name": "analysis",
+					"title": "an invented consumer's analysis output, in valibot and in this library",
+					"reference": "valibot",
+					"root": "ModuleAnalysis",
+					"sides": [
+						{
+							"id": "valibot",
+							"label": "valibot"
+						},
+						{
+							"id": "fuz_schema",
+							"label": "fuz_schema"
+						}
+					],
+					"bundles": {
+						"valibot": {
+							"minified": 9000,
+							"gzip": 3100
+						},
+						"fuz_schema": {
+							"minified": 6800,
+							"gzip": 2400
+						}
+					},
+					"rows": [
+						{
+							"name": "a module",
+							"valid": true,
+							"sides": {
+								"valibot": {
+									"time": {
+										"ns": 21000,
+										"batch_ns": 20160,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 9000
+									}
+								},
+								"fuz_schema": {
+									"time": {
+										"ns": 8000,
+										"batch_ns": 7680,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 1200
+									}
+								}
+							}
+						},
+						{
+							"name": "a module with a wrong kind",
+							"valid": false,
+							"sides": {
+								"valibot": {
+									"time": {
+										"ns": 24000,
+										"batch_ns": 23040,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 11000
+									}
+								},
+								"fuz_schema": {
+									"time": {
+										"ns": 8500,
+										"batch_ns": 8160,
+										"spread": 0.03
+									},
+									"bytes": {
+										"bytes": 1500
+									}
+								}
+							}
+						}
+					],
+					"asides": []
+				}
+			]
+		}
+	},
+	"wasm": {
+		"status": "measured",
+		"script": "benchmark:wasm",
+		"command": "node src/benchmarks/fixture.ts wasm",
+		"args": [],
+		"duration_ms": 60000,
+		"data": {
+			"rounds": 15,
+			"round_ms": 20,
+			"wasm_bytes": 250000,
+			"wasm_gzip_bytes": 99000,
+			"payloads": [
+				{
+					"size": "1 item",
+					"outcome": "valid",
+					"items": 1,
+					"bytes": 134,
+					"code_units": 134,
+					"rows": [
+						{
+							"holding": null,
+							"side": "reference",
+							"label": "JSON.parse(text)",
+							"ns": 680,
+							"min_ns": 663,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "js",
+							"label": "JSON.parse, is",
+							"ns": 850,
+							"min_ns": 833,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "wasm",
+							"label": "wasm matches_json(text)",
+							"ns": 510,
+							"min_ns": 499.8,
+							"vs_js": 0.6
+						},
+						{
+							"holding": "bytes",
+							"side": "js",
+							"label": "TextDecoder, JSON.parse, is",
+							"ns": 1020,
+							"min_ns": 1003,
+							"vs_js": null
+						},
+						{
+							"holding": "bytes",
+							"side": "wasm",
+							"label": "wasm matches_json_bytes(bytes)",
+							"ns": 550.8000000000001,
+							"min_ns": 538.5600000000001,
+							"vs_js": 0.54
+						}
+					]
+				},
+				{
+					"size": "4 MB",
+					"outcome": "valid",
+					"items": 28000,
+					"bytes": 4000100,
+					"code_units": 4000100,
+					"rows": [
+						{
+							"holding": null,
+							"side": "reference",
+							"label": "JSON.parse(text)",
+							"ns": 19200000,
+							"min_ns": 18720000,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "js",
+							"label": "JSON.parse, is",
+							"ns": 24000000,
+							"min_ns": 23520000,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "wasm",
+							"label": "wasm matches_json(text)",
+							"ns": 13679999.999999998,
+							"min_ns": 13406399.999999998,
+							"vs_js": 0.57
+						},
+						{
+							"holding": "bytes",
+							"side": "js",
+							"label": "TextDecoder, JSON.parse, is",
+							"ns": 28800000,
+							"min_ns": 28320000,
+							"vs_js": null
+						},
+						{
+							"holding": "bytes",
+							"side": "wasm",
+							"label": "wasm matches_json_bytes(bytes)",
+							"ns": 14774399.999999998,
+							"min_ns": 14446079.999999998,
+							"vs_js": 0.51
+						}
+					]
+				},
+				{
+					"size": "4 MB",
+					"outcome": "first_bad",
+					"items": 28000,
+					"bytes": 4000090,
+					"code_units": 4000090,
+					"rows": [
+						{
+							"holding": null,
+							"side": "reference",
+							"label": "JSON.parse(text)",
+							"ns": 11200000,
+							"min_ns": 10920000,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "js",
+							"label": "JSON.parse, is",
+							"ns": 14000000,
+							"min_ns": 13720000,
+							"vs_js": null
+						},
+						{
+							"holding": "string",
+							"side": "wasm",
+							"label": "wasm matches_json(text)",
+							"ns": 420000,
+							"min_ns": 411600,
+							"vs_js": 0.03
+						},
+						{
+							"holding": "bytes",
+							"side": "js",
+							"label": "TextDecoder, JSON.parse, is",
+							"ns": 16800000,
+							"min_ns": 16520000,
+							"vs_js": null
+						},
+						{
+							"holding": "bytes",
+							"side": "wasm",
+							"label": "wasm matches_json_bytes(bytes)",
+							"ns": 453600,
+							"min_ns": 443520,
+							"vs_js": 0.03
+						}
+					]
+				}
+			]
+		}
+	}
+}

@@ -20,11 +20,14 @@
  * @module
  */
 
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { args_parse, argv_parse, type ArgValue } from '@fuzdev/fuz_util/args.ts';
 
 import type * as Schema from '#lib/schema.ts';
 import type * as Meta from '#lib/meta.ts';
 import { LIB_NAMES } from './lib_names.ts';
+import type { BenchmarkData, BenchmarkId } from './results_schema.ts';
 import { SCENARIOS } from './scenarios.ts';
 
 const ARGS_QUERY = '?args';
@@ -97,6 +100,38 @@ export const to_count_arg = (
 	min = 1
 ): Schema.Schema<number, number | undefined> =>
 	s.with_default(s.pipe(s.number, s.safe_integer, s.min_value(min)), fallback);
+
+/**
+ * The arg every script that prints a result takes: a path to also write what
+ * it measured to, as data, see `write_benchmark_data`. The text a script
+ * prints is the same with it and without.
+ */
+export const DataArg = meta(s.optional(s.pipe(s.string, s.min_length(1))), {
+	description: 'also write what was measured to this path, as JSON'
+});
+
+/**
+ * Writes what a script measured to `path`, as the JSON `results_run.ts` reads
+ * a section of a results file from: the figures themselves, each in its unit
+ * and with its spread where it has one, and never text formatted for a table.
+ * The data's type is the section's, from `results_schema.ts`, which this
+ * module takes as a type only, so no script loads the schema: the run that
+ * composes the file validates it, in a process that measures nothing. The
+ * file is written whole or not at all, and nothing is printed.
+ *
+ * @param benchmark - which script's data it is
+ * @param data - what the script measured
+ */
+export const write_benchmark_data = <TId extends BenchmarkId>(
+	path: string,
+	benchmark: TId,
+	data: BenchmarkData[TId]
+): void => {
+	mkdirSync(dirname(path), { recursive: true });
+	const temp_path = `${path}.${process.pid}.tmp`;
+	writeFileSync(temp_path, JSON.stringify({ benchmark, data }, null, '\t') + '\n');
+	renameSync(temp_path, path);
+};
 
 // what `--help` prints of an arg's default: what it is filled in with
 const to_default_text = (schema: Schema.AnySchema): string | undefined => {

@@ -11,6 +11,9 @@ target/
 .fuz/
 .zzz/
 
+# Benchmark runs that are not publishable, and what each script of a run wrote
+/results/scratch/
+
 # Env
 .env*
 !.env.example

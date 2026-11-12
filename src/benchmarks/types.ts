@@ -30,7 +30,16 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { LibNamesArg, meta, parse_args, s, to_count_arg } from './args.ts';
+import {
+	DataArg,
+	LibNamesArg,
+	meta,
+	parse_args,
+	s,
+	to_count_arg,
+	write_benchmark_data
+} from './args.ts';
+import type { TypeCost } from './results_schema.ts';
 import { to_built_schema_declarations_path } from './child.ts';
 import { LIB_NAMES } from './lib_names.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
@@ -44,7 +53,8 @@ const Args = s.object({
 	),
 	runs: meta(to_count_arg(3), {
 		description: 'times each file is checked, the median check time is reported'
-	})
+	}),
+	data: DataArg
 });
 
 const args = parse_args(Args);
@@ -159,6 +169,18 @@ const measure = (name: string, file: string): Array<string> => {
 	);
 };
 
+// what a row of figures holds, as numbers: in the order of `METRICS`, the memory
+// in kilobytes with its `K` and the check time in seconds with its `s`
+const to_type_cost = (figures: Array<string>): TypeCost => ({
+	instantiations: Number(figures[0]),
+	types: Number(figures[1]),
+	memory_kb: Number.parseInt(figures[2]!, 10),
+	check_s: Number.parseFloat(figures[3]!)
+});
+// every row of both tables, by library, for `--data`
+const measured_modules: Record<string, Array<string>> = {};
+const measured_reads: Record<string, { reads: Array<string>; alone: Array<string> }> = {};
+
 const header = ['lib', ...METRICS.map((m) => m.toLowerCase())];
 const empty = [EMPTY, ...measure(EMPTY, resolve(dir, 'empty.ts'))];
 
@@ -172,7 +194,10 @@ console.log(
 		empty,
 		...args.lib.map((lib) => [
 			lib,
-			...measure(lib, to_checked_module(lib, resolve(BENCHMARKS_DIR, 'libs', `${lib}.ts`), lib))
+			...(measured_modules[lib] = measure(
+				lib,
+				to_checked_module(lib, resolve(BENCHMARKS_DIR, 'libs', `${lib}.ts`), lib)
+			))
 		])
 	])
 );
@@ -195,7 +220,24 @@ console.log(
 					`${lib}.schemas`
 				)
 			);
+			measured_reads[lib] = { reads, alone };
 			return [lib, reads[0]!, String(Number(reads[0]) - Number(alone[0])), ...reads.slice(1)];
 		})
 	])
 );
+
+if (args.data !== undefined) {
+	// what the tables above were printed from, as numbers
+	write_benchmark_data(args.data, 'types', {
+		runs: args.runs,
+		empty: to_type_cost(empty.slice(1)),
+		modules: Object.fromEntries(args.lib.map((lib) => [lib, to_type_cost(measured_modules[lib]!)])),
+		reads: READS,
+		with_reads: Object.fromEntries(
+			args.lib.map((lib) => {
+				const { reads, alone } = measured_reads[lib]!;
+				return [lib, { ...to_type_cost(reads), reads_add: Number(reads[0]) - Number(alone[0]) }];
+			})
+		)
+	});
+}

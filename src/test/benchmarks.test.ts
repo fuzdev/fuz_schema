@@ -136,15 +136,67 @@ const to_call_end = (text: string, open: number): number => {
 	throw new Error(`no end to the call at ${open} of ${text}`);
 };
 
+// A source text with its comments dropped and its string, template, and regex
+// literals taken out, each for a placeholder, so what is done to the code around
+// them reaches into none: whitespace inside a string is the string's. A `/`
+// starts a regex where no value can end before it. A template literal is taken
+// whole to its closing backtick, so one holding another in a `${}` is not read.
+const take_literals = (text: string): { code: string; literals: Array<string> } => {
+	const literals: Array<string> = [];
+	let code = '';
+	// the last character of code that is not whitespace
+	let last = '';
+	for (let i = 0; i < text.length;) {
+		const c = text[i]!;
+		const next = text[i + 1];
+		if (c === '/' && next === '/') {
+			const end = text.indexOf('\n', i);
+			if (end < 0) break;
+			i = end;
+			continue;
+		}
+		if (c === '/' && next === '*') {
+			const end = text.indexOf('*/', i + 2);
+			if (end < 0) break;
+			i = end + 2;
+			continue;
+		}
+		const is_quote = c === "'" || c === '"' || c === '`';
+		const is_regex = c === '/' && (last === '' || '(,=:[!&|?{};'.includes(last));
+		if (!is_quote && !is_regex) {
+			code += c;
+			if (!/\s/.test(c)) last = c;
+			i++;
+			continue;
+		}
+		let end = i + 1;
+		let in_class = false;
+		for (; end < text.length; end++) {
+			const e = text[end]!;
+			if (e === '\\') end++;
+			else if (is_quote ? e === c : e === '/' && !in_class) break;
+			else if (is_regex && e === '[') in_class = true;
+			else if (is_regex && e === ']') in_class = false;
+		}
+		end++;
+		// a regex's flags are part of it
+		if (is_regex) while (/[a-z]/.test(text[end] ?? '')) end++;
+		code += `\0${literals.length}\0`;
+		literals.push(text.slice(i, end));
+		last = '\0';
+		i = end;
+	}
+	return { code, literals };
+};
+
 // What a factory and its builder must agree on: the text of the definition,
 // less comments, whitespace, the calls of a runner around the schema, and the
 // prefix of a name, so `scenario_object_flat` and `schema_object_flat` are one.
+// None of that is done inside a string, template, or regex literal, which are
+// compared as they are written.
 const to_comparable = (text: string): string => {
-	let out = text
-		.replace(/\/\*[\s\S]*?\*\//g, '')
-		.replace(/\/\/[^\n]*/g, '')
-		.replace(/\s+/g, '')
-		.replace(/\b(?:scenario|schema)_(?=\w)/g, '');
+	const { code, literals } = take_literals(text);
+	let out = code.replace(/\s+/g, '').replace(/\b(?:scenario|schema)_(?=\w)/g, '');
 	for (const wrapper of ['to_runner(', 'to_app_runner(']) {
 		for (let at = out.indexOf(wrapper); at >= 0; at = out.indexOf(wrapper)) {
 			const open = at + wrapper.length - 1;
@@ -152,22 +204,72 @@ const to_comparable = (text: string): string => {
 			out = out.slice(0, at) + out.slice(open + 1, end - 1) + out.slice(end);
 		}
 	}
-	return out;
+	return out.replace(/\0(\d+)\0/g, (_, index: string) => literals[Number(index)]!);
+};
+
+// The top-level helpers of a module that run a schema and define none: a
+// factory's runners, a builder's guard and output, and what compiles a schema
+// for either. Each side has its own, so they are not compared.
+const RUNNER_HELPERS = [
+	'to_runner',
+	'to_app_runner',
+	'to_guard',
+	'to_output',
+	'compile_each',
+	'find_uncompiled_scenarios'
+];
+
+// The source text of each top-level `const` of a module that is neither a
+// scenario's nor a runner helper, by name: what the definitions share, as
+// TypeBox's `STRICT`, which a scenario's own text doesn't hold.
+const to_shared_constants = (source: string): Map<string, string> => {
+	const constants: Map<string, string> = new Map();
+	const pattern = /^(?:export )?const (\w+)(?::[^=\n]*)? =([\s\S]*?)(?=^[^\s)\]}]|(?![\s\S]))/gm;
+	for (const [, name, text] of source.matchAll(pattern)) {
+		if (/^(?:scenario|schema)_/.test(name!) || RUNNER_HELPERS.includes(name!)) continue;
+		constants.set(name!, text!);
+	}
+	return constants;
 };
 
 const read_benchmark_source = (path: string): string =>
 	readFileSync(new URL(`../benchmarks/${path}`, import.meta.url), 'utf8');
 
+/** One side of a comparison: a module, and the prefix its definitions' names have. */
+interface DefinitionsSide {
+	path: string;
+	prefix: string;
+	/** The module's text, read from `path` when left out. */
+	source?: string;
+}
+
+// where two comparable texts part, each with what is around it
+const format_difference = (
+	name: string,
+	a: DefinitionsSide,
+	b: DefinitionsSide,
+	left: string,
+	right: string
+): string => {
+	let i = 0;
+	while (left[i] === right[i]) i++;
+	return (
+		`${name}: ${a.path} has ${left.slice(Math.max(0, i - 30), i + 30)} ` +
+		`where ${b.path} has ${right.slice(Math.max(0, i - 30), i + 30)}`
+	);
+};
+
 /**
  * What differs between two modules' definitions of every scenario, a line for
- * each scenario one lacks or whose texts differ, none when they agree.
+ * each scenario one lacks or whose texts differ, and for each top-level
+ * constant the definitions share that one lacks or whose texts differ, none
+ * when they agree.
  */
-const find_definition_differences = (
-	a: { path: string; prefix: string },
-	b: { path: string; prefix: string }
-): Array<string> => {
-	const of_a = to_definitions(read_benchmark_source(a.path), a.prefix);
-	const of_b = to_definitions(read_benchmark_source(b.path), b.prefix);
+const find_definition_differences = (a: DefinitionsSide, b: DefinitionsSide): Array<string> => {
+	const source_a = a.source ?? read_benchmark_source(a.path);
+	const source_b = b.source ?? read_benchmark_source(b.path);
+	const of_a = to_definitions(source_a, a.prefix);
+	const of_b = to_definitions(source_b, b.prefix);
 	const names = SCENARIOS.map((scenario) => scenario.name as string);
 	const wrong: Array<string> = [];
 	for (const name of new Set([...names, ...of_a.keys(), ...of_b.keys()])) {
@@ -179,14 +281,21 @@ const find_definition_differences = (
 		if (text_a !== undefined && text_b !== undefined) {
 			const left = to_comparable(text_a);
 			const right = to_comparable(text_b);
-			if (left !== right) {
-				let i = 0;
-				while (left[i] === right[i]) i++;
-				wrong.push(
-					`${name}: ${a.path} has ${left.slice(Math.max(0, i - 30), i + 30)} ` +
-						`where ${b.path} has ${right.slice(Math.max(0, i - 30), i + 30)}`
-				);
-			}
+			if (left !== right) wrong.push(format_difference(name, a, b, left, right));
+		}
+	}
+	const constants_a = to_shared_constants(source_a);
+	const constants_b = to_shared_constants(source_b);
+	for (const name of new Set([...constants_a.keys(), ...constants_b.keys()])) {
+		const text_a = constants_a.get(name);
+		const text_b = constants_b.get(name);
+		if (text_a === undefined) wrong.push(`${name}: a constant of ${b.path} and not of ${a.path}`);
+		else if (text_b === undefined) {
+			wrong.push(`${name}: a constant of ${a.path} and not of ${b.path}`);
+		} else {
+			const left = to_comparable(text_a);
+			const right = to_comparable(text_b);
+			if (left !== right) wrong.push(format_difference(name, a, b, left, right));
 		}
 	}
 	return wrong;
@@ -232,6 +341,78 @@ describe('every builder is its factory', () => {
 						? '()=>compile_each(zod.app());'
 						: `()=>z.compile(zod.${name}());`
 			])
+		);
+	});
+
+	// a change to one side of a library's two modules, which the comparison must find
+	const MUTATIONS: Array<
+		[
+			label: string,
+			lib: string,
+			side: 'factory' | 'builder',
+			from: string,
+			to: string,
+			finds: string
+		]
+	> = [
+		[
+			'a check of another length',
+			'valibot',
+			'builder',
+			'v.maxLength(100)',
+			'v.maxLength(101)',
+			'app:'
+		],
+		[
+			'a key that is no longer dropped',
+			'arktype',
+			'builder',
+			"'+': 'delete',\n\t\tname: '1 <= string <= 50'",
+			"name: '1 <= string <= 50'",
+			'pipe:'
+		],
+		[
+			'a constant every strict scenario shares',
+			'typebox',
+			'factory',
+			'additionalProperties: false',
+			'additionalProperties: true',
+			'STRICT:'
+		],
+		['whitespace inside a string', 'fuz_schema', 'factory', "'member'", "'mem ber'", 'app:'],
+		['a comment marker inside a string', 'fuz_schema', 'factory', "'member'", "'mem//ber'", 'app:'],
+		[
+			'a constant only one side has',
+			'typebox',
+			'builder',
+			'const STRICT =',
+			'const SHUT =',
+			'STRICT: a constant of'
+		]
+	];
+
+	test.each(MUTATIONS)('finds %s', (_label, lib, side, from, to, finds) => {
+		const factory: DefinitionsSide = { path: `libs/${lib}.ts`, prefix: 'scenario' };
+		const builder: DefinitionsSide = { path: `libs/schemas/${lib}.ts`, prefix: 'schema' };
+		const changed = side === 'factory' ? factory : builder;
+		const source = read_benchmark_source(changed.path);
+		assert.include(source, from, `${changed.path} no longer has the text this changes`);
+		changed.source = source.replace(from, to);
+		const differences = find_definition_differences(factory, builder);
+		assert.ok(
+			differences.some((difference) => difference.startsWith(finds)),
+			`expected a difference of ${finds} and found ${JSON.stringify(differences)}`
+		);
+	});
+
+	test('literals are taken out whole, and nothing else is', () => {
+		const { code, literals } = take_literals(
+			"a = 'x // y' /* gone */ + \"z's\" // gone\nb = /[/']+/g.test(`q ${1}`) ? 4 / 2 : c"
+		);
+		assert.deepEqual(literals, ["'x // y'", '"z\'s"', "/[/']+/g", '`q ${1}`']);
+		assert.strictEqual(
+			code.replace(/\s+/g, ''),
+			'a=\x000\x00+\x001\x00b=\x002\x00.test(\x003\x00)?4/2:c'
 		);
 	});
 
