@@ -243,6 +243,9 @@ dev server.
   difference as the benchmarks page does; the checker over the fixture, with
   a change that fails each claim for every library it names; and the README
   itself against `results/latest.json`
+- `src/test/readme_recipes.test.ts` - the README's recipes, each as it is
+  printed and what the README says it gives, and the README's blocks marked
+  `<!-- recipe: <name> -->` held to them
 - `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
   of bytes and of retained heap, over figures made up for them
 - `src/test/grade_stats.test.ts` - the grader's statistics over made-up

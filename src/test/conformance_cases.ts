@@ -2132,6 +2132,12 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.union([l.string, l.record(l.refine(l.string, () => false))]),
 		input: () => ({ k: 'x' })
 	},
+	// a union of one option, which both run as the option itself
+	{
+		name: 'union of one option, which fails',
+		schema: (l) => l.union([l.strict({ a: l.string })]),
+		input: () => ({ a: 1 })
+	},
 	// the same option of the wrong type inside, which all three report at the union
 	{
 		name: 'union, an object option of the wrong type inside',

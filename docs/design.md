@@ -1223,6 +1223,11 @@ issues. These it holds:
   fails is reported at the entry by both, and at the union here. By design:
   options are only probed, so one that fails builds no issue and allocates
   nothing.
+- A failed `union` of one option reports one issue too, at its own path,
+  where both run the option as itself and report its issues at their paths:
+  `union([object({a: string})])` given `{a: 1}` is reported at `a` by both,
+  and at the union here. By design: a union reports its own issue whatever
+  its count of options, and an option written alone reports its own.
 - A `pipe` stops at its first failing step. A check after an object, an
   array, or a record one of whose entries or items fails only a check is not
   run, where both run it and report it too, at the container's path. By

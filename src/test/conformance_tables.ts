@@ -547,6 +547,15 @@ const differences = [
 	},
 	{
 		reason:
+			'a failed `union` of one option reports one issue, at its own path, where both run the option as itself and report its issues at their paths. By design: a union reports its own issue whatever its count of options, and an option written alone reports its own',
+		status: 'declared',
+		docs: 'A failed `union` of one option reports one issue too',
+		rows: {
+			'union of one option, which fails': { both: 'fail at a', ours: 'fail at <root>' }
+		}
+	},
+	{
+		reason:
 			'a `pipe` stops at its first failing step, so a check after a container whose item fails only a check is not run, where both run it and report it too. By design: a step runs only on a value every step before it accepted',
 		status: 'declared',
 		docs: 'A `pipe` stops at its first failing step',

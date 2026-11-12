@@ -134,7 +134,9 @@ script checks for that and runs Node directly otherwise.
 
 Not generated, as no counterpart in Zod and Valibot exists or as they have no
 run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
-`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Each
+`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. A
+`union` has two or three options, so a union of one option is held to Zod
+and Valibot by the matrix alone. Each
 declared difference with no rule is in `DIFFERENTIAL_UNRULED`, with why.
 A generated schema holds no union twice and an input no object twice, so the
 memo of a `memo_union` never answers there. The test holds it to `union` on

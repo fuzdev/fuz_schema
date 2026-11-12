@@ -95,8 +95,12 @@ Caveats:
 
 - Where the fastest check of valid input matters most, and code generated at runtime is allowed: see [Measurements](#measurements).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
-- For async validation or a registry of translated messages, neither designed yet: custom text is per schema, through [`message`](#issues).
-- For `tuple` or `intersect`, which it doesn't have, or for a failed `union`'s nested issues.
+- Where a check must await inside the schema, as Valibot's `pipeAsync` and Zod's async `refine` do:
+  `parse` is synchronous, and an async check runs after it, on its output, see [Async checks](#async-checks).
+- Where translated messages should come from a registry or a shipped locale:
+  here a consumer's catalogue writes them from an issue's data, see [Translating issues](#translating-issues).
+- For `tuple` or `intersect`, which it doesn't have,
+  or where a failed `union` must report each option's issues, which a caller [gets by parsing again](#a-failed-unions-options).
 - Where the API must be stable: it [isn't yet](#status).
 
 ## Priorities
@@ -154,7 +158,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 ### Other differences in behavior
 
 - `pipe` stops at its first failing step.
-- A failed `union` reports one issue, not its options' issues, and names each option once, as `received` names values:
+- A failed `union` reports one issue, not its options' issues, even with one option, and names each option once, as `received` names values:
   `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])` reads `expected string | null | "a" | "b" | number`,
   by the rule in [`docs/design.md`](docs/design.md#issues).
 - A missing object key is the `undefined` it reads as, except to the schemas [Missing keys](#missing-keys) names,
@@ -515,6 +519,152 @@ so `s.check_at('confrim', ...)` fails to compile.
 It is a `check` to every reader, and a `pipe` stops at the first step that fails,
 so of several `check_at`s, one per field, one reports its issue at a time.
 
+#### A failed `union`'s options
+
+A failed `union` reports one issue, at its own path, as its options are only probed.
+Each option's issues come from parsing the value at that path with each option in the union's `def`:
+
+<!-- recipe: union_options -->
+
+```ts
+const Contact = s.union([
+	s.object({email: s.pipe(s.string, s.min_length(3))}),
+	s.object({phone: s.pipe(s.string, s.min_length(7))})
+]);
+const Form = s.object({name: s.string, contact: Contact});
+
+// each option's issues for the issue of a union the caller names, with paths from the root
+const explain_union = (
+	union: s.UnionSchema<ReadonlyArray<s.Schema>>,
+	issue: s.SchemaIssue,
+	input: unknown
+): Array<Array<s.SchemaIssue>> | undefined => {
+	const found = s.get_issue_value(issue, input);
+	if (!found.ok) return undefined;
+	return union.def.map((option) => {
+		const result = s.parse(option, found.value);
+		if (result.ok) return [];
+		return result.issues.map((i) => ({...i, path: [...issue.path, ...i.path]}));
+	});
+};
+
+const input = {name: 'x', contact: {phone: '12'}};
+const result = s.parse(Form, input);
+// result.issues: one issue, `contact: expected object, received object`
+const per_option = !result.ok && explain_union(Contact, result.issues[0]!, input);
+// per_option, as format_issue writes them:
+// [['contact.email: expected string, received undefined',
+//   'contact.phone: expected no unknown keys, received string'],
+//  ['contact.phone: expected length >= 7, received string']]
+```
+
+The caller names the union, and picks its issue by the path where a schema has several.
+Each option runs again, its checks and transforms too, on the input's value at the path,
+so the answer is the union's only where that value is what the union was given:
+not after a step of a `pipe` before it that changed the value and kept its type, which `get_issue_value` can't see,
+and not for a missing key, parsed as `undefined`, which an option that needs its key matches.
+An option with no issues is the sign of either.
+It gives `undefined` where `get_issue_value` finds no value, as after a step that changed the value's type.
+
+### Translating issues
+
+There is no registry of messages and no locale.
+An issue's `kind`, `expected`, `received`, and `path` are data, and a catalogue the consumer writes
+gives them its own words, with `message` given keys in place of text:
+
+<!-- recipe: translating_issues -->
+
+```ts
+const Account = s.pipe(
+	s.object({username: s.pipe(s.string, s.min_length(3)), password: s.string, confirm: s.string}),
+	s.message(s.check_at('confirm', (v) => v.password === v.confirm), 'account.passwords_match')
+);
+
+// a consumer's catalogue: its words for the types `expected` and `received` name,
+// its labels for its fields, and the text of each key given to `message`.
+// Maps, as a path's keys are the input's: a key named `constructor` finds nothing
+const TYPES_ES = new Map([['string', 'texto'], ['number', 'un número'], ['undefined', 'nada']]);
+const FIELDS_ES = new Map([['username', 'el nombre'], ['password', 'la contraseña']]);
+const MESSAGES_ES = new Map([['account.passwords_match', 'las contraseñas deben coincidir']]);
+
+const translate_es = (issue: s.SchemaIssue): string => {
+	if (issue.message !== undefined) return MESSAGES_ES.get(issue.message) ?? issue.message;
+	const field = FIELDS_ES.get(String(issue.path.at(-1))) ?? 'el valor';
+	const word = (type: string): string => TYPES_ES.get(type) ?? type;
+	switch (issue.kind) {
+		case 'min_length':
+			return `${field} necesita al menos ${issue.expected.replace('length >= ', '')} caracteres`;
+		case 'unknown_key':
+			return `${field} no es un campo permitido`;
+		default:
+			return `${field}: se esperaba ${word(issue.expected)}, se recibió ${word(issue.received)}`;
+	}
+};
+
+const short_name = s.parse(Account, {username: 'al', password: 'a', confirm: 'a'});
+const short_name_es = short_name.ok ? [] : short_name.issues.map(translate_es);
+// ['el nombre necesita al menos 3 caracteres']
+const mismatched = s.parse(Account, {username: 'alice', password: 'a', confirm: 'b'});
+const mismatched_es = mismatched.ok ? [] : mismatched.issues.map(translate_es);
+// ['las contraseñas deben coincidir']
+```
+
+The catalogue reads `expected` as the library writes it, which doesn't tell everything apart:
+
+- a bound is a number inside the text, `length >= 3` or `<= 10`, and a bigint's is written without its `n`
+- a bigint and a number literal are written the same, so `one_of([1n, 1])` expects `1 | 1`
+- `-0` is written `0`, in a literal and in a bound
+- a `regex` expects the text it was given or its pattern, and a `check` the text it was given or `check`:
+  the author's words, which a catalogue has nothing to translate from but a key
+
+### Async checks
+
+`parse` is synchronous, and async validation is not planned.
+A check that awaits, as a lookup of whether a name is taken, runs on the output after `parse`,
+and reports issues in the shape `fail` builds, so whatever reads issues reads its own:
+
+<!-- recipe: async_checks -->
+
+```ts
+// an issue in the shape `fail` builds, so `format_issue` and a catalogue read it as any other
+const issue_at = (path: Array<PropertyKey>, expected: string, received: string): s.SchemaIssue => ({
+	kind: 'check',
+	expected,
+	received,
+	path,
+	message: undefined
+});
+
+// `parse`, then each check of the typed output in turn, awaited, stopping at the first that fails
+const parse_then = async <T extends s.Schema>(
+	schema: T,
+	value: unknown,
+	checks: ReadonlyArray<(output: s.Infer<T>) => Promise<Array<s.SchemaIssue>>>
+): Promise<s.SchemaResult<s.Infer<T>>> => {
+	const result = s.parse(schema, value);
+	if (!result.ok) return result;
+	for (const check of checks) {
+		const issues = await check(result.value);
+		if (issues.length) return {ok: false, issues};
+	}
+	return result;
+};
+
+const Signup = s.object({username: s.pipe(s.string, s.min_length(3)), email: s.string});
+const is_taken = async (username: string): Promise<boolean> => username === 'alice'; // a lookup
+const username_free = async (output: s.Infer<typeof Signup>): Promise<Array<s.SchemaIssue>> =>
+	(await is_taken(output.username)) ? [issue_at(['username'], 'an unused username', 'string')] : [];
+
+const signup = parse_then(Signup, {username: 'alice', email: 'a@b.c'}, [username_free]);
+// resolves to {ok: false, issues: [{kind: 'check', expected: 'an unused username',
+//   received: 'string', path: ['username'], message: undefined}]}
+```
+
+A failed `parse` runs no check.
+A `check` given an async function is a type error, as its function returns a boolean,
+and in untyped code it always passes: its promise is truthy.
+A `transform` given one puts the promise in the output.
+
 ### Writing a schema
 
 Most validation the library lacks is a `check` in a `pipe`.
@@ -724,13 +874,14 @@ which its changeset says. An added export is not.
 - [x] JSON Schema output, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
-- [ ] nested issues for a failed `union`
+- [ ] each option's issues for a failed `union`, which reports one issue at its own path: Zod and Valibot report the issues of an only option, or of the one option that has the input's type and fails only a check inside, and nest every option's otherwise. A `variant` reports the option its key picks, and [parsing again](#a-failed-unions-options) gets each option's
 - [ ] `tuple`, `intersect`
 - [x] extend, merge, pick, omit, and partial, as a spread of `def`, see [Composing object schemas](#composing-object-schemas)
 - [ ] abort-early as a caller option
 - [x] a published package
 - [ ] the Rust side: the schema model, whether a JSON text matches, its issues, and a wasm build to measure are built, output is not
-- [ ] async validation, i18n: not designed yet
+- [ ] async validation: not planned. `parse` is synchronous, and an async check runs on its output, after it, see [Async checks](#async-checks)
+- [ ] translated messages: no registry is planned. An issue's `kind`, `expected`, `received`, and `path` are data, which a catalogue the consumer writes translates, see [Translating issues](#translating-issues)
 
 ## Develop
 
