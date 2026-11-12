@@ -113,7 +113,9 @@ Everything below runs on the publishing machine, from the root of the checkout.
    ```
    It writes `<UTC date>_<name>.json`, prints what each section came to, and
    won't write over a run of the same date and machine: move that file, or
-   delete it if it is not one to keep.
+   delete it if it is not one to keep. A published run kept beside a later one
+   of its day has its commit added to its name, as
+   `<UTC date>_<name>_<commit>.json`.
 8. **Check the run**, with the list below. A run that fails a check is measured
    again, not published with a note.
 9. **Make it the published run.**

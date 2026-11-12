@@ -433,19 +433,19 @@ and Node it ran on, and the size of the `.wasm`.
 
 | Input | wasm over JS |
 |---|---|
-| 4 MB of bytes, bad first element | 0.02x ASCII, 0.18-0.19x mostly not ASCII |
-| 4 MB of bytes, both sides read the whole text | 0.54-0.65x ASCII, 0.64-0.74x mostly not ASCII |
-| 10 KB of bytes, both sides read the whole text | 0.55-0.65x |
-| one item, about 130 bytes, valid | 0.40-0.48x |
-| 4 MB held as a string, `matches_json(text)`, valid or bad last element | 0.90-0.99x ASCII, 0.67-0.78x mostly not ASCII |
-| 4 MB held as a string, `encodeInto`, then `matches_json_input`, valid or bad last element | 0.59-0.69x ASCII, 0.82-0.91x mostly not ASCII |
+| 4 MB of bytes, bad first element | 0.02x ASCII, 0.17-0.18x mostly not ASCII |
+| 4 MB of bytes, both sides read the whole text | 0.54-0.65x ASCII, 0.61-0.75x mostly not ASCII |
+| 10 KB of bytes, both sides read the whole text | 0.55-0.66x |
+| one item, about 130 bytes, valid | 0.40-0.47x |
+| 4 MB held as a string, `matches_json(text)`, valid or bad last element | 0.89-0.99x ASCII, 0.66-0.80x mostly not ASCII |
+| 4 MB held as a string, `encodeInto`, then `matches_json_input`, valid or bad last element | 0.59-0.68x ASCII, 0.81-0.94x mostly not ASCII |
 
 It buys a verdict on bytes, most where it can stop early. The byte entry
 points validate the whole text as UTF-8 first, so on mostly non-ASCII text
-they stop at 0.18-0.19x where `matches_json(text)`, which doesn't validate,
-stops at 0.08x. For a string, `matches_json(text)` is no win on the whole of
-an ASCII text: 0.90x at best, where the script's line for a win is under
-0.90x. Written into the handle's buffer with `encodeInto`, the same ASCII
-text is one, and on mostly non-ASCII text the glue's own path is the quicker
-of the two. A wasm verdict followed by `JSON.parse`
-is slower than plain JS on valid input.
+they stop at 0.17-0.18x where `matches_json(text)`, which doesn't validate,
+stops at 0.08x. For a string, `matches_json(text)` is no win to count on over
+the whole of an ASCII text: 0.89x at best, beside the script's line for a
+win, under 0.90x, and inside what it calls noise. Written into the handle's
+buffer with `encodeInto`, the same ASCII text is one, and on mostly non-ASCII
+text the glue's own path is the quicker of the two. A wasm verdict followed
+by `JSON.parse` is slower than plain JS on valid input.
