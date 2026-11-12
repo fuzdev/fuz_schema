@@ -2,6 +2,7 @@
   "name": "@fuzdev/fuz_schema",
   "version": "0.5.7",
   "description": "a performance-focused schema library for JS",
+  "glyph": "🦴",
   "logo": "logo.svg",
   "logo_alt": "a friendly pixelated spider facing you",
   "license": "0BSD",

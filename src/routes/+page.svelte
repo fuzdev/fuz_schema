@@ -23,8 +23,8 @@
 			<p class="text-align:left">a performance-focused<br />schema library<br />for JS</p>
 		</header>
 		<p>
-			An experiment in how far Valibot's strategy can be pushed on bundle size, speed, and memory
-			with simpler internals. It is published as <code>@fuzdev/fuz_schema</code> and unstable.
+			Valibot's strategy pushed on bundle size, speed, and memory with simpler internals. It is
+			published as <code>@fuzdev/fuz_schema</code> and unstable.
 		</p>
 		<p>
 			<a href={resolve('/about')}>about</a> · <a href={resolve('/docs')}>docs</a> ·

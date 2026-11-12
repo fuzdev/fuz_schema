@@ -3,9 +3,10 @@
 > a performance-focused schema library for JS
 
 fuz_schema (`@fuzdev/fuz_schema`, [schema.fuz.dev](https://schema.fuz.dev/))
-is a schema validation library. It asks
-whether Valibot's strategy, with simpler internals, can be pushed far enough
-on bundle size, speed, and memory to be worth owning. "No" is a valid outcome.
+is a schema validation library. It takes Valibot's strategy and pushes it on
+bundle size, speed, and memory with simpler internals. Its case is measured:
+the README's claims are held by a test to the published benchmark run,
+`results/latest.json`.
 
 The library is `src/lib/`. The rest of the repo is its benchmarks, a docs
 site, and a Rust workspace whose crates are the library's Rust side.
