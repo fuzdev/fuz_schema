@@ -293,8 +293,8 @@
 					</li>
 					<li>
 						The parses after the first and the peak memory over a bare process are each compared by
-						the band of their own samples. A results file from before the script recorded those
-						bands has neither, and shows the two rows without comparing them.
+						the band of their own samples. A results file without those bands shows the two rows
+						without comparing them.
 					</li>
 					<li>
 						A figure marked <code>†</code> builds one definition again and again, which a library

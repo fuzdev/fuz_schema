@@ -7,8 +7,9 @@
  * leave the file unparsable to TypeScript, an error, a survivor that doesn't
  * say why in `survives`, and a mutant that says it survives and doesn't.
  *
- * The copy is the working tree's `src` and `docs`, its `package.json` and
- * `tsconfig.json`, and its `node_modules` linked, under a directory of this
+ * The copy is the working tree's `src`, `docs`, and `results`, its
+ * `README.md`, `package.json`, and `tsconfig.json`, and its `node_modules`
+ * linked, under a directory of this
  * run's own in `~/.cache/fuz_schema_mutate/`, one copy to a worker. It has a
  * vitest config of its own, without `vite.config.ts` and the site's plugins,
  * which no test needs. The unmutated copy runs first, and the run stops if it

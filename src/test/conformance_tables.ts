@@ -439,7 +439,7 @@ const differences = [
 	},
 	{
 		reason:
-			"`record` validates the value of every own key, so that of an own `__proto__` key too, and `keyed_record` the key as well, before leaving the key out of a copy, where both drop it unread: the stricter answer, and the Rust crate's",
+			"`record` validates the value of every own key, so that of an own `__proto__` key too, and `keyed_record` the key as well, before leaving a key that is still `__proto__` out of a copy, where both drop it unread: the stricter answer, and the Rust crate's",
 		status: 'declared',
 		docs: '`record` validates the value of an own `__proto__` key',
 		rows: {

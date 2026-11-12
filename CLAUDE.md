@@ -50,8 +50,8 @@ BENCH_RESULTS_FIXTURE=1 gro build # build the site over the fixture run (invente
 and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
 `--samples`, and `--discard`, `npm run benchmark:types` takes `--lib` and `--runs`,
 `npm run benchmark:bundle` takes `--raw`, and `npm run benchmark:wasm` takes
-`--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every script takes
-`--help`, and each of those above and of `benchmark:harvest` and
+`--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every benchmark script
+takes `--help`, and each of those above and of `benchmark:harvest` and
 `benchmark:survey` takes `--data`, a path to also write what it measured to
 as JSON. `npm run results` takes `--machine`, `--smoke`, `--only`
 (repeatable), `--wasm`, and `--plan`, and `npm run results:publish` the path
@@ -118,11 +118,12 @@ dev server.
 - `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
   generic helpers over the library compile where they are read, those of its
   exported schemas write every factory's type by its name, and every export
-  of `schema.ts` that is or makes a schema declares a named type
+  of `schema.ts` and `meta.ts` that is or makes a schema declares a named type
 - `src/test/schema.invariants.test.ts` - every factory of `schema.ts` and
   `meta.ts` carries `// @__NO_SIDE_EFFECTS__`, every export of the library
-  has a doc comment of its own, and the package has no dependencies, with `schema_exports_test_helpers.ts`, the exports that are or
-  make a schema, which `schema.emit.test.ts` reads too
+  has a doc comment of its own, and the package has no dependencies, with
+  `schema_exports_test_helpers.ts`, the exports that are or make a schema,
+  which `schema.emit.test.ts` reads too
 - `src/test/schema.docs.test.ts` - a property of a type inferred from an
   object schema has its entry's doc comment and the entry as its definition,
   asked of TypeScript's language service
@@ -285,7 +286,8 @@ dev server.
     process loads its rows through: one library's scenarios, one side of a
     harvested set, with the sets' declarations, and one library's survey rows
   - `survey.ts`, `survey_shapes.ts` - many small shapes in this library,
-    Valibot, and Zod, timed row by row and summarized by what a parse does
+    Valibot, Zod, and Zod compiled, timed row by row and summarized by what a
+    parse does
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
@@ -577,7 +579,7 @@ every process of the grader as it starts, before it loads an instance, so a
 break of one fails the grade and not only a reading of it: the arms of a job
 load from one directory, a timing runs under no flags of its own and no
 `NODE_OPTIONS`, a bytes process holds two instances of each version, and a
-process apart holds one version. `docs/benchmarks.md` says what each of those
+process apart holds one version. `docs/grading.md` says what each of those
 guards against.
 
 The flat namespace is enforced: `svelte_docinfo({onDuplicates: 'throw'})` in

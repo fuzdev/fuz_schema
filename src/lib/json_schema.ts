@@ -8,10 +8,11 @@
  * a `pipe` or of another type than its step, a step after a `transform` on
  * the input side, a step but a `uuid` after a `to_lower_case` on the input
  * side and before one on the output side, a step that asserts something of
- * the string before a `to_integer` on the output side, a `regex` with flags beyond `d`
- * and `u` or whose source is no pattern under `u` or means something else
- * there, a bound that isn't finite, a `variant` option whose discriminator is
- * no `literal` entry, and a kind defined outside the library.
+ * the string before a `to_integer` on the output side, a `regex` with flags
+ * beyond `d` and `u` or whose source is no pattern under `u` or means
+ * something else there, a bound that isn't finite, a length that isn't whole,
+ * a default that isn't JSON, a `variant` option whose discriminator is no
+ * `literal` entry, and a kind defined outside the library.
  * By default it throws, naming the kind and where in the document, and with
  * `unrepresentable: 'any'` it writes `{}` there, or leaves the keyword out, or
  * keeps the `variant` option, under `anyOf`.
@@ -74,8 +75,10 @@ export interface JsonSchemaOptions {
 	 * Which side of a parse to describe: `'output'`, what it returns, or
 	 * `'input'`, what it accepts. They differ where a default fills a key in,
 	 * which is required of the output and optional in the input, where
-	 * `strip_object` drops unknown keys, and where a `transform` runs, which
-	 * has no output to write and whose input is the steps before it.
+	 * `strip_object` drops unknown keys, where a `transform` runs, which has
+	 * no output to write and whose input is the steps before it, and where a
+	 * `to_integer` reads a string, an `integer` of the output and a `pattern`
+	 * of the input.
 	 *
 	 * @default 'output'
 	 */

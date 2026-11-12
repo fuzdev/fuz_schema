@@ -61,7 +61,7 @@ and what each script was started with and how long it took.
   so the tree is read again as the run ends: a run whose tree had changes
   either time, or was at another commit by the end, is written to `scratch/`.
 
-A file is publishable when its kind is `full`, it was narrowed to nothing,
+A file is publishable when its kind is `full`, it was not narrowed,
 every section but an optional one was measured, each script was started with
 the args of a full run and no other, every timed section took more than one
 pass, and the tree was clean at one commit as the run started and as it ended.
@@ -94,7 +94,7 @@ Everything below runs on the publishing machine, from the root of the checkout.
    npm run results -- --smoke
    ```
    It runs every script once, briefly, and composes a file under `scratch/`,
-   so a script that fails stops this short run and not the long one.
+   so a script that fails shows in this short run and not in the long one.
 5. **Quiet the machine.** Timed numbers are one machine's, and comparable
    between runs only when it is prepared the same way each time: on AC power
    with the `performance` governor, nothing else running, no suspend, and a few

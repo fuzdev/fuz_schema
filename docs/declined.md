@@ -365,8 +365,7 @@ if the input has such a key.
 place of a loop of its own that repeats it.
 
 - **Cost**: +18 gzip in every bundle with an object schema, and a loose
-  schema's input that comes back as it is slower alone, see
-  [design.md](design.md#object-schemas).
+  schema's input that comes back as it is 1.5 to 1.6x slower alone.
 - **Why**: slower on the path `loose_object` is the cheapest on, and bytes
   for the bundles without one.
 - **Reopens**: nothing known.
@@ -1292,7 +1291,7 @@ within the bounds after it.
   only a consumer that writes JSON Schema bundles.
 - **Reopens**: a consumer whose validator or documents can't take a long
   pattern, as the one of every safe integer, about 535 characters signed.
-- **Measured**: before v0.5.8, on Node 26.13.
+- **Measured**: before v0.6.0, on Node 26.13.
 
 ## The parse context
 

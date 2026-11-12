@@ -178,10 +178,9 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   takes a UUID in either case and gives it lowercase, as RFC 9562 asks.
   A `brand` or `flavor` goes outside a step that changes the value, as there:
   one on a step before it is dropped, as the output is a new string.
-- `pipe(string, to_integer())` reads Rust's integer grammar, `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s:
-  an optional sign and ASCII digits, and nothing else, so it refuses `''`, white space, an exponent, hex, and a fraction, which `Number` takes,
-  and the digits must spell a safe integer. `unsigned` refuses the `-`, `trim` takes Unicode white space around it as Rust's `str::trim` drops it,
-  and a `-0` gives `0`, where both give `-0`. See [`docs/formats.md`](docs/formats.md#integers).
+- `pipe(string, to_integer())` reads Rust's integer grammar, `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s,
+  so it refuses `''`, white space, an exponent, hex, and a fraction, and a `-0` gives `0`, where both give `-0`.
+  See [`docs/formats.md`](docs/formats.md#integers).
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -207,6 +206,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `record(key, value)` | `record(key, value)`, `partialRecord(key, value)` | `keyed_record(key, value)`, and `record(value)` where any string is a key |
 | `finite` | | nothing: `number` refuses what isn't finite |
 | `toNumber` | `z.coerce.number()` | `to_integer`, of Rust's integer grammar and not `Number`'s |
+| `isoTimestamp` | `z.iso.datetime()` | `iso_datetime`, in UTC only, see [`docs/formats.md`](docs/formats.md) |
 | `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
 | `description`, `metadata` | `.describe()`, `.meta()` | `meta`, in `meta.ts` |
 | `parse` | `.parse()` | `parse_or_throw` |
@@ -238,7 +238,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaContext`, `SchemaAction`, `SchemaRefinement`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
 | types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `KeyedRecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
-| types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput` |
+| types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput`, `SchemaKeyedRecord` |
 
 The rest of the types, the `*Def` types of `def`, `Flavor` and `Brand`, and those of the other modules
 (`SchemaMeta`, `SchemaField`, `SchemaJson`, `JsonSchema`, the `Standard*` types), are in the API docs.
@@ -736,15 +736,9 @@ const unwrap = (schema: s.SchemaNode): s.SchemaNode => {
 unwrap(User.def.age).kind; // 'number'
 ```
 
-- no options: `def` is `undefined`
-- one option: `def` is that value — a `literal`'s value, a `one_of`'s array, a `regex`'s pattern,
-  the function given to `check`, `transform`, or `lazy`
-- `to_integer` holds its grammar, `{unsigned, trim}`, both written
-- `optional` and `nullable` hold `{schema}`, `with_default` holds `{schema, value}`,
-  and `with_default_fn` holds `{schema, make}`
-- the object schemas hold their entries, and `object_with_rest` holds `{entries, rest}`,
-  `array` and `record` the schema of their items, `keyed_record` holds `{key, value}`,
-  `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
+`def` is `undefined` for a kind with no options, the one value for a kind with one, as a `literal`'s value or a `one_of`'s array,
+and an object or an array of what the others were given, as `optional`'s `{schema}`, an object schema's entries, and a `union`'s options in order:
+[`docs/design.md`](docs/design.md#what-def-holds) has it for every kind.
 
 `message`, `flavor`, and `brand` have no kind: the result has the `kind` and `def` of the schema given.
 `void` has none either: it is a `literal` whose `def` is `undefined`.
@@ -760,8 +754,9 @@ whose output type is `unknown`.
 `unwrap_schema` goes through `optional`, `nullable`, `with_default`, `with_default_fn`, `pipe`, and `lazy`;
 `get_schema_meta` finds a key on the outermost layer that has it;
 `find_schema_meta` finds every value of a key on any schema a value can reach:
-every step of a `pipe`, every option of a `union`, and, with `{structural: true}`,
-object entries, what an `array` or `record` holds, and a `keyed_record`'s key and value schemas, reading each schema once so a recursion through one schema object ends;
+every step of a `pipe`, every option of a `union` or a `variant`, and, with `{structural: true}`,
+object entries and an `object_with_rest`'s `rest`, what an `array` or `record` holds, and a `keyed_record`'s key and value schemas,
+reading each schema once so a recursion through one schema object ends;
 `get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
 with each one's default and description, and never call a `with_default_fn`'s function;
 `format_schema_type` renders the type a schema accepts, for help output.
@@ -867,7 +862,7 @@ The text of `message` and the names of `flavor` and `brand` are not in a schema'
 
 `to_json_schema` writes a schema as JSON Schema draft 2020-12, in the shapes Zod's `toJSONSchema` writes,
 a module of its own. `io` picks the side of a parse it describes, `'output'` by default or `'input'`,
-which differ on defaults, `strip_object`, and `transform`.
+which differ on defaults, `strip_object`, `transform`, and `to_integer`.
 
 ```ts
 import {to_json_schema} from '@fuzdev/fuz_schema/json_schema.ts';
@@ -906,14 +901,14 @@ which its changeset says. An added export is not.
 - [x] JSON Schema output, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
-- [ ] each option's issues for a failed `union`, which reports one issue at its own path: Zod and Valibot report the issues of an only option, or of the one option that has the input's type and fails only a check inside, and nest every option's otherwise. A `variant` reports the option its key picks, and [parsing again](#a-failed-unions-options) gets each option's
+- [ ] each option's issues for a failed `union`, which reports one issue at its own path: a `variant` reports the option its key picks, and [parsing again](#a-failed-unions-options) gets each option's
 - [ ] `tuple`, `intersect`
 - [x] extend, merge, pick, omit, and partial, as a spread of `def`, see [Composing object schemas](#composing-object-schemas)
 - [ ] abort-early as a caller option
 - [x] a published package
 - [ ] the Rust side: the schema model, whether a JSON text matches, its issues, and a wasm build to measure are built, output is not
-- [ ] async validation: not planned. `parse` is synchronous, and an async check runs on its output, after it, see [Async checks](#async-checks)
-- [ ] translated messages: no registry is planned. An issue's `kind`, `expected`, `received`, and `path` are data, which a catalogue the consumer writes translates, see [Translating issues](#translating-issues)
+- [ ] async validation: not planned, see [Async checks](#async-checks)
+- [ ] translated messages: no registry is planned, see [Translating issues](#translating-issues)
 
 ## Develop
 

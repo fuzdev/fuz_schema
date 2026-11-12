@@ -259,10 +259,9 @@ same rule and never looks at the input's keys unless it made a copy:
 - **Of the unknown keys, a symbol key, an inherited key, and a non-enumerable
   key are left out**, and so is a `__proto__` key, which would set the
   prototype if assigned. The input returned as it is keeps them all.
-- **The loop is not the shared one**, though it repeats it. A bundle without
-  `loose_object` carries none of this, and a loose schema's input that comes
-  back as it is measured 1.5 to 1.6x slower alone when the loop was a call to
-  the shared one, see
+- **The loop is not the shared one**, though it repeats it: a bundle without
+  `loose_object` carries none of this, and a call to the shared one measured
+  slower, see
   [declined.md](declined.md#loose_object-through-the-shared-loop).
 - **Every key of a copy is a keyed write.** A change in a wide loose object
   costs in proportion to its width: a copy of a parsed input of 20 keys, 14
@@ -312,7 +311,9 @@ loop of its own, so a bundle with `record` carries none of it:
 - **A key that fails is an `invalid_key` issue**, and `value` is not run on
   its value: see [Issues](#issues).
 - **An own `__proto__` key is run through both schemas**, and a failure of
-  either reported, then left out, as `record` does with its value.
+  either reported, as `record` does with its value. What `key` gives is its
+  key in the output, as for any key: it is left out where that is
+  `__proto__`.
 - **Not an overload of `record`.** `record`'s `def` is the schema of its
   values, which every walk of a schema reads as one, and a `record` that
   branched on its arguments would carry the key loop into every bundle with a
@@ -916,7 +917,8 @@ the type of what they wrap, and a `pipe`'s `def` is `SchemaPipeDef`. An action i
   and fails on an output or an input written out as `Schema`'s type
   arguments, or on a factory's type not written by its name, and pins the
   output a `pipe` writes out. It also asks the checker for the declared
-  return type of every exported schema and factory of `schema.ts`.
+  type of every export of `schema.ts` and `meta.ts` that is or makes a
+  schema.
 
 ## Nominal types
 
@@ -1069,7 +1071,9 @@ each.
   the finite numbers, a `check`, a `transform` on the output side, a step after
   a `transform` on the input side, which reads what it gave, a step but a
   `uuid` after a `to_lower_case` on the input side and before one on the output
-  side, which read another string than the document's, an action outside a
+  side, which read another string than the document's, a step that asserts
+  something of the string before a `to_integer` on the output side, an action
+  outside a
   `pipe` or after a schema of another type, a `regex` with flags beyond `d` and
   `u`, or whose source is no pattern under the flag `u`, or means something
   else there, a bound that isn't finite or a length that isn't whole, a default
@@ -1125,11 +1129,12 @@ each.
   not `\s`, so a validator of another engine reads the same set. No
   character lowercases into or out of what it reads, so a `to_lower_case`
   before it is written as if it weren't, which
-  `src/test/json_schema.test.ts` holds over every code point. A step after it
-  but a bound, `integer`, `safe_integer`, or a `transform` is refused on the
-  input side, a `check` as everywhere, and the metadata of the steps after
-  it, of the integer, is not copied there, nor its own `examples` and
-  `default`, as for a `transform`.
+  `src/test/json_schema.test.ts` holds over every code point. After it, a
+  string's action is refused on both sides, as after any number, and a
+  `check` as everywhere. On the input side a `transform` after it ends the
+  pipe, as after any step, and the metadata of the steps after it, which are
+  of the integer, is not copied there, nor its own `examples` and `default`,
+  as for a `transform`.
 - **`minLength` and `maxLength` count code points** in JSON Schema, where
   `min_length` and `max_length` count UTF-16 code units, so a validator
   reading the document takes a string of surrogate pairs this library
@@ -1218,8 +1223,9 @@ and inputs through the three and fails on a difference that its table, in
 `src/test/conformance_tables.ts`, doesn't declare, and on a declared one that
 is no longer there. Where the two disagree, the table records which this
 library goes with. This list is that table in words: the test holds each
-declared difference to its words here, and which of the two this library goes
-with is written from the table by hand. The differential,
+declared difference to its words here, and the bold leads of the list of
+where the two disagree, below, to `SIDES_LEADS` in that file, both ways and
+in order; what each says of the table's rows is written by hand. The differential,
 `src/test/schema.differential.test.ts`, holds generated schemas and inputs to
 the same table, see [testing.md](testing.md#the-differential).
 

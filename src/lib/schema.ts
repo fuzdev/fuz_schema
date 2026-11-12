@@ -5,8 +5,9 @@
  * schemas as plain data, and `pipe` for refinement. The internals differ:
  *
  * - Every schema and action is the same three-field object, `kind`, `def`,
- *   and `run`. There is no separate action type, so `pipe` is a loop over
- *   schemas, and every `run` call site loads from one object shape.
+ *   and `run`. There is no separate action shape, `SchemaAction` being a
+ *   type only, so `pipe` is a loop over schemas, and every `run` call site
+ *   loads from one object shape.
  * - `kind` and `def` describe a schema as data. What each kind's `def` holds
  *   is written down in `SchemaDefs`.
  * - `run` returns the output directly and reports failure by counting it in
@@ -2077,11 +2078,13 @@ export interface KeyedRecordSchema<
  *   and `received` of `key`, `'string'` unless a step of `key` changed the
  *   type, and the key last in its path unless `key` added to it with a
  *   `check_at`, in the input's order among the values' issues. `value` is not
- *   run on its value. `get_issue_value` gives the last key of the path for it. A `message` on `key` labels it,
- *   and its function is handed the key and the issue `key` reported.
+ *   run on its value. `get_issue_value` gives the last key of the path for
+ *   it. A `message` on `key` labels it, and its function is handed the key
+ *   and the issue `key` reported.
  * - Keys are read as `record` reads them: own enumerable string keys, an own
- *   `__proto__` key run through `key` and its value through `value` and then
- *   left out, an array refused, and a class instance taken.
+ *   `__proto__` key run through `key` and its value through `value`, and
+ *   left out where `key` gives it as `__proto__`, an array refused, and a
+ *   class instance taken.
  * - The output is the input itself when every key gives itself and no value
  *   changed.
  *
@@ -2887,7 +2890,7 @@ const UNSIGNED_INTEGER_EXPECTED = 'an unsigned safe integer in decimal digits';
  * it are of the integer: `pipe(string, to_integer(), min_value(1), max_value(1000))`.
  * Its issue is of kind `to_integer`, expected `'a safe integer in decimal
  * digits'`, or `'an unsigned safe integer in decimal digits'`, whether the
- * grammar or the range failed, and received the string in a `pipe` and the
+ * grammar or the range failed, and received `'string'` in a `pipe` and the
  * type of the value given outside one. Outside a `pipe` it fails any value
  * that isn't a string, where a test of its grammar alone would convert it.
  *

@@ -367,7 +367,7 @@ from so little that how often it is past by noise is not known, which is why
 the warning doesn't read it. A `WARN` on an identical tree is that, and is
 read with the lists.
 
-`node src/benchmarks/grade_aa.ts <dir>...` reads grades of two copies of one
+`npm run grade:aa -- <dir>...` reads grades of two copies of one
 file, each the directory of a grade or one that holds them, as
 `.gro/grade/`, and prints for each summary line rule 6 fails on and the
 warning reads how often its figure was slower past its A/A, its mean over the A/A,
