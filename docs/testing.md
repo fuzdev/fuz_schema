@@ -185,21 +185,26 @@ table of small breaks, each a name, a file (`src/lib/schema.ts` when
 omitted), and edits, each a `find` that occurs exactly once in the file and
 its `replace`, applied in order. Most break the library; some break a table
 the tests read, as a recognizer of the differential or a `SIDES` row.
-`gro check` typechecks and lints the table and never runs it.
+`gro check` typechecks and lints the table and never runs a mutant, and
+`src/test/mutants.test.ts` holds every anchor to its file, so an edit that
+moves one fails there and not at the next run.
 
 ```bash
 npm run mutate
 npm run mutate -- --filter record --deep
 ```
 
-It copies the working tree's `src` and `docs`, `package.json`, and
-`tsconfig.json`, with `node_modules` linked, to a directory of the run's own
+It copies the working tree's `src`, `docs`, and `results`, `package.json`,
+`tsconfig.json`, and `README.md`, which the tests of the README read, with
+`node_modules` linked, to a directory of the run's own
 under `~/.cache/fuz_schema_mutate/`, a copy to a worker, with a vitest config
-of its own, without the site's plugins, which no test needs, and a test
+of its own, without the site's plugins, and a test
 timeout of 60 s, as the tests that take seconds alone are slower beside the
 other copies. Each copy's vitest gets an even share of the cores. It runs the tests
 of the unmutated copy first and stops if they fail, then for each mutant
-applies its edits, runs `vitest run` without `sizes.test.ts`, and
+applies its edits, runs `vitest run` without `sizes.test.ts`,
+`site_render.test.ts`, which needs the site's plugins, and
+`mutants.test.ts`, which the mutant's own edit would fail, and
 restores the file. Each mutant is:
 
 - **killed**: a test failed, and the test files reported failed before the

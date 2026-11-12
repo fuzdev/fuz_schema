@@ -41,7 +41,7 @@ import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 import ts from 'typescript';
 
 import * as s from '#lib/schema.ts';
-import { MUTANTS, type Mutant } from './mutants.ts';
+import { apply_mutant, MUTANT_DEFAULT_FILE, MUTANTS, type Mutant } from './mutants.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
@@ -81,7 +81,6 @@ const RUN_DIR = join(CACHE, `run_${PID_NAMESPACE}_${process.pid}`);
 // a copy of another PID namespace's run, whose PID can't be asked after, is
 // removed once it is this old
 const FOREIGN_RUN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_FILE = 'src/lib/schema.ts';
 const TIMEOUT_FLOOR = 120;
 // the timeout by default is the floor, or this many times the unmutated run
 // where that is longer
@@ -237,8 +236,12 @@ const describe_exit = (result: RunResult): string =>
 
 const make_copy = (dir: string): void => {
 	mkdirSync(dir, { recursive: true });
-	for (const d of ['src', 'docs']) cpSync(join(ROOT, d), join(dir, d), { recursive: true });
-	for (const f of ['package.json', 'tsconfig.json']) copyFileSync(join(ROOT, f), join(dir, f));
+	for (const d of ['src', 'docs', 'results']) {
+		cpSync(join(ROOT, d), join(dir, d), { recursive: true });
+	}
+	for (const f of ['package.json', 'tsconfig.json', 'README.md']) {
+		copyFileSync(join(ROOT, f), join(dir, f));
+	}
 	symlinkSync(join(ROOT, 'node_modules'), join(dir, 'node_modules'));
 	writeFileSync(join(dir, 'vitest.config.ts'), VITEST_CONFIG);
 };
@@ -288,23 +291,16 @@ const clear_stale_runs = (): void => {
  * @returns the mutated text, or the reason an anchor is stale or the edits leave it unparsable
  */
 const prepare = (mutant: Mutant): Prepared | string => {
-	const file = mutant.file ?? DEFAULT_FILE;
+	const file = mutant.file ?? MUTANT_DEFAULT_FILE;
 	let original: string;
 	try {
 		original = readFileSync(join(ROOT, file), 'utf8');
 	} catch {
 		return `${mutant.name}: no file ${file}`;
 	}
-	let mutated = original;
-	for (let i = 0; i < mutant.edits.length; i++) {
-		const { find, replace } = mutant.edits[i]!;
-		const count = mutated.split(find).length - 1;
-		if (count !== 1) {
-			return `${mutant.name}: edit ${i + 1} finds ${count} occurrences in ${file}, not 1`;
-		}
-		mutated = mutated.replace(find, () => replace);
-	}
-	if (mutated === original) return `${mutant.name}: its edits change nothing`;
+	const applied = apply_mutant(mutant, original);
+	if ('problem' in applied) return applied.problem;
+	const mutated = applied.text;
 	const { diagnostics } = ts.transpileModule(mutated, { fileName: file, reportDiagnostics: true });
 	if (diagnostics?.length) return `${mutant.name}: its edits leave ${file} unparsable`;
 	return { mutant, file, original, mutated };
@@ -339,7 +335,13 @@ const VITEST_ARGS = [
 	'run',
 	`--maxWorkers=${vitest_workers}`,
 	'--exclude',
-	'src/test/sizes.test.ts'
+	'src/test/sizes.test.ts',
+	// the site's rendering needs the site's plugins, and no mutant is of the site
+	'--exclude',
+	'src/test/site_render.test.ts',
+	// it holds every mutant's anchors, which the mutant applied has taken its own from
+	'--exclude',
+	'src/test/mutants.test.ts'
 ];
 clear_stale_runs();
 const dirs = Array.from({ length: worker_count }, (_, i) => join(RUN_DIR, `worker_${i}`));

@@ -2,7 +2,8 @@
  * The mutants of `npm run mutate`: each a small break of the library, or of a
  * table the tests read, that the suite should fail on. `mutate.ts` applies
  * each to a copy of the working tree and runs the tests, see
- * `docs/testing.md`. Typechecked and linted by `gro check`, never run by it.
+ * `docs/testing.md`. Typechecked and linted by `gro check`, which never runs
+ * a mutant and holds every anchor, in `mutants.test.ts`.
  *
  * A mutant's `file` is `src/lib/schema.ts` when omitted. Its `edits` apply in
  * order, and each `find` occurs exactly once in the file as the edits before
@@ -24,6 +25,35 @@ export interface Mutant {
 	edits: Array<MutantEdit>;
 	survives?: string;
 }
+
+/** The file a mutant edits when it names none. */
+export const MUTANT_DEFAULT_FILE = 'src/lib/schema.ts';
+
+/**
+ * Applies a mutant's edits to the text of its file.
+ *
+ * @param mutant - the mutant
+ * @param original - the text of the mutant's file
+ * @returns the mutated text as `text`, or as `problem` the reason an anchor is stale or the edits change nothing
+ */
+export const apply_mutant = (
+	mutant: Mutant,
+	original: string
+): { text: string } | { problem: string } => {
+	const file = mutant.file ?? MUTANT_DEFAULT_FILE;
+	let text = original;
+	for (let i = 0; i < mutant.edits.length; i++) {
+		const { find, replace } = mutant.edits[i]!;
+		const count = text.split(find).length - 1;
+		if (count !== 1) {
+			return {
+				problem: `${mutant.name}: edit ${i + 1} finds ${count} occurrences in ${file}, not 1`
+			};
+		}
+		text = text.replace(find, () => replace);
+	}
+	return text === original ? { problem: `${mutant.name}: its edits change nothing` } : { text };
+};
 
 export const MUTANTS: Array<Mutant> = [
 	{
@@ -2585,7 +2615,7 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/schema_json.ts',
 		edits: [
 			{
-				find: `				return [[json.defs![def]!, \`/defs/\${pointer_token(def)}\`]];`,
+				find: `				return [json.defs![def]!];`,
 				replace: `				return [];`
 			}
 		]
@@ -2595,8 +2625,8 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/schema_json.ts',
 		edits: [
 			{
-				find: `				return [[json.defs![def]!, \`/defs/\${pointer_token(def)}\`]];`,
-				replace: `				return [[json.defs![def]!, path]];`
+				find: `defs[name] = child(target, \`/defs/\${pointer_token(name)}\`, inner);`,
+				replace: `defs[name] = child(target, path, inner);`
 			}
 		]
 	},
@@ -2605,8 +2635,10 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/schema_json.ts',
 		edits: [
 			{
-				find: `Object.entries(value).map(([key, v]) => [v, \`\${path}/\${pointer_token(key)}\`]);`,
-				replace: `Object.entries(value).map(([, v]) => [v, path]);`
+				find: `				(def as Record<string, unknown>)[key],
+				\`\${path}/\${pointer_token(key)}\`,`,
+				replace: `				(def as Record<string, unknown>)[key],
+				path,`
 			}
 		]
 	},
