@@ -3008,6 +3008,143 @@ describe('empty object schemas', () => {
 	});
 });
 
+describe('object types of entries typed by hand', () => {
+	type OptionalNumber = s.OptionalSchema<typeof s.number>;
+	// a known key beside an index signature of entries that can leave a key out
+	type Indexed = { a: typeof s.string } & Record<string, OptionalNumber>;
+	// mapped, as a type literal can't hold a property its index signature refuses
+	type IndexedOut = { [K in keyof Mixed]: Mixed[K] };
+	type Mixed = { a: string } & Record<string, number | undefined>;
+	// what `as const` and a `const` type parameter give
+	type ReadonlyEntries = { readonly a: typeof s.string; readonly b: OptionalNumber };
+	type Union = { a: typeof s.string } | { b: OptionalNumber };
+
+	test('a known key beside an index signature is decided by its own entry', () => {
+		expectTypeOf<s.Infer<s.ObjectSchema<Indexed>>>().toEqualTypeOf<IndexedOut>();
+		expectTypeOf<s.InferInput<s.ObjectSchema<Indexed>>>().toEqualTypeOf<IndexedOut>();
+		expectTypeOf<s.Infer<s.StripObjectSchema<Indexed>>>().toEqualTypeOf<IndexedOut>();
+		expectTypeOf<s.InferInput<s.StripObjectSchema<Indexed>>>().toEqualTypeOf<IndexedOut>();
+		expectTypeOf<s.Infer<s.LooseObjectSchema<Indexed>>>().toEqualTypeOf<
+			IndexedOut & Record<string, unknown>
+		>();
+		expectTypeOf<s.InferInput<s.LooseObjectSchema<Indexed>>>().toEqualTypeOf<
+			IndexedOut & Record<string, unknown>
+		>();
+		expectTypeOf<s.Infer<s.ObjectWithRestSchema<Indexed, typeof s.number>>>().toEqualTypeOf<
+			IndexedOut & Record<string, number>
+		>();
+		expectTypeOf<s.InferInput<s.ObjectWithRestSchema<Indexed, typeof s.number>>>().toEqualTypeOf<
+			IndexedOut & Record<string, number>
+		>();
+		// and so is one beside an index signature of required entries
+		type Required = { error: typeof s.string } & s.SchemaEntries;
+		expectTypeOf<s.Infer<s.ObjectSchema<Required>>>().toEqualTypeOf<{
+			error: string;
+			[k: string]: unknown;
+		}>();
+		expectTypeOf<s.InferInput<s.LooseObjectSchema<Required>>>().toEqualTypeOf<
+			{ error: string; [k: string]: unknown } & Record<string, unknown>
+		>();
+		// and an optional entry beside an index signature of required entries stays optional
+		type Reversed = { a: OptionalNumber } & Record<string, typeof s.string>;
+		type ReversedOut = { [K in keyof ReversedMixed]: ReversedMixed[K] };
+		type ReversedMixed = { a?: number | undefined } & Record<string, string>;
+		expectTypeOf<s.Infer<s.ObjectSchema<Reversed>>>().toEqualTypeOf<ReversedOut>();
+		expectTypeOf<s.InferInput<s.ObjectSchema<Reversed>>>().toEqualTypeOf<ReversedOut>();
+		expectTypeOf<s.Infer<s.StripObjectSchema<Reversed>>>().toEqualTypeOf<ReversedOut>();
+		expectTypeOf<s.InferInput<s.StripObjectSchema<Reversed>>>().toEqualTypeOf<ReversedOut>();
+		expectTypeOf<s.Infer<s.LooseObjectSchema<Reversed>>>().toEqualTypeOf<
+			ReversedOut & Record<string, unknown>
+		>();
+		expectTypeOf<s.InferInput<s.LooseObjectSchema<Reversed>>>().toEqualTypeOf<
+			ReversedOut & Record<string, unknown>
+		>();
+		expectTypeOf<s.Infer<s.ObjectWithRestSchema<Reversed, typeof s.string>>>().toEqualTypeOf<
+			ReversedOut & Record<string, string>
+		>();
+		expectTypeOf<s.InferInput<s.ObjectWithRestSchema<Reversed, typeof s.string>>>().toEqualTypeOf<
+			ReversedOut & Record<string, string>
+		>();
+	});
+
+	test('a known key is read in a generic function', () => {
+		type Known = { error: typeof s.string };
+		const read = <T extends s.SchemaEntries>(
+			o: s.SchemaObjectOutput<Known & T>,
+			i: s.SchemaObjectInput<Known & T>,
+			l: s.Infer<s.LooseObjectSchema<Known & T>>
+		): [string, string, string] => {
+			expectTypeOf(o.error).toEqualTypeOf<string>();
+			expectTypeOf(i.error).toEqualTypeOf<string>();
+			expectTypeOf(l.error).toEqualTypeOf<string>();
+			return [o.error, i.error, l.error];
+		};
+		assert.deepEqual(read({ error: 'e' }, { error: 'e' }, { error: 'e' }), ['e', 'e', 'e']);
+		// through entries constrained to have it
+		const constrained = <T extends Known>(o: s.SchemaObjectOutput<T>): string => {
+			expectTypeOf(o.error).toEqualTypeOf<string>();
+			return o.error;
+		};
+		assert.strictEqual(constrained<Known>({ error: 'e' }), 'e');
+		// an entry that is itself a type parameter is read as `unknown`, as whether its key is
+		// optional waits on it
+		const parameter = <S extends s.Schema<string>, T extends s.SchemaEntries>(
+			o: s.SchemaObjectOutput<{ error: S } & T>
+		): unknown => {
+			expectTypeOf(o.error).toEqualTypeOf<unknown>();
+			return o.error;
+		};
+		assert.strictEqual(
+			parameter<typeof s.string, { n: typeof s.number }>({ error: 'e', n: 1 }),
+			'e'
+		);
+	});
+
+	test('readonly entries give mutable properties', () => {
+		type Out = { a: string; b?: number | undefined };
+		expectTypeOf<s.Infer<s.ObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<Out>();
+		expectTypeOf<s.InferInput<s.ObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<Out>();
+		expectTypeOf<s.Infer<s.StripObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<Out>();
+		expectTypeOf<s.InferInput<s.StripObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<Out>();
+		expectTypeOf<s.Infer<s.LooseObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<
+			Out & Record<string, unknown>
+		>();
+		expectTypeOf<s.InferInput<s.LooseObjectSchema<ReadonlyEntries>>>().toEqualTypeOf<
+			Out & Record<string, unknown>
+		>();
+		expectTypeOf<
+			s.Infer<s.ObjectWithRestSchema<ReadonlyEntries, typeof s.unknown>>
+		>().toEqualTypeOf<Out & Record<string, unknown>>();
+		expectTypeOf<
+			s.InferInput<s.ObjectWithRestSchema<ReadonlyEntries, typeof s.unknown>>
+		>().toEqualTypeOf<Out & Record<string, unknown>>();
+		// so a parsed value is assigned into, from `as const` entries and a `const` type parameter
+		const _Const = s.object({ a: s.string } as const);
+		const make = <const T extends s.SchemaEntries>(entries: T) => s.loose_object(entries);
+		const _Made = make({ a: s.string });
+		const assign = (o: s.Infer<typeof _Const>, i: s.InferInput<typeof _Made>): void => {
+			o.a = 'x';
+			i.a = 'x';
+		};
+		assign({ a: '' }, { a: '' });
+	});
+
+	test('loose_object and object_with_rest over a union of entries give one member for each', () => {
+		type Loose = ({ a: string } | { b?: number | undefined }) & Record<string, unknown>;
+		expectTypeOf<s.Infer<s.LooseObjectSchema<Union>>>().toEqualTypeOf<Loose>();
+		expectTypeOf<s.InferInput<s.LooseObjectSchema<Union>>>().toEqualTypeOf<Loose>();
+		type Rest = ({ a: string } | { b?: number | undefined }) & Record<string, string>;
+		expectTypeOf<s.Infer<s.ObjectWithRestSchema<Union, typeof s.string>>>().toEqualTypeOf<Rest>();
+		expectTypeOf<
+			s.InferInput<s.ObjectWithRestSchema<Union, typeof s.string>>
+		>().toEqualTypeOf<Rest>();
+		// as `object` and `strip_object` give
+		type Strict = { a: string } | { b?: number | undefined };
+		expectTypeOf<s.Infer<s.ObjectSchema<Union>>>().toEqualTypeOf<Strict>();
+		expectTypeOf<s.InferInput<s.StripObjectSchema<Union>>>().toEqualTypeOf<Strict>();
+	});
+});
+
 describe('brand and flavor of a branded or flavored schema', () => {
 	type A = s.Branded<string, 'A'>;
 	type FA = s.Flavored<string, 'A'>;

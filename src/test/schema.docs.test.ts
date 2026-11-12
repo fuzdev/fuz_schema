@@ -48,6 +48,21 @@ const Variant = s.variant('kind', [
 	}),
 	s.object({ kind: s.literal('b') })
 ]);
+const Readonly = s.object({
+	/** The required doc. */
+	required: s.string
+} as const);
+const make = <const T extends s.SchemaEntries>(entries: T) => s.loose_object(entries);
+const Made = make({
+	/** The optional doc. */
+	optional: s.optional(s.number)
+});
+type UnionEntries =
+	| typeof Entries
+	| {
+			/** The added doc. */
+			added: typeof s.string;
+	  };
 interface NamedOutput extends s.SchemaStrictObjectOutput<typeof Entries> {}
 interface NamedInput extends s.SchemaStrictObjectInput<typeof Entries> {}
 
@@ -58,6 +73,12 @@ declare const strip_in: s.InferInput<typeof Strip>;
 declare const loose_out: s.Infer<typeof Loose>;
 declare const loose_in: s.InferInput<typeof Loose>;
 declare const rest_out: s.Infer<typeof Rest>;
+declare const rest_in: s.InferInput<typeof Rest>;
+declare const readonly_out: s.Infer<typeof Readonly>;
+declare const readonly_in: s.InferInput<typeof Readonly>;
+declare const made_out: s.Infer<typeof Made>;
+declare const union_out: s.Infer<s.LooseObjectSchema<UnionEntries>>;
+declare const union_rest_out: s.Infer<s.ObjectWithRestSchema<UnionEntries, typeof s.unknown>>;
 declare const extended_out: s.Infer<typeof Extended>;
 declare const holder_out: s.Infer<typeof Holder>;
 declare const variant_out: s.Infer<typeof Variant>;
@@ -77,6 +98,13 @@ strip_in./*strip_in.optional*/optional;
 loose_out./*loose_out.required*/required;
 loose_in./*loose_in.defaulted*/defaulted;
 rest_out./*rest_out.required*/required;
+rest_in./*rest_in.optional*/optional;
+readonly_out./*readonly_out.required*/required;
+readonly_in./*readonly_in.required*/required;
+made_out./*made_out.optional*/optional;
+if ('added' in union_out) union_out./*union_out.added*/added;
+if ('piped' in union_out) union_out./*union_out.piped*/piped;
+if ('added' in union_rest_out) union_rest_out./*union_rest_out.added*/added;
 extended_out./*extended_out.required*/required;
 extended_out./*extended_out.added*/added;
 holder_out./*holder_out.nested*/nested;

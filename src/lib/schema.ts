@@ -438,18 +438,12 @@ type EntryGivesUndefined<T, O> = [EntryTakesMissing<T>] extends [true]
 		: false
 	: false;
 
-type OptionalOutputKeys<T extends SchemaEntries> = {
-	[K in keyof T]: [EntryLeavesMissingOut<T[K]>] extends [true] ? K : never;
-}[keyof T];
-
-type OptionalInputKeys<T extends SchemaEntries> = {
-	[K in keyof T]: [EntryTakesMissing<T[K]>] extends [true] ? K : never;
-}[keyof T];
-
 /**
  * The output of an object schema with the entries `T`, each key optional
- * where its entry can leave a missing key out. `loose_object` outputs this
- * and `Record<string, unknown>`.
+ * where its entry can leave a missing key out, and none `readonly`: a
+ * `readonly` on the entries is of the entries object, not of the value
+ * parsed. `loose_object` outputs this and `Record<string, unknown>`.
+ * Distributes over a union of entries, one output for each.
  *
  * Exported with `SchemaObjectInput` and the three types below so a consumer
  * can name the output and input of a schema it exports, as an interface that
@@ -460,24 +454,48 @@ type OptionalInputKeys<T extends SchemaEntries> = {
 // keys worked out beside it: a property of a mapped type over `keyof T` is
 // the entry's, so an entry's doc comment and its definition reach the output's
 // property, where one over `Exclude<keyof T, ...>` has neither.
-// `src/test/schema.docs.test.ts` asks the language service for both
-export type SchemaObjectOutput<T extends SchemaEntries> = Flatten<
-	{ [K in keyof T as K extends OptionalOutputKeys<T> ? never : K]: Infer<T[K]> } & {
-		[K in keyof T as K extends OptionalOutputKeys<T> ? K : never]?: Infer<T[K]>;
-	}
->;
+// `src/test/schema.docs.test.ts` asks the language service for both.
+// Each key is decided by its own entry, in the `as` clause: tested against
+// the union of the optional keys, a known key beside an index signature of
+// optional entries extends the signature's `string` among them, and would be
+// optional too, and one beside an index signature of required entries is lost
+// from a union indexed by that `string`.
+// Distributed first, as each half of a union of entries would distribute on
+// its own and the intersection cross them
+export type SchemaObjectOutput<T extends SchemaEntries> = T extends unknown
+	? Flatten<
+			{
+				-readonly [K in keyof T as [EntryLeavesMissingOut<T[K]>] extends [true] ? never : K]: Infer<
+					T[K]
+				>;
+			} & {
+				-readonly [
+					K in keyof T as [EntryLeavesMissingOut<T[K]>] extends [true] ? K : never
+				]?: Infer<T[K]>;
+			}
+		>
+	: never;
 
 /**
  * The input of an object schema with the entries `T`, each key optional
- * where a missing key can match its entry. `loose_object` takes this and
- * `Record<string, unknown>`.
+ * where a missing key can match its entry, and none `readonly`.
+ * `loose_object` takes this and `Record<string, unknown>`. Distributes over
+ * a union of entries as `SchemaObjectOutput` does.
  */
-// mapped over `keyof T` for the reason `SchemaObjectOutput` is
-export type SchemaObjectInput<T extends SchemaEntries> = Flatten<
-	{ [K in keyof T as K extends OptionalInputKeys<T> ? never : K]: InferInput<T[K]> } & {
-		[K in keyof T as K extends OptionalInputKeys<T> ? K : never]?: InferInput<T[K]>;
-	}
->;
+// mapped, decided, and distributed for the reasons `SchemaObjectOutput` is
+export type SchemaObjectInput<T extends SchemaEntries> = T extends unknown
+	? Flatten<
+			{
+				-readonly [
+					K in keyof T as [EntryTakesMissing<T[K]>] extends [true] ? never : K
+				]: InferInput<T[K]>;
+			} & {
+				-readonly [
+					K in keyof T as [EntryTakesMissing<T[K]>] extends [true] ? K : never
+				]?: InferInput<T[K]>;
+			}
+		>
+	: never;
 
 /**
  * The output of `object` and `strip_object`: `SchemaObjectOutput` of the

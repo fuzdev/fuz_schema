@@ -497,6 +497,17 @@ all a missing key costs an object that has no schema asking.
   `loose_object` and an `object_with_rest` keep their index signature. The
   types are `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, and
   `SchemaStripObjectInput`.
+- **Each key's type is its own entry's, and no key is `readonly`.** A known
+  key beside an index signature is optional by its own entry and not by the
+  signature's, so `{error: S} & Record<string, OptionalSchema<…>>` keeps
+  `error` required, and `{error: OptionalSchema<…>} & Record<string, S>`
+  keeps it optional. Entries typed `readonly`, by `as const` or a `const`
+  type parameter, give properties that aren't: the `readonly` is of the
+  entries object, not of the value parsed. A union of entries gives a union
+  of outputs, one for each, under every object schema, `loose_object` and
+  `object_with_rest` with their index signature on each. The types are
+  `SchemaObjectOutput` and `SchemaObjectInput`, and
+  `src/test/schema.inference.test.ts` pins each.
 
 ## Defaults
 
