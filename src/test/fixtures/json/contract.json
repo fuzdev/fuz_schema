@@ -59,6 +59,11 @@
 			"refused": "unknown_kind"
 		},
 		{
+			"name": "keyed_record",
+			"document": "{\"schema\":{\"kind\":\"keyed_record\",\"def\":{\"key\":{\"kind\":\"string\"},\"value\":{\"kind\":\"number\"}}}}",
+			"refused": "unknown_kind"
+		},
+		{
 			"name": "length_at_the_root",
 			"document": "{\"schema\":{\"kind\":\"min_length\",\"def\":1}}",
 			"refused": "action_outside_pipe"

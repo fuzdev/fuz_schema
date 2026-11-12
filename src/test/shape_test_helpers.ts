@@ -163,6 +163,19 @@ export const SHAPE_SAMPLES: Record<
 		{ schema: s.record(s.number), valid: [{}, { a: 1 }], invalid: [{ a: 'a' }, 1, []] },
 		{ schema: s.record(s.with_default(s.number, 1)), valid: [{ a: undefined }], invalid: [1] }
 	],
+	keyed_record: () => [
+		{
+			schema: s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number),
+			valid: [{}, { a: 1 }],
+			invalid: [{ A: 1 }, { a: 'a' }, { A: 'a', b: 1 }, 1, []]
+		},
+		{
+			// a key that gives another copies, and a `__proto__` key is dropped
+			schema: s.keyed_record(s.pipe(s.string, s.to_lower_case), s.with_default(s.number, 1)),
+			valid: [{ A: 1 }, { a: undefined }, JSON.parse('{"a": 1, "__proto__": 2}')],
+			invalid: [{ a: 'a' }, 1]
+		}
+	],
 	array: () => [
 		{ schema: s.array(s.string), valid: [[], ['a']], invalid: [[1], ['a', 1], 1, {}] },
 		{ schema: s.array(s.with_default(s.number, 1)), valid: [[1, undefined]], invalid: [['a']] }
@@ -336,6 +349,7 @@ const AROUND: Array<[string, (schema: s.AnySchema) => s.AnySchema, (value: unkno
 	],
 	['array', (schema) => s.array(schema), (a) => [a]],
 	['record', (schema) => s.record(schema), (a) => ({ a })],
+	['keyed_record', (schema) => s.keyed_record(s.string, schema), (a) => ({ a })],
 	['meta', (schema) => meta(schema, { description: 'd' }), (a) => a]
 ];
 

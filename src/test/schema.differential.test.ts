@@ -446,6 +446,96 @@ const PINS: Array<DifferentialPin> = [
 		},
 		input: obj([['__proto__', v(Infinity)]])
 	},
+	// a key outside the set of a keyed_record, which a bare check's key given
+	// brings out beside it
+	{
+		recognizers: ['keyed_record of one_of keys, a key outside'],
+		rules: ['check_missing_key', 'split_on_a_side'],
+		spec: {
+			t: 'union',
+			of: [
+				{ t: 'keyed_record', key: { t: 'one_of', vs: ['k0', 'k1', 'z'] }, of: { t: 'string' } },
+				strip([
+					['a', { t: 'check', fn: 'is_string' }],
+					['d', { t: 'min_length', of: { t: 'string' }, n: 0 }]
+				])
+			]
+		},
+		input: obj([['__proto__', v('x')]])
+	},
+	// an own `__proto__` key the first option's key refuses, so the union goes
+	// on to an option whose copy drops it, where theirs take the renamed key
+	// into that option's copy
+	{
+		recognizers: [],
+		rules: ['record_own_proto'],
+		spec: {
+			t: 'union',
+			of: [
+				{
+					t: 'keyed_record',
+					key: { t: 'one_of', vs: ['k0', 'k1', 'z'] },
+					of: { t: 'transform', fn: 'to_null' }
+				},
+				{
+					t: 'keyed_record',
+					key: { t: 'one_of', vs: ['k0', '__proto__', 'renamed__proto__'] },
+					of: { t: 'record', of: { t: 'unknown' } }
+				}
+			]
+		},
+		input: obj([
+			['k0', obj()],
+			['__proto__', obj()]
+		])
+	},
+	// a refused own `__proto__` key in a strict object with an unknown key, under a
+	// check: the unknown key is ours too, and no step the key's failure stopped
+	{
+		recognizers: [],
+		rules: ['record_own_proto'],
+		spec: {
+			t: 'refine',
+			fn: 'true',
+			of: {
+				t: 'object',
+				flavor: 'strict',
+				entries: [
+					['a', { t: 'bigint' }],
+					[
+						'b',
+						{
+							t: 'keyed_record',
+							key: { t: 'one_of', vs: ['k0', 'k1', 'z'] },
+							of: { t: 'regex', of: { t: 'string' }, re: 'lower' }
+						}
+					]
+				]
+			}
+		},
+		input: obj([
+			['b', obj([['__proto__', v('x')]])],
+			['hasOwnProperty', v('x')]
+		])
+	},
+	// and an infinity of a class instance given to a record, with a check after
+	{
+		recognizers: ['number, Infinity'],
+		rules: ['prototype_ignored', 'split_on_a_side'],
+		spec: { t: 'refine', of: { t: 'record', of: { t: 'number' } }, fn: 'false' },
+		input: obj([['k', v(Infinity)]], { base: 'class' })
+	},
+	// and the same of an infinity that is an item of an array under the key
+	{
+		recognizers: ['number, Infinity'],
+		rules: ['prototype_ignored', 'split_on_a_side'],
+		spec: {
+			t: 'refine',
+			of: { t: 'record', of: { t: 'array', of: { t: 'number' } } },
+			fn: 'false'
+		},
+		input: obj([['k0', arr([v(Infinity)])]], { base: 'class' })
+	},
 	// a pipe that starts with a transform, then a check that fails, beside a
 	// bare check, after which zod runs a check, and valibot refuses the key
 	{

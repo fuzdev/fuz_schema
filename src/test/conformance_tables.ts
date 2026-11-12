@@ -386,7 +386,7 @@ const differences = [
 	},
 	{
 		reason:
-			'a class instance given to a `record`, and an `object_with_rest` input that inherits a key, are read by their own keys, so a `union` with such an option of a default that does not match its schema takes it with an `undefined` value, as a copy with the default, where both refuse it, a check after the record reports a key named `prototype`, and an input that comes back still inherits the key: zod refuses the class instance and reads the inherited key, and valibot refuses the default and leaves a key named `prototype` out unread. It follows from going with valibot on the class instance and the inherited key, and with zod on the default, the key named `prototype`, and the missing key of a bare transform',
+			'a class instance given to a `record`, and an `object_with_rest` input that inherits a key, are read by their own keys, so a `union` with such an option of a default that does not match its schema takes it with an `undefined` value, as a copy with the default, where both refuse it, a check after the record reports a key named `prototype` or an infinity, and an input that comes back still inherits the key: zod refuses the class instance and reads the inherited key, and valibot refuses the default, leaves a key named `prototype` out unread, and takes an infinity. It follows from going with valibot on the class instance and the inherited key, and with zod on the default, the key named `prototype`, the infinities, and the missing key of a bare transform',
 		status: 'declared',
 		docs: 'a class instance given to a `record`, and an `object_with_rest` input that inherits a key, are read by their own keys',
 		rows: {
@@ -409,6 +409,11 @@ const differences = [
 			'a check after a record, class instance, own key named prototype, wrong': {
 				both: 'fail at <root>',
 				ours: 'fail at prototype'
+			},
+			// and an infinity, which zod's `number` refuses, as here, and valibot's takes
+			'a check after a record of numbers, class instance, a value Infinity': {
+				both: 'fail at <root>',
+				ours: 'fail at k'
 			}
 		}
 	},
@@ -434,10 +439,27 @@ const differences = [
 	},
 	{
 		reason:
-			"`record` validates the value of every own key, so that of an own `__proto__` key too, before leaving the key out of a copy, where both drop it unread: the stricter answer, and the Rust crate's",
+			"`record` validates the value of every own key, so that of an own `__proto__` key too, and `keyed_record` the key as well, before leaving the key out of a copy, where both drop it unread: the stricter answer, and the Rust crate's",
 		status: 'declared',
 		docs: '`record` validates the value of an own `__proto__` key',
 		rows: {
+			'keyed_record, own __proto__ key whose value is wrong': {
+				both: 'ok {a: 1}',
+				ours: 'fail at __proto__'
+			},
+			'keyed_record, own __proto__ key the key schema refuses': {
+				both: 'ok {a: 1}',
+				ours: 'fail at __proto__'
+			},
+			// and as an option of a union, which goes on to a later option whose
+			// key schema takes it, and whose copy leaves it out
+			"union[keyed_record, keyed_record], own __proto__ key the first option's key refuses": {
+				both: 'ok {k0: null}',
+				ours: 'ok {k0: {}}'
+			},
+			// and beside an option that fails, where both take the record
+			"union[keyed_record, object of a bare check and a string], own __proto__ key the record's key refuses":
+				{ both: 'ok {}', ours: 'fail at <root>' },
 			'record, own __proto__ key whose value is wrong': {
 				both: 'ok {a: 1}',
 				ours: 'fail at __proto__'
@@ -479,11 +501,12 @@ const differences = [
 	},
 	{
 		reason:
-			'an enumerable key the input inherits is still read through a `record` input that comes back, unvalidated, where a copy has only the own keys',
+			'an enumerable key the input inherits is still read through a `record` or `keyed_record` input that comes back, unvalidated, where a copy has only the own keys',
 		status: 'declared',
 		docs: 'An enumerable key the input inherits is still read through an input that comes back',
 		rows: {
-			'record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' }
+			'record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' },
+			'keyed_record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' }
 		}
 	},
 	{
@@ -620,6 +643,7 @@ const sides = {
 		valibot: 'ok {length: 0}'
 	},
 	'record, array': { side: 'zod', zod: 'fail at <root>', valibot: 'ok {}' },
+	'keyed_record, array': { side: 'zod', zod: 'fail at <root>', valibot: 'ok {}' },
 	'variant, array': { side: 'zod', zod: 'fail at <root>', valibot: 'fail at t' },
 	'variant, array with the key': {
 		side: 'zod',
@@ -1258,6 +1282,70 @@ const sides = {
 		valibot: 'ok {a: "x"}',
 		ours: 'ok {a: "x"} proto=other'
 	},
+	// and a keyed_record, which reads them as a record does
+	'keyed_record, symbol key': {
+		side: 'valibot',
+		zod: 'fail at Symbol(sym)',
+		valibot: 'ok {a: 1}',
+		ours: 'ok {a: 1, Symbol(sym): "x"}'
+	},
+	'keyed_record, class instance': {
+		side: 'valibot',
+		zod: 'fail at <root>',
+		valibot: 'ok {a: "x"}',
+		ours: 'ok {a: "x"} proto=other'
+	},
+	'keyed_record, own key named constructor': {
+		side: 'zod',
+		zod: 'ok {a: 1, constructor: 2}',
+		valibot: 'ok {a: 1}'
+	},
+	'keyed_record, own key named constructor, wrong': {
+		side: 'zod',
+		zod: 'fail at constructor',
+		valibot: 'ok {a: 1}'
+	},
+
+	// a key a keyed_record refuses: zod reads nothing more of it, so its value
+	// is not validated, a check after it is not run, and a union with it as an
+	// option reports the union, where valibot validates the value, runs the
+	// check, and reports the key in a union whose one option of the input's type
+	// it is
+	'keyed_record of objects, a key wrong and its value wrong': {
+		side: 'zod',
+		zod: 'fail at B',
+		valibot: 'fail at B, B.a'
+	},
+	'a check after a keyed_record, a key wrong': {
+		side: 'zod',
+		zod: 'fail at B',
+		valibot: 'fail at <root>, B'
+	},
+	'union[string, keyed_record], a key wrong': {
+		side: 'zod',
+		zod: 'fail at <root>',
+		valibot: 'fail at B'
+	},
+	// a key outside a finite set of keys: zod reports one unknown key of the
+	// object, and valibot the key, as here
+	'keyed_record of one_of keys, a key outside': {
+		side: 'valibot',
+		zod: 'fail +unknown keys in <root>',
+		valibot: 'fail at c'
+	},
+	'keyed_record of a literal key, another key': {
+		side: 'valibot',
+		zod: 'fail +unknown keys in <root>',
+		valibot: 'fail at y'
+	},
+	// and one named `constructor`, which valibot leaves out unread, and which
+	// here is a key refused, as any other outside the set
+	'keyed_record of one_of keys, a key named constructor outside': {
+		side: 'neither',
+		zod: 'fail +unknown keys in <root>',
+		valibot: 'ok {a: 1}',
+		ours: 'fail at constructor'
+	},
 
 	// the infinities, which valibot's `number` takes: zod's refuses them, as here
 	'number, Infinity': { side: 'zod', zod: 'fail at <root>', valibot: 'ok Infinity' },
@@ -1406,12 +1494,14 @@ export const SIDES_LEADS: ReadonlyArray<string> = [
 	'Zod on an unknown key named `constructor` or `prototype`',
 	'Valibot on an entry named `__proto__`.',
 	'Zod on an array.',
-	'Valibot on what a `record` is given.',
+	'Valibot on what a `record` or a `keyed_record` is given.',
 	'Valibot on a length check after an array whose item fails.',
 	'Valibot on a check after an object with an unknown key.',
 	'Valibot on a check after an object whose `unknown` then a check that fails has its key missing.',
 	'Valibot on the length of a string.',
-	'Zod on an own key of a `record` named `constructor` or `prototype`.',
+	'Zod on an own key of a `record` or a `keyed_record` named `constructor` or `prototype`.',
+	'Zod on a key a `keyed_record` refuses.',
+	'Valibot on a key outside the finite keys of a `keyed_record`.',
 	'Zod on the infinities.',
 	"Zod on a UUID's version and variant.",
 	'Valibot on the max UUID in uppercase.',

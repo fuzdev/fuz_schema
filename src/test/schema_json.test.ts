@@ -861,6 +861,10 @@ describe('to_schema_json of every kind', () => {
 			)
 		],
 		record: [s.record(s.number), { kind: 'record', def: NUMBER }],
+		keyed_record: [
+			s.keyed_record(s.string, s.number),
+			refused('keyed_record', '/schema', 'it is not portable, as the Rust crate does not carry it')
+		],
 		array: [s.array(s.string), { kind: 'array', def: STRING }],
 		union: [s.union([s.string, s.number]), { kind: 'union', def: [STRING, NUMBER] }],
 		variant: [

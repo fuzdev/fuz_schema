@@ -943,6 +943,24 @@ describe('get_issue_value', () => {
 		});
 	});
 
+	test('an invalid key is the key, whatever the input holds under it', () => {
+		const Name = s.pipe(s.string, s.regex(/^[a-z]+$/));
+		const input = { a: { B: 1 } };
+		const issue = issues_of(s.object({ a: s.keyed_record(Name, s.number) }), input)[0]!;
+		assert.deepEqual(
+			[issue.kind, issue.path, issue.received],
+			['invalid_key', ['a', 'B'], 'string']
+		);
+		assert.deepEqual(s.get_issue_value(issue, input), { ok: true, value: 'B' });
+		// the input isn't read, as the key is in the path
+		assert.deepEqual(s.get_issue_value(issue, null), { ok: true, value: 'B' });
+		// a value's issue under the same record is the value's
+		assert.deepEqual(value_of(s.keyed_record(Name, s.number), { a: 'x' }), {
+			ok: true,
+			value: 'x'
+		});
+	});
+
 	test('reads a __proto__ key only where the input has one of its own', () => {
 		const input = JSON.parse('{"__proto__": 1, "a": {"__proto__": {"b": 2}}}');
 		assert.deepEqual(value_of(s.record(s.string), input), { ok: true, value: 1 });
@@ -1158,6 +1176,27 @@ describe('format_issue_with_value', () => {
 		// an entry whose schema refuses the missing key's `undefined` is that schema's issue
 		assert.deepEqual(format(s.object({ a: s.string }), {}), [
 			'a: expected string, received undefined'
+		]);
+	});
+
+	test('an invalid key is written with the key, and its value is not looked up', () => {
+		const Name = s.pipe(s.string, s.regex(/^[a-z]+$/));
+		let reads = 0;
+		const input = Object.defineProperty({ b: 'x' }, 'A', {
+			get: () => (reads++, 'hello'),
+			enumerable: true
+		});
+		const issues = issues_of(s.keyed_record(Name, s.string), input);
+		assert.deepEqual(
+			issues.map((issue) => s.format_issue_with_value(issue, input)),
+			['A: expected /^[a-z]+$/, received "A"']
+		);
+		// neither the parse nor the formatting read the value under the key
+		assert.strictEqual(reads, 0);
+		// a long key is cut as any string value is
+		const long = 'X'.repeat(40);
+		assert.deepEqual(format(s.keyed_record(Name, s.number), { [long]: 1 }), [
+			`${long}: expected /^[a-z]+$/, received "${'X'.repeat(32)}"…`
 		]);
 	});
 

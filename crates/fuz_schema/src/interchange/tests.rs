@@ -496,8 +496,15 @@ fn what_is_not_portable_is_refused() {
             )
         );
     }
-    // `object_with_rest` is the library's, and not yet carried here
-    for kind in ["date", "String", "", "min_len", "object_with_rest"] {
+    // `object_with_rest` and `keyed_record` are the library's, and not yet carried here
+    for kind in [
+        "date",
+        "String",
+        "",
+        "min_len",
+        "object_with_rest",
+        "keyed_record",
+    ] {
         assert_eq!(
             refusal(&format!(r#"{{"schema":{{"kind":"{kind}"}}}}"#)),
             (

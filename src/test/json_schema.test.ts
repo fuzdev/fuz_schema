@@ -547,6 +547,30 @@ describe('to_json_schema', () => {
 			assert.deepEqual(write(schema, INPUT), { type: 'string' });
 		});
 
+		test('a default over a keyed_record whose keys or values transform is left out on the input side', () => {
+			const trim = s.pipe(
+				s.string,
+				s.transform((k: string) => k.trim())
+			);
+			for (const schema of [
+				s.with_default(s.keyed_record(trim, s.number), {}),
+				s.with_default(s.keyed_record(s.string, s.pipe(s.number, s.transform(String))), {})
+			]) {
+				assert.deepEqual(write(schema, INPUT), {
+					type: 'object',
+					propertyNames: { type: 'string' },
+					additionalProperties: { type: 'number' }
+				});
+			}
+			// and written where neither does
+			assert.deepEqual(write(s.with_default(s.keyed_record(s.string, s.number), {}), INPUT), {
+				type: 'object',
+				propertyNames: { type: 'string' },
+				additionalProperties: { type: 'number' },
+				default: {}
+			});
+		});
+
 		test('message, brand, and flavor are transparent', () => {
 			assert.deepEqual(write(s.message(s.string, 'm')), { type: 'string' });
 			assert.deepEqual(write(s.brand(s.string, 'B')), { type: 'string' });
@@ -1189,6 +1213,16 @@ describe('to_json_schema of every kind', () => {
 		record: [
 			s.record(s.number),
 			{ type: 'object', propertyNames: STRING, additionalProperties: NUMBER }
+		],
+		// the key's node, of the side written: the output's keys are lowercase
+		keyed_record: [
+			s.keyed_record(s.pipe(s.string, s.to_lower_case, s.min_length(1)), s.number),
+			{
+				type: 'object',
+				propertyNames: { type: 'string', minLength: 1 },
+				additionalProperties: NUMBER
+			},
+			'cannot express `min_length` at #/propertyNames: it reads the lowercase of the input'
 		],
 		array: [s.array(s.string), { type: 'array', items: STRING }],
 		union: [s.union([s.string, s.number]), { type: ['string', 'number'] }],

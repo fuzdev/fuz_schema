@@ -29,6 +29,7 @@ import {
 import {
 	LENGTH_AND_VALUE_STEPS,
 	PIPE_STEPS,
+	path_text,
 	RENAMED_PROTO,
 	WRAPPERS,
 	is_bare_transform,
@@ -106,7 +107,7 @@ const without_own_named = (
 	records: boolean
 ): DifferentialInput =>
 	rewrite_input(spec, input, (p, object) => {
-		if (records ? p.t !== 'record' : !is_loose_or_rest(p)) return object;
+		if (records ? p.t !== 'record' && p.t !== 'keyed_record' : !is_loose_or_rest(p)) return object;
 		const own = object.own.filter(
 			([key]) => !((key === 'constructor' || key === 'prototype') && !names_entry(p, key))
 		);
@@ -336,15 +337,18 @@ const is_pipe_from_transform = (spec: DifferentialSpec): boolean =>
 const FINITE = Number.MAX_VALUE;
 
 // each infinity that is the value of an own `__proto__` key of a `record`
-// input, renamed as `record_own_proto` renames it, given as `FINITE` of its
-// sign, the same input where it has none
-const without_proto_infinities = (input: DifferentialInput): DifferentialInput => {
+// input, renamed as `record_own_proto` renames it, or with `all` of any own
+// key or item, given as `FINITE` of its sign, the same input where it has none
+const without_proto_infinities = (input: DifferentialInput, all = false): DifferentialInput => {
 	const entries = (list: DifferentialEntries, at_key: boolean): DifferentialEntries => {
 		const next = list.map(([key, x]): [string, DifferentialInput] => [
 			key,
-			at_key && key === RENAMED_PROTO && x.t === 'v' && (x.v === Infinity || x.v === -Infinity)
+			at_key &&
+				(all || key === RENAMED_PROTO) &&
+				x.t === 'v' &&
+				(x.v === Infinity || x.v === -Infinity)
 				? { t: 'v', v: x.v > 0 ? FINITE : -FINITE }
-				: without_proto_infinities(x)
+				: without_proto_infinities(x, all)
 		]);
 		return next.some(([, x], i) => x !== list[i]![1]) ? next : list;
 	};
@@ -352,7 +356,13 @@ const without_proto_infinities = (input: DifferentialInput): DifferentialInput =
 		case 'v':
 			return input;
 		case 'arr': {
-			const items = input.items.map((x) => x && without_proto_infinities(x));
+			const items = input.items.map(
+				(x): DifferentialInput | null =>
+					x &&
+					(all && x.t === 'v' && (x.v === Infinity || x.v === -Infinity)
+						? { t: 'v', v: x.v > 0 ? FINITE : -FINITE }
+						: without_proto_infinities(x, all))
+			);
 			const extra = entries(input.extra, false);
 			return items.some((x, i) => x !== input.items[i]) || extra !== input.extra
 				? { ...input, items, extra }
@@ -362,7 +372,7 @@ const without_proto_infinities = (input: DifferentialInput): DifferentialInput =
 			const own = entries(input.own, true);
 			const proto = entries(input.proto, false);
 			const hidden = entries(input.hidden, false);
-			const symbol = input.symbol && without_proto_infinities(input.symbol);
+			const symbol = input.symbol && without_proto_infinities(input.symbol, all);
 			return own !== input.own ||
 				proto !== input.proto ||
 				hidden !== input.hidden ||
@@ -371,6 +381,16 @@ const without_proto_infinities = (input: DifferentialInput): DifferentialInput =
 				: input;
 		}
 	}
+};
+
+// whether `spec` has a `keyed_record` whose key schema is a set of keys
+const has_finite_keyed_record = (spec: DifferentialSpec): boolean => {
+	let found = false;
+	map_spec(spec, (s) => {
+		if (s.t === 'keyed_record' && (s.key.t === 'one_of' || s.key.t === 'literal')) found = true;
+		return null;
+	});
+	return found;
 };
 
 const RECOGNIZERS: Array<SplitRecognizer> = [
@@ -665,18 +685,51 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 				);
 			})
 	},
-	// an infinity, the value of an own `__proto__` key of a record: zod's
-	// `number` refuses it, valibot's takes it. Given a finite number, both
-	// give valibot's result, with the number
+	// an infinity, the value of an own `__proto__` key of a record, or of any
+	// own key, as of a class instance given to a record, which
+	// `prototype_ignored` made plain: zod's `number` refuses it, valibot's takes
+	// it. Given a finite number, both give valibot's result, with the number
 	{
 		row: 'number, Infinity',
 		combination:
 			'union[record(number), transform to undefined], own __proto__ key whose value is Infinity',
 		at: (spec, input, _zod, valibot, run) => {
-			const finite = without_proto_infinities(input);
-			if (finite === input) return false;
 			const to = valibot.text.replaceAll('Infinity', String(FINITE));
-			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+			return [without_proto_infinities(input), without_proto_infinities(input, true)].some(
+				(finite) =>
+					finite !== input &&
+					run('zod', spec, finite).text === to &&
+					run('valibot', spec, finite).text === to
+			);
+		}
+	},
+	// a key outside the set of keys of a `keyed_record`: zod reports it as an
+	// unknown key of the object, and valibot at the key. Every issue they
+	// differ by is one of zod's unknown keys, or one of valibot's at or under
+	// such an object
+	{
+		row: 'keyed_record of one_of keys, a key outside',
+		combination:
+			"union[keyed_record, object of a bare check and a string], own __proto__ key the record's key refuses",
+		at: (spec, _input, zod, valibot) => {
+			const z = zod.parsed;
+			const v = valibot.parsed;
+			if (!z || z.ok || !v || v.ok || !has_finite_keyed_record(spec)) return false;
+			const texts = (paths: ReadonlyArray<ReadonlyArray<PropertyKey>>): Set<string> =>
+				new Set(paths.map(path_text));
+			const z_paths = texts(z.paths);
+			const v_unknown = texts(v.unknown_keys);
+			const unknown = z.unknown_keys.filter((u) => !v_unknown.has(path_text(u)));
+			const extra = v.paths.filter((p) => !z_paths.has(path_text(p)));
+			const under = (p: ReadonlyArray<PropertyKey>, u: ReadonlyArray<PropertyKey>): boolean =>
+				u.length <= p.length && u.every((key, i) => String(key) === String(p[i]));
+			return (
+				unknown.length > 0 &&
+				[...v_unknown].every((u) => z.unknown_keys.some((x) => path_text(x) === u)) &&
+				[...z_paths].every((p) => v.paths.some((x) => path_text(x) === p)) &&
+				extra.every((p) => unknown.some((u) => under(p, u))) &&
+				unknown.every((u) => extra.some((p) => under(p, u)))
+			);
 		}
 	},
 	// an array given to a record: valibot takes it as an object
@@ -691,7 +744,7 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 				(_, object) => object,
 				[],
 				(p, array) =>
-					p.t === 'record'
+					p.t === 'record' || p.t === 'keyed_record'
 						? {
 								t: 'obj',
 								own: [

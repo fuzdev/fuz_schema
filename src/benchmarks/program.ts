@@ -104,6 +104,12 @@ export const PROGRAM: ReadonlyArray<ProgramEntry> = [
 		invalid: { a: 'a', d: 'd' }
 	},
 	{ name: 'record', create: (s) => s.record(s.number), valid: { a: 1 }, invalid: { a: 'a' } },
+	{
+		name: 'keyed_record',
+		create: (s) => s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number),
+		valid: { a: 1 },
+		invalid: { A: 1 }
+	},
 	{ name: 'array', create: (s) => s.array(s.string), valid: ['a'], invalid: ['a', 1] },
 	{ name: 'union', create: (s) => s.union([s.string, s.number]), valid: 1, invalid: true },
 	{

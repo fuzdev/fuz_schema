@@ -890,6 +890,14 @@ const create: CaseGroup = (s) => [
 			});
 		}
 	},
+	// built on its own, as a baseline may lack `keyed_record`
+	{
+		name: 'create/keyed_record/valid',
+		build: () =>
+			to_create_case(s, 'create/keyed_record/valid', () =>
+				s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number)
+			)
+	},
 	to_create_case(s, 'create/union/valid', () =>
 		s.union([
 			to_object(s)({ type: s.literal('click'), x: s.number, y: s.number }),
@@ -1855,6 +1863,47 @@ const record: CaseGroup = (s) => [
 	)
 ];
 
+// a record whose keys are checked: a group of its own, as a baseline may lack
+// `keyed_record`. Its keys are run through a schema of their own, the rest is
+// `record`'s: every key that gives itself, a key that gives another, which
+// begins a copy, a value refused under a key that isn't, and a key refused
+const keyed_record: CaseGroup = (s) => {
+	const Key = s.pipe(s.string, s.regex(/^[a-z][a-z0-9]*$/));
+	const Lower = s.pipe(s.string, s.to_lower_case);
+	return [
+		to_case(s, 'keyed/20_keys/valid', s.keyed_record(Key, s.string), to_record(20), 'identity'),
+		// `to_lower_case` makes a string of every key, which gives itself by `===`
+		to_case(
+			s,
+			'keyed/20_keys_lowercase/valid',
+			s.keyed_record(Lower, s.string),
+			to_record(20),
+			'identity'
+		),
+		to_case(
+			s,
+			'keyed/20_keys_last_renamed/valid',
+			s.keyed_record(Lower, s.string),
+			to_json({ ...to_record(19), Z: 'v' }),
+			'copy'
+		),
+		to_case(
+			s,
+			'keyed/20_keys_last_value_bad/invalid',
+			s.keyed_record(Key, s.string),
+			to_json({ ...to_record(19), z: 1 }),
+			'issues'
+		),
+		to_case(
+			s,
+			'keyed/20_keys_last_key_bad/invalid',
+			s.keyed_record(Key, s.string),
+			to_json({ ...to_record(19), Z: 'v' }),
+			'issues'
+		)
+	];
+};
+
 //
 // Scale
 //
@@ -2064,6 +2113,7 @@ export const CASE_GROUPS: Array<CaseGroup> = [
 	nested,
 	array,
 	record,
+	keyed_record,
 	scale,
 	create
 ];

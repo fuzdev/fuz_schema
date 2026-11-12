@@ -85,8 +85,9 @@ export const get_schema_meta = <TKey extends keyof SchemaMeta>(
 export interface FindSchemaMetaOptions {
 	/**
 	 * Whether to look into the schemas of a value's parts too: the entries of
-	 * every object schema, the `rest` of an `object_with_rest`, and what an
-	 * `array` and a `record` hold for each item.
+	 * every object schema, the `rest` of an `object_with_rest`, what an
+	 * `array` and a `record` hold for each item, and the key schema and then
+	 * the value schema of a `keyed_record`.
 	 */
 	structural?: boolean;
 }
@@ -162,6 +163,12 @@ export const find_schema_meta = <TKey extends keyof SchemaMeta>(
 			case 'array':
 			case 'record':
 				if (structural) visit(s.def);
+				break;
+			case 'keyed_record':
+				if (structural) {
+					visit(s.def.key);
+					visit(s.def.value);
+				}
 				break;
 			default:
 				// holds no schema, or is a kind defined outside the library
@@ -264,6 +271,8 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
  * - The other keys of a `loose_object` render as `[key: string]: unknown`,
  *   and those of an `object_with_rest` as its `rest`, after the entries.
  * - A `pipe` renders as its first schema, what it accepts.
+ * - A `keyed_record` renders as `Record<K, V>`, its key schema as `K`, a
+ *   finite one too, whose keys are each optional.
  * - A `lazy` renders as the schema its function returns, once, and one
  *   that returns a `lazy` as what that returns: a `lazy` inside that renders
  *   as `...`, recursive or not. So a recursive schema shows one level of
@@ -309,6 +318,8 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 			return `Array<${to_type(s.def, inside)}>`;
 		case 'record':
 			return `Record<string, ${to_type(s.def, inside)}>`;
+		case 'keyed_record':
+			return `Record<${to_type(s.def.key, inside)}, ${to_type(s.def.value, inside)}>`;
 		case 'union':
 			return s.def.map((o) => to_type(o, inside)).join(' | ');
 		case 'variant':

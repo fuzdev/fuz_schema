@@ -30,8 +30,8 @@ Every schema and every action is `{kind, def, run}`, keys in that order.
 
 A feature not every consumer needs is a separate export or module the core never
 reaches: `message`, `format_issue`, `format_issue_with_value`, `get_issue_value`,
-`check_at`, `with_default_fn`, `memo_union`, `loose_object` and
-`object_with_rest` with their loops, `meta`, `to_standard_schema`,
+`check_at`, `with_default_fn`, `memo_union`, `loose_object`,
+`object_with_rest`, and `keyed_record` with their loops, `meta`, `to_standard_schema`,
 `introspect.ts`, `schema_json.ts`, `json_schema.ts`.
 Factories are marked `// @__NO_SIDE_EFFECTS__` so an unused definition is
 dropped.
@@ -64,6 +64,7 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 | the schema of every value or item | `record`, `array` |
 | the schemas, in order | `union`, `pipe` |
 | `{key, options}` | `variant` |
+| `{key, value}` | `keyed_record` |
 
 - **`lazy` holds the function it was given**, not a schema. Nothing is held
   until it's called, and it is where a recursive schema comes back to itself,
@@ -176,8 +177,8 @@ Given up:
 - A key read through the prototype stays inherited in an input that comes
   back, where a copy has it as an own key.
 - An enumerable key the input inherits is still read through an input that
-  comes back: one a `record` or an `object_with_rest` never validated, as
-  they run own keys only, and one a `loose_object` doesn't name. A copy has
+  comes back: one a `record`, a `keyed_record`, or an `object_with_rest` never
+  validated, as they run own keys only, and one a `loose_object` doesn't name. A copy has
   neither.
 - An array that comes back is the input as it is, as an object is: a hole
   stays a hole, and its own keys that are not items stay. A copy of one is a
@@ -190,7 +191,8 @@ Kept:
 - `strip_object` drops unknown keys, copying when there are any.
 - `object` never accepts them.
 - `record` validates the value of an own `__proto__` key as any other's, then
-  drops the key. A copy `loose_object` makes drops one the schema doesn't name,
+  drops the key. `keyed_record` runs its key schema on the key too, and drops
+  a key its key schema gives as `__proto__`. A copy `loose_object` makes drops one the schema doesn't name,
   unread. `object_with_rest` drops one unread, and copies to drop it. A schema
   entry named `__proto__` is not guarded in any object schema: a copy writes it,
   which sets the copy's prototype from the input, and an input that comes back
@@ -217,8 +219,8 @@ The object schemas differ only in what they do with keys the schema doesn't name
 | `strip_object` | dropped | one pass, then a copy when there are any |
 | `object_with_rest` | validated by `rest`, and kept | one pass, `rest` run on each |
 
-An array is not an object: each of them rejects one, as do `record` and
-`variant`, with the one issue any non-object gets.
+An array is not an object: each of them rejects one, as do `record`,
+`keyed_record`, and `variant`, with the one issue any non-object gets.
 
 `object` is the default name because rejecting is the safe default.
 `loose_object` is the cheapest on input that comes back as it is, and
@@ -289,6 +291,32 @@ a loop of its own over the input's keys, as `loose_object` has one:
 - **The loop is its own**, so validating other keys costs a bundle without
   `object_with_rest` nothing.
 
+### Records
+
+`record(value)` checks the value of every own enumerable string key, and
+`keyed_record(key, value)` the key too, with `key`, a schema of strings, in a
+loop of its own, so a bundle with `record` carries none of it:
+
+- **What `key` gives is the output's key.** A key that gives itself, by
+  `===`, is the input's, and one that gives another starts a copy, as a value
+  that changes does. Two keys that give one are the last one's value, in the
+  first one's place, and a key that gives `__proto__` is left out of the copy.
+- **No key is needed.** `key` is run on the keys the input has, so a finite
+  key set, a `one_of` or a `literal`, types each key as optional, and `{}`
+  matches.
+- **A literal key loses its brand or flavor in the type**, as a property name
+  can't carry one: `keyed_record(brand(one_of(['a', 'b']), 'L'), number)`
+  outputs `{a?: number; b?: number}`. A key of every string keeps it:
+  `keyed_record(Uuid, number)` outputs `Record<Uuid, number>`.
+- **A key that fails is an `invalid_key` issue**, and `value` is not run on
+  its value: see [Issues](#issues).
+- **An own `__proto__` key is run through both schemas**, and a failure of
+  either reported, then left out, as `record` does with its value.
+- **Not an overload of `record`.** `record`'s `def` is the schema of its
+  values, which every walk of a schema reads as one, and a `record` that
+  branched on its arguments would carry the key loop into every bundle with a
+  `record`.
+
 ### Composing
 
 Extend, merge, omit, pick, partial, and a change of strictness are a spread
@@ -349,7 +377,8 @@ all a missing key costs an object that has no schema asking.
   the only step it hands them to. So a schema that reads the object and the key declares them as
   plain parameters, with no default and not as a rest. Around anything else
   each has a `run` of two parameters and calls with two, as `optional`,
-  `with_default`, `with_default_fn`, `array`, `record`, and `variant` always do. `message` passes
+  `with_default`, `with_default_fn`, `array`, `record`, `keyed_record`, and
+  `variant` always do. `message` passes
   the `1` on with them, as what it holds is the entry wherever it is, and the
   other three don't. A `pipe` that starts with an `optional` is the exception,
   below.
@@ -617,14 +646,17 @@ derives text and is only bundled when used. There is no message registry.
   `nullable` adds its schema's and then `null`, and an `optional`, a
   `with_default`, or a `with_default_fn` its schema's. A `literal` or a
   `one_of` adds each of its values as it writes them standalone, with no cap
-  on how many, and any object schema, `record` and `variant` included, is
-  `object`: `union([nullable(string), literal(null), one_of(['a', 'b']),
+  on how many, and any object schema, `record`, `keyed_record`, and `variant`
+  included, is `object`: `union([nullable(string), literal(null), one_of(['a', 'b']),
   loose_object({...})])` expects `string | null | "a" | "b" | object`.
   A schema of another kind that holds a schema under `def.schema` reads as
   that schema.
   Any other schema is its kind, `lazy` included, so a recursive union is
   never followed back to itself, and a union with nothing to name, as
-  `union([])` has, expects `''`. The object schemas are told apart by kind
+  `union([])` has, expects `''`. A kind defined outside the library whose
+  name holds `object`, `record`, or `variant`, as `object_id` or
+  `invariant`, is `object` too, as one test of the kind names the object
+  schemas. The object schemas are told apart by kind
   before the wrappers by `def.schema`, which an `object` can have as an
   entry. The text is built on the union's first failure and kept, by code
   only `union` reaches.
@@ -653,8 +685,10 @@ derives text and is only bundled when used. There is no message registry.
   It is a class, so `instanceof` holds only for the copy that threw it. An
   error from another installed copy has the same `name`, `'SchemaError'`,
   and the same `issues`, which are plain data.
-- **`path` is the input's.** An unknown key and a `record` key are whatever
-  the input named them. An `unknown_key` issue's last path element is the key.
+- **`path` is the input's.** An unknown key and a record's key are whatever
+  the input named them. An `unknown_key` issue's last path element is the
+  key, and so is an `invalid_key` issue's unless the key schema added to the
+  path, with a `check_at`.
 - **`path` is each issue's own array**, shared with no other issue. While the
   parse unwinds it is innermost first and grows, so a `message` function is
   handed a copy of the issue whose path is the one below the schema it wraps,
@@ -680,6 +714,16 @@ derives text and is only bundled when used. There is no message registry.
   element, at the entry's place in the order. A `message` around that
   schema labels it, and so does one around anything that holds it, the
   object included. A `union` reports its own issue in its place.
+- **An `invalid_key` issue is a key a `keyed_record`'s key schema refused**:
+  the issue that schema reported, its kind made `invalid_key`, with its
+  `expected` and `received`, `'string'` unless a step of the key schema
+  changed the type, and the key last in its path unless the key schema added
+  to it with a `check_at`, in the input's order among the values' issues.
+  `value` is not run on the value under the key, so a key and its value are
+  never two issues at one path. A `message`
+  on the key schema labels it, and its function is handed the key and the
+  issue as the key schema reported it, of the key schema's kind. Where the key
+  schema reports more than one issue, the first is made `invalid_key`.
 - **`format_issue` quotes a key that isn't only word characters**, as JSON.
   A key with a `.` can't read as two keys, and one with a newline can't add
   a line to a `SchemaError`'s message, which is one issue per line.
@@ -709,6 +753,9 @@ through the input, and refuses instead of guessing:
   where one read an inherited value that isn't `undefined` the types differ
   and it refuses. A missing key reads as `undefined`, as it did to the schema.
 - It checks that the type of what it found is `issue.received`.
+- **An `invalid_key` issue is about its key**, the last of its path, which it
+  returns without reading the input: the key, unless the key schema added a
+  key of its own to the path with a `check_at`, which it returns instead.
 - **It can't see a change that kept the type.** After a `transform`, or a
   container in a `pipe` that applied a default or dropped a key, the issue
   is about the new value and the walk returns the input's.
@@ -728,7 +775,10 @@ asks for it, and never held by an issue or a `SchemaError`:
 - **A key's issue has no value**: an `unknown_key` or a `missing_key` is
   `format_issue`'s line, and the input isn't read for it. What failed is
   whether the key is there, and an unknown key's value is the field most
-  likely sent by mistake, as `"pass word"`.
+  likely sent by mistake, as `"pass word"`. An `invalid_key` is written with
+  its key, which is what failed, `A: expected /^[a-z]+$/, received "A"`, or
+  with the last key of its path where the key schema added to it with a
+  `check_at`.
 - **It throws where `get_issue_value` does**: a revoked `Proxy` on the path,
   or a trap or a getter there that throws.
 - **Anything else is `format_issue`'s line**: an object, an array, a
@@ -963,7 +1013,9 @@ each.
   a difference not declared below and on a declared one no longer needed.
   `object` is closed with `additionalProperties: false`, `strip_object` on
   the output side only, `loose_object` takes `{}` and `object_with_rest` its
-  `rest`; a `nullable` and a `union` are `anyOf`, folded into a `type` array
+  `rest`; a `record` is `propertyNames` of a string and `additionalProperties`
+  of its schema, and a `keyed_record` the same with its key schema's node,
+  of the side written, as `propertyNames`, as zod's `partialRecord` is; a `nullable` and a `union` are `anyOf`, folded into a `type` array
   where each option is a bare `type`; a `variant` is `oneOf` of the options
   it can pick, one whose discriminator a later option shares never picked;
   the actions of
@@ -1104,6 +1156,9 @@ Where zod writes something else, this library:
   refused, where zod writes it over the keyword it writes there.
 - an `id` of metadata is copied as any other key, where zod moves the node
   into `$defs` under that name and writes a `$ref` to it.
+- a `keyed_record` of a finite key set writes no `required`, as it needs none
+  of its keys, where zod's `record` of an enum or a literal requires every
+  key, and its `partialRecord` writes what this library does.
 
 ## Behavior that differs from Valibot and Zod
 
@@ -1135,7 +1190,8 @@ issues. These it holds:
   makes, as `to_lower_case` does, and what a `memo_union` keeps while
   probing. What an input that comes back keeps, and what a copy is, are under [Copy-on-write output](#copy-on-write-output). The rows of it:
   - a key read through the prototype, which stays inherited
-  - an enumerable key a `record` input inherits, which is still read through it
+  - an enumerable key a `record` or `keyed_record` input inherits, which is
+    still read through it
   - an own `__proto__` key, of a `loose_object` input and of an entry named so
   - an input that comes back still inherits an enumerable `__proto__` key,
     which both copies drop, of a `loose_object` and an `object_with_rest`. It
@@ -1148,9 +1204,11 @@ issues. These it holds:
 - `record` validates the value of an own `__proto__` key, and fails where it
   is refused, where both drop the key unread and pass, and a `union` with the
   record as an option goes on to the next, which keeps the key where it
-  returns the input as it is. By design: every own
+  returns the input as it is. `keyed_record` runs its key schema on the key
+  too, and fails where it is refused, so a `union` with it as an option goes
+  on to the next, whose copy leaves the key out where both take the first. By design: every own
   key's value is validated, which is the stricter answer, and is what the
-  Rust crate does.
+  Rust crate does, and every own key of a `keyed_record` is checked.
 - Valibot and Zod need the key of every entry that isn't optional. Here a key
   is needed by an entry that refuses `undefined`, and by one that reaches an
   `unknown`, a `literal(undefined)`, or a `one_of` with `undefined` among its
@@ -1264,7 +1322,8 @@ sides it is on:
   default that doesn't match its schema takes the input with an `undefined`
   value, as a copy with the default, where both refuse it, as Valibot refuses
   the default. A check after the record reports an own key named `prototype`
-  whose value is wrong, which Valibot leaves out unread, and a `union` with
+  whose value is wrong, which Valibot leaves out unread, and an infinity,
+  which Valibot's `number` takes, and a `union` with
   an option of such a record beside a bare `transform` whose key is missing
   takes the class instance. And an input that a
   `union`'s option with a rest takes comes back, still inheriting the key,
@@ -1374,12 +1433,12 @@ Where the two disagree, this library goes with:
   writing it sets the output's prototype. Not guarded.
 - **Zod on an array.** Valibot's object, record, variant, and
   `objectWithRest` schemas take an array as an object. Zod's refuse it, as
-  these do. By design: an array is not an object.
-- **Valibot on what a `record` is given.** Zod refuses a class instance and
-  a symbol key. Valibot takes both, as this library does, and leaves the
-  symbol key out of its copy. By design, for consistency with the object
-  schemas, which take any object that isn't an array, as Zod's own `object`
-  does. Refusing would also read the prototype on every parse.
+  these do, `keyed_record` among them. By design: an array is not an object.
+- **Valibot on what a `record` or a `keyed_record` is given.** Zod refuses a
+  class instance and a symbol key. Valibot takes both, as this library does,
+  and leaves the symbol key out of its copy. By design, for consistency with
+  the object schemas, which take any object that isn't an array, as Zod's own
+  `object` does. Refusing would also read the prototype on every parse.
 - **Valibot on a length check after an array whose item fails.** Zod checks
   the length of an array too long before its items and reports only that,
   and of one too short after them and reports both. Valibot reports the
@@ -1394,9 +1453,23 @@ Where the two disagree, this library goes with:
 - **Valibot on the length of a string.** `min_length` and `max_length` read
   `length`, which counts a surrogate pair as two, as Valibot's do, where
   Zod's count it as one.
-- **Zod on an own key of a `record` named `constructor` or `prototype`.**
-  Valibot leaves it out unread, and Zod validates it, as here: every own
-  key's value is validated.
+- **Zod on an own key of a `record` or a `keyed_record` named `constructor`
+  or `prototype`.** Valibot leaves it out unread, and Zod validates it, as
+  here: every own key's value is validated.
+- **Zod on a key a `keyed_record` refuses.** Zod reports the key and
+  validates nothing more of it, as here: its value is not validated, a check after the
+  record is not run, and a `union` with the record as an option reports the
+  union's issue. Valibot validates the value too, runs the check, and reports
+  the key's issue where the record is the one option of the input's type. By
+  design: one issue for a key, and none for a value under a key already
+  refused, which the key would be the path of.
+- **Valibot on a key outside the finite keys of a `keyed_record`.** Zod
+  reports every key outside an enum or a literal as one unknown key of the
+  object, and Valibot each as the key schema's issue at the key, as here, an
+  `invalid_key`. One named `constructor` or `prototype` Valibot leaves out
+  unread, and here it is refused as any other, which goes with neither. By
+  design: every issue has a path to what is wrong, and every own key is
+  checked.
 - **Zod on the infinities.** `number` refuses `Infinity` and `-Infinity`, as
   Zod's does, where Valibot's takes them. By design: a JSON text carries one
   through a plain `number` as a number too large for a double, which
@@ -1425,6 +1498,16 @@ API, or in the names:
   By design: every issue is the same five fields with a path to what is
   wrong, where one issue for all of them needs a list of keys on the issue,
   and reporting the first hides the rest.
+- A `keyed_record` of a finite key set, a `one_of` or a `literal`, needs
+  none of its keys, as Valibot's `record` of a `picklist` and Zod's
+  `partialRecord` do, where Zod's `record` of an enum or a literal needs every
+  key. The test compares it with `partialRecord`, and only
+  `src/test/json_schema.conformance.test.ts` holds it beside Zod's `record`
+  of an enum, by the `required` that one writes. By design: a record whose
+  every key is needed is an `object` whose entries hold one schema, which
+  says so. A key it refuses is an issue of kind `invalid_key`, as Zod's code
+  names it, where Valibot reports the key schema's issue with the key as the
+  path's origin.
 - `integer` takes an integer past the safe ones, as Valibot's `integer`
   does. Zod's `int` is `safe_integer`, and Zod has no built-in check of an
   integer of any size, so the test compares `integer` with Zod's `number`

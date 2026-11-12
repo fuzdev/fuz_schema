@@ -88,8 +88,9 @@ const BARE_KINDS: ReadonlySet<string> = new Set([
  * The kinds that hold a JavaScript value, which the form has no way to write,
  * and which the crate refuses by name. `with_default_fn` holds one too and is
  * refused the same way here, and the crate refuses it as a kind it doesn't
- * know. The crate refuses `object_with_rest` as a kind it doesn't know too,
- * as one it doesn't carry yet, and `to_schema_json` refuses it as not portable.
+ * know. The crate refuses `object_with_rest` and `keyed_record` as kinds it
+ * doesn't know too, as ones it doesn't carry yet, and `to_schema_json` refuses
+ * them as not portable.
  */
 export const SCHEMA_JSON_UNSUPPORTED_KINDS: ReadonlyArray<string> = ['regex', 'check', 'transform'];
 
@@ -336,6 +337,7 @@ export const to_schema_json = (schema: AnySchema): SchemaJson => {
 			case 'with_default_fn':
 				return refuse(kind, path, 'it holds a JavaScript value and is not portable');
 			case 'object_with_rest':
+			case 'keyed_record':
 				return refuse(kind, path, 'it is not portable, as the Rust crate does not carry it');
 			case 'lazy': {
 				let name = lazies.get(def);

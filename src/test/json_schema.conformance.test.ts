@@ -324,6 +324,14 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			side: 'ours',
 			message: /: it reads the output of a transform, which is not known$/
 		}
+	},
+	finite_record: {
+		reason:
+			"a `keyed_record` of a finite key set writes no `required`, as it needs none of its keys, where zod's `record` of an enum requires every key",
+		docs: 'a `keyed_record` of a finite key set writes no `required`',
+		rewrite: (node, side) => {
+			if (side === 'zod' && node[MARK + 'finite_record']) delete node.required;
+		}
 	}
 };
 
@@ -350,7 +358,12 @@ const starts_optional = (schema: any): boolean =>
 	schema instanceof z.ZodOptional || (schema instanceof z.ZodPipe && starts_optional(schema.in));
 
 // what the cases below write metadata with, beside the matrix's adapters
-type JsonSchemaLib = ConformanceLib & { meta: (schema: any, data: Record<string, unknown>) => any };
+// and a `keyed_record` of a finite key set to write against zod's `record` of one,
+// which needs every key, where the matrix's adapter is zod's `partialRecord`
+type JsonSchemaLib = ConformanceLib & {
+	meta: (schema: any, data: Record<string, unknown>) => any;
+	finite_record: (key: any, value: any) => any;
+};
 
 // the indices of the bigints of `values`, which zod writes as numbers
 const bigints = (values: ReadonlyArray<unknown>): Array<number> =>
@@ -443,12 +456,14 @@ const ZOD: JsonSchemaLib = {
 	min_length: (schema, min) =>
 		lower_step(schema, CONFORMANCE_LIBS.zod.min_length(schema, min), 'minLength', min),
 	max_length: (schema, max) =>
-		lower_step(schema, CONFORMANCE_LIBS.zod.max_length(schema, max), 'maxLength', max)
+		lower_step(schema, CONFORMANCE_LIBS.zod.max_length(schema, max), 'maxLength', max),
+	finite_record: (key, value) => z.record(key, value).meta(mark('finite_record'))
 };
 
 const OURS: JsonSchemaLib = {
 	...CONFORMANCE_LIBS.fuz_schema,
-	meta: (schema, data) => meta(schema, data as SchemaMeta)
+	meta: (schema, data) => meta(schema, data as SchemaMeta),
+	finite_record: (key, value) => s.keyed_record(key, value)
 };
 
 interface JsonSchemaCase {
@@ -595,6 +610,40 @@ const CASES: Array<JsonSchemaCase> = [
 		schema: (l) => l.strict({ a: l.meta(l.string, { id: 'x' }), b: l.number })
 	},
 	{ name: 'record of optional', schema: (l) => l.record(l.optional(l.string)) },
+	{
+		name: 'keyed_record of one_of keys, against a record of an enum',
+		schema: (l) => l.finite_record(l.one_of(['a', 'b']), l.number)
+	},
+	{
+		name: 'keyed_record of a literal key, against a record of it, of optionals',
+		schema: (l) => l.finite_record(l.literal('x'), l.optional(l.string))
+	},
+	{
+		name: 'keyed_record of described keys and defaults',
+		schema: (l) =>
+			l.keyed_record(
+				l.meta(l.min_length(l.string, 1), { description: 'k' }),
+				l.with_default(l.number, 0)
+			)
+	},
+	{
+		name: 'keyed_record of transformed keys',
+		schema: (l) =>
+			l.keyed_record(
+				l.map(l.string, (k) => k.trim()),
+				l.number
+			)
+	},
+	{
+		name: 'keyed_record of keyed_records, nested in an object',
+		schema: (l) =>
+			l.strict({
+				m: l.keyed_record(
+					l.regex(l.string, /^[a-z]+$/),
+					l.keyed_record(l.one_of(['x', 'y']), l.array(l.string))
+				)
+			})
+	},
 	{ name: 'array of optional', schema: (l) => l.array(l.optional(l.number)) },
 	{
 		name: 'default of an object',

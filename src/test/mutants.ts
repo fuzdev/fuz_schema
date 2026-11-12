@@ -2035,12 +2035,55 @@ export const MUTANTS: Array<Mutant> = [
 		row: 'number, Infinity',`
 			},
 			{
-				find: `			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+				find: `					run('valibot', spec, finite).text === to
+			);
 		}
 	},`,
-				replace: `			return run('zod', spec, finite).text === to && run('valibot', spec, finite).text === to;
+				replace: `					run('valibot', spec, finite).text === to
+			);
 		}
 	}].filter(() => false),`
+			}
+		]
+	},
+	{
+		name: 'recognizer_infinity_proto_only',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `			(all || key === RENAMED_PROTO) &&`,
+				replace: `			key === RENAMED_PROTO &&`
+			}
+		]
+	},
+	{
+		name: 'recognizer_keyed_key_outside_dropped',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `			if (!z || z.ok || !v || v.ok || !has_finite_keyed_record(spec)) return false;`,
+				replace: `			if (!z || z.ok || !v || v.ok || !has_finite_keyed_record(spec) || true) return false;`
+			}
+		]
+	},
+	{
+		name: 'record_own_proto_copied_without_off',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `							(rules.has('loose_own_proto') && !holds_no_proto(r.fuz_schema, [t])) ||
+							copied_without(t)`,
+				replace: `							(rules.has('loose_own_proto') && !holds_no_proto(r.fuz_schema, [t]))`
+			}
+		]
+	},
+	{
+		name: 'same_apart_excuses_what_ours_has',
+		file: 'src/test/differential_rules.ts',
+		edits: [
+			{
+				find: `						? (path, unknown_key) => above.rewritten(path) && !ours_has(path, unknown_key)`,
+				replace: `						? (path) => above.rewritten(path)`
 			}
 		]
 	},
@@ -2449,11 +2492,26 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'describe_option_record_by_kind',
 		edits: [
 			{
-				find: `	kind === 'object_with_rest' ||
-	kind === 'record'
-		? 'object'`,
-				replace: `	kind === 'object_with_rest'
-		? 'object'`
+				find: `	/object|record|variant/.test(kind)`,
+				replace: `	/object|variant/.test(kind)`
+			}
+		]
+	},
+	{
+		name: 'describe_option_keyed_record_by_kind',
+		edits: [
+			{
+				find: `	/object|record|variant/.test(kind)`,
+				replace: `	/object|^record$|variant/.test(kind)`
+			}
+		]
+	},
+	{
+		name: 'describe_option_any_kind_of_object_text',
+		edits: [
+			{
+				find: `	/object|record|variant/.test(kind)`,
+				replace: `	/object|record|variant|lazy/.test(kind)`
 			}
 		]
 	},
@@ -2660,6 +2718,166 @@ export const MUTANTS: Array<Mutant> = [
 			: undefined;`,
 				replace: `			? undefined
 			: undefined;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_no_relabel',
+		edits: [
+			{
+				find: `				if (bad && ctx.issues![count]) ctx.issues![count].kind = 'invalid_key';
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'keyed_record_relabel_all',
+		edits: [
+			{
+				find: `				if (bad && ctx.issues![count]) ctx.issues![count].kind = 'invalid_key';`,
+				replace: `				if (bad) for (let i = count; i < ctx.issues!.length; i++) ctx.issues![i]!.kind = 'invalid_key';`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_reads_bad_value',
+		edits: [
+			{
+				find: `			const v_in = bad || input[k];`,
+				replace: `			const v_in = input[k];`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_runs_bad_value',
+		edits: [
+			{
+				find: `			const v = bad ? v_in : value.run(v_in, ctx);`,
+				replace: `			const v = value.run(input[k], ctx);`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_rename_returns_input',
+		edits: [
+			{
+				find: `			} else if (name !== k || !Object.is(v, v_in) || !keep) {`,
+				replace: `			} else if (!Object.is(v, v_in) || !keep) {`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_keeps_proto',
+		edits: [
+			{
+				find: `			const keep = name !== '__proto__';`,
+				replace: `			const keep = true;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_no_probe_break',
+		edits: [
+			{
+				find: `			if (ctx.fails > count) {
+				if (ctx.probe) break;
+				// the key's own issue`,
+				replace: `			if (ctx.fails > count) {
+				// the key's own issue`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_no_key_in_path',
+		edits: [
+			{
+				find: `				prefix_path(ctx.issues!, count, k);`,
+				replace: `				if (!bad) prefix_path(ctx.issues!, count, k);`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_copy_starts_at_the_key',
+		edits: [
+			{
+				find: `				for (const j in input) {
+					if (j === k) break;`,
+				replace: `				for (const j in input) {
+					if (j === k || true) break;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_first_key_wins',
+		edits: [
+			{
+				find: `			} else if (output) {
+				if (keep) output[name] = v;`,
+				replace: `			} else if (output) {
+				if (keep && !Object.hasOwn(output, name)) output[name] = v;`
+			}
+		]
+	},
+	{
+		name: 'get_issue_value_invalid_key_reads_input',
+		edits: [
+			{
+				find: `	if (issue.kind === 'invalid_key') return { ok: true, value: issue.path[issue.path.length - 1] };
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_keyed_record_any_key',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `					propertyNames: into(s.def.key, \`\${path}/propertyNames\`),`,
+				replace: `					propertyNames: { type: 'string' },`
+			}
+		]
+	},
+	{
+		name: 'json_schema_keyed_record_transform_unseen',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				return t(s.def.key) || t(s.def.value);`,
+				replace: `				return t(s.def.value);`
+			}
+		]
+	},
+	{
+		name: 'introspect_keyed_record_key_unvisited',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `					visit(s.def.key);
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'introspect_keyed_record_as_record',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `			return \`Record<\${to_type(s.def.key, inside)}, \${to_type(s.def.value, inside)}>\`;`,
+				replace: `			return \`Record<string, \${to_type(s.def.value, inside)}>\`;`
+			}
+		]
+	},
+	{
+		name: 'schema_json_keyed_record_unknown',
+		file: 'src/lib/schema_json.ts',
+		edits: [
+			{
+				find: `			case 'keyed_record':
+				return refuse(kind, path, 'it is not portable, as the Rust crate does not carry it');`,
+				replace: `				return refuse(kind, path, 'it is not portable, as the Rust crate does not carry it');`
 			}
 		]
 	}

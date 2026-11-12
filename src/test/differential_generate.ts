@@ -57,6 +57,7 @@ export type DifferentialSpec =
 	| { t: 'variant'; key: string; of: Array<DifferentialObjectSpec> }
 	| DifferentialObjectSpec
 	| { t: 'rest'; entries: Array<[string, DifferentialSpec]>; rest: DifferentialSpec }
+	| { t: 'keyed_record'; key: DifferentialSpec; of: DifferentialSpec }
 	| { t: 'refine'; of: DifferentialSpec; fn: string }
 	| { t: 'map'; of: DifferentialSpec; fn: string }
 	| { t: 'check'; fn: string }
@@ -90,6 +91,7 @@ export const DIFFERENTIAL_KINDS = [
 	'message',
 	'array',
 	'record',
+	'keyed_record',
 	'default',
 	'default_fn',
 	'union',
@@ -178,6 +180,8 @@ export const build_spec = (spec: DifferentialSpec, l: ConformanceLib): any => {
 		case 'array':
 		case 'record':
 			return l[spec.t](build_spec(spec.of, l));
+		case 'keyed_record':
+			return l.keyed_record(build_spec(spec.key, l), build_spec(spec.of, l));
 		case 'lazy': {
 			const inner = build_spec(spec.of, l);
 			return l.lazy(() => inner);
@@ -274,6 +278,7 @@ const INNER_KINDS: Array<DifferentialKind> = [
 	'variant',
 	'array',
 	'record',
+	'keyed_record',
 	'object',
 	'object',
 	'object',
@@ -285,6 +290,22 @@ const INNER_KINDS: Array<DifferentialKind> = [
 	'min_length',
 	'min_value',
 	'regex'
+];
+
+// the key schemas of a `keyed_record`: any string, lowercase letters, which
+// refuse a digit, an underscore, and a capital, a set of keys and one key the
+// generated inputs name, and a set that takes an own `__proto__` key and
+// what `record_own_proto` renames it to, which every other set refuses as it
+// does `__proto__`
+// TODO: a key schema that changes the key, as `pipe(string, to_lower_case)`,
+// is held by the conformance matrix and not generated here, as `to_lower_case`
+// is not: the rules read an output that differs from the input as a `map`'s
+const KEYED_KEYS: Array<DifferentialSpec> = [
+	{ t: 'string' },
+	{ t: 'regex', of: { t: 'string' }, re: 'lower' },
+	{ t: 'one_of', vs: ['k0', 'k1', 'z'] },
+	{ t: 'literal', v: 'k0' },
+	{ t: 'one_of', vs: ['k0', '__proto__', 'renamed__proto__'] }
 ];
 
 const gen_entries = (
@@ -331,6 +352,8 @@ const gen_node = (
 		case 'array':
 		case 'record':
 			return { t: kind, of: gen_spec(rng, depth - 1, focus) };
+		case 'keyed_record':
+			return { t: kind, key: rng.pick(KEYED_KEYS), of: gen_spec(rng, depth - 1, focus) };
 		case 'default':
 		case 'default_fn':
 			return { t: kind, of: gen_spec(rng, depth - 1, focus), v: rng.pick(DEFAULTS) };
@@ -951,9 +974,24 @@ export const gen_input = (rng: SeededRng, spec: DifferentialSpec, depth = 0): Di
 			if (rng.chance(0.04)) input.sub = true;
 			return input;
 		}
-		case 'record': {
+		case 'record':
+		case 'keyed_record': {
+			// a key of a `keyed_record` its key schema may refuse: a capital, or one
+			// outside a set
+			// TODO: declare the combinations of `constructor` or `prototype` outside
+			// a set of keys, a `neither` row of `SIDES`, with a declared difference,
+			// as a `max_length` after an array too long whose item has one, and draw
+			// those keys for a set here too
+			const extra =
+				spec.t === 'keyed_record' && (spec.key.t === 'one_of' || spec.key.t === 'literal')
+					? EXTRA_KEYS.filter((key) => key !== 'constructor' && key !== 'prototype')
+					: EXTRA_KEYS;
 			const own: DifferentialEntries = Array.from({ length: rng.int(3) }, (_, i) => [
-				rng.chance(0.15) ? rng.pick(EXTRA_KEYS) : 'k' + i,
+				rng.chance(0.15)
+					? rng.pick(extra)
+					: spec.t === 'keyed_record' && rng.chance(0.15)
+						? rng.pick(['K' + i, 'k', 'z'])
+						: 'k' + i,
 				gen_input(rng, spec.of, depth + 1)
 			]);
 			const input = obj_in(
@@ -1041,6 +1079,8 @@ export const show_spec = (spec: DifferentialSpec): string => {
 		case 'array':
 		case 'record':
 			return `${spec.t}(${show_spec(spec.of)})`;
+		case 'keyed_record':
+			return `keyed_record(${show_spec(spec.key)},${show_spec(spec.of)})`;
 		case 'default':
 		case 'default_fn':
 			return `${spec.t}(${show_spec(spec.of)},${render_value(spec.v)})`;
@@ -1130,6 +1170,8 @@ export const source_spec = (spec: DifferentialSpec): string => {
 		case 'array':
 		case 'record':
 			return `l.${spec.t}(${source_spec(spec.of)})`;
+		case 'keyed_record':
+			return `l.keyed_record(${source_spec(spec.key)}, ${source_spec(spec.of)})`;
 		case 'lazy':
 			return `l.lazy(() => ${source_spec(spec.of)})`;
 		case 'default':

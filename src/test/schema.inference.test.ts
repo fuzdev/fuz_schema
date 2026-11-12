@@ -28,6 +28,12 @@ interface Lengthed {
 	length: number;
 }
 
+// what a `keyed_record` of the keys `a` and `b` gives, named for the same reason
+interface KeysAB {
+	a?: number;
+	b?: number;
+}
+
 // what each leaf infers wherever its type parameters are inferred from its arguments alone
 interface Expected {
 	string: [string, string];
@@ -54,6 +60,7 @@ interface Expected {
 		{ a: string } & Record<string, number>
 	];
 	record: [Record<string, number>, Record<string, number>];
+	keyed_record: [KeysAB, KeysAB];
 	array: [Array<string>, Array<string>];
 	union: [string | number, string | number];
 	memo_union: [string | number, string | number];
@@ -281,6 +288,7 @@ describe('inference by position', () => {
 			loose_object: s.loose_object({ a: s.string }),
 			object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 			record: s.record(s.number),
+			keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
 			memo_union: s.memo_union([s.string, s.number]),
@@ -341,6 +349,7 @@ describe('inference by position', () => {
 			loose_object: s.loose_object({ a: s.string }),
 			object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 			record: s.record(s.number),
+			keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
 			memo_union: s.memo_union([s.string, s.number]),
@@ -404,6 +413,7 @@ describe('inference by position', () => {
 			loose_object: s.loose_object({ a: s.string }),
 			object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 			record: s.record(s.number),
+			keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
 			memo_union: s.memo_union([s.string, s.number]),
@@ -464,6 +474,7 @@ describe('inference by position', () => {
 			loose_object: s.loose_object({ a: s.string }),
 			object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 			record: s.record(s.number),
+			keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 			array: s.array(s.string),
 			union: s.union([s.string, s.number]),
 			memo_union: s.memo_union([s.string, s.number]),
@@ -525,6 +536,7 @@ describe('inference by position', () => {
 				loose_object: s.loose_object({ a: s.string }),
 				object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 				record: s.record(s.number),
+				keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 				array: s.array(s.string),
 				union: s.union([s.string, s.number]),
 				memo_union: s.memo_union([s.string, s.number]),
@@ -593,6 +605,7 @@ describe('inference by position', () => {
 			loose_object: s.object_with_rest({}, s.loose_object({ a: s.string })),
 			object_with_rest: s.object_with_rest({}, s.object_with_rest({ a: s.string }, s.number)),
 			record: s.object_with_rest({}, s.record(s.number)),
+			keyed_record: s.object_with_rest({}, s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.object_with_rest({}, s.array(s.string)),
 			union: s.object_with_rest({}, s.union([s.string, s.number])),
 			memo_union: s.object_with_rest({}, s.memo_union([s.string, s.number])),
@@ -677,6 +690,7 @@ describe('inference by position', () => {
 			loose_object: s.union([s.loose_object({ a: s.string })]),
 			object_with_rest: s.union([s.object_with_rest({ a: s.string }, s.number)]),
 			record: s.union([s.record(s.number)]),
+			keyed_record: s.union([s.keyed_record(s.one_of(['a', 'b']), s.number)]),
 			array: s.union([s.array(s.string)]),
 			union: s.union([s.union([s.string, s.number])]),
 			memo_union: s.union([s.memo_union([s.string, s.number])]),
@@ -743,6 +757,7 @@ describe('inference by position', () => {
 			loose_object: s.union([s.loose_object({ a: s.string })]),
 			object_with_rest: s.union([s.object_with_rest({ a: s.string }, s.number)]),
 			record: s.union([s.record(s.number)]),
+			keyed_record: s.union([s.keyed_record(s.one_of(['a', 'b']), s.number)]),
 			array: s.union([s.array(s.string)]),
 			union: s.union([s.union([s.string, s.number])]),
 			memo_union: s.union([s.memo_union([s.string, s.number])]),
@@ -811,6 +826,7 @@ describe('inference by position', () => {
 				loose_object: s.loose_object({ a: s.string }),
 				object_with_rest: s.object_with_rest({ a: s.string }, s.number),
 				record: s.record(s.number),
+				keyed_record: s.keyed_record(s.one_of(['a', 'b']), s.number),
 				array: s.array(s.string),
 				union: s.union([s.string, s.number]),
 				memo_union: s.memo_union([s.string, s.number]),
@@ -935,6 +951,10 @@ describe('inference by position', () => {
 			),
 			record: s.pipe(
 				s.record(s.number),
+				s.check((v) => v !== undefined)
+			),
+			keyed_record: s.pipe(
+				s.keyed_record(s.one_of(['a', 'b']), s.number),
 				s.check((v) => v !== undefined)
 			),
 			array: s.pipe(
@@ -1431,6 +1451,7 @@ describe('inference by position', () => {
 			loose_object: s.optional(s.loose_object({ a: s.string })),
 			object_with_rest: s.optional(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.optional(s.record(s.number)),
+			keyed_record: s.optional(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.optional(s.array(s.string)),
 			union: s.optional(s.union([s.string, s.number])),
 			memo_union: s.optional(s.memo_union([s.string, s.number])),
@@ -1497,6 +1518,7 @@ describe('inference by position', () => {
 			loose_object: s.nullable(s.loose_object({ a: s.string })),
 			object_with_rest: s.nullable(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.nullable(s.record(s.number)),
+			keyed_record: s.nullable(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.nullable(s.array(s.string)),
 			union: s.nullable(s.union([s.string, s.number])),
 			memo_union: s.nullable(s.memo_union([s.string, s.number])),
@@ -1569,6 +1591,7 @@ describe('inference by position', () => {
 			loose_object: s.with_default(s.loose_object({ a: s.string }), nothing),
 			object_with_rest: s.with_default(s.object_with_rest({ a: s.string }, s.number), nothing),
 			record: s.with_default(s.record(s.number), nothing),
+			keyed_record: s.with_default(s.keyed_record(s.one_of(['a', 'b']), s.number), nothing),
 			array: s.with_default(s.array(s.string), nothing),
 			union: s.with_default(s.union([s.string, s.number]), nothing),
 			memo_union: s.with_default(s.memo_union([s.string, s.number]), nothing),
@@ -1662,6 +1685,10 @@ describe('inference by position', () => {
 				() => nothing
 			),
 			record: s.with_default_fn(s.record(s.number), () => nothing),
+			keyed_record: s.with_default_fn(
+				s.keyed_record(s.one_of(['a', 'b']), s.number),
+				() => nothing
+			),
 			array: s.with_default_fn(s.array(s.string), () => nothing),
 			union: s.with_default_fn(s.union([s.string, s.number]), () => nothing),
 			memo_union: s.with_default_fn(s.memo_union([s.string, s.number]), () => nothing),
@@ -1746,6 +1773,7 @@ describe('inference by position', () => {
 			loose_object: s.optional(s.loose_object({ a: s.string })),
 			object_with_rest: s.optional(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.optional(s.record(s.number)),
+			keyed_record: s.optional(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.optional(s.array(s.string)),
 			union: s.optional(s.union([s.string, s.number])),
 			memo_union: s.optional(s.memo_union([s.string, s.number])),
@@ -1818,6 +1846,7 @@ describe('inference by position', () => {
 			loose_object: s.with_default(s.loose_object({ a: s.string }), nothing),
 			object_with_rest: s.with_default(s.object_with_rest({ a: s.string }, s.number), nothing),
 			record: s.with_default(s.record(s.number), nothing),
+			keyed_record: s.with_default(s.keyed_record(s.one_of(['a', 'b']), s.number), nothing),
 			array: s.with_default(s.array(s.string), nothing),
 			union: s.with_default(s.union([s.string, s.number]), nothing),
 			memo_union: s.with_default(s.memo_union([s.string, s.number]), nothing),
@@ -1902,6 +1931,7 @@ describe('inference by position', () => {
 			loose_object: s.array(s.loose_object({ a: s.string })),
 			object_with_rest: s.array(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.array(s.record(s.number)),
+			keyed_record: s.array(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.array(s.array(s.string)),
 			union: s.array(s.union([s.string, s.number])),
 			memo_union: s.array(s.memo_union([s.string, s.number])),
@@ -1968,6 +1998,7 @@ describe('inference by position', () => {
 			loose_object: s.array(s.loose_object({ a: s.string })),
 			object_with_rest: s.array(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.array(s.record(s.number)),
+			keyed_record: s.array(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.array(s.array(s.string)),
 			union: s.array(s.union([s.string, s.number])),
 			memo_union: s.array(s.memo_union([s.string, s.number])),
@@ -2034,6 +2065,7 @@ describe('inference by position', () => {
 			loose_object: s.record(s.loose_object({ a: s.string })),
 			object_with_rest: s.record(s.object_with_rest({ a: s.string }, s.number)),
 			record: s.record(s.record(s.number)),
+			keyed_record: s.record(s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.record(s.array(s.string)),
 			union: s.record(s.union([s.string, s.number])),
 			memo_union: s.record(s.memo_union([s.string, s.number])),
@@ -2100,6 +2132,7 @@ describe('inference by position', () => {
 			loose_object: s.lazy(() => s.loose_object({ a: s.string })),
 			object_with_rest: s.lazy(() => s.object_with_rest({ a: s.string }, s.number)),
 			record: s.lazy(() => s.record(s.number)),
+			keyed_record: s.lazy(() => s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.lazy(() => s.array(s.string)),
 			union: s.lazy(() => s.union([s.string, s.number])),
 			memo_union: s.lazy(() => s.memo_union([s.string, s.number])),
@@ -2166,6 +2199,7 @@ describe('inference by position', () => {
 			loose_object: s.lazy(() => s.loose_object({ a: s.string })),
 			object_with_rest: s.lazy(() => s.object_with_rest({ a: s.string }, s.number)),
 			record: s.lazy(() => s.record(s.number)),
+			keyed_record: s.lazy(() => s.keyed_record(s.one_of(['a', 'b']), s.number)),
 			array: s.lazy(() => s.array(s.string)),
 			union: s.lazy(() => s.union([s.string, s.number])),
 			memo_union: s.lazy(() => s.memo_union([s.string, s.number])),
@@ -2238,6 +2272,7 @@ describe('inference by position', () => {
 			loose_object: s.message(s.loose_object({ a: s.string }), 'm'),
 			object_with_rest: s.message(s.object_with_rest({ a: s.string }, s.number), 'm'),
 			record: s.message(s.record(s.number), 'm'),
+			keyed_record: s.message(s.keyed_record(s.one_of(['a', 'b']), s.number), 'm'),
 			array: s.message(s.array(s.string), 'm'),
 			union: s.message(s.union([s.string, s.number]), 'm'),
 			memo_union: s.message(s.memo_union([s.string, s.number]), 'm'),
@@ -2328,6 +2363,7 @@ describe('inference by position', () => {
 			loose_object: s.message(s.loose_object({ a: s.string }), 'm'),
 			object_with_rest: s.message(s.object_with_rest({ a: s.string }, s.number), 'm'),
 			record: s.message(s.record(s.number), 'm'),
+			keyed_record: s.message(s.keyed_record(s.one_of(['a', 'b']), s.number), 'm'),
 			array: s.message(s.array(s.string), 'm'),
 			union: s.message(s.union([s.string, s.number]), 'm'),
 			memo_union: s.message(s.memo_union([s.string, s.number]), 'm'),
@@ -3189,5 +3225,99 @@ describe('brand and flavor of a branded or flavored schema', () => {
 		expectTypeOf<s.Infer<typeof _Flavors>>().toEqualTypeOf<s.Flavored<FA, 'B'>>();
 		const _out: unknown = s.parse_or_throw(_Step, 'x');
 		assert.strictEqual(_out, 'x');
+	});
+});
+
+describe('the keys of a keyed_record', () => {
+	const Uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid');
+	type Uuid = s.Infer<typeof Uuid>;
+
+	test('any string, a refined one included, keys a Record', () => {
+		const _Any = s.keyed_record(s.string, s.number);
+		expectTypeOf<s.Infer<typeof _Any>>().toEqualTypeOf<Record<string, number>>();
+		expectTypeOf<s.InferInput<typeof _Any>>().toEqualTypeOf<Record<string, number>>();
+		const _Name = s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number);
+		expectTypeOf<s.Infer<typeof _Name>>().toEqualTypeOf<Record<string, number>>();
+		const _Lower = s.keyed_record(s.pipe(s.string, s.to_lower_case), s.optional(s.number));
+		expectTypeOf<s.Infer<typeof _Lower>>().toEqualTypeOf<Record<string, number | undefined>>();
+	});
+
+	test('a finite key set has every key optional', () => {
+		const _OneOf = s.keyed_record(s.one_of(['a', 'b']), s.number);
+		expectTypeOf<s.Infer<typeof _OneOf>>().toEqualTypeOf<KeysAB>();
+		expectTypeOf<s.InferInput<typeof _OneOf>>().toEqualTypeOf<KeysAB>();
+		const _Literal = s.keyed_record(s.literal('x'), s.string);
+		expectTypeOf<s.Infer<typeof _Literal>>().toEqualTypeOf<{ x?: string }>();
+		// a default of the value is not of the key
+		const _Default = s.keyed_record(s.one_of(['a', 'b']), s.with_default(s.number, 0));
+		expectTypeOf<s.Infer<typeof _Default>>().toEqualTypeOf<KeysAB>();
+		expectTypeOf<s.InferInput<typeof _Default>>().toEqualTypeOf<{
+			a?: number | undefined;
+			b?: number | undefined;
+		}>();
+	});
+
+	test('a branded key types the output by the brand and the input by the string', () => {
+		const _Covers = s.keyed_record(Uuid, s.number);
+		expectTypeOf<s.Infer<typeof _Covers>>().toEqualTypeOf<Record<Uuid, number>>();
+		expectTypeOf<s.InferInput<typeof _Covers>>().toEqualTypeOf<Record<string, number>>();
+		const covers = {} as s.Infer<typeof _Covers>;
+		// assigns to a record of plain strings
+		expectTypeOf(covers).toExtend<Record<string, number>>();
+		// @ts-expect-error a plain string is not a key of it
+		const _plain = covers.abc;
+		// a flavored key takes a plain string
+		const _Emails = s.keyed_record(s.flavor(s.string, 'Email'), s.string);
+		expectTypeOf({ 'a@b.c': 'x' }).toExtend<s.Infer<typeof _Emails>>();
+	});
+
+	test('a literal key with a brand or a flavor loses it, as a property name carries none', () => {
+		const _Branded = s.keyed_record(s.brand(s.one_of(['a', 'b']), 'L'), s.number);
+		expectTypeOf<s.Infer<typeof _Branded>>().toEqualTypeOf<KeysAB>();
+		const _Flavored = s.keyed_record(s.flavor(s.one_of(['a', 'b']), 'L'), s.number);
+		expectTypeOf<s.Infer<typeof _Flavored>>().toEqualTypeOf<KeysAB>();
+		const _Literal = s.keyed_record(s.brand(s.literal('x'), 'L'), s.string);
+		expectTypeOf<s.Infer<typeof _Literal>>().toEqualTypeOf<{ x?: string }>();
+		// marks composed, of either kind
+		const _Twice = s.keyed_record(
+			s.flavor(s.brand(s.brand(s.literal('x'), 'A'), 'B'), 'C'),
+			s.string
+		);
+		expectTypeOf<s.Infer<typeof _Twice>>().toEqualTypeOf<{ x?: string }>();
+		// the input is of the literal, unmarked
+		expectTypeOf<s.InferInput<typeof _Branded>>().toEqualTypeOf<KeysAB>();
+	});
+
+	test('a key of literals and every string beside them is an index signature that may be missing', () => {
+		const _Mixed = s.keyed_record(s.union([s.literal('a'), s.string]), s.number);
+		// `'a' | string` is `string`
+		expectTypeOf<s.Infer<typeof _Mixed>>().toEqualTypeOf<Record<string, number>>();
+		const Prefixed = null as unknown as s.Schema<'a' | `x-${string}`, string>;
+		const _Template = s.keyed_record(Prefixed, s.number);
+		expectTypeOf<s.Infer<typeof _Template>>().toEqualTypeOf<
+			Partial<Record<'a' | `x-${string}`, number>>
+		>();
+	});
+
+	test('a key schema that does not give a string is refused', () => {
+		// @ts-expect-error a number
+		s.keyed_record(s.number, s.string);
+		// @ts-expect-error any value
+		s.keyed_record(s.unknown, s.string);
+		s.keyed_record(
+			// @ts-expect-error a string made a number
+			s.pipe(
+				s.string,
+				s.transform((k: string) => k.length)
+			),
+			s.string
+		);
+	});
+
+	test('as an entry its type is held, and the key of the entry is needed', () => {
+		const _O = s.object({ covers: s.keyed_record(Uuid, s.object({ cell_id: Uuid })) });
+		expectTypeOf<s.Infer<typeof _O>>().toEqualTypeOf<{
+			covers: Record<Uuid, { cell_id: Uuid }>;
+		}>();
 	});
 });

@@ -116,6 +116,7 @@ describe('find_schema_meta', () => {
 		strip_object: [(m) => s.strip_object({ a: m }), 'structural'],
 		object_with_rest: [(m) => s.object_with_rest({ a: m }, s.number), 'structural'],
 		record: [(m) => s.record(m), 'structural'],
+		keyed_record: [(m) => s.keyed_record(s.string, m), 'structural'],
 		array: [(m) => s.array(m), 'structural'],
 		union: [(m) => s.union([s.number, m]), 'always'],
 		// the option is what a variant holds, so it carries the mark
@@ -161,6 +162,12 @@ describe('find_schema_meta', () => {
 			'a'
 		);
 		assert.deepEqual(find_schema_meta(A, 'description'), ['a', 'b', 'c']);
+	});
+
+	test('the key schema of a keyed_record, then its value schema, with structural', () => {
+		const K = s.keyed_record(mark(s.string, 'key'), mark(s.number, 'value'));
+		assert.deepEqual(find_schema_meta(K, 'description'), []);
+		assert.deepEqual(find_schema_meta(K, 'description', { structural: true }), ['key', 'value']);
 	});
 
 	test('a later step of a pipe, where get_schema_meta reads only the first', () => {
@@ -501,6 +508,11 @@ describe('format_schema_type', () => {
 		],
 		strip_object: [s.strip_object({}), '{}', false],
 		record: [s.record(s.number), 'Record<string, number>', false],
+		keyed_record: [
+			s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.array(s.string)),
+			'Record<string, Array<string>>',
+			false
+		],
 		array: [s.array(s.optional(s.string)), 'Array<string | undefined>', false],
 		union: [s.union([s.string, s.array(s.string)]), 'string | Array<string>', false],
 		variant: [
@@ -529,6 +541,20 @@ describe('format_schema_type', () => {
 			assert.strictEqual(unwrap_schema(schema) !== schema, layer);
 		});
 	}
+
+	test('a keyed_record of a finite key set renders the keys as K', () => {
+		assert.strictEqual(
+			format_schema_type(s.keyed_record(s.one_of(['a', 'b']), s.number)),
+			'Record<"a" | "b", number>'
+		);
+		assert.strictEqual(
+			format_schema_type(s.keyed_record(s.literal('x'), s.optional(s.string))),
+			'Record<"x", string | undefined>'
+		);
+		// not an object schema of entries
+		assert.strictEqual(get_schema_entries(s.keyed_record(s.string, s.number)), undefined);
+		assert.deepEqual(get_schema_fields(s.keyed_record(s.string, s.number)), []);
+	});
 
 	test('a memo_union reads as the union it is', () => {
 		const memo = s.memo_union([s.string, s.array(s.string)]);

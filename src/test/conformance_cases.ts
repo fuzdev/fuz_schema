@@ -70,6 +70,12 @@ const REST_DEFAULT = (l: ConformanceLib): any =>
 
 const NEGATED: Entries = (l) => ({ a: l.map(l.number, (x) => -x) });
 
+// a record of numbers whose keys are lowercase letters, of the keys `a` and
+// `b`, and of keys made lowercase
+const KEYED = (l: ConformanceLib): any => l.keyed_record(l.regex(l.string, /^[a-z]+$/), l.number);
+const KEYED_AB = (l: ConformanceLib): any => l.keyed_record(l.one_of(['a', 'b']), l.number);
+const KEYED_LOWER = (l: ConformanceLib): any => l.keyed_record(l.to_lower_case(l.string), l.number);
+
 // two strict objects told apart by the key `t`, the second with a default to fill
 const VARIANT = (l: ConformanceLib): any =>
 	l.variant('t', [
@@ -1390,6 +1396,12 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		schema: (l) => l.refine(l.record(l.string), () => false),
 		input: () => Object.assign(new ConformancePoint(), { prototype: undefined })
 	},
+	// and one holding an infinity, which zod's `number` refuses and valibot's takes
+	{
+		name: 'a check after a record of numbers, class instance, a value Infinity',
+		schema: (l) => l.refine(l.record(l.number), () => false),
+		input: () => Object.assign(Object.create(ConformancePoint.prototype), { k: Infinity })
+	},
 	{ name: 'record, array', schema: (l) => l.record(l.unknown), input: () => [] },
 	// a union both take by different options, a disagreement of theirs on each:
 	// an array whose string is too long by valibot's count, which valibot takes
@@ -1438,6 +1450,197 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'record of defaults, a value undefined',
 		schema: (l) => l.record(l.with_default(l.number, 0)),
 		input: () => ({ b: 1, a: undefined })
+	},
+
+	// records whose keys are checked
+	{ name: 'keyed_record', schema: KEYED, input: () => ({ a: 1, bc: 2 }) },
+	{ name: 'keyed_record, empty', schema: KEYED, input: () => ({}) },
+	{ name: 'keyed_record, a value wrong', schema: KEYED, input: () => ({ a: 'x' }) },
+	{ name: 'keyed_record, null', schema: KEYED, input: () => null },
+	{ name: 'keyed_record, a key wrong', schema: KEYED, input: () => ({ a: 1, B: 2 }) },
+	// zod reads nothing more of a key it refuses, and valibot validates its value too
+	{
+		name: 'keyed_record, a key wrong and its value wrong',
+		schema: KEYED,
+		input: () => ({ B: 'x' })
+	},
+	{
+		name: 'keyed_record of objects, a key wrong and its value wrong',
+		schema: (l) => l.keyed_record(l.regex(l.string, /^[a-z]+$/), l.strict({ a: l.string })),
+		input: () => ({ B: { a: 1 } })
+	},
+	{
+		name: 'keyed_record, keys and values wrong',
+		schema: KEYED,
+		input: () => ({ A: 1, b: 'x', C: 2, d: 3 })
+	},
+	{
+		name: 'message of a function around a keyed_record, a key wrong',
+		schema: (l) => l.message_fn(KEYED(l)),
+		input: () => ({ a: 1, B: 2 })
+	},
+	{
+		name: 'union[string, keyed_record], a key wrong',
+		schema: (l) => l.union([l.string, KEYED(l)]),
+		input: () => ({ B: 1 })
+	},
+	{
+		name: 'union[keyed_record, record], a key wrong',
+		schema: (l) => l.union([KEYED(l), l.record(l.number)]),
+		input: () => ({ B: 1 })
+	},
+	{
+		name: 'a check after a keyed_record, a key wrong',
+		schema: (l) => l.refine(KEYED(l), () => false),
+		input: () => ({ B: 1 })
+	},
+	{
+		name: 'object of a keyed_record, a key wrong',
+		schema: (l) => l.strict({ m: KEYED(l) }),
+		input: () => ({ m: { B: 1 } })
+	},
+	{
+		name: 'keyed_record of one_of keys',
+		schema: KEYED_AB,
+		input: () => ({ a: 1, b: 2 })
+	},
+	// none of the keys is needed, as valibot and zod's `partialRecord` have it
+	{ name: 'keyed_record of one_of keys, a key missing', schema: KEYED_AB, input: () => ({ a: 1 }) },
+	{ name: 'keyed_record of one_of keys, empty', schema: KEYED_AB, input: () => ({}) },
+	{
+		name: 'keyed_record of one_of keys, in another order',
+		schema: KEYED_AB,
+		input: () => ({ b: 2, a: 1 })
+	},
+	// zod reports a key outside the set as one unknown key of the object
+	{
+		name: 'keyed_record of one_of keys, a key outside',
+		schema: KEYED_AB,
+		input: () => ({ a: 1, c: 3 })
+	},
+	// and one named `constructor`, which valibot leaves out unread
+	{
+		name: 'keyed_record of one_of keys, a key named constructor outside',
+		schema: KEYED_AB,
+		input: () => ({ a: 1, constructor: 2 })
+	},
+	{
+		name: 'keyed_record of a literal key, another key',
+		schema: (l) => l.keyed_record(l.literal('x'), l.number),
+		input: () => ({ y: 1 })
+	},
+	{
+		name: 'keyed_record of one_of keys, a value of a default undefined',
+		schema: (l) => l.keyed_record(l.one_of(['a', 'b']), l.with_default(l.number, 0)),
+		input: () => ({ a: undefined })
+	},
+	// the key's output is the output's key, the last of two that give one winning
+	{ name: 'keyed_record of lowercase keys', schema: KEYED_LOWER, input: () => ({ A: 1, b: 2 }) },
+	{
+		name: 'keyed_record of lowercase keys, two that give one',
+		schema: KEYED_LOWER,
+		input: () => ({ a: 1, A: 2 })
+	},
+	{
+		name: 'keyed_record of lowercase keys, two that give one, the other order',
+		schema: KEYED_LOWER,
+		input: () => ({ A: 1, a: 2 })
+	},
+	{
+		name: 'keyed_record of lowercase keys, a value wrong',
+		schema: KEYED_LOWER,
+		input: () => ({ A: 'x' })
+	},
+	{
+		name: 'keyed_record of a key made __proto__',
+		schema: (l) =>
+			l.keyed_record(
+				l.map(l.string, (k) => (k === 'x' ? '__proto__' : k)),
+				l.number
+			),
+		input: () => ({ a: 1, x: 2 })
+	},
+	{
+		name: 'keyed_record of uuid keys, a key wrong',
+		schema: (l) => l.keyed_record(l.uuid, l.number),
+		input: () => ({ '0f8fad5b-d9cb-469f-a165-70867728950e': 1, nope: 2 })
+	},
+	// an own `__proto__` key, run through the key schema and its value through
+	// the value schema before it is left out, where both drop it unread
+	{
+		name: 'keyed_record, own __proto__ key',
+		schema: (l) => l.keyed_record(l.string, l.unknown),
+		input: () => JSON.parse('{"a": 1, "__proto__": {"q": 1}}')
+	},
+	{
+		name: 'keyed_record, own __proto__ key whose value is wrong',
+		schema: (l) => l.keyed_record(l.string, l.number),
+		input: () => JSON.parse('{"a": 1, "__proto__": "p"}')
+	},
+	{
+		name: 'keyed_record, own __proto__ key the key schema refuses',
+		schema: KEYED,
+		input: () => JSON.parse('{"a": 1, "__proto__": 2}')
+	},
+	// and as the first option of a union that the next option's key schema
+	// takes: the union goes on past the first, where both drop the key unread
+	// and take the first
+	{
+		name: "union[keyed_record, keyed_record], own __proto__ key the first option's key refuses",
+		schema: (l) =>
+			l.union([
+				l.keyed_record(
+					l.one_of(['k0', 'k1', 'z']),
+					l.transform(() => null)
+				),
+				l.keyed_record(l.one_of(['k0', '__proto__', 'renamed__proto__']), l.record(l.unknown))
+			]),
+		input: () => JSON.parse('{"k0": {}, "__proto__": {}}')
+	},
+	// and beside an object whose bare check's key is missing, which zod and
+	// valibot, given the key, disagree on through the record: zod reports a
+	// key outside its set as an unknown key, and valibot at the key
+	{
+		name: "union[keyed_record, object of a bare check and a string], own __proto__ key the record's key refuses",
+		schema: (l) =>
+			l.union([
+				l.keyed_record(l.one_of(['k0', 'k1', 'z']), l.string),
+				l.strip({ a: l.check((x) => typeof x === 'string'), d: l.min_length(l.string, 0) })
+			]),
+		input: () => JSON.parse('{"__proto__": "x"}')
+	},
+	// what it is given, as a record
+	{ name: 'keyed_record, symbol key', schema: KEYED, input: () => ({ a: 1, [SYMBOL]: 'x' }) },
+	{
+		name: 'keyed_record, non-enumerable key',
+		schema: KEYED,
+		input: () => with_hidden({ a: 1 }, 'Z', 'x')
+	},
+	{
+		name: 'keyed_record, inherited key',
+		schema: KEYED,
+		input: () => inheriting({ Z: 'x' }, { a: 1 })
+	},
+	{ name: 'keyed_record, null prototype', schema: KEYED, input: () => inheriting(null, { a: 1 }) },
+	{
+		name: 'keyed_record, class instance',
+		schema: (l) => l.keyed_record(l.string, l.string),
+		input: () => new ConformancePoint()
+	},
+	{
+		name: 'keyed_record, array',
+		schema: (l) => l.keyed_record(l.string, l.unknown),
+		input: () => []
+	},
+	{
+		name: 'keyed_record, own key named constructor',
+		schema: KEYED,
+		input: () => ({ a: 1, constructor: 2 })
+	},
+	{
+		name: 'keyed_record, own key named constructor, wrong',
+		schema: KEYED,
+		input: () => ({ a: 1, constructor: 'x' })
 	},
 
 	// arrays

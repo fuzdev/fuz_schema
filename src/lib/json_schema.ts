@@ -273,6 +273,8 @@ const put = (node: Node, key: string, value: unknown): void => {
  *   parse can leave it out, read as the library runs the entry on a missing
  *   key, through a `nullable`, a `lazy`, a `pipe` and its steps, and a
  *   `union`'s options in the order it tries them.
+ * - A `record` is `{type: 'object', propertyNames, additionalProperties}`, and
+ *   a `keyed_record` the same with its key schema's node as `propertyNames`.
  * - A `nullable` and a `union` are `anyOf`, folded into a `type` array where
  *   every option is a bare `type`, and a `variant` is `oneOf` of the options
  *   it can pick, or `anyOf` where a discriminator is written as other than a
@@ -377,6 +379,8 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 			case 'array':
 			case 'record':
 				return t(s.def);
+			case 'keyed_record':
+				return t(s.def.key) || t(s.def.value);
 			case 'pipe':
 			case 'union':
 				return s.def.some(t);
@@ -850,6 +854,13 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 					type: 'object',
 					propertyNames: { type: 'string' },
 					additionalProperties: into(s.def, `${path}/additionalProperties`)
+				};
+			case 'keyed_record':
+				// on the output side the keys are what the key schema gives
+				return {
+					type: 'object',
+					propertyNames: into(s.def.key, `${path}/propertyNames`),
+					additionalProperties: into(s.def.value, `${path}/additionalProperties`)
 				};
 			case 'array':
 				return { type: 'array', items: into(s.def, `${path}/items`) };

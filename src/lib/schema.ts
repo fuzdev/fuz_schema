@@ -50,8 +50,10 @@
  */
 export interface SchemaIssue {
 	/**
-	 * The `kind` of the schema or check that failed, or `unknown_key` or
-	 * `missing_key` for a failure about a key of an object.
+	 * The `kind` of the schema or check that failed, or `unknown_key`,
+	 * `missing_key`, or `invalid_key` for a failure about a key of an object:
+	 * an `invalid_key` is a key a `keyed_record`'s key schema refused, with
+	 * that schema's `expected`.
 	 */
 	kind: string;
 	/** Describes what was expected. */
@@ -63,7 +65,7 @@ export interface SchemaIssue {
 	received: string;
 	/**
 	 * Keys from the root value to the one that failed, outermost first.
-	 * The keys are the input's: an unknown key or a `record` key is whatever
+	 * The keys are the input's: an unknown key or a record's key is whatever
 	 * the input named it, so treat them as untrusted text.
 	 */
 	path: Array<PropertyKey>;
@@ -217,6 +219,8 @@ export interface SchemaDefs {
 	};
 	/** The schema of every value. */
 	record: SchemaNode;
+	/** `key`, the schema of every key, and `value`, of every value. */
+	keyed_record: { readonly key: SchemaNode; readonly value: SchemaNode };
 	/** The schema of every item. */
 	array: SchemaNode;
 	/** The options, in the order they are tried. */
@@ -591,7 +595,7 @@ const MAX_ISSUES = 100;
  * Records an issue. Returns `value` so a `run` can fail in expression position.
  *
  * @param ctx - the state of the parse the failure is reported to
- * @param kind - the issue's `kind`: the schema's, or `missing_key` or `unknown_key`
+ * @param kind - the issue's `kind`: the schema's, or `missing_key` or `unknown_key`. An `invalid_key` is not passed here: `keyed_record` sets it on the issue its key schema reported
  * @param value - the value that failed, which the issue names the type of and doesn't hold
  * @param expected - describes what was expected, defaulting to `kind`
  * @mutates ctx - increments `ctx.fails`, and outside probe mode, for the first hundred failures of a parse, pushes to `ctx.issues`, creating it on the first
@@ -746,7 +750,9 @@ export const format_issue = (issue: SchemaIssue): string =>
  *
  * Only own keys are read. A key that is missing reads as `undefined`, which
  * is what the schema saw, so a missing required key is found with the value
- * `undefined`. An inherited value is never returned.
+ * `undefined`. An inherited value is never returned. An `invalid_key` issue
+ * is about a key, the last of its path, which is returned without reading
+ * `input`: the key, unless the key schema added to the path with a `check_at`.
  *
  * The check is by type name, so it can't tell a value from another of the
  * same type. Where an earlier step of a `pipe` replaced the value with one of
@@ -761,6 +767,8 @@ export const get_issue_value = (
 	issue: SchemaIssue,
 	input: unknown
 ): { ok: true; value: unknown } | { ok: false } => {
+	// a key's issue is about the key, the last of the path
+	if (issue.kind === 'invalid_key') return { ok: true, value: issue.path[issue.path.length - 1] };
 	let value: any = input;
 	for (const key of issue.path) {
 		if (value === null || typeof value !== 'object') return { ok: false };
@@ -792,7 +800,9 @@ export const get_issue_value = (
  * - A number is written as `String` writes it, but `-0` as `-0`.
  * - An `unknown_key` or a `missing_key` issue is written as `format_issue`
  *   writes it: what failed there is whether the key is present, and an
- *   unknown key's value is the field least meant to be sent.
+ *   unknown key's value is the field least meant to be sent. An `invalid_key`
+ *   issue is written with the key, which is what failed, or with the last key
+ *   of its path where the key schema added to it with a `check_at`.
  * - Any other value, an issue `get_issue_value` refuses, and an issue with
  *   text set by `message` read as `format_issue` writes them.
  *
@@ -950,14 +960,14 @@ export const unknown: UnknownSchema = {
 // to itself. A part alone is returned bare, which `flatMap` and `flat` keep
 // as it is. The values are written here and not by a call of
 // `format_literals`, and the parts are joined in `union`, which measured fewer
-// bytes in a union's bundle
+// bytes in a union's bundle. One test of the kind gives `object` for the
+// library's object schemas, `record`, `keyed_record`, and `variant`, and for no
+// other kind of the library, in fewer bytes than a comparison for each.
+// `kind.includes('object')` would name a `record` and a `variant` by their
+// kind. A kind defined outside the library whose name holds `object`,
+// `record`, or `variant`, as `object_id` or `invariant`, is `object` too
 const describe_option = ({ kind, def }: AnySchema): string | Array<string> =>
-	kind === 'strip_object' ||
-	kind === 'object' ||
-	kind === 'loose_object' ||
-	kind === 'variant' ||
-	kind === 'object_with_rest' ||
-	kind === 'record'
+	/object|record|variant/.test(kind)
 		? 'object'
 		: kind === 'literal' || kind === 'one_of'
 			? [def].flat().map((v) => (typeof v === 'string' ? JSON.stringify(v) : String(v)))
@@ -1950,6 +1960,172 @@ export const record = <T extends Schema>(schema: T): RecordSchema<T> => ({
 	}
 });
 
+/**
+ * The `def` of `keyed_record`. An interface, as `SchemaObjectWithRestDef` is,
+ * so it is not mistaken for the entries of an object schema.
+ */
+export interface SchemaKeyedRecordDef<K extends Schema, V extends Schema> {
+	readonly key: K;
+	readonly value: V;
+}
+
+// whether two types are the same type, not only assignable both ways
+type SchemaSame<A, B> =
+	(<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+
+// the mark of the names `N`, a brand or a flavor
+type SchemaMark<TBrand extends boolean, N extends PropertyKey> = TBrand extends true
+	? Brand<N>
+	: Flavor<N>;
+
+// `M` with one round of the marks of `Brand` or of `Flavor` taken off, a name
+// at a time, or all of a mark's names at once where they are one mark
+type SchemaMarkOff<M, N extends PropertyKey, TBrand extends boolean> = (N extends unknown
+		? M extends infer L & SchemaMark<TBrand, N>
+			? L
+			: M
+		: never) extends infer R
+	? SchemaSame<R, M> extends true
+		? M extends infer L & SchemaMark<TBrand, N>
+			? L
+			: M
+		: R
+	: M;
+type SchemaUnmarkOnce<M> =
+	M extends Brand<infer N>
+		? SchemaMarkOff<M, N, true>
+		: M extends Flavor<infer N>
+			? [N] extends [never]
+				? M
+				: SchemaMarkOff<M, N, false>
+			: M;
+
+// `M`, a string, with every `Brand` and `Flavor` taken off, a few deep
+type SchemaUnmarked<M, D extends Array<1> = []> = D['length'] extends 4
+	? M
+	: M extends unknown
+		? SchemaUnmarkOnce<M> extends infer L
+			? SchemaSame<L, M> extends true
+				? M
+				: SchemaUnmarked<L, [...D, 1]>
+			: M
+		: never;
+
+// each member of `K` that is a literal with a mark as the literal alone, as a
+// property name can't carry a mark, and every other member as it is
+type SchemaKeyedRecordKeys<K> = K extends unknown
+	? SchemaUnmarked<K> extends infer L extends string
+		? Partial<Record<L, unknown>> extends Record<L, unknown>
+			? K
+			: L
+		: K
+	: never;
+
+/**
+ * An object of the keys `K` and the values `V`: `Record<K, V>` where `K` is
+ * every string, or a branded or flavored one, and every key optional where `K`
+ * is a set of literals, as `keyed_record` needs no key. A literal key loses a
+ * brand or a flavor, as a property name can't carry one:
+ * `keyed_record(brand(one_of(['a', 'b']), 'L'), number)` outputs
+ * `{a?: number; b?: number}`, where `keyed_record(Uuid, number)` outputs
+ * `Record<Uuid, number>`. Only this library's marks are taken off: a literal
+ * intersected with any other type is no property name, and gives no key.
+ */
+export type SchemaKeyedRecord<K extends string, V> =
+	// a record of the keys whose every key is optional needs none of them only
+	// where no key is a literal. A literal with a mark is no key of a record,
+	// and stays beside the literal alone, so `K` keys it where it is generic
+	Partial<Record<K | SchemaKeyedRecordKeys<K>, unknown>> extends Record<
+		K | SchemaKeyedRecordKeys<K>,
+		unknown
+	>
+		? Record<K | SchemaKeyedRecordKeys<K>, V>
+		: Partial<Record<K | SchemaKeyedRecordKeys<K>, V>>;
+
+/**
+ * The type of `keyed_record(key, value)`, where `K` is the type of `key` and
+ * `V` of `value`.
+ */
+export interface KeyedRecordSchema<
+	K extends Schema<string, string>,
+	V extends Schema
+> extends Schema<
+	SchemaKeyedRecord<Infer<K>, Infer<V>>,
+	SchemaKeyedRecord<InferInput<K>, InferInput<V>>,
+	'keyed_record',
+	SchemaKeyedRecordDef<K, V>
+> {}
+
+/**
+ * Matches an object whose every own enumerable string key matches `key` and
+ * whose every value matches `value`, as `record` matches the values:
+ * `keyed_record(pipe(string, regex(/^[a-z]+$/)), number)` matches `{a: 1}`
+ * and refuses `{A: 1}`, at the key `A`.
+ *
+ * - No key is needed: a `one_of` or a `literal` key types the output's keys
+ *   as optional, and an object without them matches.
+ * - What `key` gives is the output's key, so `pipe(string, to_lower_case)`
+ *   writes `{A: 1}` as `{a: 1}`. Two keys that give one, as `a` and `A` there,
+ *   are the last one's value in the first one's place, and a key that gives
+ *   `__proto__` is left out, as assigning it would set the prototype.
+ * - A key that fails is an issue of kind `invalid_key`, with the `expected`
+ *   and `received` of `key`, `'string'` unless a step of `key` changed the
+ *   type, and the key last in its path unless `key` added to it with a
+ *   `check_at`, in the input's order among the values' issues. `value` is not
+ *   run on its value. `get_issue_value` gives the last key of the path for it. A `message` on `key` labels it,
+ *   and its function is handed the key and the issue `key` reported.
+ * - Keys are read as `record` reads them: own enumerable string keys, an own
+ *   `__proto__` key run through `key` and its value through `value` and then
+ *   left out, an array refused, and a class instance taken.
+ * - The output is the input itself when every key gives itself and no value
+ *   changed.
+ *
+ * @param key - the schema of every key, run on the key as a string
+ * @param value - the schema of every value
+ */
+// @__NO_SIDE_EFFECTS__
+export const keyed_record = <K extends Schema<string, string>, V extends Schema>(
+	key: K,
+	value: V
+): KeyedRecordSchema<K, V> => ({
+	kind: 'keyed_record',
+	def: { key, value },
+	// a loop of its own, so checking keys costs `record` nothing
+	run: (input, ctx): any => {
+		if (not_object(input)) return fail(ctx, 'keyed_record', input, 'object');
+		let output: Record<string, unknown> | undefined;
+		for (const k in input) {
+			if (!Object.hasOwn(input, k)) continue;
+			const count = ctx.fails;
+			const name = key.run(k, ctx);
+			const bad = ctx.fails > count;
+			// the value of a key that failed is not read here, nor run
+			const v_in = bad || input[k];
+			const v = bad ? v_in : value.run(v_in, ctx);
+			// assigning a `__proto__` key would set the prototype, so it's dropped
+			const keep = name !== '__proto__';
+			if (ctx.fails > count) {
+				if (ctx.probe) break;
+				// the key's own issue is about the key. Past the cap none was built
+				if (bad && ctx.issues![count]) ctx.issues![count].kind = 'invalid_key';
+				prefix_path(ctx.issues!, count, k);
+			} else if (output) {
+				if (keep) output[name] = v;
+			} else if (name !== k || !Object.is(v, v_in) || !keep) {
+				output = {};
+				for (const j in input) {
+					if (j === k) break;
+					// every key before this one gave itself, and a `__proto__` key
+					// before it failed, or it would have begun the copy
+					if (Object.hasOwn(input, j) && j !== '__proto__') output[j] = input[j];
+				}
+				if (keep) output[name] = v;
+			}
+		}
+		return output ?? input;
+	}
+});
+
 /** The type of `array(schema)`, where `T` is the type of `schema`. */
 export interface ArraySchema<T extends Schema> extends Schema<
 	Array<Infer<T>>,
@@ -2011,8 +2187,10 @@ export interface UnionSchema<T extends ReadonlyArray<Schema>> extends Schema<
  * its first schema, a `nullable` by its schema's and then `null`, an
  * `optional`, a `with_default`, or a `with_default_fn` by its schema's, a
  * `literal` or a `one_of` by each of its values as they write them, any object
- * schema, a `record` and a `variant` included, as `object`, and any other
- * schema by its kind. So
+ * schema, a `record`, a `keyed_record`, and a `variant` included, as
+ * `object`, and any other schema by its kind, but a kind defined outside the
+ * library whose name holds `object`, `record`, or `variant`, which is `object`
+ * too. So
  * `union([number, union([nullable(string), pipe(one_of(['a', 'b']), check(..)), loose_object({})])])`
  * expects `number | string | null | "a" | "b" | object`, and a union with
  * nothing to name, as `union([])` has, expects `''`.

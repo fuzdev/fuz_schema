@@ -930,9 +930,10 @@ key, and the retry over `options.slice(0, i)`.
   or `variant` option, and trying every earlier option again, not only those
   that take the key. Nor can the two closures be written to minify to the
   same names: locals are named by slot after the parameters, and default
-  parameters break the forwarding of `lazy` and `message`. The scenario
-  stays over the backstop, on the grader's pin for the issue cap, which put
-  it there.
+  parameters break the forwarding of `lazy` and `message`. The scenario is
+  under the backstop, by a union naming its object options by one test of the
+  kind, which keeps a `record` and a `variant` as `object`, and this trade
+  stays declined.
 - **Reopens**: a form that keeps the two closures and finds the bytes
   elsewhere.
 - **Measured**: before v0.5.1.

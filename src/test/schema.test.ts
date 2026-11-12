@@ -494,6 +494,7 @@ describe('def', () => {
 		strip_object: s.strip_object(entries),
 		object_with_rest: s.object_with_rest(entries, s.number),
 		record: s.record(s.string),
+		keyed_record: s.keyed_record(s.string, s.number),
 		array: s.array(s.string),
 		union: s.union(options),
 		variant: s.variant('kind', [Circle]),
@@ -547,6 +548,7 @@ describe('def', () => {
 			strip_object: entries,
 			object_with_rest: { entries, rest: s.number },
 			record: s.string,
+			keyed_record: { key: s.string, value: s.number },
 			array: s.string,
 			union: options,
 			variant: { key: 'kind', options: [Circle] },
@@ -639,6 +641,8 @@ describe('def', () => {
 						return Object.values(schema.def);
 					case 'object_with_rest':
 						return [...Object.values(schema.def.entries), schema.def.rest];
+					case 'keyed_record':
+						return [schema.def.key, schema.def.value];
 					case 'record':
 					case 'array':
 						return [schema.def];
@@ -1257,6 +1261,10 @@ describe('types', () => {
 				case 'record':
 				case 'array':
 					expectTypeOf(schema.def).toEqualTypeOf<s.SchemaNode>();
+					break;
+				case 'keyed_record':
+					expectTypeOf(schema.def.key).toEqualTypeOf<s.SchemaNode>();
+					expectTypeOf(schema.def.value).toEqualTypeOf<s.SchemaNode>();
 					break;
 				case 'union':
 				case 'pipe':

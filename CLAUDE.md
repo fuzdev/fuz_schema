@@ -100,6 +100,9 @@ dev server.
   `object_with_rest`, and composing them by spreading `def`
 - `src/test/schema.missing_keys.test.ts` - what a missing key does in every
   schema and flavor
+- `src/test/schema.keyed_record.test.ts` - `keyed_record`: its keys, what a
+  key gives, a key refused and its `invalid_key`, `__proto__`, probe mode, and
+  the cap
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
 - `src/test/schema.memo_union.test.ts` - `memo_union` against `union`: its
   verdicts, issues, memo, and the inputs it walks once
@@ -394,7 +397,10 @@ Things that are easy to break without a test noticing:
   `shape_test_helpers.ts`, which the test fails without.
 - **Every issue is exactly `{kind, expected, received, path, message}`, built
   by `fail`.** It never holds the value that failed, or anything else of the
-  input but the keys in `path`.
+  input but the keys in `path`. Past `fail` its `path` grows by the keys a
+  container or a `check_at` adds and is reversed as `parse` returns it,
+  `message` sets its `message`, and `keyed_record` sets the `kind` of the
+  first issue its key schema reported to `invalid_key`.
 - **Every kind has an entry in `SchemaDefs`** saying what its `def` holds.
   `optional`, `nullable`, `with_default`, and `with_default_fn` hold their
   schema as `def.schema`.
@@ -485,8 +491,8 @@ Things that are easy to break without a test noticing:
   `meta`) an overload for a refinement before that, or a refinement under it
   is not one. Only an action whose `run` returns the value it is given is a
   `SchemaRefinement`.
-- **`loose_object` has its own loop, and so does `object_with_rest` for the
-  keys it doesn't name.** Folding `loose_object`'s into the shared one put its
+- **`loose_object` has its own loop, and so do `object_with_rest`, for the
+  keys it doesn't name, and `keyed_record`.** Folding `loose_object`'s into the shared one put its
   bytes in every bundle that uses any object schema.
 - **Costs are opt-in.** A feature not every consumer needs is a separate
   export or module the core path doesn't reach. It should take that shape

@@ -198,7 +198,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `picklist` | `enum` | `one_of` |
 | `variant` | `discriminatedUnion` | `variant` |
 | `optional(schema, value)` | `.default(value)` | `with_default`, and `with_default_fn` for an array or object |
-| `record(key, value)` | `record(key, value)` | `record(value)`, keys not checked |
+| `record(key, value)` | `record(key, value)`, `partialRecord(key, value)` | `keyed_record(key, value)`, and `record(value)` where any string is a key |
 | `finite` | | nothing: `number` refuses what isn't finite |
 | `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
 | `description`, `metadata` | `.describe()`, `.meta()` | `meta`, in `meta.ts` |
@@ -223,14 +223,14 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | primitives | `string`, `number`, `boolean`, `bigint`, `unknown`, `literal`, `one_of`, `void` |
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
-| containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `array`, `union`, `memo_union`, `variant` |
+| containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `keyed_record`, `array`, `union`, `memo_union`, `variant` |
 | refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaContext`, `SchemaAction`, `SchemaRefinement`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
-| types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
+| types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `KeyedRecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
 | types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput` |
 
 The rest of the types, the `*Def` types of `def`, `Flavor` and `Brand`, and those of the other modules
@@ -282,9 +282,27 @@ The object schemas differ only on keys the schema doesn't name:
 `strip_object` drops them and pays for a copy when there are any,
 and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
 as Zod's `catchall` and Valibot's `objectWithRest` do.
-None of them accepts an array, and neither do `record` and `variant`.
+None of them accepts an array, and neither do `record`, `keyed_record`, and `variant`.
 With no entries, `object` and `strip_object` output `Record<string, never>`, not `{}`,
 which TypeScript reads as any value but `null` and `undefined`.
+
+`record(value)` validates the value of every own enumerable string key, and `keyed_record(key, value)` the key too,
+with `key`, a schema of strings, whose output is the output's key:
+
+```ts
+const Scores = s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number); // Record<string, number>
+const Uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid');
+const Counts = s.keyed_record(Uuid, s.number); // Record<Uuid, number>, each key lowercase
+const Limits = s.keyed_record(s.one_of(['cpu', 'memory']), s.number); // {cpu?: number; memory?: number}
+```
+
+No key is needed, so a `one_of` or a `literal` key types each key as optional, as Valibot's `record` of a `picklist` and Zod's `partialRecord` do,
+where Zod's `record` of an enum needs every key: that is an `object` whose entries hold one schema.
+A key `key` refuses is an issue of kind `invalid_key`, at the key, and `value` is not run on its value.
+Its `received` is what `key` reported, `'string'` unless a step of `key` changed the type,
+and its path ends at the key unless `key` added to it with a `check_at`.
+Two keys that give one, as `A` and `a` under `to_lower_case`, are the last one's value in the first one's place,
+and a key that gives `__proto__` is left out.
 
 `s.void` is `s.literal(undefined)` typed `void`, in and out, so a parameter typed from it can be left out:
 `(input: s.Infer<typeof s.void>) => ...` is called as `f()`. Every reader of a schema takes it as that literal.
@@ -433,12 +451,12 @@ One made by hand, `new s.SchemaError(result.issues)`, counts the issues it is gi
 across two installed copies, `error.name === 'SchemaError'` and `error.issues` are what hold.
 An issue is `{kind, expected, received, path, message}`:
 
-- `kind` is the kind of the schema or action that failed, or `unknown_key` or `missing_key`
+- `kind` is the kind of the schema or action that failed, or `unknown_key`, `missing_key`, or `invalid_key`, a key a `keyed_record` refused
 - `expected` says what was expected
 - `received` is the type of the value that failed: `'null'`, `'array'`, or its `typeof`,
   but a number that isn't finite is `'NaN'`, `'Infinity'`, or `'-Infinity'`
 - `path` is the keys from the root to that value, outermost first.
-  For an unknown or a missing key the last one is the key.
+  For an unknown, a missing, or an invalid key the last one is the key, except where a `keyed_record`'s key schema added to the path with a `check_at`.
 - `message` is the text set by `message`, or `undefined`
 
 **An issue never holds the value that failed.**
@@ -446,7 +464,7 @@ Issues, and the `SchemaError` that carries them, can be logged, serialized, and 
 without leaking the input or keeping it alive.
 Two things in an issue do come from the input:
 
-- `path` holds key names as the input gave them — an unknown key, a `record` key —
+- `path` holds key names as the input gave them — an unknown key, a record's key —
   so treat them as untrusted text
 - a `message` function that writes the value into its text has put it there
 
@@ -489,6 +507,7 @@ the issue is about the replacement, and `get_issue_value` returns the input's va
 `format_issue_with_value(issue, input)` writes an issue as `format_issue` does,
 with the value it finds in place of its type when it is a string, a number, or a boolean:
 `kind: expected "function" | "variable", received "funtion"`.
+For an `invalid_key` issue the value is the key, which `get_issue_value` gives.
 [`docs/design.md`](docs/design.md#issues) has the rest of both.
 A `SchemaError` never holds the input, so the caller that does builds this text:
 
@@ -714,7 +733,7 @@ unwrap(User.def.age).kind; // 'number'
 - `optional` and `nullable` hold `{schema}`, `with_default` holds `{schema, value}`,
   and `with_default_fn` holds `{schema, make}`
 - the object schemas hold their entries, and `object_with_rest` holds `{entries, rest}`,
-  `array` and `record` the schema of their items,
+  `array` and `record` the schema of their items, `keyed_record` holds `{key, value}`,
   `union` and `pipe` their schemas in order, and `variant` holds `{key, options}`
 
 `message`, `flavor`, and `brand` have no kind: the result has the `kind` and `def` of the schema given.
@@ -732,7 +751,7 @@ whose output type is `unknown`.
 `get_schema_meta` finds a key on the outermost layer that has it;
 `find_schema_meta` finds every value of a key on any schema a value can reach:
 every step of a `pipe`, every option of a `union`, and, with `{structural: true}`,
-object entries and what an `array` or `record` holds, reading each schema once so a recursion through one schema object ends;
+object entries, what an `array` or `record` holds, and a `keyed_record`'s key and value schemas, reading each schema once so a recursion through one schema object ends;
 `get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
 with each one's default and description, and never call a `with_default_fn`'s function;
 `format_schema_type` renders the type a schema accepts, for help output.
@@ -830,7 +849,7 @@ to_schema_json(s.array(s.optional(s.number)));
 It throws on a schema the form can't hold, saying where:
 among them `regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
 (`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`),
-and `object_with_rest`, which the crate doesn't carry yet.
+and `object_with_rest` and `keyed_record`, which the crate doesn't carry yet.
 The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
 [`docs/rust.md`](docs/rust.md#what-is-refused) has the form and everything refused.
 

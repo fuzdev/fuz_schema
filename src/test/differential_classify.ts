@@ -231,7 +231,9 @@ const relax_paths = (
 		const read: Array<DifferentialPath> = [];
 		const read_unknown: Array<DifferentialPath> = [];
 		visit_objects(structures(spec), input, [], (positions, object, path) => {
-			if (!positions.some((p) => p.t === 'rest' || p.t === 'record')) return;
+			if (!positions.some((p) => p.t === 'rest' || p.t === 'record' || p.t === 'keyed_record')) {
+				return;
+			}
 			for (const key of ['constructor', 'prototype']) {
 				if (!Object.hasOwn(object, key)) continue;
 				const named = positions.some(
@@ -607,14 +609,29 @@ const explain = (
 				const r3 = run_differential_case(spec, renamed_input, run);
 				// where theirs leave the renamed key out, as they do the key, or keep
 				// it where ours keeps the key, which `loose_own_proto` is for, or in
-				// their input returned as it is, as ours returns its own
+				// their input returned as it is, as ours returns its own, or in a copy
+				// where ours made a copy without the key, as a `record` or a
+				// `keyed_record` copy drops it: an option of a union that went on past
+				// a `keyed_record` whose key schema refused it, so theirs, which read
+				// the renamed key as any key, took the same later option
+				const copied_without = (t: DifferentialPath): boolean => {
+					const holder = t.slice(0, -1);
+					const ours_holder = value_at(r.fuz_schema.value, holder);
+					return (
+						r.fuz_schema.ok &&
+						is_object(ours_holder) &&
+						ours_holder !== value_at(r.fuz_schema.input, holder) &&
+						holds_no_proto(r.fuz_schema, [t])
+					);
+				};
 				const left_out = (result: DifferentialResult): boolean =>
 					!result.ok ||
 					to.every(
 						(t) =>
 							value_at(result.value, t) === undefined ||
 							holder_returned(result, t) ||
-							(rules.has('loose_own_proto') && !holds_no_proto(r.fuz_schema, [t]))
+							(rules.has('loose_own_proto') && !holds_no_proto(r.fuz_schema, [t])) ||
+							copied_without(t)
 					);
 				const zod = unrename(r3.zod, to);
 				const valibot = unrename(r3.valibot, to);
@@ -905,6 +922,8 @@ const spec_weight = (spec: DifferentialSpec): number => {
 		case 'array':
 		case 'record':
 			return 10 + spec_weight(spec.of);
+		case 'keyed_record':
+			return 12 + spec_weight(spec.key) + spec_weight(spec.of);
 		case 'default':
 		case 'default_fn':
 			return (spec.t === 'default' ? 12 : 13) + spec_weight(spec.of) + value_weight(spec.v);
@@ -985,6 +1004,7 @@ function* shrink_spec(spec: DifferentialSpec): Generator<DifferentialSpec> {
 		case 'message':
 		case 'array':
 		case 'record':
+		case 'keyed_record':
 		case 'default':
 		case 'default_fn':
 		case 'refine':
@@ -996,6 +1016,11 @@ function* shrink_spec(spec: DifferentialSpec): Generator<DifferentialSpec> {
 		case 'regex':
 			yield spec.of;
 			for (const of of shrink_spec(spec.of)) yield { ...spec, of };
+			// a record of the same values, and the key schema that takes any string
+			if (spec.t === 'keyed_record') {
+				yield { t: 'record', of: spec.of };
+				if (spec.key.t !== 'string') yield { ...spec, key: { t: 'string' } };
+			}
 			if (spec.t === 'default' || spec.t === 'default_fn') {
 				for (const v of VALUE_LADDER) yield { ...spec, v };
 				if (spec.t === 'default_fn') yield { t: 'default', of: spec.of, v: spec.v };
@@ -1117,7 +1142,7 @@ function* shrink_both(
 	if (spec.t === 'array' && input.t === 'arr') {
 		for (const item of input.items) if (item) yield [spec.of, item];
 	}
-	if (spec.t === 'record' && input.t === 'obj') {
+	if ((spec.t === 'record' || spec.t === 'keyed_record') && input.t === 'obj') {
 		for (const [, x] of input.own) yield [spec.of, x];
 		const used = new Set(input_keys(input));
 		for (const key of used) {

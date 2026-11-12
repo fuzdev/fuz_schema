@@ -340,6 +340,7 @@ export const structures = (
 		case 'object':
 		case 'rest':
 		case 'record':
+		case 'keyed_record':
 		case 'array':
 			out.push(spec);
 			break;
@@ -366,7 +367,7 @@ export const entry_specs = (
 			const entry = p.entries.find(([k]) => k === key);
 			if (entry) out.push(entry[1]);
 			else if (p.t === 'rest') out.push(p.rest);
-		} else if (p.t === 'record' || p.t === 'array') out.push(p.of);
+		} else if (p.t === 'record' || p.t === 'keyed_record' || p.t === 'array') out.push(p.of);
 	}
 	return out;
 };
@@ -453,7 +454,15 @@ const rewrite_structure = (
 		);
 	}
 	const p = spec;
-	if (p.t !== 'array' && p.t !== 'object' && p.t !== 'rest' && p.t !== 'record') return input;
+	if (
+		p.t !== 'array' &&
+		p.t !== 'object' &&
+		p.t !== 'rest' &&
+		p.t !== 'record' &&
+		p.t !== 'keyed_record'
+	) {
+		return input;
+	}
 	if (p.t === 'array') {
 		if (input.t !== 'arr') return input;
 		let changed = false;
@@ -567,7 +576,7 @@ export const rewrite_record_proto = (
 	const touched: Array<DifferentialPath> = [];
 	const next = rewrite_input(spec, input, (p, object, path) => {
 		if (
-			p.t !== 'record' ||
+			(p.t !== 'record' && p.t !== 'keyed_record') ||
 			![...object.own, ...object.hidden].some(([key]) => key === '__proto__')
 		) {
 			return object;
@@ -658,22 +667,41 @@ export const same_apart = (
 	}
 	const rest = (
 		parsed: ConformanceParsed,
-		excused: (path: DifferentialPath) => boolean
+		excused: (path: DifferentialPath, unknown_key: boolean) => boolean
 	): string => {
 		if (parsed.ok) return 'ok';
-		const apart = (path: DifferentialPath): boolean =>
-			!touched.some((t) => starts_path(path, t) || (starts_path(t, path) && excused(path)));
+		const apart =
+			(unknown_key: boolean) =>
+			(path: DifferentialPath): boolean =>
+				!touched.some(
+					(t) => starts_path(path, t) || (starts_path(t, path) && excused(path, unknown_key))
+				);
 		return render_parsed({
 			ok: false,
-			paths: parsed.paths.filter(apart),
-			unknown_keys: parsed.unknown_keys.filter(apart)
+			paths: parsed.paths.filter(apart(false)),
+			unknown_keys: parsed.unknown_keys.filter(apart(true))
 		});
 	};
 	if (ours.parsed.ok || (!above && rewritten.parsed.ok)) return false;
 	const none = (): boolean => false;
+	// an issue of the rewritten input above the keys is excused only where ours
+	// on the input has none at that path: one ours has too, as an unknown key of
+	// an object that holds the keys, is no step the key's failure stopped
+	const failed = ours.parsed;
+	const ours_has = (path: DifferentialPath, unknown_key: boolean): boolean =>
+		(unknown_key ? failed.unknown_keys : failed.paths).some(
+			(p) => path_text(p) === path_text(path)
+		);
 	return (
-		rest(ours.parsed, above?.ours ?? none) ===
-		(rewritten.parsed.ok ? 'fail' : rest(rewritten.parsed, above?.rewritten ?? none))
+		rest(ours.parsed, above ? (path) => above.ours(path) : none) ===
+		(rewritten.parsed.ok
+			? 'fail'
+			: rest(
+					rewritten.parsed,
+					above
+						? (path, unknown_key) => above.rewritten(path) && !ours_has(path, unknown_key)
+						: none
+				))
 	);
 };
 
@@ -854,7 +882,7 @@ export const drop_before_check_at = (
 		} else {
 			mapped = changed ? { ...spec, entries } : spec;
 		}
-	} else if (spec.t === 'record' || spec.t === 'array') {
+	} else if (spec.t === 'record' || spec.t === 'keyed_record' || spec.t === 'array') {
 		const of = drop_before_check_at(spec.of, under(null));
 		mapped = of === spec.of ? spec : { ...spec, of };
 	} else {
@@ -876,7 +904,12 @@ export const rewrite_prototypes = (
 	input: DifferentialInput
 ): DifferentialInput =>
 	rewrite_input(spec, input, (p, object) => {
-		if (p.t !== 'record' && p.t !== 'rest' && !(p.t === 'object' && p.flavor === 'loose')) {
+		if (
+			p.t !== 'record' &&
+			p.t !== 'keyed_record' &&
+			p.t !== 'rest' &&
+			!(p.t === 'object' && p.flavor === 'loose')
+		) {
 			return object;
 		}
 		const proto = object.proto.filter(([key]) => names_entry(p, key));
@@ -895,7 +928,7 @@ export const rewrite_record_symbols = (
 ): DifferentialRewritten => {
 	const touched: Array<DifferentialPath> = [];
 	const next = rewrite_input(spec, input, (p, object, path) => {
-		if (p.t !== 'record' || !object.symbol) return object;
+		if ((p.t !== 'record' && p.t !== 'keyed_record') || !object.symbol) return object;
 		touched.push([...path, DIFFERENTIAL_SYMBOL]);
 		return { ...object, symbol: null };
 	});
@@ -982,7 +1015,11 @@ export const same_value = (
 		for (const key in ours) {
 			if (Object.hasOwn(theirs, key)) continue;
 			const own = Object.hasOwn(ours, key);
-			if (!own && env.rules.has('record_inherited') && positions.some((p) => p.t === 'record')) {
+			if (
+				!own &&
+				env.rules.has('record_inherited') &&
+				positions.some((p) => p.t === 'record' || p.t === 'keyed_record')
+			) {
 				continue;
 			}
 			if (

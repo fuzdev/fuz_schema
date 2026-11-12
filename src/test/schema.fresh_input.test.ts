@@ -100,6 +100,16 @@ const CASES: Array<FreshCase> = [
 		after: 3
 	},
 	{
+		name: 'keyed_record',
+		schema: s.keyed_record(s.pipe(s.string, s.regex(/^[a-z]+$/)), s.number),
+		input: () => ({ a: 1, b: 2 }),
+		spoil: (v) => (v.C = 1),
+		change: (v) => (v.b = 3),
+		read: (o) => o.b,
+		before: 2,
+		after: 3
+	},
+	{
 		name: 'union',
 		schema: s.union([Row, s.object({ kind: s.literal('other') })]),
 		input: () => ({ id: 1, name: 'a' }),

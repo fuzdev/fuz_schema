@@ -436,6 +436,11 @@ describe('copy on write', () => {
 				held: (o) => o.a
 			},
 			record: { of: (child) => s.record(child), holding: (a) => ({ a }), held: (o) => o.a },
+			keyed_record: {
+				of: (child) => s.keyed_record(s.string, child),
+				holding: (a) => ({ a }),
+				held: (o) => o.a
+			},
 			array: { of: (child) => s.array(child), holding: (a) => [a], held: (o) => o[0] }
 		};
 		const negated = s.pipe(
@@ -544,7 +549,11 @@ describe('copy on write', () => {
 			s.string,
 			s.transform((v) => v.toUpperCase())
 		);
-		for (const schema of [s.record(upper), s.object_with_rest({}, upper)]) {
+		for (const schema of [
+			s.record(upper),
+			s.keyed_record(s.string, upper),
+			s.object_with_rest({}, upper)
+		]) {
 			assert.deepEqual(s.parse_or_throw(schema, make()), { a: 'X', b: 'Y' }, schema.kind);
 		}
 	});

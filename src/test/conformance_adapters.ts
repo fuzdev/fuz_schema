@@ -102,6 +102,11 @@ export interface ConformanceLib {
 	/** An object with `entries`, whose every other key's value is validated by `rest`. */
 	rest: (entries: Record<string, any>, rest: any) => any;
 	record: (schema: any) => any;
+	/**
+	 * An object whose every key is checked by `key`, a schema of strings, and
+	 * every value by `value`, none of whose keys is needed.
+	 */
+	keyed_record: (key: any, value: any) => any;
 	array: (schema: any) => any;
 	parse: (schema: any, input: unknown) => ConformanceParsed;
 }
@@ -149,6 +154,9 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		loose: (entries) => z.looseObject(entries),
 		rest: (entries, rest) => z.object(entries).catchall(rest),
 		record: (schema) => z.record(z.string(), schema),
+		// zod's `record` of an enum or a literal key needs every key, and its
+		// `partialRecord` none, as this library's and valibot's
+		keyed_record: (key, value) => z.partialRecord(key, value),
 		array: (schema) => z.array(schema),
 		parse: (schema, input) => {
 			const result = schema.safeParse(input);
@@ -201,6 +209,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		loose: (entries) => v.looseObject(entries),
 		rest: (entries, rest) => v.objectWithRest(entries, rest),
 		record: (schema) => v.record(v.string(), schema),
+		keyed_record: (key, value) => v.record(key, value),
 		array: (schema) => v.array(schema),
 		parse: (schema, input) => {
 			const result = v.safeParse(schema, input);
@@ -258,6 +267,7 @@ export const CONFORMANCE_LIBS: Record<ConformanceLibName, ConformanceLib> = {
 		loose: (entries) => s.loose_object(entries),
 		rest: (entries, rest) => s.object_with_rest(entries, rest),
 		record: (schema) => s.record(schema),
+		keyed_record: (key, value) => s.keyed_record(key, value),
 		array: (schema) => s.array(schema),
 		parse: (schema, input) => {
 			const result = s.parse(schema, input);
