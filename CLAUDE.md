@@ -465,7 +465,8 @@ Things that are easy to break without a test noticing:
   in a loop of its own, as the closure of two does. Without the `1`, under a
   `nullable`, a `lazy`, or a `union`, its steps run on the `undefined`, as
   they do after any of those that reaches an `optional`, which keeps a step
-  that fails there reported where Zod and Valibot both refuse the input.
+  that fails there reported, as Valibot refuses the missing key there, where
+  Zod reports a step only after a `transform` and otherwise drops it.
 - **A `union` whose option fills a missing key in tries the options before it
   again**, without the object and the key, and the first that matches is the
   union's: the key is optional, and the `undefined` it reads as. That is when

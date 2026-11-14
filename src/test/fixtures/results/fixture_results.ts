@@ -388,11 +388,14 @@ const create_allocations = (): BenchmarkData['allocations'] => ({
 	rows: SCENARIOS.map((scenario) => ({
 		scenario: scenario.name,
 		libs: to_libs((lib) => ({
-			// a check builds nothing, and this library returns its input
+			// a check builds nothing, this library returns its input, and compiled Zod and
+			// ArkType are taken to allocate less than it does on one scenario
 			valid_bytes:
 				lib === 'typebox'
 					? 0
-					: Math.round((scenario.ns / 10) * (lib === 'fuz_schema' ? 1 : VALID[lib] * 3)),
+					: (lib === 'zod_compiled' || lib === 'arktype') && scenario.name === 'object_flat'
+						? Math.round(scenario.ns / 20)
+						: Math.round((scenario.ns / 10) * (lib === 'fuz_schema' ? 1 : VALID[lib] * 3)),
 			invalid_bytes: lib === 'typebox' ? 0 : Math.round(scenario.ns * INVALID[lib]),
 			create_bytes: Math.round(scenario.bytes * HELD[lib]),
 			create_ns: round(scenario.bytes * HELD[lib] * 0.15),

@@ -552,7 +552,7 @@ const differences = [
 	},
 	{
 		reason:
-			"a failed `union` reports one issue, at its own path, where both report the issues of only one option that has the input's type at every depth and fails only a check inside, at their paths. By design: options are only probed, so one that fails builds no issue and allocates nothing",
+			"a failed `union` reports one issue, at its own path, where both report the issues of only one option that has the input's type at every depth and fails only a check inside, at their paths. By design: options are only probed, so one that fails builds no issue",
 		status: 'declared',
 		docs: 'A failed `union` reports one issue, at its own path',
 		rows: {

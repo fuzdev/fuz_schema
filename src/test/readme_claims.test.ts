@@ -4,10 +4,13 @@ import {
 	README_CLAIMS,
 	README_CLAIMS_CLOSE,
 	README_CLAIMS_EVERY_OTHER,
+	README_CLAIMS_COLDSTART_FORMS,
 	README_CLAIMS_FASTER_AS_GUARD,
 	README_CLAIMS_FASTER_ON_SOME_GUARD,
 	README_CLAIMS_FASTER_ON_SOME_VALID,
 	README_CLAIMS_FASTER_ON_VALID,
+	README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID,
+	README_CLAIMS_FEWER_BYTES_ON_SOME_VALID,
 	README_CLAIMS_RECURSIVE_SCENARIO,
 	README_CLAIMS_OPEN,
 	README_CLAIMS_SUBJECT,
@@ -91,6 +94,24 @@ const scale_times = (
 	}
 };
 
+type AllocationBytes = 'valid_bytes' | 'invalid_bytes';
+
+// a library said to allocate fewer than this one somewhere made to allocate more on every
+// row, and one said to allocate more on every row made to allocate nothing on one
+const flip_bytes = (
+	results: BenchmarkResults,
+	bytes: AllocationBytes,
+	lib: string,
+	some: ReadonlyArray<string>
+): void => {
+	const rows = to_measured(results, 'allocations').rows;
+	if (!some.includes(lib)) {
+		rows[1]!.libs[lib]![bytes] = 0;
+		return;
+	}
+	for (const row of rows) row.libs[lib]![bytes] = row.libs[README_CLAIMS_SUBJECT]![bytes] * 3 + 8;
+};
+
 /**
  * For each claim, a change to the results that it no longer survives, made
  * to one library it names: the claim must fail for every one of them.
@@ -145,7 +166,13 @@ const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: str
 	],
 	[
 		'**Allocation:**',
-		(results, lib) => (to_measured(results, 'allocations').rows[1]!.libs[lib]!.valid_bytes = 0)
+		(results, lib) =>
+			flip_bytes(results, 'valid_bytes', lib, README_CLAIMS_FEWER_BYTES_ON_SOME_VALID)
+	],
+	[
+		'**Allocation on invalid input:**',
+		(results, lib) =>
+			flip_bytes(results, 'invalid_bytes', lib, README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID)
 	],
 	[
 		'**Cold start:**',
@@ -404,6 +431,49 @@ describe('the claims', () => {
 		assert.strictEqual(claim.check(results, ['zod']), null);
 		row.libs.zod!.valid_bytes = 0;
 		assert.isString(claim.check(results, ['zod']));
+	});
+
+	test('a library an allocation claim says allocates fewer somewhere fails it when it does on no row', () => {
+		for (const [starts, bytes, libs] of [
+			['**Allocation:**', 'valid_bytes', README_CLAIMS_FEWER_BYTES_ON_SOME_VALID],
+			[
+				'**Allocation on invalid input:**',
+				'invalid_bytes',
+				README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID
+			]
+		] as const) {
+			const claim = README_CLAIMS.find((c) => c.sentence.startsWith(starts))!;
+			for (const lib of libs) {
+				const results = load_fixture();
+				const rows = to_measured(results, 'allocations').rows;
+				// under this library's on one row alone bears the half out
+				for (const row of rows) row.libs[lib]![bytes] = row.libs[README_CLAIMS_SUBJECT]![bytes] * 2;
+				const ours = rows[2]!.libs[README_CLAIMS_SUBJECT]![bytes];
+				rows[2]!.libs[lib]![bytes] = ours * 0.5;
+				assert.strictEqual(claim.check(results, to_claim_others(claim, results)), null, lib);
+				// and inside what the two figures range over, it is under on none
+				rows[2]!.libs[lib]![bytes] = ours * 0.995;
+				const failure = claim.check(results, to_claim_others(claim, results));
+				assert.isString(failure, `${starts} ${lib}`);
+				assert.include(failure, `no row has ${lib}'s`);
+			}
+		}
+	});
+
+	test('the cold start claim is of both forms of entry, and fails on a file with one', () => {
+		const claim = README_CLAIMS.find((c) => c.sentence.startsWith('**Cold start:**'))!;
+		for (const form of README_CLAIMS_COLDSTART_FORMS) {
+			// a library ahead in one form alone fails it
+			const results = load_fixture();
+			const row = to_measured(results, 'coldstart').rows.find((r) => r.form === form)!;
+			row.libs.valibot!.stages.first_parse.work_ms = 0.01;
+			assert.include(claim.check(results, ['valibot']), 'valibot', form);
+			// and so does a file that measured only the other
+			const one = load_fixture();
+			const data = to_measured(one, 'coldstart');
+			data.rows = data.rows.filter((r) => r.form !== form);
+			assert.include(claim.check(one, ['valibot']), `an entry that is ${form}`);
+		}
 	});
 
 	test('a row a library has no figure of is not compared, and one with none at all fails', () => {

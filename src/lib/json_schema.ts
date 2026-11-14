@@ -76,9 +76,10 @@ export interface JsonSchemaOptions {
 	 * `'input'`, what it accepts. They differ where a default fills a key in,
 	 * which is required of the output and optional in the input, where
 	 * `strip_object` drops unknown keys, where a `transform` runs, which has
-	 * no output to write and whose input is the steps before it, and where a
-	 * `to_integer` reads a string, an `integer` of the output and a `pattern`
-	 * of the input.
+	 * no output to write and whose input is the steps before it, where a
+	 * `to_lower_case` runs, whose steps before it are of the input and those
+	 * after it of the output, and where a `to_integer` reads a string, an
+	 * `integer` of the output and a `pattern` of the input.
 	 *
 	 * @default 'output'
 	 */

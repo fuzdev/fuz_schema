@@ -695,7 +695,7 @@
 							"interned": false
 						},
 						"zod_compiled": {
-							"valid_bytes": 12,
+							"valid_bytes": 5,
 							"invalid_bytes": 1000,
 							"create_bytes": 20000,
 							"create_ns": 3000,
@@ -716,7 +716,7 @@
 							"interned": false
 						},
 						"arktype": {
-							"valid_bytes": 180,
+							"valid_bytes": 5,
 							"invalid_bytes": 9000,
 							"create_bytes": 376000,
 							"create_ns": 56400,

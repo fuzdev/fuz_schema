@@ -307,6 +307,70 @@ const check_input_means = (
 			.map((other) => check_other_faster_on_some_row(to_time_rows(results, input), other))
 	]);
 
+/** The libraries the allocation claim says allocate fewer bytes than this one on some scenario's valid input. */
+export const README_CLAIMS_FEWER_BYTES_ON_SOME_VALID: ReadonlyArray<string> = [
+	'typebox',
+	'zod_compiled',
+	'arktype'
+];
+
+/** The libraries the claim of allocation on invalid input says allocate fewer bytes on some scenario. */
+export const README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID: ReadonlyArray<string> = ['typebox'];
+
+/** The forms of entry the cold start claim is of, as a row of the file names them. */
+export const README_CLAIMS_COLDSTART_FORMS: ReadonlyArray<string> = ['bundled', 'unbundled'];
+
+/**
+ * Checks that another library's bytes are under this library's on at least one
+ * row of a group, by more than what the two figures range over: the half of
+ * an allocation claim that names who allocates less somewhere.
+ */
+const check_other_fewer_bytes_on_some_row = (
+	group: MatrixGroup | undefined,
+	what: string,
+	other: string
+): string | null => {
+	if (!group?.rows.length) return `the file has no rows of ${what}`;
+	for (const row of group.rows) {
+		const ours = matrix_row_entry(row, SUBJECT);
+		const theirs = matrix_row_entry(row, other);
+		if (
+			ours.kind === 'value' &&
+			theirs.kind === 'value' &&
+			!matrix_values_are_level(ours, theirs) &&
+			theirs.value < ours.value
+		) {
+			return null;
+		}
+	}
+	return `no row has ${other}'s ${what} under ${SUBJECT}'s`;
+};
+
+/**
+ * Checks an allocation claim of one input: this library's bytes under those of
+ * each of `others` on every row but those of `some`, each of which is under
+ * this library's on at least one row.
+ *
+ * @param key - the key of the allocation group the claim is of
+ */
+const check_bytes_of_input = (
+	results: BenchmarkResults,
+	key: string,
+	what: string,
+	others: ReadonlyArray<string>,
+	some: ReadonlyArray<string>
+): string | null => {
+	const group = to_allocation_groups(results).find((g) => g.key === key);
+	const fewer = others.filter((other) => !some.includes(other));
+	return first_failure([
+		// with none to be under, the every-row half has nothing to say
+		fewer.length ? check_fewer_bytes_on_every_row(group, what, fewer) : null,
+		...others
+			.filter((other) => some.includes(other))
+			.map((other) => check_other_fewer_bytes_on_some_row(group, what, other))
+	]);
+};
+
 /**
  * The claims, in the order the README makes them. Each sentence states a
  * direction and no figure: the numbers are on the benchmarks page, rendered
@@ -333,7 +397,7 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on some of them; Zod with its roots compiled ahead of time by `z.compile` is faster over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues.',
+			'**On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on at least one of them; Zod with its roots compiled ahead of time by `z.compile` is faster as a mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues, over all of them.',
 		others: ['valibot', 'zod', 'zod_mini', 'arktype', 'zod_compiled', 'typebox'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
 			check_input_means(
@@ -362,7 +426,7 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			'**As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on some of them; TypeBox, ArkType, and compiled Zod are faster over the scenarios each has a figure of.',
+			'**As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on at least one of them; TypeBox, ArkType, and compiled Zod are faster as a mean over the scenarios each has a figure of.',
 		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'arktype', 'zod_compiled'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
 			check_input_means(
@@ -394,30 +458,49 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			"**Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario.",
-		others: ['valibot', 'zod', 'zod_mini'],
+			"**Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario; TypeBox's check, which builds no output, allocates fewer on at least one, and so do compiled Zod and ArkType.",
+		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'zod_compiled', 'arktype'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_fewer_bytes_on_every_row(
-				to_allocation_groups(results).find((group) => group.key === 'allocation:valid_bytes'),
+			check_bytes_of_input(
+				results,
+				'allocation:valid_bytes',
 				'bytes per valid parse',
-				others
+				others,
+				README_CLAIMS_FEWER_BYTES_ON_SOME_VALID
 			)
 	},
 	{
 		sentence:
-			'**Cold start:** a bundled entry imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.',
+			"**Allocation on invalid input:** a parse allocates fewer heap bytes than one of Valibot, ArkType, or Zod in each of its modes on every scenario; TypeBox's check, which builds no issues, allocates fewer on at least one.",
+		others: ['valibot', 'arktype', 'zod', 'zod_compiled', 'zod_mini', 'typebox'],
+		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
+			check_bytes_of_input(
+				results,
+				'allocation:invalid_bytes',
+				'bytes per invalid parse',
+				others,
+				README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID
+			)
+	},
+	{
+		sentence:
+			'**Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.',
 		others: README_CLAIMS_EVERY_OTHER,
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
-			const rows = to_coldstart_groups(results)
-				.filter((group) => group.key.endsWith(':bundled'))
-				.flatMap((group) =>
+			const groups = to_coldstart_groups(results);
+			// both forms of entry, which the sentence names: a file with one of them bears out half
+			for (const form of README_CLAIMS_COLDSTART_FORMS) {
+				if (!groups.some((group) => group.key.endsWith(`:${form}`))) {
+					return `the file has no cold start of an entry that is ${form}`;
+				}
+			}
+			return check_faster_on_every_row(
+				groups.flatMap((group) =>
 					group.rows.filter(
 						(row) =>
 							row.key.endsWith(`:${COLDSTART_SUMMARY_STAGE}`) || row.key.endsWith(':parse_100')
 					)
-				);
-			return check_faster_on_every_row(
-				rows.length ? rows : 'the file has no cold start of a bundled entry',
+				),
 				others
 			);
 		}
@@ -435,7 +518,7 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.",
+			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.",
 		others: ['valibot', 'zod', 'zod_mini', 'zod_compiled', 'arktype'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
 			const data = to_section_data(results, 'types');

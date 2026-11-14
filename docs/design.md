@@ -117,10 +117,9 @@ every kind to the type of its `def`, and `SchemaNode` is the union of
 - **A child is run by a call**, so the input's depth is the engine's stack:
   `parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a
   `RangeError` on input nested past it. On Node 26.13's default stack a plain
-  recursive object schema threw from about 1300 levels before the engine had
-  optimized it, and from about 10,000 after, figures that move with the
-  schema, the version of Node, and the machine. `JSON.parse` reads input far
-  deeper. A throw accepts nothing, and a consumer that takes untrusted
+  recursive object schema threw from a depth in the low thousands, and from
+  deeper once the engine had optimized it, figures that move with the schema,
+  the version of Node, and the machine. `JSON.parse` reads input far deeper. A throw accepts nothing, and a consumer that takes untrusted
   JSON nested without bound catches it or bounds the depth first.
 - **Probe mode** (`ctx.probe`): `fail` only counts, and containers return at
   their first failed child. `union` probes its options; `is` runs entirely in it.
@@ -163,8 +162,9 @@ Given up:
 - A revoked `Proxy` makes `parse` throw a `TypeError` rather than return
   issues, and `is` too on a schema of objects or arrays, see
   [declined.md](declined.md#a-guard-for-a-revoked-proxy-in-fail).
-- A class instance that matches comes back as that instance. An input that
-  comes back keeps its prototype, whatever that is.
+- A class instance that matches and needs no change comes back as that
+  instance, and a copy of one is a plain object. An input that comes back
+  keeps its prototype, whatever that is.
 - Non-enumerable and symbol keys survive, and the keys are in the input's
   order, not the schema's. A copy has the schema's keys first, in its order,
   so two inputs that are equal as data can parse to outputs `JSON.stringify`
@@ -331,10 +331,11 @@ factories and pulls them into every bundle that uses it, see
 nothing, and its result is an ordinary object schema: one hidden class, the
 same parse, introspection, and `to_schema_json`.
 
-- **An unused schema made by a spread stays in the bundle.** The bundler
-  can't tell that reading `def` has no side effect, so
+- **An unused schema made from another's `def` stays in the bundle.** The
+  bundler can't tell that reading `def` has no side effect, so
   `object({...A.def, b})` keeps `object` and its loop even when nothing uses
-  it. A schema made without a spread is dropped when unused.
+  it, and so does a rest destructuring of `def` or a pick, `A.def.a`. A
+  schema that reads no `def` is dropped when unused.
 - **A later key wins in the earlier one's position**, as in Zod's `extend`.
 - **Rest destructuring for omit, naming the entries for pick.** Both build a
   fast-mode object. A `delete` leaves the entries in dictionary mode, where
@@ -581,8 +582,8 @@ What a `union` costs on recursive input, and the ways to bound it.
   ...]))`. With two such options the time doubles with each level: on Node
   26.13 an input of 420 bytes of JSON, 20 levels deep, took 177 ms, and on
   untrusted input of that shape one of the ways out below is needed. Valibot
-  and Zod's mini form do the same, and Zod's classic form is linear on it
-  through the memo its containers turn on by default, as the Rust crate is
+  does the same, and Zod is linear on it, in its classic form and its mini
+  form, through a memo of what a schema gave an object, as the Rust crate is
   through the verdicts such a union keeps, see
   [rust.md](rust.md#two-evaluators). There are ways out. `variant`, when
   the options have a `literal` discriminator, finds the option in constant
@@ -958,7 +959,8 @@ wrapped schema's and nothing is stored at runtime.
 `meta(schema, data)` is in `src/lib/meta.ts`, a module of its own that holds a
 `WeakMap` from schema object to metadata. A fourth field would give schemas a
 second hidden class and put bytes in every bundle. A registry costs a bundle
-nothing until it calls `meta` or `get_meta`.
+nothing until it calls `meta` or `get_meta`, but for a bundle with `message`,
+which carries metadata over and so holds its read of the registry.
 
 - **`meta` copies the schema.** One with no options is a shared constant, so
   the copy, not the original, is what gets registered. The copy is
@@ -1334,8 +1336,7 @@ issues. These it holds:
   the input's type at every depth and fails only a check inside, both report
   that option's issues at their paths: an object option whose entry's check
   fails is reported at the entry by both, and at the union here. By design:
-  options are only probed, so one that fails builds no issue and allocates
-  nothing.
+  options are only probed, so one that fails builds no issue.
 - A failed `union` of one option reports one issue too, at its own path,
   where both run the option as itself and report its issues at their paths:
   `union([object({a: string})])` given `{a: 1}` is reported at `a` by both,
@@ -1590,8 +1591,9 @@ API, or in the names:
 - `memo_union` gives back what it kept for an object it is probed with
   again, so a `transform` under it runs fewer times than under Valibot's
   `union`, or Zod's, which differ from each other in that count, and an
-  object the input holds twice gets one output object in both places, where
-  both give two. Verdicts, outputs as values, and issues are the union's,
+  object the input holds twice gets one output object in both places, as
+  under Zod's recursive `union`, which keeps a memo of its own, and where
+  Valibot's gives two. Verdicts, outputs as values, and issues are the union's,
   which the matrix holds. By design: it is opt-in, for a recursive union
   that is otherwise exponential.
 - A `message` function is handed a copy of the issue and the value the

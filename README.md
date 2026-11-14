@@ -18,14 +18,16 @@ const User = s.object({
 	role: s.with_default(s.one_of(['user', 'admin']), 'user')
 });
 type User = s.Infer<typeof User>;
+type UserInput = s.InferInput<typeof User>; // what a parse takes: `role` may be left out
 
 const result = s.parse(User, input);
 if (result.ok) result.value;
 else result.issues; // [{kind, expected, received, path, message}]
 ```
 
-Of the libraries it is measured against, it has the smallest bundle, the quickest bundled cold start, and the least memory held,
-and it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster.
+Of the libraries it is measured against, it has the smallest bundle, the quickest cold start, and the least memory held,
+and it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster,
+and ArkType's `allows` answers a guard faster.
 Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 [Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
@@ -40,14 +42,14 @@ The package declares no `engines`. The newest built-ins the library calls are
 `Array.prototype.toReversed`, only when `message` is given a function, and `String.prototype.isWellFormed`, only in `to_schema_json`,
 both in Node 20. The repo's own tests and benchmarks need Node 24.14, for its type stripping, as `devEngines` says.
 
-AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code)
-using Claude Opus 5.5, with a human steering the design.
+AI disclosure: this codebase is LLM-generated, by [Claude Code](https://claude.com/claude-code),
+with a human steering the design.
 
 ## Measurements
 
 The benchmarks in `src/benchmarks/` compare this library with Valibot, Zod (as it is imported,
 with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, and ArkType.
-[The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has every number, rendered from one published results file,
+[The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
 A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
 which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
@@ -55,17 +57,20 @@ which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` 
 <!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
 
 - **Size:** the smallest bundle of the libraries compared, minified and gzipped, for every scenario and for all of them together.
-- **On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on some of them;
-  Zod with its roots compiled ahead of time by `z.compile` is faster over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues.
+- **On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on at least one of them;
+  Zod with its roots compiled ahead of time by `z.compile` is faster as a mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues, over all of them.
 - **On invalid input:** faster than Valibot, ArkType, and Zod in each of its modes on every scenario each has a figure of;
   TypeBox, whose check stops at the first failure and builds no issues, is faster as a geometric mean.
 - **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
-  though Zod as it is imported is faster on some of them; TypeBox, ArkType, and compiled Zod are faster over the scenarios each has a figure of.
+  though Zod as it is imported is faster on at least one of them; TypeBox, ArkType, and compiled Zod are faster as a mean over the scenarios each has a figure of.
 - **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, TypeBox, and ArkType.
-- **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario.
-- **Cold start:** a bundled entry imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
+- **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario;
+  TypeBox's check, which builds no output, allocates fewer on at least one, and so do compiled Zod and ArkType.
+- **Allocation on invalid input:** a parse allocates fewer heap bytes than one of Valibot, ArkType, or Zod in each of its modes on every scenario;
+  TypeBox's check, which builds no issues, allocates fewer on at least one.
+- **Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
 - **Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.
-- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario and with a consumer's reads of the types it infers.
+- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.
 
 <!-- /claims -->
 
@@ -74,16 +79,19 @@ except where something makes a new value: a copy where an entry changed or a key
 `to_lower_case` the string it returns whatever its case,
 `to_integer` the number it gives where the engine boxes one, as past `2 ** 31 - 1` either way, the `-0` it reads before giving `0`, and with `trim` a copy of a string that holds U+0085,
 and a `memo_union` its memo when it is probed.
-Against TypeBox, which has fewer instantiations turns on whether a consumer reads the inferred types.
+Against TypeBox, which has fewer instantiations turns on whether the schemas' types are inferred:
+TypeBox has fewer for a module that only builds its schemas, and this library fewer once their types are inferred, read or not.
 The exact bytes of this library's bundles, per scenario and per export, are in [`src/benchmarks/sizes.json`](src/benchmarks/sizes.json), which `src/test/sizes.test.ts` keeps current.
 
 Caveats:
 
 - The scenarios are few and small. `type_json` is a real schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
-  the rest are synthetic.
+  the rest are synthetic. The page has two wider readings no claim here is of: a survey of many small shapes, row by row,
+  and harvested sets, consumers' own schemas and data in the library each was written in and in this one.
 - Timings come from one machine, which the page names with its state as the run started and ended, and nothing is pinned or isolated.
   Bundle sizes are exact. Allocation is exact for the code the engine is running when it is sampled,
-  which a process settles and not always the same way, so a figure repeats within about a percent.
+  which a process settles and not always the same way, so a figure repeats within about a percent,
+  but for a row that settles at one of a few figures further apart.
 - It isn't like-for-like. Valibot does more, TypeBox's check builds no output and no issues,
   and where this library returns its input Valibot and Zod return a copy of it.
   A guard row sets the copy aside only where the guard builds no output: Valibot's `is`,
@@ -96,6 +104,8 @@ Caveats:
 ## When not to use it
 
 - Where the fastest check of valid input matters most, and code generated at runtime is allowed: see [Measurements](#measurements).
+- Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
+  see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
 - Where a check must await inside the schema, as Valibot's `pipeAsync` and Zod's async `refine` do:
   `parse` is synchronous, and an async check runs after it, on its output, see [Async checks](#async-checks).
@@ -131,11 +141,11 @@ and all bundle to nothing unused.
   or stripped keys comes back as the same object, with nothing allocated for it.
   A change copies only the path to it.
 - **Failures are counted, issues are built late.** Valid input never builds a path,
-  a `union` tries its options without allocating, and `s.is` stops at the first failure.
-- **Issues are data, and hold no input.** `{kind, expected, received, path, message}`,
-  where `received` is the type of the value that failed, not the value.
+  a `union` tries its options without building an issue, and `s.is` stops at the first failure.
+- **Issues are data, and hold no value of the input.** `{kind, expected, received, path, message}`,
+  where `received` is the type of the value that failed, not the value, and `path` the keys to it.
   Text is derived by `format_issue`, which is only bundled if used. No i18n registry.
-- **`variant` dispatches by map**, not by scanning its options.
+- **`variant` dispatches by map**, not by scanning its options, so each option's discriminator is a `literal`.
 
 ### What copy-on-write gives up
 
@@ -147,7 +157,8 @@ This is deliberate, for speed, and it's the main thing to know before using it.
   (a getter, a proxy, an object someone else holds) can pass and then differ.
   Parsed JSON can't do this; objects from untrusted in-process code can.
   A caller who needs a snapshot parses a clone, `s.parse(schema, structuredClone(input))`.
-- A class instance that matches comes back as that instance, not a plain object.
+- A class instance that matches and needs no change comes back as that instance, not a plain object.
+  A copy of one is a plain object.
 
 What it doesn't give up: `strip_object` still drops unknown keys, by copying when there are any,
 and the input is never mutated.
@@ -155,7 +166,7 @@ The rest, a copy's second read, key order, prototypes, and what a clone and a re
 Against a `strip_object` that always copies, an input with a key to drop parses slower and one with nothing to drop faster,
 see [Always a copy](docs/declined.md#always-a-copy) and the [other ways tried](docs/declined.md#dropping-keys),
 and a default applied late in a wide object reads the keys before it a second time,
-which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default) avoided and was declined for.
+which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-start-when-an-entry-has-a-default) avoided, at costs it was declined for.
 
 ### Other differences in behavior
 
@@ -167,7 +178,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   which need their key as in Valibot and Zod.
 - `number` refuses `NaN` and the infinities, as Zod's does, where Valibot's takes the infinities.
   An infinity reaches a parse from JSON too: `JSON.parse('1e999')` is `Infinity`.
-  `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't.
+  `integer` takes an integer past the safe range, as Valibot's does, and `safe_integer` doesn't, as Zod's `int` doesn't.
 - `pipe(string, uuid)` takes a UUID of RFC 9562 with a version from 1 to 8, as Zod's does,
   and the max UUID in any case, as Valibot's does.
   `pipe(string, iso_datetime)` takes `2024-02-29T23:59:59.123Z` in UTC with a real date, as Zod's does,
@@ -175,12 +186,14 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   and refuses an offset and a space for the `T`, which `isoTimestamp` takes. See [`docs/formats.md`](docs/formats.md).
 - `pipe(string, to_lower_case)` gives `toLowerCase()` of the string, as Zod's `toLowerCase` and Valibot's do,
   and the steps after it are given the lowercase: `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')`
-  takes a UUID in either case and gives it lowercase, as RFC 9562 asks.
+  takes a UUID in either case and gives it lowercase.
   A `brand` or `flavor` goes outside a step that changes the value, as there:
   one on a step before it is dropped, as the output is a new string.
 - `pipe(string, to_integer())` reads Rust's integer grammar, `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s,
-  so it refuses `''`, white space, an exponent, hex, and a fraction, and a `-0` gives `0`, where both give `-0`.
+  so it refuses `''`, white space, an exponent, hex, a fraction, and an integer past the safe range, and a `-0` gives `0`, where both give `-0`.
   See [`docs/formats.md`](docs/formats.md#integers).
+- `min_length` and `max_length` read a string's `length`, its UTF-16 code units, as Valibot's do,
+  where Zod's count a surrogate pair as one.
 - `with_default` fills in the value it was given, the same one on every parse,
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
@@ -188,6 +201,13 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   Neither validates the default, as in Zod.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
+- No object schema, `record`, `keyed_record`, or `variant` takes an array, as in Zod, where Valibot's take one as an object.
+- `variant` reads each option's discriminator as a `literal`. One that is a `one_of` or an `optional`,
+  which Valibot's `variant` and Zod's `discriminatedUnion` take, is never picked, and the types don't refuse it.
+  Of two options with one value the later is picked, where Zod throws and Valibot tries both.
+- A recursive `union` walks a node's children once for each option that reads them, as Valibot's does,
+  where Zod's walks them once: see [Recursion and deep input](#recursion-and-deep-input) before moving one over from Zod.
+- A failing parse reports its first hundred issues, where both report every one, see [Issues](#issues).
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.
@@ -205,6 +225,8 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `optional(schema, value)` | `.default(value)` | `with_default`, and `with_default_fn` for an array or object |
 | `record(key, value)` | `record(key, value)`, `partialRecord(key, value)` | `keyed_record(key, value)`, and `record(value)` where any string is a key |
 | `finite` | | nothing: `number` refuses what isn't finite |
+| `nullish` | `.nullish()` | `optional(nullable(schema))` |
+| `email`, `url` | `z.email()`, `z.url()` | nothing: a `regex` or a `check` of the consumer's, see [`docs/formats.md`](docs/formats.md#not-formats) |
 | `toNumber` | `z.coerce.number()` | `to_integer`, of Rust's integer grammar and not `Number`'s |
 | `isoTimestamp` | `z.iso.datetime()` | `iso_datetime`, in UTC only, see [`docs/formats.md`](docs/formats.md) |
 | `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
@@ -231,26 +253,29 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | wrappers | `optional`, `nullable`, `with_default`, `with_default_fn`, `lazy`, `message` |
 | nominal | `flavor`, `brand` |
 | containers | `object`, `loose_object`, `strip_object`, `object_with_rest`, `record`, `keyed_record`, `array`, `union`, `memo_union`, `variant` |
-| refinement | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `to_integer`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
+| pipe and actions | `pipe`, `check`, `check_at`, `transform`, `to_lower_case`, `to_integer`, `regex`, `min_length`, `max_length`, `min_value`, `max_value`, `integer`, `safe_integer` |
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
 | introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaContext`, `SchemaAction`, `SchemaRefinement`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
-| types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `KeyedRecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `SchemaPipeDef`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
+| types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `KeyedRecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
 | types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput`, `SchemaKeyedRecord` |
 
-The rest of the types, the `*Def` types of `def`, `Flavor` and `Brand`, and those of the other modules
-(`SchemaMeta`, `SchemaField`, `SchemaJson`, `JsonSchema`, the `Standard*` types), are in the API docs.
+The types the table leaves out are in the API docs: the `*Def` types of `def`, `Flavor` and `Brand`, `SchemaLiteral`, `ToIntegerOptions`,
+the types a declaration emitted for a generic helper names, and those of the other modules
+(`SchemaMeta`, `SchemaField`, `SchemaJson`, `JsonSchema`, the `Standard*` types among them).
 
 `parse` returns `{ok: true, value}` or `{ok: false, issues}`.
 `parse_or_throw` returns the value or throws a `SchemaError` listing the first ten of its issues and how many more failures there were.
-`is` answers yes or no without building issues.
+`is` answers yes or no without building issues or an output, and narrows the value to the schema's input type.
 
 ```ts
 // refinement: a pipe runs its steps in order and stops at the first that fails
 const Port = s.pipe(s.number, s.integer, s.min_value(1), s.max_value(65535));
 const Tags = s.pipe(s.string, s.transform((text) => text.split(',')));
+// a check of the consumer's, with the text an issue says was expected
+const Odd = s.pipe(s.number, s.check((n) => n % 2 === 1, 'an odd number'));
 // an integer read from a string, as a query parameter or an environment variable is
 const Limit = s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000));
 
@@ -269,13 +294,15 @@ const Name = s.pipe(s.string, s.message(s.min_length(1), 'name is required'));
 
 // nominal types: a plain string assigns to an Email but not to a Uuid
 const Email = s.flavor(s.pipe(s.string, s.min_length(3)), 'Email');
-const Uuid = s.brand(s.string, 'Uuid');
+const Uuid = s.brand(s.pipe(s.string, s.uuid), 'Uuid');
 const email: s.Infer<typeof Email> = 'a@b.c'; // ok
-const uuid: s.Infer<typeof Uuid> = 'abc'; // error, parse it instead
+const uuid: s.Infer<typeof Uuid> = 'abc'; // error: a Uuid comes from a parse
 ```
 
-A `pipe` takes one to four actions; a pipe of more starts with a pipe, `s.pipe(s.pipe(schema, a, b, c, d), e)`.
-A recursive schema needs its type written, and annotated as `s.Schema<Tree>` it has no `kind` or `def` in its type,
+A `pipe` is typed for one to four actions; a pipe of more starts with a pipe, `s.pipe(s.pipe(schema, a, b, c, d), e)`.
+An action is a step of a `pipe`: as a schema of its own it is handed the value unchecked,
+so `s.object({a: s.min_length(1)})` throws a `TypeError` on `{}`, see [`docs/design.md`](docs/design.md#actions-outside-a-pipe).
+A recursive schema needs its type written, and annotated as `s.Schema<Tree>` its `kind` is typed `string` and its `def` `unknown`,
 and its input type is its output's: where it holds a default, give the input too, `s.Schema<Tree, TreeInput>`.
 
 `flavor` and `brand` change only the output type.
@@ -290,7 +317,7 @@ The object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
 `strip_object` drops them and pays for a copy when there are any,
 and `object_with_rest(entries, rest)` validates the value of each own one with `rest`,
-as Zod's `catchall` and Valibot's `objectWithRest` do.
+as Valibot's `objectWithRest` does; Zod's `catchall` validates an inherited one too.
 None of them accepts an array, and neither do `record`, `keyed_record`, and `variant`.
 With no entries, `object` and `strip_object` output `Record<string, never>`, not `{}`,
 which TypeScript reads as any value but `null` and `undefined`.
@@ -320,7 +347,7 @@ and a key that gives `__proto__` is left out.
 
 A key the input lacks reads as `undefined`, so it fails unless its entry accepts that.
 `optional`, `with_default`, and `with_default_fn` do, which is how a key is made optional,
-and a `union` with an option that lets the key be missing makes the key optional.
+and so does a `nullable`, a `lazy`, or a `union` that reaches one of them, as in Zod, where Valibot needs the key under each.
 
 `unknown`, `literal(undefined)` (and so `s.void`), and a `one_of` with `undefined` among its values
 accept `undefined` and still need their key, own or inherited, as in Valibot and Zod:
@@ -329,7 +356,7 @@ They need it under `nullable`, `lazy`, `message`, a `union`, and at the start of
 so `{}` doesn't match `s.object({a: s.nullable(s.unknown)})` either: write `s.optional(s.unknown)` for a key that may be missing.
 Their missing key is a `missing_key` issue, `a: expected a required key, received undefined`, except under a `union`, whose own issue it is,
 and one whose schema refuses `undefined` has that schema's issue.
-Valibot and Zod also need the key of a bare `check` entry (their `custom`), which here accepts a missing key.
+Valibot and Zod also need the key of a bare `check` entry (their `custom`), which here is given the `undefined` a missing key reads as.
 
 A `pipe` that starts with an `optional` runs none of its steps for a key that is missing, and leaves the key out, as in Valibot:
 `{}` matches `s.object({a: s.pipe(s.optional(s.string), s.check(...))})` whatever the check says,
@@ -346,7 +373,7 @@ so an `unknown` among them matches, and the first that matches is the union's.
 
 A recursive `union` whose options walk a node's children before an entry tells them apart
 takes time exponential in the input's depth, as each option walks them again:
-with two such options the time doubles with each level, see [`docs/design.md`](docs/design.md#unions-and-recursion).
+with two such options the time doubles with each level, as in Valibot, where Zod's `union` walks them once, see [`docs/design.md`](docs/design.md#unions-and-recursion).
 On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
 Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
 and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
@@ -361,6 +388,7 @@ On untrusted JSON that can nest without bound, catch it or bound the depth first
 
 An object schema's `def` is its entries, so a new one is a spread of it into a factory.
 There are no `extend`, `pick`, `omit`, or `partial` helpers, and the spread costs nothing in the library.
+A schema made from another's `def` stays in a bundle that doesn't use it, as a bundler can't tell that reading `def` has no side effect.
 
 ```ts
 const User = s.object({id: s.string, name: s.string, password: s.string});
@@ -390,17 +418,18 @@ const More = s.object_with_rest({...Counts.def.entries, label: s.string}, Counts
 const Range = s.pipe(s.object({...Bounds.def, step: s.number}), s.check(in_order));
 ```
 
-A `message`, `brand`, or `meta` on the base is not carried over.
+A `message`, `brand`, `flavor`, or `meta` on the base is not carried over; one on an entry is, as the entry is the same schema.
 A generic function that overrides a key types its entries as `Omit<T, keyof U> & U`,
 since a spread of generic entries types as `T & U` and an overridden key's type collapses.
 
 ### Exporting schemas from a library
 
-Every schema the library makes but a `pipe` has a type named for its factory,
+Every schema the library makes but a `pipe` and an action has a type named for its factory,
 whose type arguments are only what the factory was given: `s.object(entries)` is an `s.ObjectSchema<typeof entries>`,
 `s.array(schema)` an `s.ArraySchema<typeof schema>`, and `s.string` an `s.StringSchema`.
+`memo_union` has `union`'s, and `message` and `meta` keep the type of the schema given.
 So the declaration emitted for an exported schema writes each schema it holds by its name,
-and doesn't write out its output or its input, with two exceptions.
+and doesn't write out its output or its input, but for those two.
 A `pipe` is an `s.PipeSchema<TOutput, typeof first>`, whose output its steps compute,
 so a declaration writes that output out wherever the pipe is held.
 An action is a `SchemaRefinement` or a `SchemaAction`, typed by what it takes and gives.
@@ -439,10 +468,14 @@ export interface User extends s.Infer<typeof User> {}
 export interface UserInput extends s.SchemaStrictObjectInput<typeof UserEntries> {}
 ```
 
+The name is for the consumer's own annotations: a parse of `User` is still typed by the output written out, which assigns to the interface.
+A `pipe` named with its output, as `StampedSchema` is, parses to the name.
+
 A doc comment on an entry is its property's in the output and input types, the named ones included,
 so the entries are where a field is documented.
 `strip_object` has `SchemaStripObjectInput` for its input, and `loose_object` has
-`SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`.
+`SchemaObjectOutput` and `SchemaObjectInput`, each `& Record<string, unknown>`,
+and `object_with_rest` the same two, each `& Record<string, ...>` of what its `rest` gives and takes.
 
 `Infer<Schema>` is `unknown` and `Infer<AnySchema>` is `any`.
 A helper generic over this library's schemas and another's reads the output behind a test,
@@ -481,8 +514,9 @@ Two things in an issue do come from the input:
 with no `path: ` for an issue at the root, and with the issue's `message` in place of the
 `expected X, received Y` where it has one.
 A key that isn't only word characters is quoted as JSON, so a key can't pass for two keys,
-for the rest of the line, or, with a newline in it, for a line of its own:
+for the rest of the line, or, with a `\n` or a `\r` in it, for a line of its own:
 `a.b` is two keys and `"a.b"` is one.
+U+0085, U+2028, and U+2029 are written as they are, as JSON leaves them, and are line breaks to a reader that splits on them.
 
 There are two ways to the value:
 
@@ -516,7 +550,8 @@ the issue is about the replacement, and `get_issue_value` returns the input's va
 `format_issue_with_value(issue, input)` writes an issue as `format_issue` does,
 with the value it finds in place of its type when it is a string, a number, or a boolean:
 `kind: expected "function" | "variable", received "funtion"`.
-For an `invalid_key` issue the value is the key, which `get_issue_value` gives.
+For an `invalid_key` issue the value is the last key of its path, which `get_issue_value` gives,
+and an `unknown_key` or a `missing_key` issue is written as `format_issue` writes it.
 [`docs/design.md`](docs/design.md#issues) has the rest of both.
 A `SchemaError` never holds the input, so the caller that does builds this text:
 
@@ -591,7 +626,8 @@ Each option runs again, its checks and transforms too, on the input's value at t
 so the answer is the union's only where that value is what the union was given:
 not after a step of a `pipe` before it that changed the value and kept its type, which `get_issue_value` can't see,
 and not for a missing key, parsed as `undefined`, which an option that needs its key matches.
-An option with no issues is the sign of either.
+An option with no issues is the sign of the second, and of the first only where the input's value matches an option:
+where it matches none, the issues are of the input's value, and nothing says so.
 It gives `undefined` where `get_issue_value` finds no value, as after a step that changed the value's type.
 
 ### Translating issues
@@ -712,6 +748,7 @@ As an entry, `run` is also handed the object, the key, and `1`, so a schema that
 can tell a missing key: `Schema`'s doc comment says who passes them on,
 and a `run` that reads them declares them as plain parameters.
 `to_schema_json` and `to_json_schema` refuse a kind the library doesn't define.
+The kind joins `SchemaDefs`, and so `SchemaNode`, by declaration merging, as a key joins [`SchemaMeta`](#metadata).
 [`docs/design.md`](docs/design.md#running) has what a `run` may read of its `SchemaContext`.
 
 ### Introspection
@@ -727,7 +764,8 @@ const unwrap = (schema: s.SchemaNode): s.SchemaNode => {
 		case 'optional':
 		case 'nullable':
 		case 'with_default':
-			return unwrap(schema.def.schema); // all three hold their schema as `def.schema`
+		case 'with_default_fn':
+			return unwrap(schema.def.schema); // all four hold their schema as `def.schema`
 		default:
 			return schema;
 	}
@@ -757,8 +795,8 @@ whose output type is `unknown`.
 every step of a `pipe`, every option of a `union` or a `variant`, and, with `{structural: true}`,
 object entries and an `object_with_rest`'s `rest`, what an `array` or `record` holds, and a `keyed_record`'s key and value schemas,
 reading each schema once so a recursion through one schema object ends;
-`get_schema_entries` and `get_schema_fields` read an object schema's entries under its wrappers,
-with each one's default and description, and never call a `with_default_fn`'s function;
+`get_schema_entries` reads an object schema's entries under its wrappers, and `get_schema_fields` each one
+with its default and description, never calling a `with_default_fn`'s function;
 `format_schema_type` renders the type a schema accepts, for help output.
 
 ```ts
@@ -776,7 +814,7 @@ format_schema_type(Args); // '{port?: number}'
 
 `meta` attaches metadata to a schema and `get_meta` reads it back.
 They are a module of their own, backed by a `WeakMap`, so a schema stays `{kind, def, run}`
-and a bundle that attaches no metadata carries none of it.
+and a bundle that attaches no metadata carries none of the module: only `message`, which carries metadata over, reads the registry.
 
 ```ts
 import {meta, get_meta} from '@fuzdev/fuz_schema/meta.ts';
@@ -832,6 +870,7 @@ const standard = to_standard_schema(User); // {'~standard': {version: 1, vendor,
 The types follow version 1.1 of the spec and are copied from it, so there's no dependency on it.
 `validate` is synchronous and ignores the spec's options argument,
 and the input and output types are carried by the result's type, for the spec's own inference to read.
+An issue there is `{message, path}`: the issue's `message`, or `expected X, received Y` where it has none, and its `path`.
 
 It's an adapter so that schemas don't each carry a `~standard` property.
 Schemas that are Standard Schemas natively were measured and declined, as a flat cost
@@ -855,14 +894,15 @@ It throws on a schema the form can't hold, saying where:
 among them `regex`, `check`, `transform`, and `with_default_fn`, which hold JS values
 (`uuid` and `iso_datetime` are written, in place of a `regex` for a UUID or a date and time in UTC, and so is `to_lower_case`),
 and `object_with_rest`, `keyed_record`, and `to_integer`, which the crate doesn't carry yet.
-The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written.
+The text of `message` and the names of `flavor` and `brand` are not in a schema's data, and are not written,
+and neither is metadata.
 [`docs/rust.md`](docs/rust.md#what-is-refused) has the form and everything refused.
 
 ### JSON Schema
 
 `to_json_schema` writes a schema as JSON Schema draft 2020-12, in the shapes Zod's `toJSONSchema` writes,
 a module of its own. `io` picks the side of a parse it describes, `'output'` by default or `'input'`,
-which differ on defaults, `strip_object`, `transform`, and `to_integer`.
+which differ on defaults, `strip_object`, `transform`, `to_lower_case`, and `to_integer`.
 
 ```ts
 import {to_json_schema} from '@fuzdev/fuz_schema/json_schema.ts';
@@ -876,8 +916,11 @@ to_json_schema(s.object({name: s.string, port: s.optional(s.number)}));
 It throws on what JSON Schema can't say, saying where, among them: a `bigint`, a `check`, a `transform` on the output side,
 a `regex` with flags other than `d` and `u` or whose source isn't a pattern under `u`, a literal of `undefined`.
 With `unrepresentable: 'any'` it writes `{}` there instead, or leaves out the keyword of a `pipe`'s step.
+A mistake of the schema's author, as a metadata key that is a JSON Schema keyword, throws in both.
 `to_lower_case` writes nothing, as Zod writes nothing for its `toLowerCase`,
-and `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
+and a step that reads another string than the document's is refused, one before it on the output side and one after it on the input side:
+`s.pipe(s.string, s.min_length(1), s.to_lower_case)` is written on the input side only, where Zod writes the length on both.
+A `uuid` holds of both strings, so `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')` is written as a `uuid`.
 `to_integer` is an `integer` within the bounds after it on the output side, with nothing of the string, its metadata included,
 and on the input side a `pattern` of exactly the strings it reads within them, where Zod writes the bare string:
 `s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))` takes `^(?:\+?0*(?:[1-9]\d{0,2}|1000))$`.
@@ -924,13 +967,13 @@ The benchmarks, which [Measurements](#measurements) reads, and the deeper tests:
 npm run benchmark             # parse time, every library on every scenario, and each as a guard
 npm run benchmark:bundle      # bundle size per scenario and per export, minified and gzipped
 npm run benchmark:allocations # heap bytes per parse and per schema built
-npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory
+npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory, after gro build
 npm run benchmark:heap        # memory still held after building and parsing
-npm run benchmark:types       # what each library costs the TypeScript checker
-npm run benchmark:survey      # many small shapes against Valibot and Zod, by what a parse does
+npm run benchmark:types       # what each library costs the TypeScript checker, after gro build
+npm run benchmark:survey      # many small shapes against Valibot, Zod, and compiled Zod, by what a parse does
 npm run benchmark:harvest     # consumers' own schemas and data, in their library and in this one
 npm run benchmark:wasm        # the Rust crate as wasm against this library, after npm run build:wasm
-npm run results -- --smoke    # every one of them into one results file, briefly
+npm run results -- --smoke    # each of them but the wasm, which --wasm adds, into one results file, briefly
 npm run results:publish -- results/<file>.json # make a full run the published one
 npm run differential          # generated schemas and inputs against Zod and Valibot, see docs/testing.md
 npm run mutate                # break the library on purpose and check the tests fail
@@ -948,7 +991,7 @@ npm run grade:aa -- .gro/grade/      # what saved grades of one version against 
 ```
 
 `grade` compares two versions of the library over a matrix of cases (realistic shapes, one case per code path, and the same shapes at scale):
-time, each beside what copies of one version differed by, its A/A, heap bytes allocated, whether the output is the input itself,
+time, a case's beside its floor and a summary's beside its A/A, what copies of one version differed by, heap bytes allocated, whether the output is the input itself,
 and then bundle size, retained heap, and cold start. It checks the result against the rules a change is accepted by:
 among them, bytes every user pays need a speedup in return, every scenario of one schema stays at or under 0.75 of Valibot's gzipped size,
 or at the size a ruling pinned it at, and the valid path is never slowed to speed up the invalid one.
