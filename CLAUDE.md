@@ -436,7 +436,9 @@ Things that are easy to break without a test noticing:
 - **In probe mode nothing touches `ctx.issues`**, and containers return at
   their first failed child.
 - **The input is never mutated**, `object` never accepts an input with unknown
-  keys, and `strip_object` never returns one.
+  keys, and `strip_object` never returns one. An unknown key to those two is
+  an enumerable string key the schema doesn't name, own or inherited: a
+  symbol key and a non-enumerable key are not looked at.
 - **The object loops hand an entry the object, its key, and `1`**, as the
   third, fourth, and fifth argument of `run`, and leave whether a missing key
   fails to it. A schema that accepts `undefined` and should refuse a missing

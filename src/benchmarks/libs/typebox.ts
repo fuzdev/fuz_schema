@@ -5,7 +5,8 @@ import type { ScenarioModule, ScenarioRunner } from '../scenarios.ts';
 
 // typebox is a different category: `Compile` generates a validator with
 // `new Function`, and `Check` answers yes or no without building an output
-// or issues, so it's the floor for runtime cost, not a like-for-like parser
+// or issues, so it's near the floor for runtime cost on most scenarios, not
+// a like-for-like parser
 const to_runner = (schema: TSchema): ScenarioRunner => {
 	const validator = Compile(schema);
 	return (value) => validator.Check(value);
