@@ -20,7 +20,8 @@ export const LIBRARY_MODULES = [
 	'standard_schema.ts',
 	'schema_json.ts',
 	'json_schema.ts',
-	'introspect.ts'
+	'introspect.ts',
+	'compile.ts'
 ];
 
 export interface BundleSize {

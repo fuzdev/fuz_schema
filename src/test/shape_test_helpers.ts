@@ -32,6 +32,7 @@ export const SHAPE_NOT_SCHEMAS: ReadonlyArray<string> = [
 	'parse_or_throw',
 	'is',
 	'is_schema',
+	'is_memo_union',
 	'format_issue',
 	'get_issue_value',
 	'format_issue_with_value',

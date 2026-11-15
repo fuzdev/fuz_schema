@@ -86,6 +86,9 @@ dev server.
 - `src/lib/json_schema.ts` - `to_json_schema`, which writes a schema as JSON
   Schema draft 2020-12 in the shapes zod writes, separate so the core never
   carries it
+- `src/lib/compile.ts` - `compile_guard` and `compile_parse`, which compile a
+  schema to a function of straight-line code that gives what `is` and
+  `parse` give, separate so the core never carries it
 - `src/lib/introspect.ts` - `unwrap_schema`, `get_schema_meta`,
   `find_schema_meta`, `get_schema_entries`, `get_schema_fields`,
   `format_schema_type`, reading a schema as data, separate so the core never
@@ -106,7 +109,8 @@ dev server.
   the cap
 - `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
 - `src/test/schema.memo_union.test.ts` - `memo_union` against `union`: its
-  verdicts, issues, memo, and the inputs it walks once
+  verdicts, issues, memo, and the inputs it walks once, and `is_memo_union`
+  with its registry
 - `src/test/schema.pipe.test.ts` - `pipe` and actions, `check_at`, and `message`
 - `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
   issues, `format_issue`, `get_issue_value`, and `format_issue_with_value`
@@ -170,6 +174,29 @@ dev server.
   exactly the keywords the emitter writes, which throws on any other;
   `json_schema_differential.ts`, the run, the declared differences and their
   recognizers, the minimizer, and the report
+- `src/test/compile.test.ts` - `compile_guard` and `compile_parse` against
+  `is` and `parse` over a hand table, every scenario, and the cases a table
+  doesn't draw, with `compile_test_helpers.ts`, the comparison and the table
+- `src/test/compile.source.test.ts` - what a compile reads, refuses, and
+  emits: a frozen schema, hostile schema data, a schema held in many places,
+  a kind run in place, and the fallback, in a process of its own,
+  `compile_fallback_test_child.ts`
+- `src/test/compile.union.test.ts` - recursive unions and pipes by counted
+  runs: what is refused and its text, what is not, a `memo_union`'s bound and
+  outputs, a cyclic input, and the state of a call through a call made
+  inside it
+- `src/test/compile.refusal.test.ts` - every condition of the refusal, a
+  shape for each: the kinds a cycle is seen through, what could take an array
+  and what an object, what tells options apart, and that what an error says
+  to write compiles
+- `src/test/compile.bounds.test.ts` - the bound of compiled code, counted: a
+  slice of an enumeration of small recursive schemas, each refused or within
+  the size of the input times its depth, and a call that runs out of stack
+- `src/test/compile.differential.test.ts` - the same oracle over generated
+  schemas and inputs from fixed seeds, with every `union` and with every one
+  a `memo_union`, over recursive unions on inputs that reuse nodes, and over
+  wide objects whose every entry has a function of its own. A recursive
+  `union` the compiler refuses is counted and left out
 - `src/test/introspect.test.ts` - the readers, with a row for every kind
   that the types require
 - `src/test/schema.conformance.test.ts` - where zod and valibot agree this
@@ -370,12 +397,13 @@ dev server.
 - `README.md` - what the library is, its API, status, and what's been measured
 - `docs/design.md` - the internals and why: the one shape, the context and
   probe mode, copy-on-write and what it gives up, issues and messages, the
-  types of the schemas, metadata, JSON Schema
+  types of the schemas, metadata, JSON Schema, the compiler
 - `docs/benchmarks.md` - what every benchmark measures and how, how far to
   trust each number, and how to extend them
 - `docs/grading.md` - `npm run grade` and the rules a change is accepted by
 - `docs/testing.md` - what holds the library to more than its own examples:
-  conformance, the differential, the JSON fixtures, and mutants
+  conformance, the differential, the JSON fixtures, the compiler against the
+  interpreter, and mutants
 - `docs/declined.md` - trades that were built, measured, and not taken: what
   each gave and cost, why it was declined, and what would reopen it
 - `docs/formats.md` - the grammars of the format tests and of `to_integer`,
@@ -487,6 +515,18 @@ Things that are easy to break without a test noticing:
   context held in its closure, and a kept failure adds one to `ctx.fails` as
   `fail` does in probe mode. A memo read anywhere else, or kept outside probe
   mode, gives an answer `union` wouldn't.
+- **A `memo_union` is told by its `def`.** `memo_union` adds its options
+  array to a `WeakSet` on `globalThis` under
+  `Symbol.for('@fuzdev/fuz_schema/memo_union')`, which `is_memo_union` reads,
+  so the schema stays its three fields. The set's shape is a contract between
+  versions, as the metadata registry's is. `flavor`, `brand`, `meta`, and
+  `message` keep the `def`, so each of them around a `memo_union` is told. A
+  wrapper that comes to copy a schema with another `def` array hides a
+  `memo_union` from `compile.ts`, which then takes it for a `union` and may
+  refuse it. A `union` that holds a `memo_union`'s own array is told as one
+  and is not refused: its guard keeps verdicts, and its own `run`, which a
+  parse runs where an option can change a value or the input fails, keeps
+  nothing, so the bound is not held for it.
 - **`~types`, `~accepts`, and `~refines` exist only in the types.** An action
   is a `SchemaAction`, whose `~types.action` has a `pipe` check it by its
   optional `~accepts` alone, which refuses it after a wider step; any other
@@ -518,6 +558,51 @@ Things that are easy to break without a test noticing:
   on can be marked undecided in the table, which prints it on every run until
   it is ruled on: the table is kept free of them. A new behavior gets a case
   in the matrix.
+- **The interpreter is the oracle of `compile.ts`.** `compile_guard` gives
+  `is`'s verdict and `compile_parse` gives `parse`'s result: the same output,
+  the input itself exactly where the interpreter's is, and the interpreter's
+  issues, which compiled code never builds. A change to what a `run` in
+  `schema.ts` accepts, copies, or passes on is a change to `compile.ts`, as
+  it is to `walk.rs`, and the two differential tests of the compiler are
+  where it shows. What may differ is declared in `docs/design.md`, under
+  Compiling, which has the one list of it.
+- **`compile.ts` refuses what the library walks in exponential time**: a
+  `union` or a `pipe` on a cycle, two or more options or steps of which reach
+  a cycle, by the Rust crate's rule for the options, `union_memoized` and
+  `told_apart` in `builder.rs`. A failed parse and a subtree run in place are
+  the library's walk, so nothing compiled bounds them: a change that lets
+  such a schema compile breaks the bound the docs give. A cycle a
+  `memo_union` is on counts as none. A plain `union` is compiled as its
+  options in the schema's order, and keeps nothing.
+  `compile.bounds.test.ts` holds what compiles to the bound by counted work,
+  and a new kind that runs schemas on one value, as `union` and `pipe` do,
+  gets the rule and a row in its grammar. `compile.refusal.test.ts` has a
+  shape for every condition of the rule, and `mutants.ts` a mutant that
+  drops each: a kind added to the walk that finds a cycle, to what could
+  take an array or an object, or to what tells options apart gets both.
+- **`compile.ts` reads a schema and never writes to one.** It reads `kind`
+  and `def`, calls a `lazy`'s function once, and calls a `run` only for a
+  subtree it runs in place. A `union`'s and a `pipe`'s `def` is the schema's
+  own array: a walk that uses one as a work list empties the schema.
+  `compile.source.test.ts` compiles schemas frozen to their last `def`.
+- **Emitted source is built only from safe parts**: a name the emitter makes
+  is `_` and a counter, from the one `fresh`, a captured value is `c` and its
+  index, and the names written out in the emitter are of neither form, so no
+  two names meet. A string of the schema's goes through `quote`, a number or
+  a bigint is printed once `typeof` says it is one, and anything else is a
+  captured value. A new place that writes schema data into source goes
+  through one of those, and gets a row in the hostile cases of
+  `compile.source.test.ts`. No table of the emitter is a plain object keyed by
+  schema data, an entry's name among it: a `Map`.
+- **The state of a compiled call is saved at entry and put back at exit**, a
+  throw included, where a schema has any: the verdicts a `memo_union` keeps
+  and the context of a subtree run in place. A new variable a call writes to beside
+  the functions goes through `state`, or an inner call from a `check` leaves
+  the outer one's wrong.
+- **A subtree run in place under a `memo_union` shares one context for a
+  call**, probing where the library would be, as a `memo_union` keeps its memo
+  by context: a context for each subtree gives an object the input holds
+  twice two outputs where the library gives one.
 - **The library has no dependencies.** The comparison libraries and the
   bundler are devDependencies of the benchmarks only.
   `src/test/schema.invariants.test.ts` fails on a `dependencies`,

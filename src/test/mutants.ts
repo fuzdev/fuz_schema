@@ -3175,5 +3175,2220 @@ export const MUTANTS: Array<Mutant> = [
 				replace: `))`
 			}
 		]
+	},
+	{
+		name: 'memo_union_registers_its_run',
+		edits: [
+			{
+				find: `	).add(options);`,
+				replace: `	).add(run);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_registers_nothing_for_the_keyed_closure',
+		edits: [
+			{
+				find: `	).add(options);`,
+				replace: `	).add(run.length > 2 ? [] : options);`
+			}
+		]
+	},
+	{
+		name: 'memo_union_registry_a_weakmap',
+		edits: [
+			{
+				find: `] ??= new WeakSet()
+	).add(options);`,
+				replace: `] ??= new WeakMap() as any
+	).add(options);`
+			}
+		]
+	},
+	{
+		name: 'is_memo_union_reads_the_schema',
+		edits: [
+			{
+				find: `	]?.has(schema.def);`,
+				replace: `	]?.has(schema);`
+			}
+		]
+	},
+	{
+		name: 'is_memo_union_reads_another_key',
+		edits: [
+			{
+				find: `		Symbol.for('@fuzdev/fuz_schema/memo_union')
+	]?.has(schema.def);`,
+				replace: `		Symbol.for('@fuzdev/fuz_schema/memo_unions')
+	]?.has(schema.def);`
+			}
+		]
+	},
+	{
+		name: 'compile_number_takes_nan',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`Number.isFinite(\${v})\`;`,
+				replace: `return \`typeof \${v} === "number"\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_arrays_are_objects',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`typeof \${v} !== "object" || \${v} === null || Array.isArray(\${v})\`;`,
+				replace: `\`typeof \${v} !== "object" || \${v} === null\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_unknown_ignores_its_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return key ? \`(\${v} !== undefined || \${present})\` : 'true';`,
+				replace: `return 'true';`
+			}
+		]
+	},
+	{
+		name: 'compile_literal_undefined_ignores_its_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `all_of([\`\${v} === undefined\`, present]) : equals(v, def);`,
+				replace: `\`\${v} === undefined\` : equals(v, def);`
+			}
+		]
+	},
+	{
+		name: 'compile_nullable_drops_the_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const inner = cond(def.schema, v, key_for(key, def.schema));`,
+				replace: `const inner = cond(def.schema, v, null);`
+			}
+		]
+	},
+	{
+		name: 'compile_pipe_after_optional_runs_for_a_missing_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return starts_optional && key?.entry ? any_of([\`!(\${present})\`, every]) : every;`,
+				replace: `return every;`
+			}
+		]
+	},
+	{
+		name: 'compile_object_takes_an_unknown_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `code += \`for (const \${k} in \${v}) if (\${unknown_key(k, entries)}) \${bail}\\n\`;`,
+				replace: `code += '';`
+			}
+		]
+	},
+	{
+		name: 'compile_keyed_record_key_unchecked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `(kind === 'keyed_record' ? emit(def.key, k, null, bail) : '') +`,
+				replace: `'' +`
+			}
+		]
+	},
+	{
+		name: 'compile_memo_union_not_told',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `all.filter((x) => kind_of(x) === 'union' && is_memo_union(x))`,
+				replace: `[] as Array<AnySchema>`
+			}
+		]
+	},
+	{
+		name: 'compile_inner_call_takes_the_outer_state',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `state.map(([name, initial]) => \`\${name} = \${initial};\\n\`).join('') +
+`,
+				replace: `'' +
+`
+			}
+		]
+	},
+	{
+		name: 'compile_copy_writes_a_missing_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `: \`if (\${out_of.get(n)} !== undefined || \${quote(n)} in \${v}) \${write}\`;`,
+				replace: `: write;`
+			}
+		]
+	},
+	{
+		name: 'compile_strip_object_keeps_an_unknown_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!\${dropped}) for (const \${k} in \${v}) if (\${unknown_key(k, def)}) {\\n\${dropped} = true;\\nbreak;\\n}\\n\`;`,
+				replace: `\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_loose_copy_takes_proto',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: ` && Object.hasOwn(\${v}, \${k}) && \${k} !== "__proto__") \${o}[\${k}] = \${v}[\${k}];\\n\`;`,
+				replace: ` && Object.hasOwn(\${v}, \${k})) \${o}[\${k}] = \${v}[\${k}];\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_default_fn_made_once',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const filled = kind === 'with_default' ? literal(def.value) : \`\${capture(def.make)}()\`;`,
+				replace: `const filled = kind === 'with_default' ? literal(def.value) : capture(def.make());`
+			}
+		]
+	},
+	{
+		name: 'compile_array_copy_is_the_input',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `{\\n\${o} = \${v}.slice(0, \${n});\\n\${o}[\${i}] = \${out};\\n}\\n}\\n\`,`,
+				replace: `{\\n\${o}[\${i}] = \${out};\\n}\\n}\\n\`,`
+			}
+		]
+	},
+	{
+		name: 'compile_handoff_without_the_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`const \${o} = handoff(\${capture(schema)}, \${v}, \${context}\${key_args(key, true)});\\nif (\${o} === FAIL) \${bail}\\n\`,`,
+				replace: `\`const \${o} = handoff(\${capture(schema)}, \${v}, \${context});\\nif (\${o} === FAIL) \${bail}\\n\`,`
+			}
+		]
+	},
+	{
+		name: 'compile_context_of_the_module_for_a_memo_union',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const shares_context = memos.size > 0 || all.some((x) => kind_of(x) === '');`,
+				replace: `const shares_context = false;`
+			}
+		]
+	},
+	{
+		name: 'compile_own_kind_in_the_context_of_the_module',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const shares_context = memos.size > 0 || all.some((x) => kind_of(x) === '');`,
+				replace: `const shares_context = memos.size > 0;`
+			}
+		]
+	},
+	{
+		name: 'compile_union_option_not_probed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const \${was} = \${context}.probe;\\nctx.probe = true;\\n`,
+				replace: `const \${was} = \${context}.probe;\\n`
+			}
+		]
+	},
+	{
+		name: 'compile_probe_not_restored_after_a_match',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\${probes ? \`ctx.probe = \${was};\\n\` : ''}\`, o];`,
+				replace: `\`, o];`
+			}
+		]
+	},
+	{
+		name: 'compile_line_separators_unescaped',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `	JSON.stringify(text).replace(LINE_SEPARATORS, (c) => '\\\\u' + c.charCodeAt(0).toString(16));`,
+				replace: `	JSON.stringify(text);`
+			}
+		]
+	},
+	{
+		name: 'compile_string_as_text',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return quote(value);`,
+				replace: `return value;`
+			}
+		]
+	},
+	{
+		name: 'compile_throws_where_code_generation_is_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (error instanceof EvalError) return undefined;`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_any_error_falls_back',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (error instanceof EvalError) return undefined;
+		throw error;`,
+				replace: `		return undefined;`
+			}
+		]
+	},
+	{
+		name: 'compile_depth_unbounded',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (depth > COMPILE_MAX_DEPTH) {`,
+				replace: `if (depth < 0) {`
+			}
+		]
+	},
+	{
+		name: 'compile_depth_one_short',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (depth > COMPILE_MAX_DEPTH) {`,
+				replace: `if (depth >= COMPILE_MAX_DEPTH) {`
+			}
+		]
+	},
+	{
+		name: 'compile_non_schema_not_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!is_schema(schema)) throw Error(\`cannot compile at \${path || '/'}: not a schema\`);`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_def_as_work_list',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const stack = children(from);`,
+				replace: `const stack: Array<any> = kind_of(from) === 'union' ? from.def : children(from);`
+			}
+		]
+	},
+	{
+		name: 'compile_name_of_a_captured_value',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const fresh = (): string => \`_\${ids++}\`;`,
+				replace: `const fresh = (): string => \`c\${ids++}\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_shared_schema_in_line',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `held.get(schema)! > 1 &&`,
+				replace: `held.get(schema)! > Infinity &&`
+			}
+		]
+	},
+	{
+		name: 'compile_own_kind_handed_wherever_a_key_is',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return schema.run.length > 2 || schema.kind === 'lazy';`,
+				replace: `return true;`
+			}
+		]
+	},
+	{
+		name: 'compile_lazy_hands_on_by_what_reads',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const keyed = !!key && reads_key(schema);
+		const name = fn_of(schema, (out`,
+				replace: `const keyed = !!key && reads_key(schema) && kind_of(schema) !== '';
+		const name = fn_of(schema, (out`
+			}
+		]
+	},
+	{
+		name: 'compile_union_function_never_keyed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const keyed = !!key && reads_key(schema);
+		const name = fn_of(schema, keyed ? 'uk'`,
+				replace: `const keyed = false;
+		const name = fn_of(schema, keyed ? 'uk'`
+			}
+		]
+	},
+	{
+		name: 'compile_array_copy_by_strict_equality',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `else if (!Object.is(\${out}, \${e})) {\\n\${o} = \${v}.slice(0, \${n});`,
+				replace: `else if (\${out} !== \${e}) {\\n\${o} = \${v}.slice(0, \${n});`
+			}
+		]
+	},
+	{
+		name: 'compile_object_copy_by_strict_equality',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `.map((n) => \`!Object.is(\${out_of.get(n)}, \${read_of.get(n)})\`)`,
+				replace: `.map((n) => \`\${out_of.get(n)} !== \${read_of.get(n)}\`)`
+			}
+		]
+	},
+	{
+		name: 'compile_record_copy_by_strict_equality',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `} else if (\${k} === "__proto__" || !Object.is(\${out}, \${e})) {\\n\${o} = {};\\n\``,
+				replace: `} else if (\${k} === "__proto__" || \${out} !== \${e}) {\\n\${o} = {};\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_record_copy_keeps_proto',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `} else if (\${k} === "__proto__" || !Object.is(\${out}, \${e})) {\\n\${o} = {};\\n\``,
+				replace: `} else if (!Object.is(\${out}, \${e})) {\\n\${o} = {};\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_minus_zero_as_zero',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return Object.is(value, -0) ? '-0' : String(value);`,
+				replace: `return String(value);`
+			}
+		]
+	},
+	{
+		name: 'compile_nan_by_strict_equality',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `value !== value ? \`\${v} !== \${v}\` : \`\${v} === \${literal(value)}\`;`,
+				replace: `\`\${v} === \${literal(value)}\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_variant_nan_never_matches',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (value !== value) of_nan = \`if (\${d} === \${d}) \${bail}\\n\${body}\`;`,
+				replace: `if (value !== value) of_nan = \`\${bail}\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_variant_first_of_two_alike',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `for (const option of def.options) by_value.set(option.def[def.key].def, option);`,
+				replace: `for (const option of def.options) if (!by_value.has(option.def[def.key].def)) by_value.set(option.def[def.key].def, option);`
+			}
+		]
+	},
+	{
+		name: 'compile_one_of_large_drops_undefined',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (def.includes(undefined)) tests.push(all_of([\`\${v} === undefined\`, present]));`,
+				replace: `if (def.includes(undefined) && values.length <= ONE_OF_INLINE_MAX) tests.push(all_of([\`\${v} === undefined\`, present]));`
+			}
+		]
+	},
+	{
+		name: 'compile_one_of_large_takes_a_missing_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (def.includes(undefined)) tests.push(all_of([\`\${v} === undefined\`, present]));`,
+				replace: `if (def.includes(undefined)) tests.push(values.length > ONE_OF_INLINE_MAX ? \`\${v} === undefined\` : all_of([\`\${v} === undefined\`, present]));`
+			}
+		]
+	},
+	{
+		name: 'compile_rest_validates_proto',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `&& Object.hasOwn(\${v}, \${k}) && \${k} !== "__proto__") {\\n\` +`,
+				replace: `&& Object.hasOwn(\${v}, \${k})) {\\n\` +`
+			}
+		]
+	},
+	{
+		name: 'compile_rest_validates_inherited',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (\${unknown_key(k, entries)} && Object.hasOwn(\${v}, \${k}) && \${k} !== "__proto__") {\\n\` +`,
+				replace: `if (\${unknown_key(k, entries)} && \${k} !== "__proto__") {\\n\` +`
+			}
+		]
+	},
+	{
+		name: 'compile_out_nullable_drops_the_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'optional' ? null : key_for(key, def.schema),`,
+				replace: `null,`
+			}
+		]
+	},
+	{
+		name: 'compile_guard_default_fn_not_called',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`if (\${v} === undefined) \${capture(def.make)}();\\nelse {\\n\${emit(def.schema, v, null, bail)}}\\n\`;`,
+				replace: `return \`if (\${v} !== undefined) {\\n\${emit(def.schema, v, null, bail)}}\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_strip_guard_refuses_unknown_keys',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (kind === 'object') {
+			// an enumerable key, own or inherited, that no entry names`,
+				replace: `		if (kind === 'object' || kind === 'strip_object') {
+			// an enumerable key, own or inherited, that no entry names`
+			}
+		]
+	},
+	{
+		name: 'compile_object_copy_takes_an_inherited_unknown_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind === 'object') code += \`for (const \${k} in \${v}) if (\${unknown_key(k, def)}) \${bail}\\n\`;`,
+				replace: `if (kind === 'object') code += \`for (const \${k} in \${v}) if (\${unknown_key(k, def)} && Object.hasOwn(\${v}, \${k})) \${bail}\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_object_guard_takes_an_inherited_unknown_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `code += \`for (const \${k} in \${v}) if (\${unknown_key(k, entries)}) \${bail}\\n\`;`,
+				replace: `code += \`for (const \${k} in \${v}) if (\${unknown_key(k, entries)} && Object.hasOwn(\${v}, \${k})) \${bail}\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_array_length_read_each_time',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`for (let \${i} = 0, \${n} = \${v}.length; \${i} < \${n}; \${i}++) {\\nconst \${e} = \${v}[\${i}];\\n\` +
+					\`\${emit(def, e, null, bail)}}\\n\``,
+				replace: `\`for (let \${i} = 0, \${n} = 0; \${i} < \${v}.length; \${i}++, \${n}++) {\\nconst \${e} = \${v}[\${i}];\\n\` +
+					\`\${emit(def, e, null, bail)}}\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_uuid_is_any_string',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`handoff(\${capture(schema)}, \${v}, P) !== FAIL\`;`,
+				replace: `return \`typeof \${v} === "string"\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_min_length_exclusive',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`\${v}.length >= \${literal(def)}\`;`,
+				replace: `return \`\${v}.length > \${literal(def)}\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_max_value_exclusive',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`\${v} <= \${literal(def)}\`;`,
+				replace: `return \`\${v} < \${literal(def)}\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_safe_integer_is_integer',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`Number.isSafeInteger(\${v})\`;`,
+				replace: `return \`Number.isInteger(\${v})\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_bigint_takes_a_number',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return \`typeof \${v} === "\${kind}"\`;`,
+				replace: `return kind === 'bigint' ? \`(typeof \${v} === "bigint" || typeof \${v} === "number")\` : \`typeof \${v} === "\${kind}"\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_lazy_function_never_keyed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const keyed = !!key && reads_key(schema);
+		const name = fn_of(schema, (out`,
+				replace: `const keyed = false;
+		const name = fn_of(schema, (out`
+			}
+		]
+	},
+	{
+		name: 'compile_out_pipe_first_step_without_the_key',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `							i || starts_optional ? null : key_for(key, steps[0]!),
+							bail`,
+				replace: `							null,
+							bail`
+			}
+		]
+	},
+	{
+		name: 'compile_memo_union_keeps_no_verdict',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				if (memos.has(schema)) return union_call(schema, v, key);`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_inner_call_drops_the_outer_state',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `? \` finally {\\n\${state.map(([name], i) => \`\${name} = \${saved[i]};\\n\`).join('')}}\``,
+				replace: `? \` finally {\\n}\``
+			}
+		]
+	},
+	{
+		name: 'compile_failed_parse_not_the_interpreter',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `deep ? 'break X;' : 'return fallback(v);'`,
+				replace: `deep ? 'break X;' : 'return { ok: false, issues: [] };'`
+			}
+		]
+	},
+	{
+		name: 'compile_failed_deep_parse_not_the_interpreter',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`\\nreturn fallback(v);\\n\`;`,
+				replace: `\`\\nreturn \${output ? '{ ok: false, issues: [] }' : 'false'};\\n\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_out_union_not_handed_for_a_retry',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (memos.has(schema) || key_for(key, ...def)) {`,
+				replace: `if (memos.has(schema)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_out_memo_union_not_handed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (memos.has(schema) || key_for(key, ...def)) {`,
+				replace: `if (key_for(key, ...def)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_two_array_options_not_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `: walking.filter((option) => holds(option)[0]).length > 1 ||`,
+				replace: `: false ||`
+			}
+		]
+	},
+	{
+		name: 'compile_two_object_options_not_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `(objects.length > 1 && !told_apart(objects))`,
+				replace: `false`
+			}
+		]
+	},
+	{
+		name: 'compile_two_walking_steps_not_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `? walking.length > 1`,
+				replace: `? false`
+			}
+		]
+	},
+	{
+		name: 'compile_literal_after_the_walk_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				if (reaches_cycle(entry)) break;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_literals_alike_tell_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `(found) => found.has(name) && values.size < values.add(found.get(name)).size`,
+				replace: `(found) => found.has(name)`
+			}
+		]
+	},
+	{
+		name: 'compile_union_off_a_cycle_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const walking = reach_of(schema, true).has(schema)
+			? (schema.def as Array<AnySchema>).filter(reaches_cycle)
+			: [];`,
+				replace: `const walking = (schema.def as Array<AnySchema>).filter(reaches_cycle);`
+			}
+		]
+	},
+	{
+		name: 'compile_memo_union_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (memos.has(schema) || !/^(union|pipe)$/.test(kind)) continue;`,
+				replace: `if (!/^(union|pipe)$/.test(kind)) continue;`
+			}
+		]
+	},
+	{
+		name: 'compile_walk_through_a_memo_union',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_memo_union_option_walks_on',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `known = !memos.has(schema) && [schema, ...reach_of(schema, true)]`,
+				replace: `known = [schema, ...reach_of(schema, true)]`
+			}
+		]
+	},
+	{
+		name: 'compile_range_error_thrown',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `{\\nif (!(\${error} instanceof RangeError)) throw \${error};\\n}\``,
+				replace: `{\\nthrow \${error};\\n}\``
+			}
+		]
+	},
+	{
+		name: 'compile_any_error_is_the_interpreters',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `{\\nif (!(\${error} instanceof RangeError)) throw \${error};\\n}\``,
+				replace: `{\\n}\``
+			}
+		]
+	},
+	{
+		name: 'compile_no_catch_for_a_kind_run_in_place',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const deep = targets.size > 0 || shares_context;`,
+				replace: `const deep = targets.size > 0;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_optional',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'optional'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_nullable',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'nullable'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_with_default',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'with_default'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_with_default_fn',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'with_default_fn'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_lazy',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'lazy'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'object'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_loose_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'loose_object'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_strip_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'strip_object'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_object_with_rest',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'object_with_rest'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_record',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'record'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'array'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_keyed_record',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'keyed_record'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_union',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'union'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_pipe',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'pipe'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_walk_cut_at_variant',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!(walked && (memos.has(next[1]) || kind_of(next[1]) === 'variant'))) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_optional_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'optional':
+			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`,
+				replace: `			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_nullable_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'optional':
+			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`,
+				replace: `			case 'optional':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_with_default_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'optional':
+			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`,
+				replace: `			case 'optional':
+			case 'nullable':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_with_default_fn_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'optional':
+			case 'nullable':
+			case 'with_default':
+			case 'with_default_fn':
+				return [['/def/schema', def.schema]];`,
+				replace: `			case 'optional':
+			case 'nullable':
+			case 'with_default':
+				return [['/def/schema', def.schema]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_lazy_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return [['/def()', target_of(schema)]];`,
+				replace: `return [];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_object_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'object':
+			case 'loose_object':
+			case 'strip_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`,
+				replace: `			case 'loose_object':
+			case 'strip_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_loose_object_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'object':
+			case 'loose_object':
+			case 'strip_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`,
+				replace: `			case 'object':
+			case 'strip_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_strip_object_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'object':
+			case 'loose_object':
+			case 'strip_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`,
+				replace: `			case 'object':
+			case 'loose_object':
+				return Object.keys(def).map((name) => [\`/def/\${name}\`, def[name]]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_rest_entries_not_walked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `...Object.keys(def.entries).map((name): [string, AnySchema] => [`,
+				replace: `...[].map((name): [string, AnySchema] => [`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_rest_not_walked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `					['/def/rest', def.rest]
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_record_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'record':
+			case 'array':
+				return [['/def', def]];`,
+				replace: `			case 'array':
+				return [['/def', def]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_array_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'record':
+			case 'array':
+				return [['/def', def]];`,
+				replace: `			case 'record':
+				return [['/def', def]];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_keyed_record_key_not_walked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `					['/def/key', def.key],
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_keyed_record_value_not_walked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `					['/def/key', def.key],
+					['/def/value', def.value]
+`,
+				replace: `					['/def/key', def.key]
+`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_union_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'union':
+			case 'pipe':
+				return def.map((child: AnySchema, i: number) => [\`/def/\${i}\`, child]);`,
+				replace: `			case 'pipe':
+				return def.map((child: AnySchema, i: number) => [\`/def/\${i}\`, child]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_pipe_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'union':
+			case 'pipe':
+				return def.map((child: AnySchema, i: number) => [\`/def/\${i}\`, child]);`,
+				replace: `			case 'union':
+				return def.map((child: AnySchema, i: number) => [\`/def/\${i}\`, child]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_variant_holds_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			case 'variant':
+				return def.options.map((child: AnySchema, i: number) => [\`/def/options/\${i}\`, child]);
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_lazy_loops',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `all.filter((x) => kind_of(x) === 'lazy' && reach_of(x, true).has(x))`,
+				replace: `all.filter((x) => kind_of(x) === 'lazy' && false)`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_cycle_through_a_memo_union_counts',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `all.filter((x) => kind_of(x) === 'lazy' && reach_of(x, true).has(x))`,
+				replace: `all.filter((x) => kind_of(x) === 'lazy' && reach_of(x).has(x))`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_cycle_only_of_the_schema_itself',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `[schema, ...reach_of(schema, true)].some((x) => looping.has(x));`,
+				replace: `[schema].some((x) => looping.has(x));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_reach_through_a_memo_union',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `[schema, ...reach_of(schema, true)].some((x) => looping.has(x));`,
+				replace: `[schema, ...reach_of(schema)].some((x) => looping.has(x));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_memo_union_cut_everywhere',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!(walked && memos.has(next[1]))) stack.push(...children(next[1]));`,
+				replace: `if (!memos.has(next[1])) stack.push(...children(next[1]));`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_array_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind === 'array') return [true, false];`,
+				replace: `if (kind === 'array') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_array_takes_an_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind === 'array') return [true, false];`,
+				replace: `if (kind === 'array') return [true, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_object_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'object') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_object_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'object') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_loose_object_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'loose_object') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_loose_object_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'loose_object') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_strip_object_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'strip_object') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_strip_object_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'strip_object') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_object_with_rest_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'object_with_rest') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_object_with_rest_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'object_with_rest') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_record_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'record') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_record_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'record') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_keyed_record_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'keyed_record') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_keyed_record_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'keyed_record') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_variant_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (kind === 'variant') return [false, false];
+		if (/object|record|variant/.test(kind)) return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_variant_takes_an_array',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/object|record|variant/.test(kind)) return [false, true];`,
+				replace: `if (/object|record|variant/.test(kind) && kind !== 'variant') return [false, true];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_string_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_number_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_boolean_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_bigint_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_literal_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_one_of_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_integer_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_safe_integer_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_uuid_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|iso_datetime|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_iso_datetime_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|to_integer|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_to_integer_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_lower_case)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_to_lower_case_takes_a_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer|to_lower_case)$/;`,
+				replace: `/^(string|number|boolean|bigint|literal|one_of|integer|safe_integer|uuid|iso_datetime|to_integer)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_unknown_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'unknown') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_check_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'check') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_transform_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'transform') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_min_length_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'min_length') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_max_length_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'max_length') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_min_value_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'min_value') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_max_value_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'max_value') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_regex_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === 'regex') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_an_own_kind_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (SCALAR_KIND.test(kind)) return [false, false];`,
+				replace: `if (SCALAR_KIND.test(kind) || kind === '') return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_what_reads_as_it_likes_takes_no_container',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!through) return [true, true];`,
+				replace: `if (!through) return [false, false];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_a_lazy_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'lazy'
+				? [target_of(schema)]`,
+				replace: `kind === 'lazy'
+				? []`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_a_lazy_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'lazy'
+				? [target_of(schema)]`,
+				replace: `kind === 'lazy!'
+				? [target_of(schema)]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_pipe_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'pipe'
+					? [def[0]]`,
+				replace: `kind === 'pipe'
+					? []`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_pipe_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'pipe'
+					? [def[0]]`,
+				replace: `kind === 'pipe!'
+					? [def[0]]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_pipe_held_by_its_last_step',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'pipe'
+					? [def[0]]`,
+				replace: `kind === 'pipe'
+					? [def[def.length - 1]]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_union_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'union'
+						? def
+`,
+				replace: `kind === 'union'
+						? []
+`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_union_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'union'
+						? def
+`,
+				replace: `kind === 'union!'
+						? def
+`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_union_takes_what_its_first_option_does',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `kind === 'union'
+						? def
+`,
+				replace: `kind === 'union'
+						? [def[0]]
+`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_a_wrapper_takes_nothing',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `WRAPPER_KIND.test(kind)
+							? [def.schema]`,
+				replace: `WRAPPER_KIND.test(kind)
+							? []`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_optional_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `WRAPPER_KIND.test(kind)
+							? [def.schema]`,
+				replace: `WRAPPER_KIND.test(kind) && kind !== 'optional'
+							? [def.schema]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_nullable_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `WRAPPER_KIND.test(kind)
+							? [def.schema]`,
+				replace: `WRAPPER_KIND.test(kind) && kind !== 'nullable'
+							? [def.schema]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_with_default_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `WRAPPER_KIND.test(kind)
+							? [def.schema]`,
+				replace: `WRAPPER_KIND.test(kind) && kind !== 'with_default'
+							? [def.schema]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_under_with_default_fn_takes_either',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `WRAPPER_KIND.test(kind)
+							? [def.schema]`,
+				replace: `WRAPPER_KIND.test(kind) && kind !== 'with_default_fn'
+							? [def.schema]`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_array_and_object_swapped_under_a_wrapper',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const [a, o] = holds(next, seen);`,
+				replace: `const [o, a] = holds(next, seen);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_under_optional',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (WRAPPER_KIND.test(kind)) at = at.def.schema;`,
+				replace: `if (WRAPPER_KIND.test(kind) && kind !== 'optional') at = at.def.schema;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_under_nullable',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (WRAPPER_KIND.test(kind)) at = at.def.schema;`,
+				replace: `if (WRAPPER_KIND.test(kind) && kind !== 'nullable') at = at.def.schema;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_under_with_default',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (WRAPPER_KIND.test(kind)) at = at.def.schema;`,
+				replace: `if (WRAPPER_KIND.test(kind) && kind !== 'with_default') at = at.def.schema;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_under_with_default_fn',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (WRAPPER_KIND.test(kind)) at = at.def.schema;`,
+				replace: `if (WRAPPER_KIND.test(kind) && kind !== 'with_default_fn') at = at.def.schema;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_under_a_lazy',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			else if (kind === 'lazy') at = target_of(at);
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_in_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (OBJECT_KIND.test(kind)) return at;`,
+				replace: `if (OBJECT_KIND.test(kind) && kind !== 'object') return at;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_in_loose_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (OBJECT_KIND.test(kind)) return at;`,
+				replace: `if (OBJECT_KIND.test(kind) && kind !== 'loose_object') return at;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_literal_looked_for_in_strip_object',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (OBJECT_KIND.test(kind)) return at;`,
+				replace: `if (OBJECT_KIND.test(kind) && kind !== 'strip_object') return at;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_told_apart_through_a_pipe',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			else if (kind === 'lazy') at = target_of(at);
+			else return undefined;`,
+				replace: `			else if (kind === 'lazy') at = target_of(at);
+			else if (kind === 'pipe') at = at.def[0];
+			else return undefined;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_told_apart_through_a_union',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			else if (kind === 'lazy') at = target_of(at);
+			else return undefined;`,
+				replace: `			else if (kind === 'lazy') at = target_of(at);
+			else if (kind === 'union') at = at.def[0];
+			else return undefined;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_told_apart_through_a_variant',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			else if (kind === 'lazy') at = target_of(at);
+			else return undefined;`,
+				replace: `			else if (kind === 'lazy') at = target_of(at);
+			else if (kind === 'variant') at = at.def.options[0];
+			else return undefined;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_told_apart_in_an_object_with_rest',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const object = object_of(option);
+			if (!object) return found;
+			for (const name of Object.keys(object.def)) {
+				const entry: AnySchema = object.def[name];`,
+				replace: `const of_option = object_of(option) ?? (kind_of(option) === 'object_with_rest' ? option : undefined);
+			if (!of_option) return found;
+			const object = { def: kind_of(of_option) === 'object_with_rest' ? of_option.def.entries : of_option.def };
+			for (const name of Object.keys(object.def)) {
+				const entry: AnySchema = object.def[name];`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_option_that_is_no_object_left_out',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const firsts = options.map((option) => {`,
+				replace: `const firsts = options.filter(object_of).map((option) => {`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_one_of_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind_of(entry) === 'literal') found.set(name, entry.def);`,
+				replace: `if (/^(literal|one_of)$/.test(kind_of(entry))) found.set(name, entry.def);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_optional_literal_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind_of(entry) === 'literal') found.set(name, entry.def);`,
+				replace: `if (kind_of(entry) === 'literal') found.set(name, entry.def);
+				else if (kind_of(entry) === 'optional' && kind_of(entry.def.schema) === 'literal') found.set(name, entry.def.schema.def);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_nullable_literal_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind_of(entry) === 'literal') found.set(name, entry.def);`,
+				replace: `if (kind_of(entry) === 'literal') found.set(name, entry.def);
+				else if (kind_of(entry) === 'nullable' && kind_of(entry.def.schema) === 'literal') found.set(name, entry.def.schema.def);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_with_default_literal_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind_of(entry) === 'literal') found.set(name, entry.def);`,
+				replace: `if (kind_of(entry) === 'literal') found.set(name, entry.def);
+				else if (kind_of(entry) === 'with_default' && kind_of(entry.def.schema) === 'literal') found.set(name, entry.def.schema.def);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_pipe_first_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (kind_of(entry) === 'literal') found.set(name, entry.def);`,
+				replace: `if (kind_of(entry) === 'literal' || kind_of(entry) === 'pipe') found.set(name, entry);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_literal_only_as_the_first_entry',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (reaches_cycle(entry)) break;`,
+				replace: `if (kind_of(entry) !== 'literal') break;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_every_literal_key_has_to_tell',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return [...firsts[0]!.keys()].some((name) => {`,
+				replace: `return [...firsts[0]!.keys()].every((name) => {`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_literal_in_some_options_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return firsts.every(
+				(found) => found.has(name) && values.size < values.add(found.get(name)).size
+			);`,
+				replace: `return firsts.some(
+				(found) => found.has(name) && values.size < values.add(found.get(name)).size
+			);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_a_key_some_options_lack_tells_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return firsts.every(
+				(found) => found.has(name) && values.size < values.add(found.get(name)).size
+			);`,
+				replace: `return firsts.every(
+				(found) => values.size < values.add(found.get(name)).size
+			);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_zero_and_minus_zero_tell_apart',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `return firsts.every(
+				(found) => found.has(name) && values.size < values.add(found.get(name)).size
+			);`,
+				replace: `return firsts.every(
+				(found) =>
+					found.has(name) &&
+					![...values].some((value) => Object.is(value, found.get(name))) &&
+					!!values.add(found.get(name))
+			);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_every_option_read_as_walking',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `? (schema.def as Array<AnySchema>).filter(reaches_cycle)`,
+				replace: `? (schema.def as Array<AnySchema>)`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_pipe_asked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `!/^(union|pipe)$/.test(kind)) continue;`,
+				replace: `!/^(union)$/.test(kind)) continue;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_no_union_asked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `!/^(union|pipe)$/.test(kind)) continue;`,
+				replace: `!/^(pipe)$/.test(kind)) continue;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_only_of_the_root',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (memos.has(schema) || !/^(union|pipe)$/.test(kind)) continue;`,
+				replace: `if (memos.has(schema) || !/^(union|pipe)$/.test(kind) || schema !== root) continue;`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_arrays_counted_as_objects',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `: walking.filter((option) => holds(option)[0]).length > 1 ||`,
+				replace: `: walking.filter((option) => holds(option)[1]).length > 1 ||`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_objects_counted_as_arrays',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const objects = walking.filter((option) => holds(option)[1]);`,
+				replace: `const objects = walking.filter((option) => holds(option)[0]);`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_three_array_options_needed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `: walking.filter((option) => holds(option)[0]).length > 1 ||`,
+				replace: `: walking.filter((option) => holds(option)[0]).length > 2 ||`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_three_object_options_needed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `(objects.length > 1 && !told_apart(objects))`,
+				replace: `(objects.length > 2 && !told_apart(objects))`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_three_steps_needed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `? walking.length > 1`,
+				replace: `? walking.length > 2`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_told_apart_refused',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `(objects.length > 1 && !told_apart(objects))`,
+				replace: `(objects.length > 1 && told_apart(objects))`
+			}
+		]
+	},
+	{
+		name: 'compile_refusal_union_on_a_cycle_unasked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const walking = reach_of(schema, true).has(schema)
+`,
+				replace: `const walking = reach_of(schema, true).has(schema) && false
+`
+			}
+		]
+	},
+	{
+		name: 'compile_wrapper_counted_once',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!WRAPPER_KIND.test(kind_of(schema)) && kind_of(schema) !== 'pipe') return;`,
+				replace: `if (kind_of(schema) !== 'pipe') return;`
+			}
+		]
+	},
+	{
+		name: 'compile_pipe_counted_once',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (!WRAPPER_KIND.test(kind_of(schema)) && kind_of(schema) !== 'pipe') return;`,
+				replace: `if (!WRAPPER_KIND.test(kind_of(schema))) return;`
+			}
+		]
 	}
 ];

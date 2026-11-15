@@ -31,7 +31,7 @@ The parts, by what they change:
 - Recursion: [`lazy`](#lazy), [A recursive `union`](#a-recursive-union)
 - Primitives and formats: [`number`](#number), [The format tests](#the-format-tests), [`to_integer`](#to_integer)
 - The engine: [The parse context](#the-parse-context)
-- Types and opt-in modules: [Types](#types), [Metadata](#metadata), [Standard Schema](#standard-schema)
+- Types and opt-in modules: [Types](#types), [Metadata](#metadata), [Standard Schema](#standard-schema), [The compiler](#the-compiler)
 - Not guarded: [Degenerate schemas](#degenerate-schemas), [Values that throw when read](#values-that-throw-when-read)
 
 Add an entry when a trade is declined, under the part of the library it
@@ -1408,6 +1408,176 @@ Every schema a Standard Schema natively, in place of the
   adapter is opt-in.
 - **Reopens**: a form that costs a bundle not using it nothing.
 - **Measured**: before v0.2.0.
+
+## The compiler
+
+What was taken, in `compile.ts`: see [design.md](design.md#compiling). These
+were built, in a prototype of it or in the module before it took this form.
+An entry rests on what is exact wherever it can: counted runs, heap bytes a
+call, gzip. A time is given only where the trade is about time. Each was
+read in processes of their own, a contender to a process, passes
+interleaved, as
+[the timing across libraries](benchmarks.md#timing-across-libraries) is
+taken, on a machine that was not quiet, so it is exploratory, and its entry
+says what the same run's A/A was, or that the run had none.
+
+### The unknown-key check by counting the keys, compiled
+
+A compiled `object` counting the input's enumerable keys against the entries
+present, in place of comparing each key with the entries' names.
+
+- **Gave**: a hundred strict objects of five or six keys 0.88x as a guard,
+  1118 ns against 1276.
+- **Cost**: the hole of
+  [the same check in the interpreter](#the-unknown-key-check-by-counting-the-keys):
+  a non-enumerable own key an entry names lets an unknown key through. And a
+  recursive schema of small strict objects 1.09x, 352 ns against 322. By
+  `Object.keys(value).length` it was slower on all three: 1439 ns, 26.2
+  against 21.7, and 366.
+- **Why**: a hole in strictness, for a gain on one shape. The times are of
+  one run with no A/A in it: the passes of the two forms don't overlap on the
+  hundred objects.
+- **Reopens**: nothing known. Enumerating is the cost: with no check at all
+  the hundred objects took 620 ns, so the names compared are the smaller part.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### A `union`'s verdicts kept in compiled code
+
+A `union` the Rust crate's rule names keeping its verdicts for the length of
+a call, in place of being refused: kept from the first time an option of
+such a union failed, and the `literal` entry that tells options apart tested
+before an option's other entries, wherever it stood in the schema.
+
+- **Gave**: a guard, and a parse of an input that matched, of every such
+  union: a chain 20 levels deep ran its options 40 times, where the
+  interpreter's `union` runs them 2097150. On a tree whose last leaf alone
+  fails, 2.00 runs a node at 8191 nodes.
+- **Cost**: the bound held only in the code the compiler wrote. A parse that
+  fails is `parse`, and a union run in place is the library's: one an option
+  of which can change a value ran a `check` at each node 262142 times in a
+  compiled parse of a chain 16 levels deep, where its guard ran it 34. So did its
+  guard under a `pipe` with a later step, a union under a `keyed_record` or
+  an `object_with_rest`, and a union an option of which takes its key. And
+  the `literal` tested first was an entry read out of the schema's order.
+- **Why**: compiled code looked bounded and was the library's exponential
+  walk wherever it was not the compiler's. A refusal says so before anything
+  runs, with what to write instead.
+- **And two other triggers**, against keeping from the first failure. From
+  the first value, as a `memo_union` keeps: no fewer runs, and a map on
+  inputs where nothing is walked twice, 33798 bytes a call against none on a
+  tree of 1023 nodes whose every node the first option takes, and 29104 with
+  a `Map` in place of the `WeakMap`, which also holds the last input between
+  calls. Past a budget of 256 values asked of such unions: a chain 8 levels
+  deep ran its options 510 times against 16, and those 1023 nodes allocated
+  16911 bytes a call against none.
+- **Reopens**: issues compiled, and every subtree that runs in place
+  compiled, so that no walk is the library's.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### A twin of the schema for a parse that fails
+
+A second schema made at the compile, with a `memo_union` in place of each
+`union`, for `parse` to run where a compiled parse fails, in place of
+refusing the unions the library walks in exponential time.
+
+- **Gave**: a bound on the parse that fails: a chain 16 levels deep that
+  fails at its root after the walk took 68 runs of a `check` against 262142,
+  with the same issues.
+- **Cost**: an issue's `message`. A `message` around the union, or around a
+  container between the root and it, is a schema with the `kind` and the
+  `def` of what it wraps, so a twin made from those has lost it: `parse`
+  gives the issue its text and the twin's has none. And bytes:
+  `compile_parse` alone 7765 gzip with it against 5395 without, in the module
+  as it was then.
+- **Why**: the issues are the library's by construction, and a twin's are
+  not.
+- **Reopens**: a reader that tells a `message`, as `is_memo_union` tells a
+  `memo_union`, which is bytes in `message` and heap on each.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### Every recursive union left to the interpreter
+
+A guard handing each union that reaches a cycle to its own `run`, in place
+of compiling those the rule passes and refusing the rest.
+
+- **Gave**: the least compiler, and no refusal.
+- **Cost**: the interpreter's work on every such union. One whose options
+  walk before they fail stays exponential in the input's depth, 2097150
+  option runs at 20 levels, in code that was asked to be compiled. And one
+  the rule passes, of scalars, an array, and a record over a hundred records,
+  26023 ns against 8093 in the compiler's own code, 3.2x, in a run whose A/A
+  was within 1%.
+- **Why**: it gives up the compiled path on the schemas that recurse, and
+  says nothing of the ones that can't be bounded.
+- **Reopens**: nothing known.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### A parse that only says whether the output is the input
+
+A compiled parse that answers an input whose output is the input itself, and
+calls `parse` for every other, a copy among them, in place of building the
+output.
+
+- **Gave**: a smaller compiler, by about a quarter of its gzip in the
+  prototype, 4614 bytes over the library against 6053. And a document that
+  comes back as itself in 1094 ns against 1423.
+- **Cost**: the harvested documents it answers without the interpreter: none
+  of the 131 of the docinfo set, whose every module has a default filled in
+  below the root, and 1 of the 24 package manifests, as it can't say a
+  `transform` gave its input back, where the form taken answers all of both.
+  And a `check` runs twice on every input whose output is a copy. In time, a
+  document with defaults filled in 6921 ns against 2339. Both times are of
+  one run, whose A/As were within 3%.
+- **Why**: real schemas fill defaults in and drop keys, below the root.
+  Building the copy at the root alone answered no more of those documents.
+- **Reopens**: nothing known.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### A copy begun as a literal of its first keys
+
+An object's copy made as one literal of the keys always written, up to the
+first that can stay out, and a write for each key after, in place of an empty
+object and a write for each key where any can stay out.
+
+- **Cost**: 2536 bytes a parse against 1840 on a document with defaults
+  filled in at several levels, where the form taken allocates what the
+  interpreter's copy does, less the parse's context.
+- **Why**: more memory, and its time is not measured.
+- **Reopens**: a time, on a quiet machine, that pays for the bytes.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### A `memo_union` told by its `run`
+
+The registry `is_memo_union` reads holding the `run` a `memo_union` makes,
+in place of its options array.
+
+- **Gave**: no `union` told as a `memo_union`: the array can be shared, and
+  the `run` can't.
+- **Cost**: a `message` around a `memo_union` has a `run` of its own, so the
+  compiler took it as a `union` and lost the memo's bound: a `memo_union` of
+  one option, under a `message`, on a chain 14 levels deep whose every node
+  the one above holds twice, ran that option 32767 times, where `is` runs it
+  15. Carrying the mark over in `message` is +31 gzip on `message` alone, 264
+  to 295, in every bundle with one. And `memo_union` alone 750 gzip against
+  747.
+- **Why**: compiled code must keep a bound the interpreter has, and by the
+  array it does at no byte in `message`. A `union` told as a `memo_union`
+  keeps a memo it didn't ask for, and gives the same verdicts and outputs.
+- **Reopens**: nothing known.
+- **Measured**: before v0.6.1, on Node 26.13.
+
+### The format tests and `to_integer` as text in the compiler
+
+The compiler carrying `uuid`'s scan, `iso_datetime`'s pattern, and
+`to_integer`'s patterns as source text, emitted in line, in place of calling
+the action's own `run`.
+
+- **Cost**: a second copy of each grammar, which
+  [formats.md](formats.md) holds to one: 839 bytes of gzip as text alone.
+- **Why**: bytes and a copy to keep in step, and its time is not measured.
+- **Reopens**: a schema of formats where the call measures, on a quiet
+  machine.
+- **Measured**: before v0.6.1, on Node 26.13.
 
 ## Degenerate schemas
 

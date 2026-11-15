@@ -32,7 +32,7 @@ A feature not every consumer needs is a separate export or module the core never
 reaches: `message`, `format_issue`, `format_issue_with_value`, `get_issue_value`,
 `check_at`, `with_default_fn`, `memo_union`, `loose_object`,
 `object_with_rest`, and `keyed_record` with their loops, `meta`, `to_standard_schema`,
-`introspect.ts`, `schema_json.ts`, `json_schema.ts`.
+`introspect.ts`, `schema_json.ts`, `json_schema.ts`, `compile.ts`.
 Factories are marked `// @__NO_SIDE_EFFECTS__` so an unused definition is
 dropped.
 
@@ -599,7 +599,8 @@ What a `union` costs on recursive input, and the ways to bound it.
   and Zod: `variant` can't hold the `pipe`, and a `memo_union` of the `pipe`
   alone makes it linear.
 - **`memo_union` is a `union` that keeps what it gave while probing.** Its
-  `kind` and `def` are `union`'s, so every reader takes it as one, and its `run`
+  `kind` and `def` are `union`'s, so a reader of a schema's data takes it as
+  one, and one that must tell it apart asks `is_memo_union`, below. Its `run`
   wraps the union's, one closure of two parameters or of four as the union's is.
   Probed with an object or an array, it looks the value up in a `WeakMap` of the
   parse, which a `WeakMap` it holds keeps by the context and drops with it, and
@@ -623,6 +624,22 @@ What a `union` costs on recursive input, and the ways to bound it.
   [rust.md](rust.md#two-evaluators). It is an export of its own, as the memo
   inside `lazy` cost every `lazy`, see
   [declined.md](declined.md#a-recursive-union).
+
+- **`is_memo_union` tells one by its `def`.** `memo_union` records its
+  options array in a registry beside the schemas, a `WeakSet` on `globalThis`
+  under `Symbol.for('@fuzdev/fuz_schema/memo_union')`, one for the realm as
+  the [metadata](#metadata) registry is, so the schema stays its three fields
+  and two copies of the module agree. Its shape is a contract between
+  versions, and a change to it takes a new key. A `flavor`, a `brand`, a
+  `meta`, and a `message` of a `memo_union` hold that array as their `def`
+  and are one, at no byte in any of them. The mark is of the array, so a
+  `union` made from a `memo_union`'s own `def`, or from an array a
+  `memo_union` is made from, is told as one: a reader then keeps a memo for a
+  `union`, the same verdicts and outputs, and `union([...options])` tells
+  them apart. The mark is for [the compiler](#compiling), which runs a schema
+  by other code than its `run`. What a `memo_union` holds for it is the entry
+  of the set, see [declined.md](declined.md#the-compiler) for the keys not
+  taken.
 
 ## Issues
 
@@ -1215,6 +1232,188 @@ Where zod writes something else, this library:
 - a step that asserts something of the string before a `to_integer` is refused
   on the output side, or dropped with `'any'`, as the output can't be
   narrowed by it, where zod writes the integer alone.
+
+## Compiling
+
+`src/lib/compile.ts` compiles a schema to a function: `compile_guard` to what
+`is` answers, `compile_parse` to what `parse` returns. It emits JavaScript
+source and makes a function of it with `new Function`, so it is a module of
+its own, by [rule 8](grading.md#rules). The interpreter is the oracle, and a
+difference from it is a bug, but for what is declared
+[at the end of this section](#what-may-differ-from-the-interpreter), the one
+place they are listed.
+
+- **It reads `kind` and `def`, once, at the compile.** A `lazy`'s function is
+  called once. Nothing is written to a schema and nothing is kept on one: the
+  caller holds the function. A schema held in more than one place, an
+  object, an array, a record, a union, or a variant, is a function of its
+  own, called from each, so the source grows with the schemas there are and
+  not with the paths to them. A wrapper and a `pipe` are written where they
+  are held, so what one holds is held in each place that holds it.
+- **Two modes.** A guard is straight-line tests that build no issue, and no
+  context or output but where a subtree runs in place, a `memo_union` keeps
+  its verdicts, or a step of a `pipe` makes the value the next step is given. A
+  parse builds the output: the input itself where nothing under a schema can
+  change a value, which is the guard's code for that subtree, and elsewhere a
+  copy made only where a child's output differs by `Object.is`, as the
+  library copies, see
+  [Copy-on-write output](#copy-on-write-output).
+- **Issues are never compiled.** A compiled parse of an input that fails calls
+  `parse`, so the issues, their order, and the cap are the library's by
+  construction, and no second copy of them can drift.
+- **A copy is the library's.** An object's copy has the schema's keys in its
+  order, a key the input lacks left out unless its entry gave a value, then
+  for a `loose_object` the input's other own keys, but `__proto__`. An array's
+  is one `slice`. A `record`'s leaves an own `__proto__` key out. A
+  `with_default` fills in its one value and a `with_default_fn` calls `make`.
+  A copy is filled from the values its entries ran on, where the library
+  reads the input a second time.
+- **What it has no code for runs in place.** A schema of a kind defined
+  outside the library, or of a library kind whose `def` is not what the kind
+  holds, a schema wherever the kind holds one included, is run by its own
+  `run`, and the code around it is compiled. It is handed the object and the
+  key as the library hands them: always as the entry itself, and elsewhere
+  where its `run` declares more than two parameters or it is reached through
+  a `lazy`. A compiled parse does the same for a `keyed_record`, an
+  `object_with_rest`, a `union` that may try an option again without its key,
+  see [Missing keys](#missing-keys), and a `memo_union` that can change a
+  value, so what it gives an object the input holds twice is the library's.
+  The format tests and `to_integer` are reached by the action's own `run`
+  too, so the module has no copy of a grammar.
+- **A subtree run in place has a context.** Where the schema holds a
+  `memo_union`, or a schema of another kind, which could hold one, it is one
+  context for a call, as a parse has one, since a `memo_union` keeps its memo
+  by context, and it is probing where the library would be: everywhere in a
+  guard, and in a parse inside a union's options. Any other schema runs its
+  subtrees in one probing context of the module. The state of a call, that
+  context and the verdicts kept, is the call's own: it is saved as the
+  function is entered and put back as it is left, a throw included, so a
+  compiled function called from a `check` it is running answers as `parse`
+  does and leaves the outer call's state as it was. A schema with no such
+  state has none of that code.
+- **What the library walks in exponential time is refused.** A compiled
+  parse of an input that fails is `parse`, and a subtree run in place is the
+  library's `run`, so compiled code can't bound what the library doesn't, and
+  the compiler doesn't look as though it did: it throws, naming the path, on
+  - a `union` on a cycle, two or more options of which reach a cycle and
+    could take the same array, or the same object unless a `literal` entry at
+    one key, with a value of its own in each of those options, comes before
+    every entry that reaches a cycle. That is the rule by which the Rust
+    crate keeps a union's verdicts, `union_memoized` in `builder.rs`, see
+    [rust.md](rust.md#two-evaluators), with the `literal` where it has it:
+    the library runs an object's entries in their order and a probe stops at
+    the first that fails, so at most one of those options gets past the key.
+    Whether an option could take an array or an object is by its kind, looked
+    through wrappers, a `lazy`, the first schema of a `pipe`, and the options
+    of a `union`. What to write instead is in the error: a `memo_union`, or
+    where each option is an object schema, a `variant` or those `literal`
+    entries first.
+  - a `pipe` on a cycle, two or more steps of which reach a cycle, the hazard
+    of [Unions and recursion](#unions-and-recursion) with no union. What to
+    write instead: the `pipe` as the one option of a `memo_union`.
+
+  A cycle is one a `lazy` closes, and one a `memo_union` is on is none: a
+  `memo_union` is asked of a value once and then read back, so a walk doesn't
+  come to it again and again, and an option that only reaches one reaches no
+  cycle. So a `memo_union` is never refused, and neither is a `union` or a
+  `pipe` that is on no cycle, which is asked of a value once whatever it
+  reaches.
+- **The rule refuses more than it must.** It reads kinds, and not what two
+  options do with the same entry, so it refuses unions the library walks in
+  good time: options that differ in what one entry holds, an array in one and
+  an object in the other, where that entry comes before every entry that
+  reaches a cycle, and options a `literal` first in each tells apart
+  where an option is an object schema in a `pipe`, which no `literal` is
+  looked for in. A `literal` is looked for in an `object`, a `loose_object`,
+  and a `strip_object`, through a wrapper and a `lazy`, and nowhere else.
+  Telling more apart is a second analysis of the schema, and a `memo_union`
+  is one word.
+- **What the compiler can't see is not refused.** A kind defined outside the
+  library is run in place, and what it walks is its own. A function a `check`
+  or a `transform` calls is the same. And a `union` given a `memo_union`'s own
+  options array is told as one, see
+  [Unions and recursion](#unions-and-recursion), so it is not refused, and
+  its guard keeps verdicts. Its own `run` keeps nothing, and a compiled parse
+  runs it wherever an option can change a value, on an input that matches or
+  one that fails, and `parse` runs it for every input that fails: that is the
+  library's walk, exponential in the depth where the options walk again. The
+  bound below is not of these three.
+- **The bound of a schema that compiles**, as [rust.md](rust.md#two-evaluators)
+  has the Rust side's: on an input that is a tree, the work is bounded by the
+  size of the input times its depth, and a factor of the schema, in a guard,
+  in a parse that matches, and in a parse that fails. It is never exponential
+  in the depth. The depth is from what a `memo_union` doesn't keep: a
+  recursive schema under no `memo_union`, read by an option of one, is walked
+  again from every value the union is asked of, as the `M` of the form there.
+  The factor of the schema grows with the unions and pipes on no cycle whose
+  options or steps read the same value. On an input that holds one object in
+  several places, a `union` walks it once for each place, as the library's
+  does, and a `memo_union` has the library's bound: a walk for each object
+  only where every recursive schema its options read is itself under a
+  `memo_union`.
+- **A `memo_union` keeps every verdict**, for the length of a call, from its
+  first value, told by `is_memo_union`, see
+  [Unions and recursion](#unions-and-recursion). The library's keeps them
+  while it probes, so compiled code keeps a verdict the library computes
+  again where a `memo_union` is not under a union. It costs a memo on each
+  call of compiled code.
+- **Where compiled code runs out of stack the interpreter answers.** A schema
+  that holds a `lazy`, a `memo_union`, or a schema of a kind the compiler has
+  no code for catches a `RangeError` at its root and calls `is` or `parse`,
+  which throws its own where it runs out too. So compiled code never throws
+  where the interpreter answers. The catch is of any `RangeError`, as the
+  stack's can't be told from another, see
+  [below](#what-may-differ-from-the-interpreter). Any other error is thrown
+  as it is, and a schema that holds none of those has no catch.
+- **Emitted source is built only from safe parts.** A name the emitter
+  makes is `_` and a counter, from one allocator, and a captured value is
+  `c` and its index, so no two meet. A string of the schema's, a key or a
+  literal, goes through `JSON.stringify`, with U+2028 and U+2029 escaped. A
+  number or a bigint is printed once `typeof` says it is one. A regex, a function, a default, and
+  anything else is a captured value the code reads from an array, and never
+  text.
+- **Where `new Function` throws an `EvalError`**, as under a content security
+  policy without `unsafe-eval`, the functions returned call `is` and `parse`.
+- **What else it refuses**: a value that is no schema where the compiler has
+  to read one, the root and what a `lazy`'s function gives, and a schema
+  nested deeper than `COMPILE_MAX_DEPTH` through every `lazy`, which is how a
+  `lazy` that makes a new schema each call ends. The error names the path.
+
+### What may differ from the interpreter
+
+- **How often a user's function runs.** A compiled parse of an input that
+  fails has run the `check`s, `transform`s, and `make`s it reached before the
+  failure, and `parse` runs them again, as `is` or `parse` does for a call
+  that ran out of stack. A `RangeError` thrown under a schema that has the
+  catch, by a `check`, a `transform`, a `make`, or a getter, is taken for the
+  stack's: the interpreter is asked, which runs the function again, so one
+  that throws once and not again gets an answer from compiled code where
+  `is` and `parse` throw. A compiled `memo_union` keeps its verdicts from
+  its first value, where the library's keeps them only while it probes, so a
+  `check` under one can run fewer times.
+- **What is read of the input.** A parse that matches first reads each value
+  of the input in the library's order: an object's entries in the schema's
+  order, and a union's options in theirs. It reads less often. A copy is
+  filled from the values its entries ran on, where the library reads the
+  input a second time. Whether a key is present is asked only where the
+  answer can change the result, and after the entries, where the library
+  asks as each entry runs. A guard makes no copy, so it reads nothing only a
+  copy reads: the keys of the input under a `strip_object` or a
+  `loose_object`, and the items a `slice` reads. A parse that fails reads the
+  input again, in `parse`. A getter or a `Proxy` can tell: one that gives
+  another value at the second read can have a compiled parse accept what one
+  `parse` refuses, and a `Proxy` that says a key is missing and gives a value
+  for it has that key left out of a compiled copy, where the library's copy
+  of a `pipe` that starts with an `optional` holds it as `undefined`, see
+  [Missing keys](#missing-keys).
+- **A schema that takes a library kind's name and a `run` of its own** is
+  compiled as the library's kind, by its `kind` and `def`, as the Rust crate
+  reads one, see [rust.md](rust.md#the-interchange-form). But a `uuid`, an
+  `iso_datetime`, and a `to_integer` are run by the schema's `run`.
+- **The depth at which an input runs the stack out.** Compiled code can
+  answer an input so deep that the interpreter throws a `RangeError`, as its
+  frames are not the interpreter's. It never throws one where the interpreter
+  answers.
 
 ## Behavior that differs from Valibot and Zod
 

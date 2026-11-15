@@ -184,6 +184,78 @@ npm run differential -- --json-schema --seed 1 --count 100000
 generated JSON groups and a tenth as many of the `to_integer` family, and
 `--focus` and `--limit` apply.
 
+## The compiler
+
+`compile.ts` is held to the interpreter, which is its oracle:
+`compile_guard(schema)(value)` to `is(schema, value)`, and
+`compile_parse(schema)(value)` to `parse(schema, value)`: the same `ok`, the
+same issues, an output that is deep-equal, the input itself exactly where the
+interpreter's is, with its keys in the same order, the same prototype, the
+same objects of the input in it, and one object in two places exactly where
+the interpreter's has one (`find_compile_difference` in
+`src/test/compile_test_helpers.ts`).
+
+- **`src/test/compile.differential.test.ts`** runs the differential's
+  generator from fixed seeds, each schema built a second time with every
+  `union` a `memo_union`, which compiles to other code, and minimizes and
+  prints a difference as a case to paste. A second family is recursive unions
+  over inputs that reuse nodes, the family of the `memo_union` test of
+  `schema.differential.test.ts`, alone, under a union that probes it, and
+  twice in one input, as a `memo_union` and, where the compiler doesn't
+  refuse it, as a `union`: the `literal` of an option comes first in some and
+  last in others, so both happen. A third is wide objects of a consumer's
+  kind: many entries, each with a `check`, a `transform`, or a `regex` of its
+  own, defaults beside them, nested `strip_object`s, one schema under two
+  keys, a union handed its key, and a `one_of` on either side of the size
+  where its test changes form.
+- **`src/test/compile.test.ts`** has what a generator doesn't draw. A hand
+  table: the formats, `to_lower_case`, `to_integer`, every wrapper a missing
+  key passes through, a union that fills a key in, `__proto__` keys and an
+  entry named so, inherited and non-enumerable keys, class instances, holes,
+  `-0` and `NaN`, and the key order of a copy. Every scenario of the
+  benchmarks. Each thing declared to differ from the interpreter, pinned, and
+  the order in which a parse that matches first reads the input's values,
+  which is the library's.
+- **`src/test/compile.source.test.ts`** has what a compile reads and emits. A
+  schema frozen to its last `def`, which compiles. What is refused and its
+  text, and the depth it follows a schema to. A hostile key, literal, `one_of`
+  value, default, bound, and regex source, each shown to stay data. The
+  source of a schema held in many places, which grows by a constant a level.
+  A kind of the test's own run in place, handed the object and the key by
+  the library's rule. The fallback, in a process under
+  `--disallow-code-generation-from-strings`, and no fallback for another
+  error.
+- **`src/test/compile.union.test.ts`** has recursive unions and pipes by
+  counted runs, never timed. What is refused, with its text, and that the
+  interpreter walks it in exponential time. What is not: a `memo_union` of
+  the same, with its bound in a guard, a parse, and a parse that fails,
+  options a `literal` tells apart first, a union on no cycle, a union on a
+  cycle only through a `memo_union`, a kind of the test's own, and a `union`
+  that shares a `memo_union`'s options. A cyclic input, which throws the
+  interpreter's `RangeError`. A compiled function called from a `check` it
+  is running: its answer, the outer call's, and the outer call's kept
+  verdicts.
+- **`src/test/compile.refusal.test.ts`** has a shape for every condition of
+  the refusal: a cycle through each kind that holds a schema, each kind that
+  could take an array or an object and each that could take neither, each
+  wrapper an option is looked through, and each thing that does and doesn't
+  tell options apart. A shape that is refused is shown to need it wherever an
+  input can nest through it, by the runs of a `check` under the interpreter,
+  and one that compiles is held to a walk. Each fix an error names is shown
+  to compile. `mutants.ts` has a mutant that drops each condition.
+- **`src/test/compile.bounds.test.ts`** holds the bound of what compiles, by
+  the traps sprung on a `Proxy` of every array and object of an input. It is
+  a slice of the enumeration the rule was searched with: pairs of option
+  templates, through one `lazy` and through two, each built with `union` and
+  with `memo_union`, over chains, trees, and an input that holds each level
+  twice, at two sizes. A `union` form is refused or it compiles, and what
+  compiles grows no faster than the size of the input times its depth in a
+  guard, a parse that matches, and a parse that fails. A `memo_union` form
+  always compiles, is held to the same, and on the input that reuses nodes
+  grows no faster than the interpreter's. And a call that runs out of stack:
+  compiled code against the interpreter at growing depths, and a
+  `RangeError` thrown by a `check`, which holds the catch.
+
 ## Mutants
 
 A test of the tests. `src/test/mutants.ts` is a

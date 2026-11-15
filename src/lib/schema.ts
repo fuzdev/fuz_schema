@@ -184,8 +184,8 @@ export type AnySchema = Schema<any, any, string, any>;
  *
  * `message`, `flavor`, `brand`, and `meta` have no kind of their own: what
  * they return has the `kind` and `def` of the schema they were given. Nor do
- * `memo_union`, which is a `union`, `void`, a `literal` of `undefined`, and
- * `check_at`, a `check`.
+ * `memo_union`, which is a `union` that `is_memo_union` tells, `void`, a
+ * `literal` of `undefined`, and `check_at`, a `check`.
  *
  * A schema of a kind defined outside this module is typed by adding its
  * entry through declaration merging, which adds it to `SchemaNode` too.
@@ -2323,10 +2323,13 @@ export const union = <const T extends ReadonlyArray<Schema>>(options: T): UnionS
  * it is probed with, and gives that back when it is probed with the same one
  * again. A recursive `union` whose options walk a node's children before an
  * entry rules them out takes time exponential in the input's depth, as each
- * option walks them again at every level; this one walks them once, so the
- * time is linear. Its `kind` and `def` are `union`'s, and so are its verdicts
- * and its issues: every reader of a schema, `to_schema_json` included, takes
- * it as a `union`.
+ * option walks them again at every level; this one reads back what it gave
+ * a node, so its options walk a node's children once where every recursive
+ * schema they read is a `memo_union` too. Its `kind` and `def` are `union`'s,
+ * and so are its verdicts
+ * and its issues: a reader of a schema's data, `to_schema_json` included,
+ * takes it as a `union`, and one that must tell it apart asks
+ * `is_memo_union`.
  *
  * Use it where two options could take the same object or array and reach a
  * `lazy` without a `literal` entry telling them apart first, as in
@@ -2400,6 +2403,13 @@ export const memo_union = <const T extends ReadonlyArray<Schema>>(options: T): U
 		}
 		return output;
 	};
+	// what tells a reader it is a `memo_union`, see `is_memo_union`: its
+	// options, in a registry beside the schemas, so the schema stays its three fields
+	(
+		(globalThis as unknown as Record<symbol, WeakSet<object> | undefined>)[
+			Symbol.for('@fuzdev/fuz_schema/memo_union')
+		] ??= new WeakSet()
+	).add(options);
 	return {
 		kind: 'union',
 		def: options,
@@ -2408,6 +2418,35 @@ export const memo_union = <const T extends ReadonlyArray<Schema>>(options: T): U
 		run: run.length > 2 ? memo_run : (value, ctx) => memo_run(value, ctx)
 	};
 };
+
+/**
+ * Whether `schema` was made by `memo_union`, which its `kind` doesn't say, as
+ * it is a `union`'s. For a reader that runs a schema by other code than its
+ * `run`, as `compile.ts` does, and must keep what a `memo_union` keeps.
+ *
+ * It is told by the schema's `def`, the options array, which `memo_union`
+ * records in a registry beside the schemas. So a `flavor`, a `brand`, a
+ * `meta`, and a `message` of a `memo_union` are one too, as each has that
+ * `def`. A `union` is not one, nor is a schema written by hand with a
+ * `union`'s `kind` and options of its own.
+ *
+ * The mark is of the array, so every schema that holds the one array is told
+ * alike: a `union` made from a `memo_union`'s own `def`, or from an array a
+ * `memo_union` was made from, is told as one. A reader then keeps a memo for
+ * a `union`, which gives the same verdicts and outputs. Give each its own
+ * array, as `union([...options])`, to tell them apart.
+ *
+ * The registry is one for the whole JS realm, on `globalThis` under
+ * `Symbol.for('@fuzdev/fuz_schema/memo_union')`, as the metadata registry of
+ * `meta.ts` is, so a `memo_union` made through one copy of this module is
+ * told through any other. That makes its shape a contract between versions:
+ * a `WeakSet` of the options arrays. A version that changes it takes a new
+ * key.
+ */
+export const is_memo_union = (schema: AnySchema): boolean =>
+	!!(globalThis as unknown as Record<symbol, WeakSet<object> | undefined>)[
+		Symbol.for('@fuzdev/fuz_schema/memo_union')
+	]?.has(schema.def);
 
 /**
  * The type of `variant(key, options)`, where `TKey` is the type of `key` and

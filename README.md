@@ -103,7 +103,9 @@ Caveats:
 
 ## When not to use it
 
-- Where the fastest check of valid input matters most, and code generated at runtime is allowed: see [Measurements](#measurements).
+- Where a schema is checked often enough to be worth compiling: [`compile.ts`](#compiling-a-schema) compiles one to straight-line code,
+  where code generated at runtime is allowed. It is not in the [measurements](#measurements) below, which are of the interpreter,
+  and it leaves the issues of an input that fails to the interpreter.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -128,7 +130,7 @@ In order:
 Flexibility comes after all four.
 Where a feature not everyone needs would cost every user, it's a separate export
 that the core never reaches: custom messages, message formatting, metadata, serializing,
-JSON Schema output, the readers of a schema, and the Standard Schema adapter are all like this,
+JSON Schema output, the readers of a schema, the compiler, and the Standard Schema adapter are all like this,
 and all bundle to nothing unused.
 
 ## What's different from Valibot
@@ -245,7 +247,7 @@ The package has no root entry: a module is imported by its path,
 `@fuzdev/fuz_schema/schema.js`, or `schema.ts`, which names the same file.
 Everything here is a named export of `schema.ts`, used through a namespace import.
 [Metadata](#metadata), the [Standard Schema](#standard-schema) adapter, the [serializer](#serializing),
-[JSON Schema](#json-schema) output, and the [readers of a schema](#introspection) are modules of their own.
+[JSON Schema](#json-schema) output, the [readers of a schema](#introspection), and the [compiler](#compiling-a-schema) are modules of their own.
 
 | | |
 |---|---|
@@ -257,7 +259,7 @@ Everything here is a named export of `schema.ts`, used through a namespace impor
 | formats | `uuid`, `iso_datetime` |
 | entry points | `parse`, `parse_or_throw`, `is` |
 | issues | `format_issue`, `format_issue_with_value`, `get_issue_value`, `SchemaError`, `fail` |
-| introspection | `is_schema`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
+| introspection | `is_schema`, `is_memo_union`, `SchemaNode`, `SchemaKind`, `SchemaDef`, `SchemaDefs`, `SchemaOfKind` |
 | types | `Infer`, `InferInput`, `Schema`, `AnySchema`, `SchemaContext`, `SchemaAction`, `SchemaRefinement`, `SchemaIssue`, `SchemaResult`, `Flavored`, `Branded` |
 | types of the schemas | `ObjectSchema`, `StripObjectSchema`, `LooseObjectSchema`, `ObjectWithRestSchema`, `ArraySchema`, `RecordSchema`, `KeyedRecordSchema`, `UnionSchema`, `VariantSchema`, `OptionalSchema`, `NullableSchema`, `WithDefaultSchema`, `WithUndefinedDefaultSchema`, `WithDefaultFnSchema`, `WithUndefinedDefaultFnSchema`, `LazySchema`, `PipeSchema`, `BrandSchema`, `FlavorSchema`, `LiteralSchema`, `OneOfSchema`, `StringSchema`, `NumberSchema`, `BooleanSchema`, `BigintSchema`, `UnknownSchema`, `VoidSchema` |
 | types to name a schema's | `SchemaEntries`, `SchemaStrictObjectOutput`, `SchemaStrictObjectInput`, `SchemaStripObjectInput`, `SchemaObjectOutput`, `SchemaObjectInput`, `SchemaKeyedRecord` |
@@ -376,8 +378,9 @@ takes time exponential in the input's depth, as each option walks them again:
 with two such options the time doubles with each level, as in Valibot, where Zod's `union` walks them once, see [`docs/design.md`](docs/design.md#unions-and-recursion).
 On untrusted input of that shape, use `variant`, or put first in each option the `literal` entries that tell the options apart, where there are some.
 Where there isn't, `memo_union` is a `union` that keeps, for one parse, what it gave each object or array it was probed with,
-and is linear: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
+so it is asked of each once: a `transform`, a `check`, or a `with_default_fn`'s `make` under it can run fewer times,
 and an object the input holds twice gets one output object in both places.
+The memo is in the union asked again, so a recursive schema one of its options reads into is a `memo_union` too where it is to be walked once.
 
 A schema runs its children by calling them, so input nested past the engine's stack makes
 `parse`, `parse_or_throw`, `is`, and a Standard Schema's `validate` throw a `RangeError`,
@@ -926,6 +929,48 @@ and on the input side a `pattern` of exactly the strings it reads within them, w
 `s.pipe(s.string, s.to_integer(), s.min_value(1), s.max_value(1000))` takes `^(?:\+?0*(?:[1-9]\d{0,2}|1000))$`.
 Metadata from `meta` is copied in. [`docs/design.md`](docs/design.md#json-schema) has the mapping and where it differs from Zod's.
 
+### Compiling a schema
+
+`compile_guard` and `compile_parse` compile a schema to a function of straight-line code, a module of its own:
+a guard that gives what `is` gives, and a parse that gives what `parse` gives.
+The compile reads the schema once, when it is called, and the caller keeps the function.
+
+```ts
+import {compile_guard, compile_parse} from '@fuzdev/fuz_schema/compile.ts';
+
+const User = s.object({name: s.string, tags: s.with_default(s.array(s.string), [])});
+
+const is_user = compile_guard(User);
+is_user({name: 'Ada'}); // true
+
+const parse_user = compile_parse(User);
+parse_user({name: 'Ada'}); // {ok: true, value: {name: 'Ada', tags: []}}
+parse_user({name: 1}); // {ok: false, issues: [...]}, the issues `parse` gives
+```
+
+The interpreter is the oracle: the verdict, the output, the input coming back as itself where nothing changed,
+and the issues are `is`'s and `parse`'s. Compiled code builds no issue, so a compiled parse of an input that fails calls `parse`.
+What it costs is the module's bytes, a compile for each schema, and `new Function`:
+where that is refused, as under a content security policy without `unsafe-eval`, the functions returned run the interpreter.
+
+- A schema of a kind the compiler has no code for, [one of your own](#writing-a-schema) among them, is run in place by its own `run`,
+  and the code around it is compiled. A compiled parse does the same for a `keyed_record`, an `object_with_rest`,
+  a `union` that may try an option again without its key, and a `memo_union` that can change a value.
+- It throws on a schema the library can walk in time exponential in the depth of an input, saying where and what to write instead:
+  a recursive `union` whose options could walk one array or object again, unless a `literal` entry that comes first in each tells them apart,
+  which is looked for only where each of those options is an `object`, a `loose_object`, or a `strip_object`, through a wrapper or a `lazy`, and a recursive `pipe` more than one step of which walks on.
+  A `memo_union` is never refused.
+  So on an input that is a tree, what compiles does work bounded by the size of the input times its depth and a factor of the schema,
+  in a guard, a parse that matches, and a parse that fails. Not seen, and outside that bound: what a kind of your own or a `check` walks,
+  and a `union` made from a `memo_union`'s own options array, which is taken for one.
+- A user's `check`, `transform`, and `with_default_fn` that ran before a failure run again in the `parse` that reports it,
+  and again where one throws a `RangeError` in a schema that holds a `lazy`, a `memo_union`, or a kind of your own, which is taken for the stack running out.
+- What is read of the input can differ, which a getter or a `Proxy` can tell.
+- Where compiled code runs out of stack the interpreter answers, so it never throws a `RangeError` where the interpreter doesn't.
+- It also throws where the schema it is given, or what a `lazy`'s function returns, is no schema, saying where, and on a schema nested deeper than `COMPILE_MAX_DEPTH`.
+
+[`docs/design.md`](docs/design.md#compiling) has what is compiled, what is left to the interpreter, and how the emitted source is kept safe.
+
 ## Status
 
 > **status**: pre-1.0 — the schema library of the Fuz stack's packages, with an API that still changes and the gaps listed below
@@ -942,6 +987,7 @@ which its changeset says. An added export is not.
 - [x] metadata, as an opt-in module
 - [x] serializing a schema to JSON, as an opt-in module
 - [x] JSON Schema output, as an opt-in module
+- [x] compiling a schema to a guard and a parse, as an opt-in module
 - [x] copy-on-write output
 - [x] `flavor` and `brand`, type-level only
 - [ ] each option's issues for a failed `union`, which reports one issue at its own path: a `variant` reports the option its key picks, and [parsing again](#a-failed-unions-options) gets each option's
@@ -1009,7 +1055,7 @@ npm run build:wasm      # needs wasm-pack
 
 - [`docs/design.md`](docs/design.md) — the internals and why: the one shape,
   probe mode, copy-on-write and what it gives up, issues and messages, the
-  types of the schemas, metadata, JSON Schema
+  types of the schemas, metadata, JSON Schema, compiling
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and how to extend them
 - [`docs/testing.md`](docs/testing.md) — what holds the library to more than its own examples:

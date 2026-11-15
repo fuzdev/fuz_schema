@@ -1,6 +1,7 @@
 import { describe, test, assert, expectTypeOf } from 'vitest';
 
 import * as s from '#lib/schema.ts';
+import { meta } from '#lib/meta.ts';
 import { to_standard_schema } from '#lib/standard_schema.ts';
 import { issues_of } from './schema_test_helpers.ts';
 
@@ -558,5 +559,111 @@ describe('array, union, variant', () => {
 				assert.throws(() => s.is(E, cyclic), RangeError, undefined, name);
 			}
 		});
+	});
+});
+
+describe('is_memo_union', () => {
+	const KEY = Symbol.for('@fuzdev/fuz_schema/memo_union');
+	// a new array each call: the mark is of the array
+	const options = (): Array<s.AnySchema> => [s.string, s.number];
+
+	test('a memo_union is one, whichever closure it has, and a union is not', () => {
+		assert(s.is_memo_union(s.memo_union(options())));
+		// one whose option takes the object and the key has the other closure
+		assert(s.is_memo_union(s.memo_union([s.unknown, s.string])));
+		assert(s.is_memo_union(s.memo_union([])));
+		assert(!s.is_memo_union(s.union(options())));
+		assert(!s.is_memo_union(s.union([s.unknown, s.string])));
+		assert(!s.is_memo_union(s.union([])));
+		// and a schema whose `def` is no object, or no array, is not
+		for (const schema of [
+			s.string,
+			s.literal('x'),
+			s.one_of(['a']),
+			s.object({}),
+			s.pipe(s.string, s.min_length(1))
+		]) {
+			assert(!s.is_memo_union(schema));
+		}
+	});
+
+	test('a flavor, a brand, a meta, and a message of one are one, as each has its def', () => {
+		const made = s.memo_union(options());
+		assert(s.is_memo_union(s.flavor(made, 'F')));
+		assert(s.is_memo_union(s.brand(made, 'B')));
+		const described = meta(made, { description: 'd' });
+		assert.notStrictEqual(described, made);
+		assert(s.is_memo_union(described));
+		assert(s.is_memo_union(meta(described, { description: 'e' })));
+		const labeled = s.message(made, 'text');
+		assert.notStrictEqual(labeled.run, made.run);
+		assert(s.is_memo_union(labeled));
+		assert(s.is_memo_union(s.message(meta(labeled, { description: 'f' }), () => 'again')));
+		assert.deepEqual(s.parse(labeled, 'x'), s.parse(made, 'x'));
+	});
+
+	test('a wrapper or a container around one is not one, and holds one', () => {
+		const made = s.memo_union(options());
+		for (const around of [s.optional(made), s.nullable(made), s.array(made), s.lazy(() => made)]) {
+			assert(!s.is_memo_union(around));
+		}
+		assert(!s.is_memo_union(s.union([made])));
+		assert(s.is_memo_union(s.optional(made).def.schema));
+	});
+
+	test('the mark is of the options array: every schema that holds the one array is told alike', () => {
+		// a schema written by hand with a union's kind and options of its own is not one
+		const made = s.memo_union(options());
+		const by_hand: s.AnySchema = {
+			kind: 'union',
+			def: options(),
+			run: (value, ctx) => made.run(value, ctx)
+		};
+		assert(!s.is_memo_union(by_hand));
+		// a union made from a memo_union's own options is told as one
+		assert(s.is_memo_union(s.union(made.def)));
+		assert(s.is_memo_union({ kind: 'union', def: made.def, run: s.string.run }));
+		// and so is a union whose array a memo_union is made from after it
+		const shared = options();
+		const before = s.union(shared);
+		assert(!s.is_memo_union(before));
+		s.memo_union(shared);
+		assert(s.is_memo_union(before));
+		// a copy of the array is another array
+		assert(!s.is_memo_union(s.union([...made.def])));
+		// either runs as what it is: only the mark is shared
+		assert.deepEqual(s.parse(s.union(made.def), true), s.parse(s.union(options()), true));
+	});
+
+	test('the schema stays its three fields, and nothing is written to it or to its options', () => {
+		const given = Object.freeze(options());
+		const made = s.memo_union(given);
+		assert.deepEqual(Object.keys(made), ['kind', 'def', 'run']);
+		assert.strictEqual(made.def, given);
+		assert.deepEqual(Reflect.ownKeys(given), ['0', '1', 'length']);
+		assert.deepEqual(Reflect.ownKeys(made.run), Reflect.ownKeys(s.union(options()).run));
+		assert(s.is_memo_union(Object.freeze(made)));
+	});
+
+	test('the registry is a WeakSet of the options arrays on globalThis under the shared key', () => {
+		const made = s.memo_union(options());
+		const registry = (globalThis as unknown as Record<symbol, unknown>)[KEY];
+		assert.instanceOf(registry, WeakSet);
+		assert((registry as WeakSet<object>).has(made.def));
+		assert(!(registry as WeakSet<object>).has(made));
+		assert(!(registry as WeakSet<object>).has(made.run));
+		assert(!(registry as WeakSet<object>).has(s.union(options()).def));
+	});
+
+	test('one made through one copy of the module is told through another', async () => {
+		// a second instance of the module, as a second install or a bundler's duplicate is
+		const copy: typeof s = await import(
+			new URL('../lib/schema.ts', import.meta.url).href + '?second_copy'
+		);
+		assert.notStrictEqual(copy.memo_union, s.memo_union);
+		assert(copy.is_memo_union(s.memo_union(options())));
+		assert(s.is_memo_union(copy.memo_union([copy.string, copy.number])));
+		assert(!s.is_memo_union(copy.union([copy.string, copy.number])));
+		assert(!copy.is_memo_union(s.union(options())));
 	});
 });
