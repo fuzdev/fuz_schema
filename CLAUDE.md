@@ -546,6 +546,13 @@ Things that are easy to break without a test noticing:
   export or module the core path doesn't reach. It should take that shape
   before it adds a field to an issue, a schema, or the context, or a branch to
   a `run`.
+- **A guarantee is kept whole or refused.** Code that can't keep a bound or a
+  verdict the interpreter has throws, or hands the work to the interpreter
+  where that is as safe: it does not do part of it faster. `compile.ts`
+  refuses a `union` it can't bound for that reason. Hostile input is what a
+  remote party can write, as JSON is, and is guarded against an ordinary
+  schema ahead of speed and size; a schema whose author had to write what no
+  schema needs is not, see `docs/declined.md` § Degenerate schemas.
 - **A difference from zod and valibot where they agree is declared**, in the
   tables of `src/test/conformance_tables.ts` and in `docs/design.md`,
   which say the same. The conformance test finds one that isn't, and one that

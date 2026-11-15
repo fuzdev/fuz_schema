@@ -121,7 +121,8 @@ Caveats:
 
 In order:
 
-1. correctness — a schema accepts what it says and nothing else
+1. correctness — a schema accepts what it says and nothing else, and that holds of input a remote party wrote:
+   a fix of over-acceptance, of time or memory an input can force, or of input leaking into an issue goes ahead of speed and size
 2. speed and size together — some bytes are worth paying for a significant speedup,
    judged by [written rules](#grading-a-change), not taste
 3. memory — per parse, per schema held, and at startup
@@ -132,6 +133,12 @@ Where a feature not everyone needs would cost every user, it's a separate export
 that the core never reaches: custom messages, message formatting, metadata, serializing,
 JSON Schema output, the readers of a schema, the compiler, and the Standard Schema adapter are all like this,
 and all bundle to nothing unused.
+
+A guarantee is kept whole or not offered.
+Where a guard would cost every consumer, the safe form is an export of its own and the hazard is said plainly:
+`union` keeps no memo, and `memo_union` does, see [Recursion and deep input](#recursion-and-deep-input).
+Where the library can see a hazard at no one's cost it refuses it:
+[`compile.ts`](#compiling-a-schema) throws on a recursive `union` it can't bound, since a faster answer there would read as a safe one.
 
 ## What's different from Valibot
 
