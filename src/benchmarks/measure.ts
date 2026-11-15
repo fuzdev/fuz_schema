@@ -28,6 +28,26 @@ import { getHeapSpaceStatistics, getHeapStatistics } from 'node:v8';
 /** The node flags scripts that measure allocation must run under. */
 export const ALLOCATION_NODE_FLAGS = '--min-semi-space-size=64 --max-semi-space-size=64';
 
+/**
+ * The node flag that turns off V8's compilation cache, which hands back what
+ * it compiled of a `new Function`'s or an `eval`'s text when the same text
+ * comes again. A figure that builds a scenario's schema from its one
+ * definition again and again runs under it, so a library that makes code per
+ * schema pays each compile, as an app's distinct schemas, whose texts differ,
+ * pay it. Without it a compile after the first is mostly a cache hit.
+ */
+export const NO_COMPILATION_CACHE_FLAG = '--no-compilation-cache';
+
+/**
+ * Whether the process runs under `NO_COMPILATION_CACHE_FLAG`, given on the
+ * command line or in `NODE_OPTIONS`.
+ */
+export const has_no_compilation_cache_flag = (): boolean =>
+	[...process.execArgv, ...(process.env.NODE_OPTIONS ?? '').split(/\s+/)].some(
+		// V8 reads a flag's underscores as dashes
+		(arg) => arg.replaceAll('_', '-') === NO_COMPILATION_CACHE_FLAG
+	);
+
 const ALLOCATION_NODE_FLAGS_MESSAGE =
 	`allocation measurement needs \`node ${ALLOCATION_NODE_FLAGS}\`, a young generation large ` +
 	'enough that a collection falls in few samples: run the script with `npm run`, which passes them';

@@ -712,7 +712,9 @@ erasable syntax only, imports with explicit `.ts` extensions that Node
 resolves on its own (relative paths, packages, `#lib/*`), and `import type`
 for types. `allocations.ts` measures allocation, which needs the node flags
 for a large young generation: its npm script passes them, and it refuses to
-run without, and starts itself again for each library under them. `run.ts`,
+run without, and starts itself twice for each library under them, the second
+also under `--no-compilation-cache`, which creation and retained heap per
+further schema run under so a library that makes code pays each compile. `run.ts`,
 `survey.ts`, `harvest.ts`, `grade.ts`, and `wasm.ts` time, so they run under
 none and refuse them, and refuse any `NODE_OPTIONS`, which every process they
 start would inherit; `harvest.ts` and `grade.ts` pass the flags to the

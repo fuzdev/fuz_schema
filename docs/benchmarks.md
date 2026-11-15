@@ -10,7 +10,7 @@ mode and no other, see [this library compiled](#this-library-compiled).
 |---|---|
 | `npm run benchmark` | parse time per scenario, valid and invalid, and each library's guard, a library to a process |
 | `npm run benchmark:bundle` | bundle size per scenario, minified and gzipped, then this library's export by export |
-| `npm run benchmark:allocations` | heap bytes per parse and per schema built, and the time to build one, a library to a process |
+| `npm run benchmark:allocations` | heap bytes per parse and per schema built, and the time to build one, two processes a library |
 | `npm run benchmark:coldstart` | a fresh process: import, build, first parse, peak memory |
 | `npm run benchmark:heap` | memory still held after building and parsing |
 | `npm run benchmark:types` | cost to the TypeScript checker, of a scenario module and of a consumer's reads of what its schemas infer |
@@ -333,11 +333,9 @@ and so has the survey.
   after it, are of a schema built and compiled, the compiler's work among them,
   and the retained heap's totals hold the compiler's module and the function it
   makes, with what the engine keeps for one. The figure per further schema is of
-  a schema compiled again each time from the scenario's one definition, which is
-  the same source text each time, and leaves out machine code and the trusted
-  spaces, as it does for every library. The engine reuses what it compiled of a
-  text it has seen, so the figure reads lower than distinct schemas hold, see
-  [Comparing like with like](#comparing-like-with-like).
+  a schema compiled again each time, each compile its own, as the creation
+  figures' are, see [Comparing like with like](#comparing-like-with-like), and
+  leaves out machine code and the trusted spaces, as it does for every library.
 - **Its unbundled cold start and its types are read from the build**, as
   `fuz_schema`'s are: `dist/compile.js` beside `dist/schema.js`, and their
   declarations. The type benchmark's module calls `compile_parse` on each
@@ -384,12 +382,15 @@ and so has the survey.
   two functions and throws them away before the first it keeps. The scripts
   need the young generation's node flags, which their npm scripts pass, and
   refuse to run without them. `benchmark:allocations` takes `--scenario` and
-  `--lib`, each repeatable, every one by default. It starts a process for each
-  library, under those flags, which imports that library's scenario module
-  and no other: in one process of every library, Valibot's and Zod's `app`
-  rows read a couple of kilobytes more than in a process of their own, which
-  loads no other library. It also times building
-  a schema in each library's process, under those flags, which no other
+  `--lib`, each repeatable, every one by default. It starts two processes for
+  each library, under those flags, each of which imports that library's
+  scenario module and no other: in one process of every library, Valibot's
+  and Zod's `app` rows read a couple of kilobytes more than in a process of
+  their own, which loads no other library. The two run the same calls in the
+  same order, and the second runs under `--no-compilation-cache` too, see
+  [Comparing like with like](#comparing-like-with-like): the bytes of a parse
+  are read from the first and creation from the second. It also times
+  building a schema, in the second, under those flags, which no other
   timing runs under, once every row's bytes are read, in batches of calls
   sized to last a few milliseconds. A library's rows are read in its process
   in order, so a row's library code has seen the scenarios before it and no
@@ -500,7 +501,10 @@ too.
   the same input and no library. It carries the library's own fixed memory.
 - **per further schema**: the difference per schema in heap and external
   memory between processes holding 50 schemas and 250, what an app that
-  defines many pays for each. It is the schema object, its `def`, its
+  defines many pays for each. Those two processes run under
+  `--no-compilation-cache` too, so a library that makes code per schema holds
+  a compile of its own for each, see
+  [Comparing like with like](#comparing-like-with-like). It is the schema object, its `def`, its
   closures and their contexts, and its slot in the array that holds the
   schemas, a few bytes, the same in both versions so it cancels: a constant
   schema such as `string` reads that slot alone. A feedback vector is not in
@@ -857,15 +861,22 @@ Each was checked against the installed library's source:
   distinct definitions would need each library's factories to vary their
   definitions, which would change their bundles, so the output marks it
   instead.
-- **A compiled mode's text is compiled once.** V8 keeps what it compiled of a
-  `new Function`'s text and reuses it for the same text, so where a figure
-  builds a scenario's schema from its one definition again and again, a
-  compile after the first makes less. `fuz_schema_compiled` and `zod_compiled`
-  read lower there than an app's distinct schemas cost: retained heap's figure
-  per further schema of a three-entry object, compiled again with a `literal`
-  of its own each time against the same each time, measured about 2.6 times as
-  much old space for `compile_parse` and about 1.4 times for `z.compile`, on
-  Node 26.13. Those cells are not marked.
+- **A library that makes code pays each compile.** V8 keeps what it compiled
+  of a `new Function`'s text and hands it back for the same text, so where a
+  figure builds a scenario's schema from its one definition again and again, a
+  compile after the first would be mostly the cache's, where an app's
+  distinct schemas, whose texts differ, pay each. Those figures, creation in
+  `benchmark:allocations` and retained heap per further schema, run under
+  `--no-compilation-cache`. On Node 26.13 that took creation time to about 4x
+  for `fuz_schema_compiled`, 3x for `zod_compiled`, and 2.5x for TypeBox, as
+  a geometric mean over the scenarios, and the figure per further schema of
+  `object_flat` from 906 bytes to 2436 for `fuz_schema_compiled`, 6699 to
+  13352 for plain Zod, whose objects compile on their first parse, 8189 to
+  10959 for `zod_compiled`, and 4464 to 5787 for TypeBox. The libraries that
+  make no code read the same. The bytes of a parse are read without the
+  flag, which moved Zod's by up to about one percent, and the totals, of one
+  schema each, too. The flag doesn't turn off a library's own keeping, which
+  is ArkType's mark above.
 - **ArkType's dropping parse clones.** It keeps a key the schema doesn't name
   by default; its scenarios drop one with `'+': 'delete'` where the others'
   do, and refuse one with `'+': 'reject'` where theirs do. A `'delete'` makes

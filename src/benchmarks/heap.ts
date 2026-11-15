@@ -28,12 +28,15 @@
  * tier the engine's code up, which holds feedback once, and spread over a few
  * dozen schemas reads as up to a hundred bytes or so each. The figure differs
  * by the pair it is read between, so only figures of one pair compare. Every
- * schema is built from the same definition, which flatters a library that
- * keeps the schema of a definition and hands it back for the same one, as
- * ArkType does: an app's schemas are distinct definitions, which cost it far
- * more each. A figure of distinct definitions needs a factory that varies its
- * definition, in every library's scenario module, which would change their
- * bundles.
+ * schema is built from the same definition. The two processes it is read
+ * between run under `NO_COMPILATION_CACHE_FLAG` too, so a library that makes
+ * code per schema holds a compile of its own for each, as an app's distinct
+ * schemas, whose texts differ, do, where V8 would otherwise share one compile
+ * of the one text among them. A library that keeps the schema of a definition
+ * and hands it back for the same one, as ArkType does, is still flattered:
+ * an app's schemas are distinct definitions, which cost it far more each. A
+ * figure of distinct definitions needs a factory that varies its definition,
+ * in every library's scenario module, which would change their bundles.
  *
  * **Flags, for this reading only** (`HEAP_NODE_FLAGS`): `--expose-gc`;
  * a fixed young generation, which V8 otherwise sizes from the machine's
@@ -53,6 +56,7 @@ import { z } from 'zod';
 import { SCENARIOS } from './scenarios.ts';
 import { PROGRAM } from './program.ts';
 import { build_bundle } from './bundle_size.ts';
+import { NO_COMPILATION_CACHE_FLAG } from './measure.ts';
 import {
 	CHILD_DIR,
 	prepare_entry,
@@ -63,6 +67,9 @@ import {
 } from './child.ts';
 
 const HEAP_NODE_FLAGS = ['--expose-gc', '--max-semi-space-size=16', '--single-threaded'];
+
+// the flags of the two processes the figure per further schema is read between
+const FURTHER_SCHEMA_NODE_FLAGS = [...HEAP_NODE_FLAGS, NO_COMPILATION_CACHE_FLAG];
 
 const HEAP_CODE_SPACES = ['code_space', 'code_large_object_space'];
 
@@ -177,8 +184,12 @@ const to_child_source = (
 		...to_reading_source(['held: runs.length'])
 	].join('\n');
 
-const read_heap = (path: string, held: number): HeapOutput => {
-	const output = HeapOutput.parse(run_child(path, HEAP_NODE_FLAGS));
+const read_heap = (
+	path: string,
+	held: number,
+	flags: ReadonlyArray<string> = HEAP_NODE_FLAGS
+): HeapOutput => {
+	const output = HeapOutput.parse(run_child(path, flags));
 	if (output.failed !== null) return output;
 	if (!output.settled) {
 		throw new Error(
@@ -221,14 +232,14 @@ export const measure_retained_heap = async (
 	const bare = read_heap(bare_path, 0);
 	const entry = await prepare_entry(lib, scenario.name, 'bundled', variant);
 	const dir = join(CHILD_DIR, 'heap', variant ? `${lib}.${variant.id}` : lib);
-	const read = (count: number): HeapOutput => {
+	const read = (count: number, flags?: ReadonlyArray<string>): HeapOutput => {
 		const path = join(dir, `${scenario.name}.${count}.mjs`);
 		write_if_changed(path, to_child_source(entry, scenario.name, count, scenario.valid));
-		return read_heap(path, count);
+		return read_heap(path, count, flags);
 	};
 	const one = read(1);
-	const few = read(HEAP_COUNTS.few);
-	const many = read(HEAP_COUNTS.many);
+	const few = read(HEAP_COUNTS.few, FURTHER_SCHEMA_NODE_FLAGS);
+	const many = read(HEAP_COUNTS.many, FURTHER_SCHEMA_NODE_FLAGS);
 	return {
 		heap_bytes: Math.max(0, one.heap_bytes - bare.heap_bytes),
 		code_bytes: Math.max(0, one.code_bytes - bare.code_bytes),
@@ -305,7 +316,7 @@ export const measure_export_heap = async (
 		const read = (count: number): HeapOutput => {
 			const path = join(dir, `${name}.${count}.mjs`);
 			write_if_changed(path, to_export_child_source(entry, name, count));
-			const output = read_heap(path, count);
+			const output = read_heap(path, count, FURTHER_SCHEMA_NODE_FLAGS);
 			if (strict && output.failed !== null) throw new Error(`${path}: ${output.failed}`);
 			return output;
 		};

@@ -20,7 +20,7 @@ import {
 import { HEAP_COUNTS, measure_retained_heap, type RetainedHeap } from './heap.ts';
 import { INTERNED_MARK, INTERNING_LIBS, LIB_NAMES, format_interned_figure } from './lib_names.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
-import { format_table } from './measure.ts';
+import { NO_COMPILATION_CACHE_FLAG, format_table } from './measure.ts';
 import { SCENARIOS, type ScenarioName } from './scenarios.ts';
 import { is_scenario_schema_kept, type ScenarioSchemaModule } from './scenario_schemas.ts';
 
@@ -85,9 +85,10 @@ console.log(
 );
 console.log(format_table(rows, 2));
 console.log(
-	"\nEvery further schema is built from the scenario's one definition again, which is not what an\n" +
-		"app's distinct schemas are: a library that keeps the schema of a definition and hands it back\n" +
-		'for the same one reads far lower in the last column than for distinct ones' +
+	"\nEvery further schema is built from the scenario's one definition again, in processes under\n" +
+		`${NO_COMPILATION_CACHE_FLAG}, so a library that makes code holds a compile for each, as an app's\n` +
+		'distinct schemas do. A library that keeps the schema of a definition and hands it back for the\n' +
+		'same one reads far lower in the last column than for distinct ones' +
 		(kept.size
 			? `, and its figures\nthere are marked ${INTERNED_MARK}, where ${INTERNING_LIBS.join(', ')} hands back the schema it built before.`
 			: '.')

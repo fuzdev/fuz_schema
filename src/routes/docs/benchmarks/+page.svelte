@@ -285,9 +285,11 @@
 						without comparing them.
 					</li>
 					<li>
-						A figure marked <code>†</code> builds one definition again and again, which a library
-						that keeps the schema of a definition hands back. It is not what an app's distinct
-						schemas cost that library.
+						Creation builds one definition again and again, in a process without the engine's
+						compilation cache, so a library that makes code pays each compile, as an app's distinct
+						schemas do. A figure marked <code>†</code> is of a library that keeps the schema of a
+						definition and hands it back. It is not what an app's distinct schemas cost that
+						library.
 					</li>
 				</ul>
 			</aside>
@@ -341,10 +343,11 @@
 					</li>
 					<li>Where a library returns a copy of its input, the copy is in its bytes.</li>
 					<li>
-						Every further schema is built from the scenario's one definition. A figure marked
-						<code>†</code> is of a library that hands back the schema it built before for the same
-						definition, so it reads far lower than an app's distinct schemas would, and is not
-						ranked.
+						Every further schema is built from the scenario's one definition, in processes without
+						the engine's compilation cache, so a library that makes code holds a compile for each. A
+						figure marked <code>†</code> is of a library that hands back the schema it built before
+						for the same definition, so it reads far lower than an app's distinct schemas would, and
+						is not ranked.
 					</li>
 				</ul>
 			</aside>

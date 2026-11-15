@@ -3,14 +3,29 @@
  * and per schema creation, plus warm creation time. See `measure.ts` for the
  * method and its limits.
  *
- * **A library is a process.** This script starts itself again for each
- * library, under `ALLOCATION_NODE_FLAGS`, and the process imports that
+ * **A library is two processes.** This script starts itself again for each
+ * library, under `ALLOCATION_NODE_FLAGS`, twice, and each process imports that
  * library's scenario module and no other. In one process of every library,
  * Valibot's and Zod's `app` rows read a couple of kilobytes more than in a
  * process of their own, which loads no other library. Every scenario asked
  * for is measured in its library's process, in order, so a row's library code
  * has seen the scenarios before it and no other. Creation is timed after every
- * row's bytes are read.
+ * row's bytes are read. The two processes run the same calls in the same
+ * order: the bytes of a parse are read from the first, and creation from the
+ * second.
+ *
+ * **Creation pays every compile.** A row's creation builds the scenario's
+ * schema from its one definition again and again, and a library that makes
+ * code per schema would read a compile after the first as V8's compilation
+ * cache hands it back. The second process runs under
+ * `NO_COMPILATION_CACHE_FLAG`, so every build compiles, as an app's distinct
+ * schemas do. The first runs without it: a parse compiles nothing past its
+ * warming, and the flag moved Zod's bytes a parse by up to about one percent,
+ * which no figure of a parse is to carry. Each reads the figures of the other
+ * too, and they are dropped, so neither process's history differs from the
+ * other's but by the flag. A library that keeps the
+ * schema of a definition and hands it back, which no flag turns off, is
+ * marked instead, see `INTERNING_LIBS`.
  *
  * Usage (`npm run benchmark:allocations` passes the node flags it needs):
  *   npm run benchmark:allocations -- --lib fuz_schema --lib valibot --scenario union
@@ -46,6 +61,8 @@ import {
 	format_table,
 	measure_bytes,
 	measure_ms,
+	NO_COMPILATION_CACHE_FLAG,
+	has_no_compilation_cache_flag,
 	require_allocation_node_flags
 } from './measure.ts';
 
@@ -55,10 +72,10 @@ const Args = s.object({
 		description: 'scenario names to run, defaulting to all'
 	}),
 	lib: meta(s.optional(LibNamesArg), { description: 'library names to run, defaulting to all' }),
-	child: meta(s.with_default(s.boolean, false), {
+	child: meta(s.optional(s.one_of(['parse', 'create'])), {
 		description:
-			'measure the one library `--lib` names and print its rows as JSON: the process this ' +
-			'script starts for each library'
+			'measure the bytes of a parse, or creation, of the one library `--lib` names and print ' +
+			'its rows as JSON: the processes this script starts for each library'
 	}),
 	data: DataArg
 });
@@ -82,7 +99,8 @@ interface AllocationRow {
 	kept: boolean;
 }
 
-// every scenario asked for, in this process's one library
+// every scenario asked for, in this process's one library, every figure read
+// whichever part the process is for
 const measure_lib = async (lib: LibName): Promise<Array<AllocationRow>> => {
 	const module: ScenarioModule = await import(`./libs/${lib}.ts`);
 	const rows: Array<AllocationRow> = [];
@@ -127,6 +145,13 @@ const measure_lib = async (lib: LibName): Promise<Array<AllocationRow>> => {
 
 if (args.child) {
 	if (libs.length !== 1) throw new Error('--child measures one library, named by --lib');
+	// creation pays every compile, and a parse runs as a consumer's does
+	if (has_no_compilation_cache_flag() !== (args.child === 'create')) {
+		throw new Error(
+			`--child ${args.child} measures ${args.child === 'create' ? 'under' : 'without'} ` +
+				`${NO_COMPILATION_CACHE_FLAG}, as the script starts it`
+		);
+	}
 	const rows = await measure_lib(libs[0]!);
 	process.stdout.write(JSON.stringify(rows) + '\n', (error) => process.exit(error ? 1 : 0));
 } else {
@@ -136,14 +161,28 @@ if (args.child) {
 	const script = fileURLToPath(import.meta.url);
 	const scenario_args = scenarios.flatMap((scenario) => ['--scenario', scenario.name]);
 	const measured: Array<AllocationRow> = [];
+	const measure_part = async (
+		lib: LibName,
+		part: 'parse' | 'create'
+	): Promise<Array<AllocationRow>> =>
+		(await start_child(script, {
+			flags: [
+				...ALLOCATION_NODE_FLAGS.split(' '),
+				...(part === 'create' ? [NO_COMPILATION_CACHE_FLAG] : [])
+			],
+			args: ['--child', part, '--lib', lib, ...scenario_args],
+			env: to_child_env(process.env),
+			label: `allocations, ${lib}, ${part}`
+		})) as Array<AllocationRow>;
+	// each process reads every figure, and only its part's are kept
 	for (const lib of libs) {
+		const parsed = await measure_part(lib, 'parse');
+		const created = await measure_part(lib, 'create');
 		measured.push(
-			...((await start_child(script, {
-				flags: ALLOCATION_NODE_FLAGS.split(' '),
-				args: ['--child', '--lib', lib, ...scenario_args],
-				env: to_child_env(process.env),
-				label: `allocations, ${lib}`
-			})) as Array<AllocationRow>)
+			...parsed.map((row, i) => {
+				const { create_bytes, create_ns, kept } = created[i]!;
+				return { ...row, create_bytes, create_ns, kept };
+			})
 		);
 	}
 	const rows: Array<Array<string>> = [
@@ -167,9 +206,10 @@ if (args.child) {
 	);
 	console.log(format_table(rows, 2));
 	console.log(
-		"\n`create` builds a scenario's schema from its one definition again and again, which is not what\n" +
-			"an app's distinct schemas are: a library that keeps the schema of a definition and hands it\n" +
-			'back for the same one reads far lower there than for distinct ones' +
+		"\n`create` builds a scenario's schema from its one definition again and again, each process under\n" +
+			`${NO_COMPILATION_CACHE_FLAG}, so a library that makes code pays every compile, as an app's distinct\n` +
+			'schemas do. A library that keeps the schema of a definition and hands it back for the same one\n' +
+			'reads far lower there than for distinct ones' +
 			(measured.some((row) => row.kept)
 				? `, and its figures are\nmarked ${INTERNED_MARK}, where ${INTERNING_LIBS.join(', ')} hands back the schema it built before.`
 				: '.')
