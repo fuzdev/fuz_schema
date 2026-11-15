@@ -333,8 +333,11 @@ and so has the survey.
   after it, are of a schema built and compiled, the compiler's work among them,
   and the retained heap's totals hold the compiler's module and the function it
   makes, with what the engine keeps for one. The figure per further schema is of
-  a schema compiled again each time, and leaves out machine code and the trusted
-  spaces, as it does for every library.
+  a schema compiled again each time from the scenario's one definition, which is
+  the same source text each time, and leaves out machine code and the trusted
+  spaces, as it does for every library. The engine reuses what it compiled of a
+  text it has seen, so the figure reads lower than distinct schemas hold, see
+  [Comparing like with like](#comparing-like-with-like).
 - **Its unbundled cold start and its types are read from the build**, as
   `fuz_schema`'s are: `dist/compile.js` beside `dist/schema.js`, and their
   declarations. The type benchmark's module calls `compile_parse` on each
@@ -854,6 +857,15 @@ Each was checked against the installed library's source:
   distinct definitions would need each library's factories to vary their
   definitions, which would change their bundles, so the output marks it
   instead.
+- **A compiled mode's text is compiled once.** V8 keeps what it compiled of a
+  `new Function`'s text and reuses it for the same text, so where a figure
+  builds a scenario's schema from its one definition again and again, a
+  compile after the first makes less. `fuz_schema_compiled` and `zod_compiled`
+  read lower there than an app's distinct schemas cost: retained heap's figure
+  per further schema of a three-entry object, compiled again with a `literal`
+  of its own each time against the same each time, measured about 2.6 times as
+  much old space for `compile_parse` and about 1.4 times for `z.compile`, on
+  Node 26.13. Those cells are not marked.
 - **ArkType's dropping parse clones.** It keeps a key the schema doesn't name
   by default; its scenarios drop one with `'+': 'delete'` where the others'
   do, and refuse one with `'+': 'reject'` where theirs do. A `'delete'` makes

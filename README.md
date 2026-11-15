@@ -47,12 +47,15 @@ with a human steering the design.
 
 ## Measurements
 
-The benchmarks in `src/benchmarks/` compare this library, as it is imported and with each schema compiled by `compile_parse` and `compile_guard`, with Valibot, Zod (as it is imported,
+The benchmarks in `src/benchmarks/` compare this library, as it is imported and with each schema compiled by
+`compile_parse` and `compile_guard`, with Valibot, Zod (as it is imported,
 with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, and ArkType.
 [The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
 A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
-which `z.compile` hands back uncompiled. `src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
+which `z.compile` hands back uncompiled. The claims are of this library as it is imported:
+"the libraries compared" are the others, and the compiled mode is in none of them.
+`src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
 
 <!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
 
@@ -103,9 +106,10 @@ Caveats:
 
 ## When not to use it
 
-- Where a schema is checked often enough to be worth compiling: [`compile.ts`](#compiling-a-schema) compiles one to straight-line code,
-  where code generated at runtime is allowed. The benchmarks enter it as a library of its own, `fuz_schema_compiled`,
-  and the claims of [Measurements](#measurements) are of the interpreter. It leaves the issues of an input that fails to the interpreter.
+- Where the fastest check of valid input matters most, and code generated at runtime is allowed:
+  [Measurements](#measurements) names the libraries faster there, and its claims are of the interpreter.
+  [`compile.ts`](#compiling-a-schema) compiles a schema to straight-line code, which the benchmarks enter as a library of its own,
+  `fuz_schema_compiled`, and how it compares with those is not yet claimed.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -945,7 +949,7 @@ The compile reads the schema once, when it is called, and the caller keeps the f
 ```ts
 import {compile_guard, compile_parse} from '@fuzdev/fuz_schema/compile.ts';
 
-const User = s.object({name: s.string, tags: s.with_default(s.array(s.string), [])});
+const User = s.object({name: s.string, tags: s.with_default_fn(s.array(s.string), () => [])});
 
 const is_user = compile_guard(User);
 is_user({name: 'Ada'}); // true

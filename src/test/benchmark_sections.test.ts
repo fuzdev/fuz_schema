@@ -160,7 +160,7 @@ describe('to_time_groups', () => {
 		);
 	});
 
-	test('this library compiled is ahead of the interpreter on valid input and as a guard, and level with it on invalid', () => {
+	test('the fixture has this library compiled ahead of the interpreter on valid input and as a guard, and level with it on invalid', () => {
 		// read against the interpreter, as a reader who hovers its column does
 		const of = (key: string) =>
 			to_matrix_ratios(find_row(groups, key), LIBS, 'fuz_schema').fuz_schema_compiled!;
@@ -857,9 +857,10 @@ describe('provenance', () => {
 	});
 });
 
-// The fixture's compiled mode runs the way the mode does where no claim reads it: it
-// ships the compiler, compiles as its schema is built, and holds the function made.
-describe('this library compiled in the fixture', () => {
+// The fixture's invented figures of the compiled mode run the way the mode does where
+// no claim reads it: it ships the compiler, compiles as its schema is built, and holds
+// the function made. Nothing here is measured
+describe("the fixture's invented figures of this library compiled", () => {
 	const fixture = load_fixture();
 	const of = <T>(libs: Record<string, T | undefined>): [T, T] => [
 		libs.fuz_schema!,
