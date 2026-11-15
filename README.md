@@ -976,6 +976,25 @@ where that is refused, as under a content security policy without `unsafe-eval`,
 - Where compiled code runs out of stack the interpreter answers, so it never throws a `RangeError` where the interpreter doesn't.
 - It also throws where the schema it is given, or what a `lazy`'s function returns, is no schema, saying where, and on a schema nested deeper than `COMPILE_MAX_DEPTH`.
 
+`to_guard_source(schema, name)` is the build-time half: it returns the text of an ES module that exports the guard, for a build to write to a file.
+The guard then ships with no `new Function`, and without the library where the schema uses no `uuid`, `iso_datetime`, or `to_integer`, which a written module imports from it.
+
+```ts
+// user_guard.gen.ts, a Gro generator of user_guard.ts
+import type {Gen} from '@fuzdev/gro';
+import {to_guard_source} from '@fuzdev/fuz_schema/compile.ts';
+import {User} from './user.ts';
+
+export const gen: Gen = () => to_guard_source(User, 'is_user');
+```
+
+- The text is JavaScript that a TypeScript file can hold as it is, and a linter passes over. The guard takes any value and returns a boolean:
+  a type predicate is a cast where it is imported, to the input type `is` narrows to, as `is_user as (value: unknown) => value is s.InferInput<typeof User>`.
+- It throws on what has no text, saying where: a `check`, a `transform`, a `with_default_fn`, a kind of your own,
+  what a compiled guard hands to the interpreter, which [`docs/design.md`](docs/design.md#a-guard-written-as-a-module) lists, and all that `compile_guard` throws on.
+- A written guard has no interpreter behind it: where it runs out of stack it throws the `RangeError`,
+  and for a recursive schema whose object has many entries it can run out at a depth `is` answers.
+
 [`docs/design.md`](docs/design.md#compiling) has what is compiled, what is left to the interpreter, and how the emitted source is kept safe.
 
 ## Status

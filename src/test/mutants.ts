@@ -3855,8 +3855,8 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/compile.ts',
 		edits: [
 			{
-				find: `\`\\nreturn fallback(v);\\n\`;`,
-				replace: `\`\\nreturn \${output ? '{ ok: false, issues: [] }' : 'false'};\\n\`;`
+				find: `(catches ? \`\\nreturn fallback(v);\\n\` : '\\n');`,
+				replace: `(catches ? \`\\nreturn \${output ? '{ ok: false, issues: [] }' : 'false'};\\n\` : '\\n');`
 			}
 		]
 	},
@@ -5388,6 +5388,425 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `if (!WRAPPER_KIND.test(kind_of(schema)) && kind_of(schema) !== 'pipe') return;`,
 				replace: `if (!WRAPPER_KIND.test(kind_of(schema))) return;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_any_name_written',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (typeof name !== 'string' || !/^[A-Za-z_$][\\w$]*$/.test(name)) {`,
+				replace: `if (typeof name !== 'string') {`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_a_name_that_is_no_string',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (typeof name !== 'string' || !/^[A-Za-z_$][\\w$]*$/.test(name)) {`,
+				replace: `if (!/^[A-Za-z_$][\\w$]*$/.test(name)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_a_name_matched_in_part',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `!/^[A-Za-z_$][\\w$]*$/.test(name)`,
+				replace: `!/^[A-Za-z_$][\\w$]*/.test(name)`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_a_name_that_starts_with_a_digit',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `!/^[A-Za-z_$][\\w$]*$/.test(name)`,
+				replace: `!/^[\\w$]+$/.test(name)`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_name_unquoted_in_its_refusal',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `named \${quote(String(name))}: not an identifier`,
+				replace: `named "\${String(name)}": not an identifier`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_uuid_has_no_text',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/^(uuid|iso_datetime|to_integer)$/.test(kind)) {`,
+				replace: `if (/^(iso_datetime|to_integer)$/.test(kind)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_iso_datetime_has_no_text',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/^(uuid|iso_datetime|to_integer)$/.test(kind)) {`,
+				replace: `if (/^(uuid|to_integer)$/.test(kind)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_to_integer_has_no_text',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (/^(uuid|iso_datetime|to_integer)$/.test(kind)) {`,
+				replace: `if (/^(uuid|iso_datetime)$/.test(kind)) {`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_action_not_imported',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			imports.add(kind);
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_to_integer_signed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `unsigned: \${!!value.def.unsigned}`,
+				replace: `unsigned: false`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_to_integer_untrimmed',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `trim: \${!!value.def.trim}`,
+				replace: `trim: false`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_regex_subclass_written',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			Object.getPrototypeOf(value) === RegExp.prototype &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_regex_with_a_property_written',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			Object.getPrototypeOf(value) === RegExp.prototype &&
+			Reflect.ownKeys(value).length < 2
+`,
+				replace: `			Object.getPrototypeOf(value) === RegExp.prototype
+`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_pattern_unquoted',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `written = \`new RegExp(\${quote(value.source)}, \${quote(value.flags)})\`;`,
+				replace: `written = \`new RegExp("\${value.source}", \${quote(value.flags)})\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_pattern_as_a_literal',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `written = \`new RegExp(\${quote(value.source)}, \${quote(value.flags)})\`;`,
+				replace: `written = \`/\${value.source}/\${value.flags}\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_pattern_by_stringify_alone',
+		file: 'src/lib/compile.ts',
+		survives:
+			"an engine escapes the line terminators of a regex's `source`, as the specification has it, so only a `Proxy` that lies about its `source`, a degenerate schema, hands `quote` one to escape, and a raw U+2028 or U+2029 in a string literal is valid since ES2019: the text loads and means the same",
+		edits: [
+			{
+				find: `written = \`new RegExp(\${quote(value.source)}, \${quote(value.flags)})\`;`,
+				replace: `written = \`new RegExp(\${JSON.stringify(value.source)}, \${quote(value.flags)})\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_flags_dropped',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `written = \`new RegExp(\${quote(value.source)}, \${quote(value.flags)})\`;`,
+				replace: `written = \`new RegExp(\${quote(value.source)})\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_flags_unquoted',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `written = \`new RegExp(\${quote(value.source)}, \${quote(value.flags)})\`;`,
+				replace: `written = \`new RegExp(\${quote(value.source)}, "\${value.flags}")\`;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_what_has_no_text_written',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (written === undefined) {
+			throw Error(
+				\`cannot write \\\`\${at}\\\` at \${path}: it is run by a function, or holds a value, that can't be written as source\`
+			);
+		}
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_no_ts_nocheck',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		'// @ts-nocheck\\n/* eslint-disable */\\n' +
+`,
+				replace: `		'/* eslint-disable */\\n' +
+`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_no_eslint_disable',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		'// @ts-nocheck\\n/* eslint-disable */\\n' +
+`,
+				replace: `		'// @ts-nocheck\\n' +
+`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_then_written',
+		file: 'src/lib/compile.ts',
+		edits: [{ find: `if (name === 'then') {`, replace: `if (name === 'than') {` }]
+	},
+	{
+		name: 'compile_emit_library_unchecked',
+		file: 'src/lib/compile.ts',
+		edits: [{ find: `if (typeof library !== 'string') {`, replace: `if (library === undefined) {` }]
+	},
+	{
+		name: 'compile_emit_any_regex_written',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			at === 'regex' &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_library_unquoted',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `} from \${quote(library)};\\n\``,
+				replace: `} from "\${library}";\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_no_failure_value',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `((rest + main).includes('FAIL') ? 'const FAIL = {};\\n' : '')`,
+				replace: `''`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_action_failure_passes',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `'if (P.fails === fails) return output;\\nP.fails = fails;\\nreturn FAIL;\\n};\\n'`,
+				replace: `'if (P.fails === fails) return output;\\nP.fails = fails;\\nreturn undefined;\\n};\\n'`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_action_always_fails',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `'if (P.fails === fails) return output;\\nP.fails = fails;\\nreturn FAIL;\\n};\\n'`,
+				replace: `'P.fails = fails;\\nreturn FAIL;\\n};\\n'`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_captures_misnumbered',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `texts.map((text, i) => \`const c\${i} = \${text};\\n\`).join('')`,
+				replace: `texts.map((text, i) => \`const c\${i + 1} = \${text};\\n\`).join('')`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_exported_under_another_name',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `export { _ as \${name} };\\n\``,
+				replace: `export { _ as guard };\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_the_guard_named_as_given',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`function _(v) {\\n\${main}}\\nexport { _ as \${name} };\\n\``,
+				replace: `\`export function \${name}(v) {\\n\${main}}\\n\``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_a_context_in_a_module',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `if (shares_context && !write) state.push(['ctx', 'undefined']);`,
+				replace: `if (shares_context) state.push(['ctx', 'undefined']);`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_a_catch_in_a_module',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `const catches = deep && !write;`,
+				replace: `const catches = deep;`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_set_values_unquoted',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\`new Set([\${values.map(literal).join(', ')}])\``,
+				replace: `\`new Set([\${values.map(String).join(', ')}])\``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_set_has_no_text',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `capture(new Set(values), () => \`new Set([\${values.map(literal).join(', ')}])\`)`,
+				replace: `capture(new Set(values))`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_refusal_names_the_schema_before_the_step',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `					emitting = step;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_refusal_names_what_a_default_holds',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				emitting = schema;
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_emit_refusal_names_the_root',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				emitting.kind,
+				paths.get(emitting)!
+`,
+				replace: `				root.kind,
+				paths.get(root)!
+`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_set_text_after_its_number',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			const written = write && text?.();
+			captures.set(value, (i = captures.size));
+`,
+				replace: `			captures.set(value, (i = captures.size));
+			const written = write && text?.();
+`
+			}
+		]
+	},
+	{
+		name: 'compile_emit_captured_schema_has_no_kind',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				is_schema(value) ? kind_of(value) : '',
+`,
+				replace: `				'',
+`
 			}
 		]
 	}

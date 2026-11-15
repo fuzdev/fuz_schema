@@ -1360,9 +1360,9 @@ place they are listed.
 - **Where compiled code runs out of stack the interpreter answers.** A schema
   that holds a `lazy`, a `memo_union`, or a schema of a kind the compiler has
   no code for catches a `RangeError` at its root and calls `is` or `parse`,
-  which throws its own where it runs out too. So compiled code never throws
-  where the interpreter answers. The catch is of any `RangeError`, as the
-  stack's can't be told from another, see
+  which throws its own where it runs out too. So `compile_guard` and
+  `compile_parse` never throw where the interpreter answers. The catch is of
+  any `RangeError`, as the stack's can't be told from another, see
   [below](#what-may-differ-from-the-interpreter). Any other error is thrown
   as it is, and a schema that holds none of those has no catch.
 - **Emitted source is built only from safe parts.** A name the emitter
@@ -1378,6 +1378,61 @@ place they are listed.
   to read one, the root and what a `lazy`'s function gives, and a schema
   nested deeper than `COMPILE_MAX_DEPTH` through every `lazy`, which is how a
   `lazy` that makes a new schema each call ends. The error names the path.
+
+### A guard written as a module
+
+`to_guard_source(schema, name)` returns the text of an ES module that exports
+the guard, for a build to write to a file: the code `compile_guard` makes,
+from the same emitter, with what that captures written out.
+
+- **A captured value is written as text or refused.** A `regex` is
+  `new RegExp` of its pattern and its flags, each a string through the rule a
+  key goes through, so a pattern stays a pattern whatever it holds. The
+  values of a long `one_of` are a `Set` of literals. Anything else has no
+  text, and the error names the kind and the path of the schema that holds
+  it: a function, which is a `check`, a `transform`, a `with_default_fn`, or
+  a kind defined outside the library, a regex with a prototype or a property
+  of its own, which can test as its pattern alone doesn't, a regex anywhere
+  but a `regex`'s pattern, and a schema a guard runs by its own `run`. That
+  last is a `keyed_record` or an `object_with_rest`, or a union handed its
+  key or a `memo_union` that can change a value, where one is a step of a
+  `pipe` or under one whose later step is given its output. What
+  `compile_guard` refuses is refused in the same words. A value is written
+  once, where it is first met: so a regex that is a `regex`'s pattern and,
+  later in the schema, a `literal`'s or a `one_of`'s value is not refused
+  there but read as the module's own regex, which no input is, and the guard
+  refuses the regex `is` accepts.
+- **The format actions are imported.** `uuid`, `iso_datetime`, and
+  `to_integer` are grammars [formats.md](formats.md) holds to one copy, so a
+  written module imports them from the library and calls their `run` with a
+  probing context of its own, as compiled code does. The specifier is
+  `@fuzdev/fuz_schema/schema.js` unless the caller gives another, and a
+  module that uses none of the three imports nothing. They are written by
+  `kind` and `def`: a schema that takes one of those names and a `run` of its
+  own is written as the library's, where `compile_guard` runs the schema's.
+  A regex is read through its own `source` and `flags`, so a `Proxy` of one
+  that lies about them is written as it lies, where `is` tests the pattern
+  behind it: a degenerate schema, see
+  [declined.md](declined.md#degenerate-schemas).
+- **The name is only what the guard is exported as.** It is an identifier of
+  ASCII letters, digits, `_`, and `$`, and anything else is refused, and so
+  is `then`, which makes a module a thenable that a dynamic `import` never
+  settles. The function has a name of the emitter's and is exported under
+  the one given, so a name the module uses, or a reserved word, shadows
+  nothing, and `default` makes it the default export.
+- **The text is JavaScript**, and starts with `// @ts-nocheck` and an
+  `eslint-disable` comment, so a build can write it to a TypeScript file as
+  it is. The guard takes any value and returns a boolean. A type predicate
+  needs the schema's type, which the text can't name: it is a cast where the
+  guard is imported, to the input type `is` narrows to.
+- **It has no interpreter behind it.** There is no catch at its root, so a
+  written guard that runs out of stack throws the `RangeError`, and a
+  `RangeError` a getter throws is thrown. Its frames hold a variable for each
+  entry of an object, so where a recursive schema has an object of many
+  entries it runs out of stack at a depth where `is` answers. A `memo_union`
+  keeps its verdicts for the length of a call, as in compiled code. A regex
+  is the module's own object, so one with a `g` or `y` flag keeps a
+  `lastIndex` of its own.
 
 ### What may differ from the interpreter
 
@@ -1412,8 +1467,9 @@ place they are listed.
   `iso_datetime`, and a `to_integer` are run by the schema's `run`.
 - **The depth at which an input runs the stack out.** Compiled code can
   answer an input so deep that the interpreter throws a `RangeError`, as its
-  frames are not the interpreter's. It never throws one where the interpreter
-  answers.
+  frames are not the interpreter's. `compile_guard` and `compile_parse` never
+  throw one where the interpreter answers; a written guard can, see
+  [A guard written as a module](#a-guard-written-as-a-module).
 
 ## Behavior that differs from Valibot and Zod
 

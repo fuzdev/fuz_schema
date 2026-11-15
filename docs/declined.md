@@ -1589,6 +1589,26 @@ the action's own `run`.
   [design.md](design.md#behavior-that-differs-from-valibot-and-zod).
 - **Reopens**: nothing known.
 
+### A regex's pattern read through `RegExp.prototype`, in a written guard
+
+`to_guard_source` reading a `regex`'s pattern by the getter of
+`RegExp.prototype.source` called on it, in a `try`, in place of the regex's
+own `source`, so a `Proxy` of a regex, on which that getter throws, is
+refused.
+
+- **Gave**: a `Proxy` whose `source` lies refused, where it is written as it
+  lies and the written guard accepts what `is` refuses, and one with no trap
+  refused with the module's own error, where the engine's `TypeError` is
+  thrown.
+- **Cost**: `to_guard_source` alone +41 gzip, 6164 to 6205, and the module
+  over the library +38. `compile_guard` and `compile_parse` +0.
+- **Why**: a schema whose author put a lying `Proxy` in it is malformed, and
+  no bytes are spent guarding one. No input reaches it, and the text stays a
+  pattern either way, as its `source` goes through the rule a key does. It
+  is declared in [design.md](design.md#a-guard-written-as-a-module).
+- **Reopens**: nothing known.
+- **Measured**: before v0.6.1, on Node 26.13.
+
 ## Values that throw when read
 
 ### A guard for a revoked `Proxy` in `fail`

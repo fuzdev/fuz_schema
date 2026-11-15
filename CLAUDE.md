@@ -88,7 +88,8 @@ dev server.
   carries it
 - `src/lib/compile.ts` - `compile_guard` and `compile_parse`, which compile a
   schema to a function of straight-line code that gives what `is` and
-  `parse` give, separate so the core never carries it
+  `parse` give, and `to_guard_source`, which writes the guard as the text of
+  a module, separate so the core never carries it
 - `src/lib/introspect.ts` - `unwrap_schema`, `get_schema_meta`,
   `find_schema_meta`, `get_schema_entries`, `get_schema_fields`,
   `format_schema_type`, reading a schema as data, separate so the core never
@@ -189,6 +190,9 @@ dev server.
   shape for each: the kinds a cycle is seen through, what could take an array
   and what an object, what tells options apart, and that what an error says
   to write compiles
+- `src/test/compile.emit.test.ts` - `to_guard_source`: a written module
+  imported and run against `is` and `compile_guard`, names and patterns that
+  stay data, and what has no text and is refused
 - `src/test/compile.bounds.test.ts` - the bound of compiled code, counted: a
   slice of an enumeration of small recursive schemas, each refused or within
   the size of the input times its depth, and a call that runs out of stack
@@ -601,6 +605,16 @@ Things that are easy to break without a test noticing:
   through one of those, and gets a row in the hostile cases of
   `compile.source.test.ts`. No table of the emitter is a plain object keyed by
   schema data, an entry's name among it: a `Map`.
+- **In a written module a captured value is text or it is refused.**
+  `to_guard_source` shares the emitter, and writes what the emitter captures:
+  a `regex`'s pattern by its source and flags through `quote`, the
+  emitter's own `Set` by its literals, and a `uuid`, an `iso_datetime`, and a
+  `to_integer` as an import from the library, never as a copy of a grammar.
+  A new thing the emitter captures gets a text there or the refusal, and a
+  hostile case in `compile.emit.test.ts`. What only a module needs stays in
+  `to_guard_source`, which a bundle with `compile_guard` alone drops, but the
+  text of that `Set` and the call that hands a captured value over, which
+  are the emitter's and run only for a module.
 - **The state of a compiled call is saved at entry and put back at exit**, a
   throw included, where a schema has any: the verdicts a `memo_union` keeps
   and the context of a subtree run in place. A new variable a call writes to beside

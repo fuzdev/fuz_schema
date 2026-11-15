@@ -1,6 +1,8 @@
 /**
  * Compiles a schema to a function of straight-line code: `compile_guard` to
- * what `is` answers, and `compile_parse` to what `parse` returns.
+ * what `is` answers, and `compile_parse` to what `parse` returns. And
+ * `to_guard_source` writes the guard as the text of a module, for a build to
+ * write to a file.
  *
  * The compiler reads a schema's `kind` and `def`, emits JavaScript source, and
  * makes a function of it with `new Function`. The interpreter is the oracle:
@@ -84,7 +86,8 @@
  *   schema's `run`.
  * - **The depth of input at which the stack runs out.** Compiled code can
  *   answer an input so deep that the interpreter throws a `RangeError`, and
- *   never the reverse.
+ *   never the reverse, but a guard `to_guard_source` writes, which has no
+ *   interpreter to ask, can throw where the interpreter answers.
  *
  * It is a module of its own, so a bundle that compiles no schema carries none
  * of it.
@@ -255,7 +258,22 @@ interface CompiledSource {
 	body: string;
 	/** What the body reads as `c[i]`: every value that is not written as text. */
 	captures: Array<unknown>;
+	/** The state of a call and the functions beside the root's, and the body of the root's. */
+	rest: string;
+	main: string;
 }
+
+// Writes a captured value as text for a module, each in the order it is
+// captured, given its kind where it is a schema, the text the emitter has for
+// it where it has one, and the kind and the path of the schema being emitted.
+// It throws where the value has no text
+type WriteCaptured = (
+	value: any,
+	kind: string,
+	text: string | undefined,
+	at: string,
+	path: string
+) => void;
 
 // Emits the body of a factory for `root`: a guard, or with `output` a parse.
 //
@@ -266,9 +284,15 @@ interface CompiledSource {
 // a default, a schema run in place. The names written out here (`v`, `p`,
 // `k`, `c`, `ctx`, `keep`, `kept`, `r`, `X`, and the factory's
 // parameters) are of neither form. A string of the schema's goes through
-// `quote`, and a number or a bigint is printed once `typeof` says it is one
-const to_source = (root: AnySchema, output: boolean): CompiledSource => {
+// `quote`, and a number or a bigint is printed once `typeof` says it is one.
+//
+// With `write`, the text is for a module, which `to_guard_source` puts
+// together: a captured value is written as text too, by `write`, and there
+// is no interpreter behind the code, so no catch and no subtree run in place
+const to_source = (root: AnySchema, output: boolean, write?: WriteCaptured): CompiledSource => {
 	const captures: Map<unknown, number> = new Map();
+	// the schema being emitted, which a refusal to write names
+	let emitting = root;
 	// the functions emitted beside the root's, and the state of one call: a
 	// variable declared beside them, with what it is at the start of a call
 	const fns: Array<string> = [];
@@ -289,9 +313,24 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 
 	const fresh = (): string => `_${ids++}`;
 
-	const capture = (value: unknown): string => {
+	// A captured value, by the name the code reads it under. `text` makes what
+	// the emitter would write it as in a module, where it made the value: it
+	// is called only for a module, and before the value is numbered, so a
+	// value it captures is numbered and written first, as the module declares
+	// them in the order they are written
+	const capture = (value: unknown, text?: () => string): string => {
 		let i = captures.get(value);
-		if (i === undefined) captures.set(value, (i = captures.size));
+		if (i === undefined) {
+			const written = write && text?.();
+			captures.set(value, (i = captures.size));
+			write?.(
+				value,
+				is_schema(value) ? kind_of(value) : '',
+				written,
+				emitting.kind,
+				paths.get(emitting)!
+			);
+		}
 		return `c${i}`;
 	};
 
@@ -602,7 +641,8 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 	// in a parse inside a union's options. Any other schema runs its subtrees
 	// in the one context of the module
 	const shares_context = memos.size > 0 || all.some((x) => kind_of(x) === '');
-	if (shares_context) state.push(['ctx', 'undefined']);
+	// a written module runs no subtree in place: an action of the library probes alone
+	if (shares_context && !write) state.push(['ctx', 'undefined']);
 	const context = shares_context
 		? `(ctx ??= { issues: undefined, fails: 0, probe: ${!output} })`
 		: 'P';
@@ -736,6 +776,7 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 		const kind = kind_of(schema);
 		const def: any = schema.def;
 		if (is_called(schema)) return call_of(schema, v, key, false);
+		emitting = schema;
 		// present, where a missing key is what `undefined` could be
 		const present = key ? `${key.key} in ${key.object}` : 'true';
 		switch (kind) {
@@ -756,7 +797,9 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 				const values = [...new Set(def as Array<unknown>)].filter((x) => x !== undefined);
 				const tests =
 					values.length > ONE_OF_INLINE_MAX
-						? [`${capture(new Set(values))}.has(${v})`]
+						? [
+								`${capture(new Set(values), () => `new Set([${values.map(literal).join(', ')}])`)}.has(${v})`
+							]
 						: values.map((x) => equals(v, x));
 				if (def.includes(undefined)) tests.push(all_of([`${v} === undefined`, present]));
 				return any_of(tests);
@@ -974,6 +1017,7 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 		bail: string
 	): [code: string, out: string] => {
 		const o = fresh();
+		emitting = schema;
 		return [
 			`const ${o} = handoff(${capture(schema)}, ${v}, ${context}${key_args(key, true)});\nif (${o} === FAIL) ${bail}\n`,
 			o
@@ -1016,6 +1060,7 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 			case 'with_default':
 			case 'with_default_fn': {
 				const [code, out] = emit_out(def.schema, v, null, bail);
+				emitting = schema;
 				// the value as it is, the same on every parse, or what `make` gives this one
 				const filled = kind === 'with_default' ? literal(def.value) : `${capture(def.make)}()`;
 				return [
@@ -1103,6 +1148,7 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 				steps.forEach((step, i) => {
 					const t = fresh();
 					const of_step = kind_of(step);
+					emitting = step;
 					if (of_step === 'to_lower_case') code += `const ${t} = ${current}.toLowerCase();\n`;
 					else if (of_step === 'transform') {
 						code += `const ${t} = ${capture(step.def)}(${current});\n`;
@@ -1212,8 +1258,10 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 	// The state of a call is this call's own: what it was is kept as the root
 	// is entered and put back as it is left, a throw included, so a call made
 	// from a `check` this one is running leaves this one's state as it was.
-	// Emitted only for a schema that has such state
-	if (deep) {
+	// Emitted only for a schema that has such state. A written module has no
+	// interpreter to ask, and no catch
+	const catches = deep && !write;
+	if (catches || state.length) {
 		const saved = state.map(() => fresh());
 		const error = fresh();
 		main =
@@ -1221,19 +1269,26 @@ const to_source = (root: AnySchema, output: boolean): CompiledSource => {
 				? `const ${state.map(([name], i) => `${saved[i]} = ${name}`).join(', ')};\n`
 				: '') +
 			state.map(([name, initial]) => `${name} = ${initial};\n`).join('') +
-			`try {\n${main}} catch (${error}) {\nif (!(${error} instanceof RangeError)) throw ${error};\n}` +
+			`try {\n${main}}` +
+			(catches
+				? ` catch (${error}) {\nif (!(${error} instanceof RangeError)) throw ${error};\n}`
+				: '') +
 			(state.length
 				? ` finally {\n${state.map(([name], i) => `${name} = ${saved[i]};\n`).join('')}}`
 				: '') +
-			`\nreturn fallback(v);\n`;
+			(catches ? `\nreturn fallback(v);\n` : '\n');
 	}
+	const rest =
+		state.map(([name, initial]) => `let ${name} = ${initial};\n`).join('') +
+		fns.map((fn) => fn + '\n').join('');
 	return {
 		body:
 			[...captures.values()].map((i) => `const c${i} = c[${i}];\n`).join('') +
-			state.map(([name, initial]) => `let ${name} = ${initial};\n`).join('') +
-			fns.map((fn) => fn + '\n').join('') +
+			rest +
 			`return function (v) {\n${main}};\n`,
-		captures: [...captures.keys()]
+		captures: [...captures.keys()],
+		rest,
+		main
 	};
 };
 
@@ -1325,4 +1380,107 @@ export const compile_parse = <T extends Schema>(
 ): ((value: unknown) => SchemaResult<Infer<T>>) => {
 	const fallback = (value: unknown): SchemaResult<Infer<T>> => parse(schema, value);
 	return to_function(to_source(schema, true), fallback) ?? fallback;
+};
+
+/**
+ * Writes `schema` as the text of an ES module that exports a guard under
+ * `name`: a function that gives `is(schema, value)`, for a build to write to
+ * a file, so the guard ships with no `new Function` and, where the schema
+ * holds no format action, without the library.
+ *
+ * The text is the code `compile_guard` makes, with what that captures written
+ * out. A `regex` is written as its pattern and flags. A `uuid`, an
+ * `iso_datetime`, and a `to_integer` are imported from `library` and run as
+ * the library's, by their `kind` and `def`, so the text holds no copy of a
+ * grammar. A `memo_union` keeps its verdicts for the length of a call. What
+ * `compile_guard` refuses is refused, and so is what has no text: a `check`,
+ * a `transform`, a `with_default_fn`, a schema of a kind defined outside the
+ * library, and a subtree `compile_guard` hands to the interpreter.
+ *
+ * The text is JavaScript, and starts with `// @ts-nocheck` and an
+ * `eslint-disable` comment, so that it can be written to a TypeScript file as
+ * it is. The guard it exports takes any value and returns a boolean: a type
+ * predicate is the importer's to add, of the schema's input type, as `is`
+ * narrows to.
+ *
+ * It differs from `compile_guard` where the interpreter is behind that: a
+ * written guard that runs out of stack throws the `RangeError`, and for a
+ * recursive schema whose object has many entries it can run out at a depth
+ * `is` answers.
+ *
+ * @param schema - read by its `kind` and `def`, and never written to
+ * @param name - what the module exports the guard as: an identifier but `then`, and `default` for the default export
+ * @param library - the specifier the module imports the format actions from, a string
+ * @returns the text of the module
+ * @throws Error where `name` is no identifier or is `then`, where `library` is no string, naming the kind and the path of a schema that can't be written, and all that `compile_guard` throws
+ * @example
+ * ```ts
+ * const User = s.object({name: s.string, tags: s.array(s.string)});
+ * to_guard_source(User, 'is_user'); // '// @ts-nocheck\n…\nfunction _(v) {…}\nexport { _ as is_user };\n'
+ * ```
+ */
+// @__NO_SIDE_EFFECTS__
+export const to_guard_source = (
+	schema: Schema,
+	name: string,
+	library: string = '@fuzdev/fuz_schema/schema.js'
+): string => {
+	if (typeof name !== 'string' || !/^[A-Za-z_$][\w$]*$/.test(name)) {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+		throw Error(`cannot write a guard named ${quote(String(name))}: not an identifier`);
+	}
+	if (name === 'then') {
+		throw Error(
+			'cannot write a guard named "then": the module would be a thenable, which a dynamic import never settles'
+		);
+	}
+	if (typeof library !== 'string') {
+		throw Error(`cannot import the format actions from ${quote(String(library))}: not a string`);
+	}
+	const imports: Set<string> = new Set();
+	// what each captured value is written as, in the order the code names them
+	const texts: Array<string> = [];
+	const { rest, main } = to_source(schema, false, (value, kind, text, at, path) => {
+		let written = text;
+		// an action of the library is the library's, by its kind and `def`
+		if (/^(uuid|iso_datetime|to_integer)$/.test(kind)) {
+			imports.add(kind);
+			written =
+				kind === 'to_integer'
+					? `to_integer({ unsigned: ${!!value.def.unsigned}, trim: ${!!value.def.trim} })`
+					: kind;
+		} else if (
+			at === 'regex' &&
+			value instanceof RegExp &&
+			Object.getPrototypeOf(value) === RegExp.prototype &&
+			Reflect.ownKeys(value).length < 2
+		) {
+			// a `regex`'s pattern and no more: one with a prototype or a property
+			// of its own can test as its pattern alone doesn't. It is read through
+			// its own `source` and `flags`, so a `Proxy` is written as it says
+			written = `new RegExp(${quote(value.source)}, ${quote(value.flags)})`;
+		}
+		if (written === undefined) {
+			throw Error(
+				`cannot write \`${at}\` at ${path}: it is run by a function, or holds a value, that can't be written as source`
+			);
+		}
+		texts.push(written);
+	});
+	return (
+		'// @ts-nocheck\n/* eslint-disable */\n' +
+		(imports.size ? `import { ${[...imports].join(', ')} } from ${quote(library)};\n` : '') +
+		((rest + main).includes('FAIL') ? 'const FAIL = {};\n' : '') +
+		// the action's `run`, called as `handoff` calls it: one probing context,
+		// and the value of a failure
+		(imports.size
+			? 'const P = { issues: undefined, fails: 0, probe: true };\n' +
+				'const handoff = (schema, value) => {\nconst fails = P.fails;\nconst output = schema.run(value, P);\n' +
+				'if (P.fails === fails) return output;\nP.fails = fails;\nreturn FAIL;\n};\n'
+			: '') +
+		texts.map((text, i) => `const c${i} = ${text};\n`).join('') +
+		rest +
+		// `_` alone is no name the emitter makes, and `name` is only what it is exported as
+		`function _(v) {\n${main}}\nexport { _ as ${name} };\n`
+	);
 };

@@ -254,7 +254,30 @@ the interpreter's has one (`find_compile_difference` in
   always compiles, is held to the same, and on the input that reuses nodes
   grows no faster than the interpreter's. And a call that runs out of stack:
   compiled code against the interpreter at growing depths, and a
-  `RangeError` thrown by a `check`, which holds the catch.
+  `RangeError` thrown by a `check`, which holds the catch. Each form of the
+  slice is given to `to_guard_source` too, which refuses what the compiler
+  refuses, in the same words.
+- **`src/test/compile.emit.test.ts`** holds `to_guard_source`. A written text
+  is imported as a `data:` module, which writes nothing to a disk, and run:
+  held to `is` and to the guard `compile_guard` makes, over the hand table
+  for every schema that can be written, a schema of every kind that can, and
+  schemas generated from fixed seeds of those kinds alone. What a module is:
+  its first line, its one export, what it imports and from where, and that
+  it holds nothing of the interpreter. Names that are no identifier, and
+  `then`, each refused, and names the module uses or the language reserves,
+  each exported and working. Patterns with a `/`, a quote, a line separator,
+  and each flag but `g` and `y`, each written and matching as the regex does,
+  and with either of those two a `lastIndex` of the module's own. A `Proxy`
+  of a regex written as it says, as strings whatever it says, and a regex
+  that is no `regex`'s pattern refused. A value the text of a long `one_of`
+  captures, written before the `Set` that holds it. Every refusal's text,
+  with the kind and the path, and a `library` that is no string refused. A
+  format action handed the value and a probing context, by a stand-in for
+  the library. A TypeScript program that holds the text, where the cast to a
+  type predicate compiles. A `memo_union` on an
+  input that holds each level twice, by the traps sprung on a `Proxy`, and a
+  call a getter of the input makes while one runs. And a `RangeError`, which
+  a written guard throws.
 
 ## Mutants
 

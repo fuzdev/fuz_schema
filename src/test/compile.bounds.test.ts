@@ -1,7 +1,7 @@
 import { describe, test, assert } from 'vitest';
 
 import * as s from '#lib/schema.ts';
-import { compile_guard, compile_parse } from '#lib/compile.ts';
+import { compile_guard, compile_parse, to_guard_source } from '#lib/compile.ts';
 import * as scenario_schemas from '../benchmarks/libs/schemas/fuz_schema.ts';
 
 // The bound of compiled code, by counted work and never by time: a slice of
@@ -271,6 +271,10 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 		const broken: Array<string> = [];
 		let refused = 0;
 		let compiled = 0;
+		let written = 0;
+		// whether no option holds a function
+		const union_would_write = (options: Array<BoundsOption>): boolean =>
+			options.every((o) => !o.id.includes('check'));
 		for (const [options, lazies] of configs) {
 			const name = `${options.map((o) => o.id).join(' + ')}, through ${lazies}`;
 			const of_memo = build_bounds(options, s.memo_union as Union, lazies);
@@ -278,6 +282,15 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 			// a `memo_union` is never refused
 			const memo_guard = compile_guard(of_memo);
 			const memo_parse = compile_parse(of_memo);
+			// and written, but where an option holds a function, which has no text
+			try {
+				to_guard_source(of_memo, 'guard');
+				if (union_would_write(options)) written++;
+			} catch (error) {
+				// the check, or the `memo_union` a guard runs in place under the pipe that holds it
+				assert.match((error as Error).message, /^cannot write `(check|union)` at /, name);
+				assert.isFalse(union_would_write(options), name);
+			}
 			let union_guard: ((value: unknown) => unknown) | undefined;
 			let union_parse: ((value: unknown) => unknown) | undefined;
 			try {
@@ -287,6 +300,8 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 			} catch (error) {
 				assert.match((error as Error).message, REFUSAL, name);
 				assert.throws(() => compile_parse(of_union), REFUSAL, name);
+				// a written guard is refused the same, in the same words
+				assert.throws(() => to_guard_source(of_union, 'guard'), (error as Error).message, name);
 				refused++;
 			}
 			for (const sizes of bounds_families(options)) {
@@ -319,6 +334,7 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 		// both happen: a union that is refused, and one that compiles
 		assert.isAbove(refused, configs.length / 8);
 		assert.isAbove(compiled, configs.length / 8);
+		assert.isAbove(written, configs.length / 2);
 	}, 60_000);
 
 	test('what the test would see: the interpreter’s union on a refused schema grows faster', () => {
