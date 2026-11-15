@@ -396,10 +396,17 @@ and so has the survey.
   in order, so a row's library code has seen the scenarios before it and no
   others: a parse among many schemas can allocate more than the same parse
   alone, see below, and a row measured with `--scenario` can read less than
-  in a full run. `grade` and `benchmark:harvest` are the other
-  way round: they refuse them, and give them to the processes that measure
-  their bytes, and such a process that fails is started once more, announced
-  on stderr, which a timing never is.
+  in a full run. A process of `benchmark:allocations` that fails is started
+  once more, announced on stderr with why it failed: Zod's invalid
+  `strict_nested` parse can read at several levels in one process, from about
+  3.1 to 4.2 kilobytes a call, with no collection in its samples and no
+  deoptimization after its warming, so its medians never settle, where most
+  processes settle at one of them. The creation a process times is started
+  again with it, for its bytes and never for its time. `grade` and
+  `benchmark:harvest` are the other way round: they refuse the flags, and
+  give them to the processes that measure their bytes, and such a process
+  that fails is started once more, announced on stderr, which a timing never
+  is.
 - **Cold start**: one fresh Node process per sample, in stages that build on
   each other, against a bare process: the import, the schema built, the first
   parse, and the tenth parse and the hundredth, each of a copy of the input

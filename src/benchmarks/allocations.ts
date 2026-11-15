@@ -164,16 +164,31 @@ if (args.child) {
 	const measure_part = async (
 		lib: LibName,
 		part: 'parse' | 'create'
-	): Promise<Array<AllocationRow>> =>
-		(await start_child(script, {
-			flags: [
-				...ALLOCATION_NODE_FLAGS.split(' '),
-				...(part === 'create' ? [NO_COMPILATION_CACHE_FLAG] : [])
-			],
-			args: ['--child', part, '--lib', lib, ...scenario_args],
-			env: to_child_env(process.env),
-			label: `allocations, ${lib}, ${part}`
+	): Promise<Array<AllocationRow>> => {
+		const start = (): Promise<unknown> =>
+			start_child(script, {
+				flags: [
+					...ALLOCATION_NODE_FLAGS.split(' '),
+					...(part === 'create' ? [NO_COMPILATION_CACHE_FLAG] : [])
+				],
+				args: ['--child', part, '--lib', lib, ...scenario_args],
+				env: to_child_env(process.env),
+				label: `allocations, ${lib}, ${part}`
+			});
+		// A process now and then has bytes that never settle, as Zod's invalid
+		// `strict_nested` parse can read at several levels in one process, or a
+		// collection in too many samples, so it gets one more process, as a process
+		// of bytes does in `grade` and the timings. The creation it times is
+		// started again with it, for its bytes and never for its time
+		return (await start().catch((error: unknown) => {
+			const lines = (error as Error).message.split('\n');
+			const reason = lines.find((line) => line.startsWith('Error: '));
+			console.error(
+				`${lines[0]}${reason ? ` (${reason.slice('Error: '.length)})` : ''}: once more`
+			);
+			return start();
 		})) as Array<AllocationRow>;
+	};
 	// each process reads every figure, and only its part's are kept
 	for (const lib of libs) {
 		const parsed = await measure_part(lib, 'parse');

@@ -247,6 +247,8 @@ export const measure_bytes = (fn: () => unknown, settle_ms = SETTLE_MS): number 
 		for (const primer of SAMPLER_PRIMERS) measure_bytes(primer, SAMPLER_PRIMER_SETTLE_MS);
 	}
 	let bytes = measure_bytes_median(fn, 1);
+	// every median, for the error of bytes that never settle
+	const medians = [bytes];
 	for (let tries = 0; tries < SETTLE_TRIES; tries++) {
 		const until = performance.now() + settle_ms;
 		do fn();
@@ -255,9 +257,13 @@ export const measure_bytes = (fn: () => unknown, settle_ms = SETTLE_MS): number 
 		const next = measure_bytes_median(fn, calls);
 		const settled = Math.abs(next - bytes) <= bytes * SETTLED_WITHIN;
 		bytes = next;
+		medians.push(bytes);
 		if (settled) return bytes;
 	}
-	throw new Error(`the bytes did not settle within ${SETTLE_TRIES} tries`);
+	throw new Error(
+		`the bytes did not settle within ${SETTLE_TRIES} tries, its medians ` +
+			medians.map((m) => Math.round(m)).join(', ')
+	);
 };
 
 // what `measure_ms` writes each call's result to, so that no compiler drops the call
