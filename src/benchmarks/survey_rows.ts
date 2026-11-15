@@ -3,8 +3,9 @@
  * `timing_child.ts` is: a row for each input of each shape the library has.
  *
  * The library is imported by name, and no other, so the process holds one
- * library. A shape's rows share its schema, as a consumer's inputs do, and
- * each cycles through copies of its input (`inputs.ts`).
+ * library: for `fuz_schema_compiled` this library and its `compile.ts`. A
+ * shape's rows share its schema, as a consumer's inputs do, and each cycles
+ * through copies of its input (`inputs.ts`).
  *
  * @module
  */
@@ -18,6 +19,8 @@ import {
 	SURVEY_SHAPES,
 	to_survey_builder_name,
 	to_survey_row_name,
+	to_survey_skip,
+	type FuzCompiled,
 	type SurveyBuilderName,
 	type SurveyInput,
 	type SurveyLibName,
@@ -36,9 +39,18 @@ export interface SurveyRowsOf {
 	rows?: Array<string>;
 }
 
-/** Imports one library, as a shape's builder takes it. */
-export const load_survey_lib = (lib: SurveyLibName): Promise<unknown> =>
-	lib === 'fuz_schema' ? import('#lib/schema.ts') : import(to_survey_builder_name(lib));
+/**
+ * Imports one library, as a shape's builder takes it: the module, and for
+ * `fuz_schema_compiled` a `FuzCompiled`, this library with its `compile.ts`.
+ */
+export const load_survey_lib = async (lib: SurveyLibName): Promise<unknown> => {
+	if (lib === 'fuz_schema') return import('#lib/schema.ts');
+	if (lib === 'fuz_schema_compiled') {
+		const [s, compile] = await Promise.all([import('#lib/schema.ts'), import('#lib/compile.ts')]);
+		return { s, compile } satisfies FuzCompiled;
+	}
+	return import(to_survey_builder_name(lib));
+};
 
 const no_compile: ZodCompile = (schema) => schema;
 
@@ -70,6 +82,12 @@ export const create_survey_run = (
 	lib: SurveyLibName,
 	module: unknown
 ): SurveyRun | undefined => {
+	if (to_survey_skip(shape, lib) !== undefined) return undefined;
+	if (lib === 'fuz_schema') return shape.fuz_schema(module as FuzCompiled['s'], undefined);
+	if (lib === 'fuz_schema_compiled') {
+		const { s, compile } = module as FuzCompiled;
+		return shape.fuz_schema(s, compile);
+	}
 	// each builder is typed to its own library, which the name picks
 	const create = shape[to_survey_builder_name(lib)] as
 		((module: unknown, compile: ZodCompile) => SurveyRun) | undefined;
@@ -83,7 +101,7 @@ export const is_survey_row_of = (
 	lib: SurveyLibName
 ): boolean => {
 	const builder = to_survey_builder_name(lib);
-	return !!shape[builder] && !input.differs?.[builder];
+	return !!shape[builder] && to_survey_skip(shape, lib) === undefined && !input.differs?.[builder];
 };
 
 // a verdict, where a throw is a miss: `parse_or_throw` and its like
@@ -116,10 +134,14 @@ export const find_survey_disagreements = (
 		const runs = SURVEY_LIBS.map((lib) => create_survey_run(shape, lib, modules[lib]));
 		for (const [i, lib] of SURVEY_LIBS.entries()) {
 			const run = runs[i];
-			if (!run === !shape.skips?.[to_survey_builder_name(lib)]) {
+			// A library with a builder of its own has it or a reason it has none, and
+			// never both. This library compiled shares a builder, and a reason leaves it out.
+			const builder = shape[to_survey_builder_name(lib)];
+			const skipped = to_survey_skip(shape, lib) !== undefined;
+			if (lib !== 'fuz_schema_compiled' && !builder === !skipped) {
 				wrong.push(
 					`${shape.name}: ${lib} ` +
-						(run ? 'has a builder and a reason it has none' : 'has no builder and no reason')
+						(builder ? 'has a builder and a reason it has none' : 'has no builder and no reason')
 				);
 			}
 			if (!run) continue;

@@ -13,7 +13,7 @@
 		rows: ReadonlyArray<SurveySummaryRow>;
 		/** The library every row is of. */
 		subject: MatrixColumn;
-		/** The libraries it is compared with, in column order. */
+		/** The columns it is compared with, in column order: the other libraries, and itself in another mode. */
 		others: ReadonlyArray<MatrixColumn>;
 	} = $props();
 </script>
@@ -21,11 +21,11 @@
 <div class="benchmarks-table-scroll">
 	<table>
 		<caption>
-			The time of <BenchmarksLabel column={subject} /> over each other library's, as a geometric
-			mean over the rows of one kind of work: under <code>1.00×</code> it is the faster of the two,
-			and over it the other is. A mean marked <code>≈</code> has <code>1.00×</code> inside what its
-			rows' spreads let it range over, printed under it, and names neither. Beside each mean is how
-			many of the rows the other library is ahead on, by more than the two spreads together.
+			The time of <BenchmarksLabel column={subject} /> over that of each other column, as a
+			geometric mean over the rows of one kind of work: under <code>1.00×</code> it is the faster of
+			the two, and over it the other is. A mean marked <code>≈</code> has <code>1.00×</code> inside
+			what its rows' spreads let it range over, printed under it, and names neither. Beside each
+			mean is how many of the rows the other is ahead on, by more than the two spreads together.
 		</caption>
 		<thead>
 			<tr>

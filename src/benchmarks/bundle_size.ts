@@ -36,7 +36,12 @@ export interface BuildScenarioBundleOptions {
 	 * itself imports).
 	 */
 	call?: boolean;
-	/** A file to resolve `#lib/schema.ts` to, for building against another version of it. */
+	/**
+	 * A file to resolve `#lib/schema.ts` to, for building against another version
+	 * of it. A module of the library beside `schema.ts`, as `compile.ts` is,
+	 * imports the working tree's by a relative path, so only a library module
+	 * that imports `schema.ts` alone is built against another version.
+	 */
 	schema_path?: string;
 	/**
 	 * A file to use as the library's scenario module. Another version of the

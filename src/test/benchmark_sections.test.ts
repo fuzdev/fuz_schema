@@ -1,10 +1,12 @@
 import { assert, describe, test } from 'vitest';
 
 import {
+	find_column_mode_of,
 	matrix_row_entry,
 	matrix_row_is_at_floor,
 	matrix_row_is_complete,
 	matrix_row_value,
+	to_maintained_columns,
 	to_matrix_ratios,
 	type MatrixGroup
 } from '#routes/docs/benchmarks/benchmark_matrix.ts';
@@ -14,6 +16,7 @@ import {
 	HEAP_FURTHER_TOLERANCE_BYTES,
 	HEAP_TOTAL_TOLERANCE_BYTES,
 	INTERNED_MARK,
+	LIB_COLORS,
 	SURVEY_ALL,
 	to_allocation_groups,
 	to_coldstart_groups,
@@ -56,8 +59,46 @@ describe('columns', () => {
 		assert.strictEqual(new Set(columns.map((column) => column.color)).size, columns.length);
 		assert.deepStrictEqual(
 			columns.filter((column) => column.by_maintainer).map((column) => column.id),
+			['fuz_schema', 'fuz_schema_compiled']
+		);
+		// and a color is left for a side of a harvested set that is no library of the roster
+		assert.isAbove(new Set(LIB_COLORS).size, columns.length);
+	});
+
+	test("the maintainer's columns are one library, and that library in another mode", () => {
+		const columns = to_lib_columns(load_fixture().meta.libs);
+		const { libs, modes } = to_maintained_columns(columns);
+		assert.deepStrictEqual(
+			libs.map((column) => column.id),
 			['fuz_schema']
 		);
+		assert.deepStrictEqual(
+			modes.map(({ column, of }) => [column.id, of.id]),
+			[['fuz_schema_compiled', 'fuz_schema']]
+		);
+		// a mode is named for its library, whose label its own begins with
+		for (const { column, of } of modes) assert.ok(column.label.startsWith(`${of.label} `));
+		// a roster with no such mode, as a file written before the mode was entered has, names none
+		const without = columns.filter((column) => column.id !== 'fuz_schema_compiled');
+		assert.deepStrictEqual(to_maintained_columns(without).modes, []);
+		assert.deepStrictEqual(
+			to_maintained_columns(without).libs.map((column) => column.id),
+			['fuz_schema']
+		);
+	});
+
+	test('a column is a mode of the column its id begins with, and a library is of none', () => {
+		const columns = to_lib_columns(load_fixture().meta.libs);
+		const of = (id: string): string | undefined => find_column_mode_of({ id }, columns)?.id;
+		assert.strictEqual(of('fuz_schema_compiled'), 'fuz_schema');
+		assert.strictEqual(of('zod_compiled'), 'zod');
+		// by the id alone, which is why the page asks it only of the maintainer's columns and
+		// of a harvested set's sides
+		assert.strictEqual(of('zod_mini'), 'zod');
+		assert.strictEqual(of('zod_jitless'), 'zod');
+		for (const id of ['fuz_schema', 'valibot', 'zod', 'typebox', 'arktype']) {
+			assert.strictEqual(of(id), undefined, id);
+		}
 	});
 });
 
@@ -106,6 +147,42 @@ describe('to_time_groups', () => {
 		assert.strictEqual(entry.text, 'not compiled');
 		assert.include(entry.why, 'z.compile');
 		assert.strictEqual(matrix_row_value(row, 'zod_compiled'), null);
+	});
+
+	test('this library compiled has a figure of every row, the recursive scenario among them', () => {
+		const rows = groups.flatMap((group) => group.rows).filter((row) => row.kind === 'cell');
+		assert.isAbove(rows.length, 0);
+		for (const row of rows) {
+			assert.strictEqual(matrix_row_entry(row, 'fuz_schema_compiled').kind, 'value', row.key);
+		}
+		assert.isNumber(
+			matrix_row_value(find_row(groups, 'time:valid:type_json'), 'fuz_schema_compiled')
+		);
+	});
+
+	test('this library compiled is ahead of the interpreter on valid input and as a guard, and level with it on invalid', () => {
+		// read against the interpreter, as a reader who hovers its column does
+		const of = (key: string) =>
+			to_matrix_ratios(find_row(groups, key), LIBS, 'fuz_schema').fuz_schema_compiled!;
+		for (const input of ['valid', 'guard']) {
+			const mean = of(`time:${input}`);
+			assert.strictEqual(mean.level, null, input);
+			assert.isBelow(mean.ratio, 1, input);
+		}
+		// the mean, and every scenario past the call floor: the gap is inside the two spreads
+		const invalid = of('time:invalid');
+		assert.strictEqual(invalid.level, 'spread');
+		assert.isAbove(invalid.ratio, 1);
+		const floor = to_run_call_floor(to_measured(results, 'run'));
+		const invalid_rows = groups
+			.find((group) => group.key === 'time:invalid')!
+			.rows.filter(
+				(row) =>
+					row.kind === 'cell' &&
+					!['fuz_schema', 'fuz_schema_compiled'].some((lib) => matrix_row_value(row, lib)! <= floor)
+			);
+		assert.isAbove(invalid_rows.length, 0);
+		for (const row of invalid_rows) assert.strictEqual(of(row.key).level, 'spread', row.key);
 	});
 
 	// the rows of an input the mean covers: every library has a figure, and none at the call floor
@@ -626,8 +703,35 @@ describe('the survey', () => {
 		assert.strictEqual(missing.text, 'other verdict');
 		assert.deepStrictEqual(
 			to_survey_columns(fresh).map((column) => column.id),
-			['fuz_schema', 'valibot', 'zod', 'zod_compiled']
+			['fuz_schema', 'fuz_schema_compiled', 'valibot', 'zod', 'zod_compiled']
 		);
+	});
+
+	test('this library compiled is a column of the survey, left out of a shape that throws', () => {
+		// compared with as every other column is: this library's time over its own
+		const all = summary.at(-1)!;
+		const compiled = all.others.fuz_schema_compiled!;
+		assert.strictEqual(compiled.compared, data.rows.length - 1);
+		const missing = matrix_row_entry(
+			find_row(to_survey_groups(load_fixture()), 'survey:throw_string/valid'),
+			'fuz_schema_compiled'
+		);
+		assert.ok(missing.kind === 'none');
+		assert.strictEqual(missing.text, 'no equivalent');
+		assert.include(missing.why, 'no form that throws');
+		// it has a figure where `z.compile` hands the root back, and of a shape only this library has
+		for (const key of ['survey:lazy_tree/valid', 'survey:memo_union/valid']) {
+			const row = find_row(to_survey_groups(load_fixture()), key);
+			assert.strictEqual(matrix_row_entry(row, 'fuz_schema_compiled').kind, 'value', key);
+		}
+		// ahead of the interpreter on the rows that match, and level on those that fail
+		const array = summary.find((row) => row.does === 'array')!.others.fuz_schema_compiled!;
+		assert.isAbove(array.ratio!, 1);
+		assert.strictEqual(array.ahead, 1);
+		const failing = summary.find((row) => row.does === 'issue at the root')!.others
+			.fuz_schema_compiled!;
+		assert.ok(failing.level);
+		assert.strictEqual(failing.ahead, 0);
 	});
 });
 
@@ -750,5 +854,50 @@ describe('provenance', () => {
 		const run = commands.find((command) => command.id === 'run')!;
 		assert.strictEqual(run.command, 'npm run benchmark -- --passes 9');
 		assert.strictEqual(run.runs, results.run.command);
+	});
+});
+
+// The fixture's compiled mode runs the way the mode does where no claim reads it: it
+// ships the compiler, compiles as its schema is built, and holds the function made.
+describe('this library compiled in the fixture', () => {
+	const fixture = load_fixture();
+	const of = <T>(libs: Record<string, T | undefined>): [T, T] => [
+		libs.fuz_schema!,
+		libs.fuz_schema_compiled!
+	];
+	test('ships more than the interpreter, on every scenario', () => {
+		for (const row of to_measured(fixture, 'bundle').rows) {
+			const [ours, compiled] = of(row.libs);
+			assert.isAbove(compiled.gzip, ours.gzip, row.scenario);
+		}
+	});
+	test('starts slower than the interpreter, at each stage to the first parse', () => {
+		for (const row of to_measured(fixture, 'coldstart').rows) {
+			const [ours, compiled] = of(row.libs);
+			for (const stage of ['import', 'create', 'first_parse'] as const) {
+				assert.isAbove(
+					compiled.stages[stage].work_ms,
+					ours.stages[stage].work_ms,
+					`${row.scenario} ${row.form} ${stage}`
+				);
+			}
+		}
+	});
+	test('holds and allocates more as its schema is built than the interpreter', () => {
+		for (const row of to_measured(fixture, 'heap').rows) {
+			const [ours, compiled] = of(row.libs);
+			assert.isAbove(compiled.total_bytes, ours.total_bytes, row.scenario);
+		}
+		for (const row of to_measured(fixture, 'allocations').rows) {
+			const [ours, compiled] = of(row.libs);
+			assert.isAbove(compiled.create_bytes, ours.create_bytes, row.scenario);
+		}
+	});
+	test('costs the checker more than the interpreter', () => {
+		const data = to_measured(fixture, 'types');
+		assert.isAbove(
+			data.modules.fuz_schema_compiled!.instantiations,
+			data.modules.fuz_schema!.instantiations
+		);
 	});
 });

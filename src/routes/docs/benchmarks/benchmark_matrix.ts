@@ -77,6 +77,49 @@ export const to_column_notes = (
 		return texts.length ? [{ column, texts }] : [];
 	});
 
+/**
+ * The column another is a mode of: the one whose id it starts with, before an
+ * underscore, as `zod_compiled` is of `zod` and `fuz_schema_compiled` of
+ * `fuz_schema`. A library in another mode is a column of its own, and is not
+ * another library.
+ *
+ * It reads the id alone, so `zod_mini` is of `zod` by it too: it is asked only
+ * of the maintainer's columns, among themselves, and of a harvested set's
+ * sides, where an id that begins with another's is a mode of it.
+ *
+ * @returns the column it is a mode of, or null for a library as it is imported
+ */
+export const find_column_mode_of = (
+	column: Pick<MatrixColumn, 'id'>,
+	columns: ReadonlyArray<MatrixColumn>
+): MatrixColumn | null => columns.find((other) => column.id.startsWith(`${other.id}_`)) ?? null;
+
+/** A column that is a library in another mode, with the library's column. */
+export interface MatrixColumnMode {
+	column: MatrixColumn;
+	of: MatrixColumn;
+}
+
+/**
+ * The maintainer's columns, told apart: the libraries, and the columns that
+ * are one of those libraries in another mode. A page names the first as what
+ * it compares the rest of the roster with, and says of the second that each
+ * is no other library.
+ */
+export const to_maintained_columns = (
+	columns: ReadonlyArray<MatrixColumn>
+): { libs: Array<MatrixColumn>; modes: Array<MatrixColumnMode> } => {
+	const maintained = columns.filter((column) => column.by_maintainer);
+	const libs: Array<MatrixColumn> = [];
+	const modes: Array<MatrixColumnMode> = [];
+	for (const column of maintained) {
+		const of = find_column_mode_of(column, maintained);
+		if (of) modes.push({ column, of });
+		else libs.push(column);
+	}
+	return { libs, modes };
+};
+
 /** A number in a row, with what a reader may want to know about it. */
 export interface MatrixValue {
 	kind: 'value';

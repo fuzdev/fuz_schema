@@ -140,6 +140,10 @@ export const RESULTS_DATA_FLAG = '--data';
  * reader must know to set that figure beside another library's, said under
  * every chart and table of such a figure and under no other. Each is what
  * `docs/benchmarks.md` says under "Comparing like with like".
+ *
+ * A library in another mode is an entry of its own, labeled with the
+ * library's label first and marked as the library is: `fuz_schema_compiled` is
+ * this library, the maintainer's, and its note says it is no other.
  */
 export const RESULTS_LIB_INFO: Readonly<
 	Record<LibName, Pick<BenchmarkLib, 'label' | 'package' | 'by_maintainer' | 'note' | 'notes'>>
@@ -153,6 +157,34 @@ export const RESULTS_LIB_INFO: Readonly<
 			{
 				about: ['valid', 'allocation'],
 				text: 'A strict or identity parse of valid input returns the input itself, where Valibot and Zod return a copy.'
+			}
+		]
+	},
+	fuz_schema_compiled: {
+		label: 'fuz_schema compiled',
+		package: '@fuzdev/fuz_schema',
+		by_maintainer: true,
+		note: "This repository's source at the run's commit, with each schema through `compile_parse`, or `compile_guard` for a guard: fuz_schema in its compiled mode, and no other library.",
+		notes: [
+			{
+				about: ['valid', 'allocation'],
+				text: 'Each schema through `compile_parse`, whose compiled code builds what `parse` returns for a valid input: the input itself where nothing changed.'
+			},
+			{
+				about: ['invalid', 'allocation'],
+				text: "Compiled code builds no issue: an invalid input is handed to `parse`, so a figure is the interpreter's parse after the compiled code has run to its first failure."
+			},
+			{
+				about: ['guard'],
+				text: 'Each schema through `compile_guard`, which gives what `is` gives.'
+			},
+			{
+				about: ['bundle', 'coldstart', 'creation', 'heap'],
+				text: 'It carries the compiler of `compile.ts`, and compiles while the schema is built.'
+			},
+			{
+				about: ['types'],
+				text: "Its module calls `compile_parse` on each schema, and its reads are of what a compiled parse gives: the interpreter's types and what the compile's add."
 			}
 		]
 	},

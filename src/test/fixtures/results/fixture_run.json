@@ -69,10 +69,55 @@
 				]
 			},
 			{
+				"id": "fuz_schema_compiled",
+				"label": "fuz_schema compiled",
+				"package": "@fuzdev/fuz_schema",
+				"version": "0.0.1",
+				"by_maintainer": true,
+				"note": "This repository's source at the run's commit, with each schema through `compile_parse`, or `compile_guard` for a guard: fuz_schema in its compiled mode, and no other library.",
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"allocation"
+						],
+						"text": "Each schema through `compile_parse`, whose compiled code builds what `parse` returns for a valid input: the input itself where nothing changed."
+					},
+					{
+						"about": [
+							"invalid",
+							"allocation"
+						],
+						"text": "Compiled code builds no issue: an invalid input is handed to `parse`, so a figure is the interpreter's parse after the compiled code has run to its first failure."
+					},
+					{
+						"about": [
+							"guard"
+						],
+						"text": "Each schema through `compile_guard`, which gives what `is` gives."
+					},
+					{
+						"about": [
+							"bundle",
+							"coldstart",
+							"creation",
+							"heap"
+						],
+						"text": "It carries the compiler of `compile.ts`, and compiles while the schema is built."
+					},
+					{
+						"about": [
+							"types"
+						],
+						"text": "Its module calls `compile_parse` on each schema, and its reads are of what a compiled parse gives: the interpreter's types and what the compile's add."
+					}
+				]
+			},
+			{
 				"id": "valibot",
 				"label": "Valibot",
 				"package": "valibot",
-				"version": "0.0.1",
+				"version": "0.0.2",
 				"by_maintainer": false,
 				"note": null,
 				"notes": [
@@ -88,7 +133,7 @@
 				"id": "zod",
 				"label": "Zod",
 				"package": "zod",
-				"version": "0.0.2",
+				"version": "0.0.3",
 				"by_maintainer": false,
 				"note": null,
 				"notes": [
@@ -112,7 +157,7 @@
 				"id": "zod_compiled",
 				"label": "Zod compiled",
 				"package": "zod",
-				"version": "0.0.3",
+				"version": "0.0.4",
 				"by_maintainer": false,
 				"note": "Zod with each root through `z.compile`, its ahead-of-time mode.",
 				"notes": [
@@ -144,7 +189,7 @@
 				"id": "zod_mini",
 				"label": "Zod Mini",
 				"package": "zod",
-				"version": "0.0.4",
+				"version": "0.0.5",
 				"by_maintainer": false,
 				"note": "`zod/mini`.",
 				"notes": [
@@ -167,7 +212,7 @@
 				"id": "typebox",
 				"label": "TypeBox",
 				"package": "typebox",
-				"version": "0.0.5",
+				"version": "0.0.6",
 				"by_maintainer": false,
 				"note": "The `Check` of its compiled validator.",
 				"notes": [
@@ -186,7 +231,7 @@
 				"id": "arktype",
 				"label": "ArkType",
 				"package": "arktype",
-				"version": "0.0.6",
+				"version": "0.0.7",
 				"by_maintainer": false,
 				"note": null,
 				"notes": [
@@ -229,6 +274,11 @@
 							"gzip": 300,
 							"brotli": 270
 						},
+						"fuz_schema_compiled": {
+							"minified": 14300,
+							"gzip": 5500,
+							"brotli": 4950
+						},
 						"valibot": {
 							"minified": 1300,
 							"gzip": 500,
@@ -268,6 +318,11 @@
 							"minified": 2080,
 							"gzip": 800,
 							"brotli": 720
+						},
+						"fuz_schema_compiled": {
+							"minified": 15600,
+							"gzip": 6000,
+							"brotli": 5400
 						},
 						"valibot": {
 							"minified": 2600,
@@ -309,6 +364,11 @@
 							"gzip": 950,
 							"brotli": 855
 						},
+						"fuz_schema_compiled": {
+							"minified": 15990,
+							"gzip": 6150,
+							"brotli": 5535
+						},
 						"valibot": {
 							"minified": 2990,
 							"gzip": 1150,
@@ -348,6 +408,11 @@
 							"minified": 4420,
 							"gzip": 1700,
 							"brotli": 1530
+						},
+						"fuz_schema_compiled": {
+							"minified": 17940,
+							"gzip": 6900,
+							"brotli": 6210
 						},
 						"valibot": {
 							"minified": 4940,
@@ -389,6 +454,11 @@
 							"gzip": 2200,
 							"brotli": 1980
 						},
+						"fuz_schema_compiled": {
+							"minified": 19240,
+							"gzip": 7400,
+							"brotli": 6660
+						},
 						"valibot": {
 							"minified": 6240,
 							"gzip": 2400,
@@ -427,6 +497,11 @@
 					"minified": 7800,
 					"gzip": 3000,
 					"brotli": 2700
+				},
+				"fuz_schema_compiled": {
+					"minified": 21320,
+					"gzip": 8200,
+					"brotli": 7380
 				},
 				"valibot": {
 					"minified": 8320,
@@ -514,6 +589,12 @@
 					"memory_kb": 127000,
 					"check_s": 0.14
 				},
+				"fuz_schema_compiled": {
+					"instantiations": 15400,
+					"types": 5218,
+					"memory_kb": 127700,
+					"check_s": 0.15
+				},
 				"valibot": {
 					"instantiations": 26600,
 					"types": 8952,
@@ -562,6 +643,13 @@
 					"memory_kb": 126000,
 					"check_s": 0.12,
 					"reads_add": 700
+				},
+				"fuz_schema_compiled": {
+					"instantiations": 13200,
+					"types": 4485,
+					"memory_kb": 126600,
+					"check_s": 0.13,
+					"reads_add": 636
 				},
 				"valibot": {
 					"instantiations": 22800,
@@ -626,6 +714,13 @@
 							"create_ns": 45,
 							"interned": false
 						},
+						"fuz_schema_compiled": {
+							"valid_bytes": 2,
+							"invalid_bytes": 30,
+							"create_bytes": 450,
+							"create_ns": 67.5,
+							"interned": false
+						},
 						"valibot": {
 							"valid_bytes": 14,
 							"invalid_bytes": 100,
@@ -678,6 +773,13 @@
 							"invalid_bytes": 150,
 							"create_bytes": 800,
 							"create_ns": 120,
+							"interned": false
+						},
+						"fuz_schema_compiled": {
+							"valid_bytes": 10,
+							"invalid_bytes": 150,
+							"create_bytes": 1200,
+							"create_ns": 180,
 							"interned": false
 						},
 						"valibot": {
@@ -734,6 +836,13 @@
 							"create_ns": 142.5,
 							"interned": false
 						},
+						"fuz_schema_compiled": {
+							"valid_bytes": 900,
+							"invalid_bytes": 13500,
+							"create_bytes": 1425,
+							"create_ns": 213.75,
+							"interned": false
+						},
 						"valibot": {
 							"valid_bytes": 6480,
 							"invalid_bytes": 45000,
@@ -788,6 +897,13 @@
 							"create_ns": 255,
 							"interned": false
 						},
+						"fuz_schema_compiled": {
+							"valid_bytes": 150,
+							"invalid_bytes": 2250,
+							"create_bytes": 2550,
+							"create_ns": 382.5,
+							"interned": false
+						},
 						"valibot": {
 							"valid_bytes": 1080,
 							"invalid_bytes": 7500,
@@ -840,6 +956,13 @@
 							"invalid_bytes": 2700,
 							"create_bytes": 2200,
 							"create_ns": 330,
+							"interned": false
+						},
+						"fuz_schema_compiled": {
+							"valid_bytes": 180,
+							"invalid_bytes": 2700,
+							"create_bytes": 3300,
+							"create_ns": 495,
 							"interned": false
 						},
 						"valibot": {
@@ -912,6 +1035,14 @@
 							"further_schema_bytes": 720,
 							"interned": false
 						},
+						"fuz_schema_compiled": {
+							"heap_bytes": 36000,
+							"code_bytes": 12000,
+							"external_bytes": 0,
+							"total_bytes": 48000,
+							"further_schema_bytes": 1080,
+							"interned": false
+						},
 						"valibot": {
 							"heap_bytes": 33600,
 							"code_bytes": 11200,
@@ -971,6 +1102,14 @@
 							"external_bytes": 0,
 							"total_bytes": 68000,
 							"further_schema_bytes": 1530,
+							"interned": false
+						},
+						"fuz_schema_compiled": {
+							"heap_bytes": 76500,
+							"code_bytes": 25500,
+							"external_bytes": 0,
+							"total_bytes": 102000,
+							"further_schema_bytes": 2295,
 							"interned": false
 						},
 						"valibot": {
@@ -1072,6 +1211,35 @@
 							"later_band_ms": 0.017,
 							"added_ms": 0.57,
 							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"fuz_schema_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 1.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 1.83,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 1.88,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 2.01,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.1,
+							"later_band_ms": 0.01,
+							"added_ms": 1.83,
+							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
 						"valibot": {
@@ -1283,6 +1451,35 @@
 							"added_rss_kb": 1300,
 							"rss_band_kb": 120
 						},
+						"fuz_schema_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 6.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 6.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 6.51,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 6.56,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 6.69,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.1,
+							"later_band_ms": 0.01,
+							"added_ms": 6.51,
+							"added_rss_kb": 4864,
+							"rss_band_kb": 120
+						},
 						"valibot": {
 							"stages": {
 								"import": {
@@ -1490,6 +1687,35 @@
 							"later_band_ms": 0.017,
 							"added_ms": 2.27,
 							"added_rss_kb": 1300,
+							"rss_band_kb": 120
+						},
+						"fuz_schema_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 1.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 1.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2.85,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 2.9,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.03,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.1,
+							"later_band_ms": 0.01,
+							"added_ms": 2.85,
+							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
 						"valibot": {
@@ -1701,6 +1927,35 @@
 							"added_rss_kb": 1300,
 							"rss_band_kb": 120
 						},
+						"fuz_schema_compiled": {
+							"stages": {
+								"import": {
+									"work_ms": 6.38,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 6.45,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 7.53,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 7.58,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 7.71,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.1,
+							"later_band_ms": 0.01,
+							"added_ms": 7.53,
+							"added_rss_kb": 4864,
+							"rss_band_kb": 120
+						},
 						"valibot": {
 							"stages": {
 								"import": {
@@ -1907,6 +2162,13 @@
 							"max_ns": 20.6,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 12,
+							"batch_ns": 11.4,
+							"min_ns": 11.64,
+							"max_ns": 12.36,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 48,
 							"batch_ns": 45.6,
@@ -1960,6 +2222,13 @@
 							"batch_ns": 28.5,
 							"min_ns": 29.1,
 							"max_ns": 30.9,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 31,
+							"batch_ns": 29.45,
+							"min_ns": 30.07,
+							"max_ns": 31.93,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2017,6 +2286,13 @@
 							"max_ns": 20.6,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 10,
+							"batch_ns": 9.5,
+							"min_ns": 9.7,
+							"max_ns": 10.3,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 130,
 							"batch_ns": 123.5,
@@ -2070,6 +2346,13 @@
 							"batch_ns": 95,
 							"min_ns": 97,
 							"max_ns": 103,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 60,
+							"batch_ns": 57,
+							"min_ns": 58.2,
+							"max_ns": 61.8,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2127,6 +2410,13 @@
 							"max_ns": 154.5,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 155,
+							"batch_ns": 147.25,
+							"min_ns": 150.35,
+							"max_ns": 159.65,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 500,
 							"batch_ns": 475,
@@ -2180,6 +2470,13 @@
 							"batch_ns": 95,
 							"min_ns": 97,
 							"max_ns": 103,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 50,
+							"batch_ns": 47.5,
+							"min_ns": 48.5,
+							"max_ns": 51.5,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2237,6 +2534,13 @@
 							"max_ns": 9270,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 5400,
+							"batch_ns": 5130,
+							"min_ns": 5238,
+							"max_ns": 5562,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 21600,
 							"batch_ns": 20520,
@@ -2290,6 +2594,13 @@
 							"batch_ns": 12825,
 							"min_ns": 13095,
 							"max_ns": 13905,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 13950,
+							"batch_ns": 13252.5,
+							"min_ns": 13531.5,
+							"max_ns": 14368.5,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2347,6 +2658,13 @@
 							"max_ns": 9270,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 4500,
+							"batch_ns": 4275,
+							"min_ns": 4365,
+							"max_ns": 4635,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 58500,
 							"batch_ns": 55575,
@@ -2402,6 +2720,13 @@
 							"max_ns": 1545,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 900,
+							"batch_ns": 855,
+							"min_ns": 873,
+							"max_ns": 927,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 3600,
 							"batch_ns": 3420,
@@ -2452,6 +2777,13 @@
 							"batch_ns": 2137.5,
 							"min_ns": 2182.5,
 							"max_ns": 2317.5,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 2325,
+							"batch_ns": 2208.75,
+							"min_ns": 2255.25,
+							"max_ns": 2394.75,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2506,6 +2838,13 @@
 							"max_ns": 1545,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 750,
+							"batch_ns": 712.5,
+							"min_ns": 727.5,
+							"max_ns": 772.5,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 9750,
 							"batch_ns": 9262.5,
@@ -2556,6 +2895,13 @@
 							"batch_ns": 1710,
 							"min_ns": 1746,
 							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 1080,
+							"batch_ns": 1026,
+							"min_ns": 1047.6,
+							"max_ns": 1112.4,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2613,6 +2959,13 @@
 							"max_ns": 2781,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 2790,
+							"batch_ns": 2650.5,
+							"min_ns": 2706.3,
+							"max_ns": 2873.7,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 9000,
 							"batch_ns": 8550,
@@ -2666,6 +3019,13 @@
 							"batch_ns": 1710,
 							"min_ns": 1746,
 							"max_ns": 1854,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 900,
+							"batch_ns": 855,
+							"min_ns": 873,
+							"max_ns": 927,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2728,6 +3088,7 @@
 			"warm_ms": 60,
 			"subject": "fuz_schema",
 			"others": [
+				"fuz_schema_compiled",
 				"valibot",
 				"zod",
 				"zod_compiled"
@@ -2760,6 +3121,10 @@
 							"ns": 18,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 16.2,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 23.4,
 							"spread": 0.03
@@ -2784,6 +3149,10 @@
 							"ns": 32,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 33.28,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 80,
 							"spread": 0.03
@@ -2799,6 +3168,34 @@
 					}
 				},
 				{
+					"shape": "throw_string",
+					"input": "valid",
+					"does": "primitive",
+					"valid": true,
+					"libs": {
+						"fuz_schema": {
+							"ns": 19,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"none": "no_equivalent",
+							"why": "a compiled parse returns a result, and has no form that throws"
+						},
+						"valibot": {
+							"ns": 24.7,
+							"spread": 0.03
+						},
+						"zod": {
+							"ns": 43.7,
+							"spread": 0.03
+						},
+						"zod_compiled": {
+							"ns": 30.4,
+							"spread": 0.03
+						}
+					}
+				},
+				{
 					"shape": "is_string",
 					"input": "valid",
 					"does": "guard",
@@ -2806,6 +3203,10 @@
 					"libs": {
 						"fuz_schema": {
 							"ns": 8,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 7.2,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2832,6 +3233,10 @@
 							"ns": 110,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 60.5,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 286,
 							"spread": 0.03
@@ -2854,6 +3259,10 @@
 					"libs": {
 						"fuz_schema": {
 							"ns": 150,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 154.5,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2880,6 +3289,10 @@
 							"ns": 210,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 126,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 336,
 							"spread": 0.03
@@ -2902,6 +3315,10 @@
 					"libs": {
 						"fuz_schema": {
 							"ns": 700,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 210,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2928,6 +3345,10 @@
 							"ns": 60,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 42,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 216,
 							"spread": 0.03
@@ -2950,6 +3371,10 @@
 					"libs": {
 						"fuz_schema": {
 							"ns": 940,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 564,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2976,6 +3401,10 @@
 							"ns": 85,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 63.75,
+							"spread": 0.03
+						},
 						"valibot": {
 							"none": "no_equivalent",
 							"why": "it has no union that keeps what it probed"
@@ -3000,6 +3429,10 @@
 							"ns": 36,
 							"spread": 0.03
 						},
+						"fuz_schema_compiled": {
+							"ns": 37.44,
+							"spread": 0.03
+						},
 						"valibot": {
 							"ns": 82.8,
 							"spread": 0.03
@@ -3022,6 +3455,10 @@
 					"libs": {
 						"fuz_schema": {
 							"ns": 210,
+							"spread": 0.03
+						},
+						"fuz_schema_compiled": {
+							"ns": 214.2,
 							"spread": 0.03
 						},
 						"valibot": {

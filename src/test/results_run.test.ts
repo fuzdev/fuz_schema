@@ -37,9 +37,13 @@ beforeEach(() => {
 	lines = [];
 	mkdirSync(join(dir, 'src/lib'), { recursive: true });
 	mkdirSync(join(dir, 'dist'));
-	writeFileSync(join(dir, 'src/lib/schema.ts'), '');
-	writeFileSync(join(dir, 'dist/schema.js'), '');
-	writeFileSync(join(dir, 'dist/schema.d.ts'), '');
+	// every source before any build, as a build is newer than each source it is held to
+	const modules = ['schema', 'compile'];
+	for (const module of modules) writeFileSync(join(dir, `src/lib/${module}.ts`), '');
+	for (const module of modules) {
+		writeFileSync(join(dir, `dist/${module}.js`), '');
+		writeFileSync(join(dir, `dist/${module}.d.ts`), '');
+	}
 	writeFileSync(
 		join(dir, 'package.json'),
 		JSON.stringify({ name: '@fuzdev/fuz_schema', version: '9.9.9' })
@@ -138,12 +142,37 @@ describe('plan_results_run', () => {
 		assert.ok(plan_results_run({ ...FULL, only: ['bundle'] }, create_deps()));
 	});
 
+	test('the build a run reads is of the module that compiles too', () => {
+		// the library compiled is read from `dist/compile.js` and its declarations
+		rmSync(join(dir, 'dist/compile.js'));
+		assert_refused(() => plan_results_run(FULL, create_deps()), 'dist/compile.js is missing');
+		assert.strictEqual(
+			find_missing_need('dist', dir),
+			'dist/compile.js is missing: run `gro build` first'
+		);
+	});
+
 	test('a build older than the source it is built from is stale', () => {
 		assert.strictEqual(find_missing_need('dist', dir), null);
 		const past = new Date(Date.now() - 60_000);
 		utimesSync(join(dir, 'dist/schema.js'), past, past);
 		assert.include(find_missing_need('dist', dir), 'older than src/lib/schema.ts');
 		assert.include(find_missing_need('wasm', dir), 'npm run build:wasm');
+	});
+
+	test('a build older than either source is stale, as one build writes every module', () => {
+		const past = new Date(Date.now() - 60_000);
+		utimesSync(join(dir, 'dist/compile.d.ts'), past, past);
+		assert.include(find_missing_need('dist', dir), 'dist/compile.d.ts is older than');
+		// a build from before `compile.ts` changed, whichever of its files is read first
+		const now = new Date();
+		utimesSync(join(dir, 'dist/compile.d.ts'), now, now);
+		const later = new Date(Date.now() + 60_000);
+		utimesSync(join(dir, 'src/lib/compile.ts'), later, later);
+		assert.strictEqual(
+			find_missing_need('dist', dir),
+			'dist/schema.js is older than src/lib/compile.ts: run `gro build` first'
+		);
 	});
 
 	test('refuses to write over a run of the same date and machine', () => {

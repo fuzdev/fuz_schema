@@ -187,16 +187,22 @@ export const create_results_run_deps = (): ResultsRunDeps => ({
 	log: (line) => console.log(line)
 });
 
-/** What each kind of need reads, and the command that builds it. */
-const NEEDS: Record<ResultsStepNeed, { files: Array<string>; build: string; newer_than?: string }> =
-	{
-		dist: {
-			files: ['dist/schema.js', 'dist/schema.d.ts'],
-			build: 'gro build',
-			newer_than: 'src/lib/schema.ts'
-		},
-		wasm: { files: ['target/fuz_schema_wasm/fuz_schema_wasm_bg.wasm'], build: 'npm run build:wasm' }
-	};
+/**
+ * What each kind of need reads, and the command that builds it. The build is
+ * read of `schema.ts` and of `compile.ts`, which the library compiled imports,
+ * and one build writes both, so each file is held to both sources.
+ */
+const NEEDS: Record<
+	ResultsStepNeed,
+	{ files: Array<string>; build: string; newer_than?: Array<string> }
+> = {
+	dist: {
+		files: ['dist/schema.js', 'dist/schema.d.ts', 'dist/compile.js', 'dist/compile.d.ts'],
+		build: 'gro build',
+		newer_than: ['src/lib/schema.ts', 'src/lib/compile.ts']
+	},
+	wasm: { files: ['target/fuz_schema_wasm/fuz_schema_wasm_bg.wasm'], build: 'npm run build:wasm' }
+};
 
 /**
  * Says what a planned step needs built that isn't: a file that is missing, or
@@ -207,14 +213,17 @@ const NEEDS: Record<ResultsStepNeed, { files: Array<string>; build: string; newe
  * @returns what to build and why, or `null` when the step has what it reads
  */
 export const find_missing_need = (need: ResultsStepNeed, dir: string): string | null => {
-	const { files, build, newer_than } = NEEDS[need];
-	const source = newer_than === undefined ? 0 : statSync(join(dir, newer_than)).mtimeMs;
+	const { files, build, newer_than = [] } = NEEDS[need];
+	const sources = newer_than.map((source) => ({
+		source,
+		mtime_ms: statSync(join(dir, source)).mtimeMs
+	}));
 	for (const file of files) {
 		const path = join(dir, file);
 		if (!existsSync(path)) return `${file} is missing: run \`${build}\` first`;
-		if (statSync(path).mtimeMs < source) {
-			return `${file} is older than ${newer_than}: run \`${build}\` first`;
-		}
+		const built = statSync(path).mtimeMs;
+		const newer = sources.find(({ mtime_ms }) => built < mtime_ms);
+		if (newer) return `${file} is older than ${newer.source}: run \`${build}\` first`;
 	}
 	return null;
 };

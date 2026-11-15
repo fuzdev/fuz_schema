@@ -1,7 +1,10 @@
 /**
  * The names of the libraries under comparison, in display order, each the
  * basename of a module in `libs/`. `libs.ts` holds the modules themselves, and
- * `src/test/benchmarks.test.ts` holds its `LIBS` to this list.
+ * `src/test/benchmarks.test.ts` holds its `LIBS` to this list. A name can be a
+ * library in another mode, after the library it is of: `fuz_schema_compiled`
+ * is this library with each schema compiled, and `zod_compiled` Zod with each
+ * root through `z.compile`.
  *
  * This module imports nothing, so a script that only names the libraries, to
  * start a process for each or to check one by `tsc`, loads none of them.
@@ -11,6 +14,7 @@
 
 export const LIB_NAMES = [
 	'fuz_schema',
+	'fuz_schema_compiled',
 	'valibot',
 	'zod',
 	'zod_compiled',

@@ -21,6 +21,7 @@ import type {
 } from '../../../benchmarks/results_schema.ts';
 import { format_bytes, format_ms, format_ns } from './benchmark_format.ts';
 import {
+	find_column_mode_of,
 	to_geomean_row,
 	to_matrix_row,
 	to_value_entry,
@@ -35,7 +36,8 @@ import { to_geomean, to_spread_band, type ValueBand } from './benchmark_ratio.ts
 /**
  * One color per library, by its place in the roster, so a library's bars are
  * the same color in every chart. The ratio beside a bar carries the verdict,
- * colored by the ratio scale.
+ * colored by the ratio scale. There is one more than the roster of a full run
+ * has, for a side of a harvested set that is no library of the roster.
  */
 export const LIB_COLORS: ReadonlyArray<string> = [
 	'var(--palette_d_40)',
@@ -45,7 +47,8 @@ export const LIB_COLORS: ReadonlyArray<string> = [
 	'var(--palette_a_40)',
 	'var(--palette_e_40)',
 	'var(--palette_j_40)',
-	'var(--palette_f_40)'
+	'var(--palette_f_40)',
+	'var(--palette_b_40)'
 ];
 
 /** The color of the library at `index` in the roster, cycling past the last. */
@@ -682,12 +685,20 @@ export const to_survey_groups = (results: BenchmarkResults): Array<MatrixGroup> 
 	}));
 };
 
-/** The libraries of the survey as columns, the subject first, each as the roster has it. */
+/**
+ * The libraries of the survey as columns, each as the roster has it: the
+ * subject first, wherever the roster has it, then the others in the roster's
+ * order. The subject is the library the file names, and never one picked by
+ * its place.
+ */
 export const to_survey_columns = (results: BenchmarkResults): Array<MatrixColumn> => {
 	const data = to_section_data(results, 'survey');
 	if (!data) return [];
-	const ids = [data.subject, ...data.others];
-	return to_lib_columns(results.meta.libs).filter((column) => ids.includes(column.id));
+	const columns = to_lib_columns(results.meta.libs);
+	return [
+		...columns.filter((column) => column.id === data.subject),
+		...columns.filter((column) => column.id !== data.subject && data.others.includes(column.id))
+	];
 };
 
 /** One harvested set as the page shows it. */
@@ -721,7 +732,7 @@ export const to_harvest_sets = (results: BenchmarkResults): Array<HarvestSetView
 		const columns = set.sides.map((side): MatrixColumn => {
 			const lib = lib_columns.find((column) => column.id === side.id);
 			// a mode of a library, as `zod_jitless` is of `zod`, is named after it
-			const of = lib_columns.find((column) => side.id.startsWith(`${column.id}_`));
+			const of = find_column_mode_of(side, lib_columns);
 			return {
 				id: side.id,
 				label:

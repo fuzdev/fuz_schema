@@ -107,6 +107,107 @@ describe('zod_compiled', () => {
 	});
 });
 
+// Calls `fn` and returns how many functions were made from text meanwhile, which
+// is what a compile of this library does once a schema. A function is counted once
+// it is made, so a compile the environment refused, which hands back the
+// interpreter, counts none.
+const count_compiled = (fn: () => void): number => {
+	const original = globalThis.Function;
+	let count = 0;
+	globalThis.Function = new Proxy(original, {
+		construct: (target, args) => {
+			const made = Reflect.construct(target, args);
+			count++;
+			return made;
+		}
+	});
+	try {
+		fn();
+	} finally {
+		globalThis.Function = original;
+	}
+	return count;
+};
+
+// What `fuz_schema_compiled` measures: compiled code for every scenario, the
+// recursive one too. A compile the library refused would throw as a factory is
+// called, and one the environment refused would hand back the interpreter, which
+// every parity test above would pass.
+describe('fuz_schema_compiled', () => {
+	const compiled = LIBS.find((lib) => lib.name === 'fuz_schema_compiled')!;
+	const interpreted = LIBS.find((lib) => lib.name === 'fuz_schema')!;
+
+	for (const scenario of SCENARIOS) {
+		// one schema, or for a scenario of many each of them
+		const roots = scenario.many_schemas ? APP_KEYS.length : 1;
+
+		test(`${scenario.name}: its factory, its guard, and its parse are each made from text, a function a schema`, () => {
+			assert.strictEqual(
+				count_compiled(() => compiled.scenarios[`scenario_${scenario.name}`]()),
+				roots,
+				'the factory'
+			);
+			assert.strictEqual(
+				count_compiled(() => to_scenario_guard(compiled.schemas, scenario)),
+				roots,
+				'the guard'
+			);
+			assert.strictEqual(
+				count_compiled(() => to_scenario_output(compiled.schemas, scenario)),
+				roots,
+				'the parse'
+			);
+		});
+	}
+
+	test('the interpreter makes no function from text, building a scenario or running it', () => {
+		for (const scenario of SCENARIOS) {
+			assert.strictEqual(
+				count_compiled(() => {
+					const run = interpreted.scenarios[`scenario_${scenario.name}`]();
+					run(scenario.valid);
+					run(scenario.invalid);
+					const guard = to_scenario_guard(interpreted.schemas, scenario);
+					guard(scenario.valid);
+				}),
+				0,
+				scenario.name
+			);
+		}
+	});
+
+	test('a compile is in the factory and none is in a call', () => {
+		for (const scenario of SCENARIOS) {
+			const run = compiled.scenarios[`scenario_${scenario.name}`]();
+			const guard = to_scenario_guard(compiled.schemas, scenario);
+			assert.strictEqual(
+				count_compiled(() => {
+					run(scenario.valid);
+					run(scenario.invalid);
+					guard(scenario.valid);
+					guard(scenario.invalid);
+				}),
+				0,
+				scenario.name
+			);
+		}
+	});
+
+	test('its output is the input itself exactly where the interpreter gives it back', () => {
+		for (const scenario of SCENARIOS) {
+			if (scenario.many_schemas) continue;
+			const ours = to_scenario_output(interpreted.schemas, scenario)!(scenario.valid);
+			const theirs = to_scenario_output(compiled.schemas, scenario)!(scenario.valid);
+			assert(ours.ok && theirs.ok);
+			assert.strictEqual(
+				theirs.value === scenario.valid,
+				ours.value === scenario.valid,
+				scenario.name
+			);
+		}
+	});
+});
+
 // The source text of each top-level `export const <prefix>_<name>` of a module,
 // by name: what follows its `=`, to the next line that starts a statement.
 const to_definitions = (source: string, prefix: string): Map<string, string> => {
@@ -306,7 +407,8 @@ const find_definition_differences = (a: DefinitionsSide, b: DefinitionsSide): Ar
 // side and not the other fails here, where every verdict could still agree.
 describe('every builder is its factory', () => {
 	for (const lib of LIB_NAMES) {
-		if (lib === 'zod_compiled') continue;
+		// a library in another mode holds its factories to its library's, below
+		if (lib === 'zod_compiled' || lib === 'fuz_schema_compiled') continue;
 		test(lib, () => {
 			assert.deepEqual(
 				find_definition_differences(
@@ -341,6 +443,49 @@ describe('every builder is its factory', () => {
 						? '()=>compile_each(zod.app());'
 						: `()=>z.compile(zod.${name}());`
 			])
+		);
+	});
+
+	// its builders are this library's, which a compile leaves as they are, and its
+	// factories this library's own text
+	test('fuz_schema_compiled', () => {
+		assert.deepEqual(
+			find_definition_differences(
+				{ path: 'libs/fuz_schema_compiled.ts', prefix: 'scenario' },
+				{ path: 'libs/fuz_schema.ts', prefix: 'scenario' }
+			),
+			[]
+		);
+		const builders = to_definitions(
+			read_benchmark_source('libs/schemas/fuz_schema_compiled.ts'),
+			'schema'
+		);
+		assert.deepEqual(
+			[...builders].map(([name, text]) => [name, to_comparable(text)]),
+			SCENARIOS.map(({ name }) => [
+				name,
+				name === 'extra_keys' ? 'object_flat;' : `()=>fuz_schema.${name}();`
+			])
+		);
+	});
+
+	// a definition of the compiled module that parts from the interpreter's, which
+	// the comparison of the two factory modules must find
+	test('finds a schema of fuz_schema_compiled that is not the one of fuz_schema', () => {
+		const source = read_benchmark_source('libs/fuz_schema_compiled.ts');
+		const from = 's.max_length(50)';
+		assert.include(source, from);
+		const differences = find_definition_differences(
+			{
+				path: 'libs/fuz_schema_compiled.ts',
+				prefix: 'scenario',
+				source: source.replace(from, 's.max_length(51)')
+			},
+			{ path: 'libs/fuz_schema.ts', prefix: 'scenario' }
+		);
+		assert.ok(
+			differences.some((difference) => difference.startsWith('pipe:')),
+			JSON.stringify(differences)
 		);
 	});
 
@@ -439,6 +584,8 @@ test('which scenarios a library hands back the schema of, built again', () => {
 	);
 	assert.deepEqual(kept, [
 		'fuz_schema string',
+		// the same constant, which a compile reads: its guard and parse are made anew
+		'fuz_schema_compiled string',
 		...['string', 'object_flat', 'extra_keys', 'strict_nested', 'pipe', 'union', 'list'].map(
 			(name) => `arktype ${name}`
 		)

@@ -15,7 +15,11 @@ import {
 	to_results_steps_dir,
 	type ResultsRunOptions
 } from '../benchmarks/results_plan.ts';
-import { BENCHMARK_FULL_ARGS, BENCHMARK_IDS } from '../benchmarks/results_schema.ts';
+import {
+	BENCHMARK_FIGURE_KINDS,
+	BENCHMARK_FULL_ARGS,
+	BENCHMARK_IDS
+} from '../benchmarks/results_schema.ts';
 
 const read = (path: string): string =>
 	readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
@@ -156,12 +160,52 @@ describe('the roster', () => {
 		assert.strictEqual(libs.find((lib) => lib.id === 'arktype')!.version, 'missing');
 	});
 
-	test("marks this library as the maintainer's, and no other", () => {
+	test("marks this library as the maintainer's, as it is imported and compiled, and no other", () => {
 		assert.deepStrictEqual(
 			to_results_libs({})
 				.filter((lib) => lib.by_maintainer)
 				.map((lib) => lib.id),
-			['fuz_schema']
+			['fuz_schema', 'fuz_schema_compiled']
 		);
+	});
+
+	test('a library in another mode is named after its library, of its package and version, and is beside it', () => {
+		const libs = to_results_libs({ '@fuzdev/fuz_schema': '1.2.3', zod: '4.5.6' });
+		for (const [mode, of] of [
+			['fuz_schema_compiled', 'fuz_schema'],
+			['zod_compiled', 'zod']
+		] as const) {
+			const mode_at = libs.findIndex((lib) => lib.id === mode);
+			const lib = libs[mode_at]!;
+			const of_lib = libs.find((l) => l.id === of)!;
+			// its label starts with the library's, so no table reads it as another library
+			assert.ok(lib.label.startsWith(`${of_lib.label} `), lib.label);
+			assert.strictEqual(lib.package, of_lib.package, mode);
+			assert.strictEqual(lib.version, of_lib.version, mode);
+			assert.strictEqual(lib.by_maintainer, of_lib.by_maintainer, mode);
+			assert.strictEqual(libs[mode_at - 1]!.id, of, mode);
+			// and the roster says what of the package it is
+			assert.isString(lib.note, mode);
+		}
+		// this library compiled says in words that it is no other library
+		assert.include(RESULTS_LIB_INFO.fuz_schema_compiled.note, 'no other library');
+	});
+
+	test('this library compiled says what each kind of its figures includes', () => {
+		const about = RESULTS_LIB_INFO.fuz_schema_compiled.notes.flatMap((note) => note.about);
+		// every kind of figure a table is of: none of its figures is the interpreter's unsaid
+		assert.sameMembers([...new Set(about)], [...BENCHMARK_FIGURE_KINDS]);
+		const to_text = (kind: (typeof BENCHMARK_FIGURE_KINDS)[number]): string =>
+			RESULTS_LIB_INFO.fuz_schema_compiled.notes
+				.filter((note) => note.about.includes(kind))
+				.map((note) => note.text)
+				.join(' ');
+		// an invalid input is the interpreter's parse, and what is built pays for the compile
+		assert.include(to_text('invalid'), 'handed to `parse`');
+		for (const kind of ['bundle', 'coldstart', 'creation', 'heap'] as const) {
+			assert.include(to_text(kind), 'compiles while the schema is built', kind);
+		}
+		assert.include(to_text('guard'), '`compile_guard`');
+		assert.include(to_text('valid'), '`compile_parse`');
 	});
 });

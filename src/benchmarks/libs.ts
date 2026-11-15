@@ -11,6 +11,7 @@ import type { LibName } from './lib_names.ts';
 import type { ScenarioModule } from './scenarios.ts';
 import type { ScenarioSchemaModule } from './scenario_schemas.ts';
 import * as fuz_schema from './libs/fuz_schema.ts';
+import * as fuz_schema_compiled from './libs/fuz_schema_compiled.ts';
 import * as valibot from './libs/valibot.ts';
 import * as zod from './libs/zod.ts';
 import * as zod_compiled from './libs/zod_compiled.ts';
@@ -18,6 +19,7 @@ import * as zod_mini from './libs/zod_mini.ts';
 import * as typebox from './libs/typebox.ts';
 import * as arktype from './libs/arktype.ts';
 import * as fuz_schema_schemas from './libs/schemas/fuz_schema.ts';
+import * as fuz_schema_compiled_schemas from './libs/schemas/fuz_schema_compiled.ts';
 import * as valibot_schemas from './libs/schemas/valibot.ts';
 import * as zod_schemas from './libs/schemas/zod.ts';
 import * as zod_compiled_schemas from './libs/schemas/zod_compiled.ts';
@@ -37,6 +39,11 @@ export const BASELINE_LIB = 'valibot';
 
 export const LIBS: Array<Lib> = [
 	{ name: 'fuz_schema', scenarios: fuz_schema, schemas: fuz_schema_schemas },
+	{
+		name: 'fuz_schema_compiled',
+		scenarios: fuz_schema_compiled,
+		schemas: fuz_schema_compiled_schemas
+	},
 	{ name: 'valibot', scenarios: valibot, schemas: valibot_schemas },
 	{ name: 'zod', scenarios: zod, schemas: zod_schemas },
 	{ name: 'zod_compiled', scenarios: zod_compiled, schemas: zod_compiled_schemas },

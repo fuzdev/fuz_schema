@@ -553,7 +553,11 @@ export const HARVEST_SETS: Array<HarvestSet> = [
 // One side of a set, for a process
 //
 
-/** The side that is this library, in every set. */
+/**
+ * The side that is this library, in every set: as it is imported. No set has a
+ * side of it compiled, which the scenarios and the survey have as
+ * `fuz_schema_compiled`.
+ */
 export const HARVEST_OURS = 'fuz_schema';
 
 /** The side that is a set's asides, which are no library's. */

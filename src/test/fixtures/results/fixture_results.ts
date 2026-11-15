@@ -11,6 +11,14 @@
  * a spread wide enough that a gap is inside it, and two libraries whose means
  * are inside each other's bands.
  *
+ * `fuz_schema_compiled` is this library in its compiled mode, with factors
+ * that run the way the mode does: a bigger bundle than the interpreter's, a
+ * slower cold start, and more held, for a faster parse of valid input and a
+ * faster guard. On invalid input it is level with the interpreter, a little
+ * over it and inside the two spreads, as its parse of one is the interpreter's
+ * after compiled code has run to its first failure. It has a figure of every
+ * scenario, and of every survey row but one of a shape that throws.
+ *
  * `fixture_run.json` beside this is what it builds, written by
  * `update.task.ts`, and `src/test/results_schema.test.ts` fails when the file
  * is stale.
@@ -44,6 +52,7 @@ type Factors = Readonly<Record<LibName, number>>;
 // what each library is taken to cost, as a multiple of this library's figure
 const VALID: Factors = {
 	fuz_schema: 1,
+	fuz_schema_compiled: 0.6,
 	valibot: 2.4,
 	zod: 1.9,
 	zod_compiled: 0.4,
@@ -51,8 +60,10 @@ const VALID: Factors = {
 	typebox: 0.2,
 	arktype: 6
 };
+// this library compiled is level with the interpreter: each row inside its two spreads
 const INVALID: Factors = {
 	fuz_schema: 1.5,
+	fuz_schema_compiled: 1.55,
 	valibot: 5,
 	zod: 28,
 	zod_compiled: 10,
@@ -64,6 +75,7 @@ const INVALID: Factors = {
 // so are the two means inside each other's bands
 const GUARD: Factors = {
 	fuz_schema: 1,
+	fuz_schema_compiled: 0.5,
 	valibot: 6.5,
 	zod: 1.6,
 	zod_compiled: 0.25,
@@ -73,6 +85,7 @@ const GUARD: Factors = {
 };
 const SIZE: Factors = {
 	fuz_schema: 1,
+	fuz_schema_compiled: 14,
 	valibot: 1.5,
 	zod: 24,
 	zod_compiled: 31,
@@ -82,6 +95,7 @@ const SIZE: Factors = {
 };
 const HELD: Factors = {
 	fuz_schema: 1,
+	fuz_schema_compiled: 1.5,
 	valibot: 1.4,
 	zod: 22,
 	zod_compiled: 25,
@@ -91,6 +105,7 @@ const HELD: Factors = {
 };
 const TYPES: Factors = {
 	fuz_schema: 1,
+	fuz_schema_compiled: 1.1,
 	valibot: 1.9,
 	zod: 7.7,
 	zod_compiled: 7.8,
@@ -180,7 +195,7 @@ const create_run = (): BenchmarkData['run'] => ({
 });
 
 const create_survey = (): BenchmarkData['survey'] => {
-	const others = ['valibot', 'zod', 'zod_compiled'] as const;
+	const others = ['fuz_schema_compiled', 'valibot', 'zod', 'zod_compiled'] as const;
 	const to_row = (
 		shape: string,
 		input: string,
@@ -230,54 +245,85 @@ const create_survey = (): BenchmarkData['survey'] => {
 		],
 		rows: [
 			to_row('string', 'valid', 'primitive', true, 18, {
+				fuz_schema_compiled: 0.9,
 				valibot: 1.3,
 				zod: 2.4,
 				zod_compiled: 1.7
 			}),
 			to_row('string', 'invalid', 'issue at the root', false, 32, {
+				fuz_schema_compiled: 1.04,
 				valibot: 2.5,
 				zod: 20,
 				zod_compiled: 24
 			}),
+			// a shape that throws, which a compiled parse has no form of
+			to_row('throw_string', 'valid', 'primitive', true, 19, {
+				fuz_schema_compiled: {
+					none: 'no_equivalent',
+					why: 'a compiled parse returns a result, and has no form that throws'
+				},
+				valibot: 1.3,
+				zod: 2.3,
+				zod_compiled: 1.6
+			}),
 			// at the call floor: this library's time is under twice the empty call
-			to_row('is_string', 'valid', 'guard', true, 8, { valibot: 1.5, zod: 1.6, zod_compiled: 1.1 }),
+			to_row('is_string', 'valid', 'guard', true, 8, {
+				fuz_schema_compiled: 0.9,
+				valibot: 1.5,
+				zod: 1.6,
+				zod_compiled: 1.1
+			}),
 			to_row('object', 'valid', 'object identity', true, 110, {
+				fuz_schema_compiled: 0.55,
 				valibot: 2.6,
 				zod: 1.8,
 				zod_compiled: 0.5
 			}),
 			to_row('object', 'one_bad', 'issue at depth 1', false, 150, {
+				fuz_schema_compiled: 1.03,
 				valibot: 3.4,
 				zod: 9,
 				zod_compiled: 8.5
 			}),
 			to_row('strip_object', 'valid', 'object copy', true, 210, {
+				fuz_schema_compiled: 0.6,
 				valibot: 1.6,
 				zod: 0.8,
 				zod_compiled: 0.36
 			}),
 			to_row('array_numbers', 'valid_100', 'array', true, 700, {
+				fuz_schema_compiled: 0.3,
 				valibot: 3,
 				zod: 3.5,
 				zod_compiled: 0.22
 			}),
-			to_row('union', 'second', 'union', true, 60, { valibot: 3.6, zod: 3.3, zod_compiled: 0.7 }),
+			to_row('union', 'second', 'union', true, 60, {
+				fuz_schema_compiled: 0.7,
+				valibot: 3.6,
+				zod: 3.3,
+				zod_compiled: 0.7
+			}),
+			// a recursive shape, which this library compiles and `z.compile` hands back
 			to_row('lazy_tree', 'valid', 'lazy', true, 940, {
+				fuz_schema_compiled: 0.6,
 				valibot: 3,
 				zod: 5.2,
 				zod_compiled: UNCOMPILED
 			}),
 			to_row('memo_union', 'valid', 'union', true, 85, {
+				fuz_schema_compiled: 0.75,
 				valibot: { none: 'no_equivalent', why: 'it has no union that keeps what it probed' },
 				zod: { none: 'no_equivalent', why: 'it has no union that keeps what it probed' },
 				zod_compiled: { none: 'no_equivalent', why: 'it has no union that keeps what it probed' }
 			}),
 			to_row('number', 'nan', 'issue at the root', false, 36, {
+				fuz_schema_compiled: 1.04,
 				valibot: 2.3,
 				zod: { none: 'differs', why: 'it takes NaN as a number' },
 				zod_compiled: { none: 'differs', why: 'it takes NaN as a number' }
 			}),
 			to_row('form', 'all_bad', 'many issues', false, 210, {
+				fuz_schema_compiled: 1.02,
 				valibot: 3.5,
 				zod: 10,
 				zod_compiled: 10.5
@@ -387,20 +433,29 @@ const is_interned = (lib: LibName, scenario: { recursive: boolean }): boolean =>
 const create_allocations = (): BenchmarkData['allocations'] => ({
 	rows: SCENARIOS.map((scenario) => ({
 		scenario: scenario.name,
-		libs: to_libs((lib) => ({
-			// a check builds nothing, this library returns its input, and compiled Zod and
-			// ArkType are taken to allocate less than it does on one scenario
-			valid_bytes:
-				lib === 'typebox'
-					? 0
-					: (lib === 'zod_compiled' || lib === 'arktype') && scenario.name === 'object_flat'
-						? Math.round(scenario.ns / 20)
-						: Math.round((scenario.ns / 10) * (lib === 'fuz_schema' ? 1 : VALID[lib] * 3)),
-			invalid_bytes: lib === 'typebox' ? 0 : Math.round(scenario.ns * INVALID[lib]),
-			create_bytes: Math.round(scenario.bytes * HELD[lib]),
-			create_ns: round(scenario.bytes * HELD[lib] * 0.15),
-			interned: is_interned(lib, scenario)
-		}))
+		libs: to_libs((lib) => {
+			// This library compiled is taken to allocate a parse what the interpreter does:
+			// it returns the same result, and its parse of an invalid input is the
+			// interpreter's. Building its schema allocates more, the compile.
+			const parsed_as = lib === 'fuz_schema_compiled' ? 'fuz_schema' : lib;
+			return {
+				// a check builds nothing, this library returns its input, and compiled Zod and
+				// ArkType are taken to allocate less than it does on one scenario
+				valid_bytes:
+					parsed_as === 'typebox'
+						? 0
+						: (parsed_as === 'zod_compiled' || parsed_as === 'arktype') &&
+							  scenario.name === 'object_flat'
+							? Math.round(scenario.ns / 20)
+							: Math.round(
+									(scenario.ns / 10) * (parsed_as === 'fuz_schema' ? 1 : VALID[parsed_as] * 3)
+								),
+				invalid_bytes: parsed_as === 'typebox' ? 0 : Math.round(scenario.ns * INVALID[parsed_as]),
+				create_bytes: Math.round(scenario.bytes * HELD[lib]),
+				create_ns: round(scenario.bytes * HELD[lib] * 0.15),
+				interned: is_interned(lib, scenario)
+			};
+		})
 	}))
 });
 

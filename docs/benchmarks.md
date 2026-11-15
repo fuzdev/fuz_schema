@@ -2,6 +2,9 @@
 
 Everything is in `src/benchmarks/`. The comparison libraries are Valibot, Zod,
 Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, and ArkType.
+This library is entered twice, as it is imported (`fuz_schema`) and with each
+schema compiled (`fuz_schema_compiled`), which is the same library in another
+mode and no other, see [this library compiled](#this-library-compiled).
 
 | Command | Measures |
 |---|---|
@@ -13,7 +16,7 @@ Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, and ArkType.
 | `npm run benchmark:types` | cost to the TypeScript checker, of a scenario module and of a consumer's reads of what its schemas infer |
 | `npm run benchmark:wasm` | the Rust crate as wasm against this library, on whether a JSON text matches |
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
-| `npm run benchmark:survey` | parse time over many small shapes, this library against Valibot, Zod, and Zod compiled, by what a parse does |
+| `npm run benchmark:survey` | parse time over many small shapes, this library against itself compiled, Valibot, Zod, and Zod compiled, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
 | `npm run results` | every script above but `grade`, in turn, into one results file ([below](#one-results-file)) |
 | `npm run results:publish` | copies a publishable run to `results/latest.json`, which the site renders |
@@ -60,9 +63,9 @@ end (`machine.ts`), so a saved output can be read on its own.
   `src/test/benchmarks.test.ts` holds each builder to its factory's text, less
   comments, whitespace outside its string and regex literals, and the runner,
   and each constant the two modules' definitions share to the other's,
-  `zod_compiled`'s factories to Zod's,
-  each library's guard to its factory's verdicts, and the outputs of every
-  library that returns one to this library's, deeply and strictly.
+  `zod_compiled`'s factories to Zod's and `fuz_schema_compiled`'s to this
+  library's, each library's guard to its factory's verdicts, and the outputs
+  of every library that returns one to this library's, deeply and strictly.
 - **Cases** (`cases.ts`) are for this library only: schema-and-input pairs
   named `group/shape/outcome`, which `grade` runs. They come in tiers:
   - `real` is what a consumer has. Some are written for the purpose: an
@@ -199,6 +202,10 @@ defaults to 1000.
   validator `z.compile` generates beside the parser, and otherwise through the
   parser, which still copies what it reads.
   Valibot's guard, `is`, runs its parser to the first issue the same way.
+- **This library is one column**, as it is imported. No set has a side of it
+  compiled: a row has one side of this library, `ours`, through the tables,
+  the bundles, and the results file, and a second is a change to each of
+  those.
 
 It isn't like-for-like, in ways that differ by set and are printed under each:
 
@@ -221,8 +228,8 @@ It isn't like-for-like, in ways that differ by set and are printed under each:
 
 ### Survey
 
-`npm run benchmark:survey` times this library against Valibot, Zod, and Zod
-with the root of each shape through `z.compile` over
+`npm run benchmark:survey` times this library against itself compiled,
+Valibot, Zod, and Zod with the root of each shape through `z.compile` over
 many small shapes (`survey_shapes.ts`), a row for each input of each: a
 primitive, a wrapper, an object returned as it came or copied, a union, a
 variant, a pipe, a recursive schema, and issues by how many there are and how
@@ -240,6 +247,14 @@ whoever runs it.
   and run in its process and timed in none, and the run names the shapes. A
   shape one library has no equivalent of leaves it out and says why. Zod's
   guard is `z.validate`.
+- **`fuz_schema_compiled` runs this library's builder** with the shape's
+  schema through `compile_parse`, and through `compile_guard` where the shape
+  is a guard, in a process that loads this library and its `compile.ts`. It
+  gives this library's verdicts and outputs, which the same check holds. Every
+  shape compiles, so it has no row left out for a schema the compiler
+  refuses. It has no equivalent of a shape that calls what has no compiled
+  form, which is the one of `parse_or_throw`: the shape says so, and its row
+  is `-`.
 - **Objects are matched by what they do with a key the schema doesn't name**:
   this library's `object` with `strictObject` and `z.strictObject`, its
   `strip_object` with Valibot's `object` and `z.object`, and its
@@ -275,6 +290,63 @@ whoever runs it.
   verdict and no output, and its shape says so. The order of a union's
   options is not held where every order gives one output: that changes the
   work and no answer.
+
+### This library compiled
+
+`fuz_schema_compiled` is this library with its schemas through the opt-in
+`compile.ts`: `compile_parse` makes a parse of a schema and `compile_guard` a
+guard, each a function of straight-line code made with `new Function`, that
+answers as `parse` and `is` do. It is a mode of this library and no other
+library: its schemas are the interpreter's, its answers are held to the
+interpreter's, and the roster names it `fuz_schema compiled` and marks it as
+the maintainer's, as it marks `fuz_schema`. It is entered as a library of its
+own, as `zod_compiled` is for Zod, so every table of the scenarios has both,
+and so has the survey.
+
+- **Its module** is `libs/fuz_schema_compiled.ts`: the scenarios' schemas
+  written again, each factory compiling its schema with `compile_parse` and
+  returning a runner over the function made. `app` compiles each of its
+  schemas. Its schemas module, `libs/schemas/fuz_schema_compiled.ts`, has the
+  interpreter's builders, which a compile reads and leaves as they are, with
+  `compile_guard` for the guard and `compile_parse` for the output.
+- **Every scenario and every survey shape it runs compiles**, the recursive
+  `type_json` too, so it has a figure of every scenario's row, and of every
+  survey row but those of the shape that calls `parse_or_throw`, and no cell
+  that says `uncompiled`. `src/test/benchmarks.test.ts` holds each factory,
+  guard, and output to making one function from text a schema, and a call to
+  making none, so a compile that fell back to the interpreter fails a test.
+- **A compile is in the factory and in no timed call.** A parse row of valid
+  input is the compiled code, which builds what `parse` returns: the input
+  itself where nothing changed, and a copy where the library makes one. A
+  guard row is the function `compile_guard` made, called as it is returned.
+- **A row of invalid input is the interpreter's parse.** Compiled code builds
+  no issue: an input that fails is handed to `parse`, once the compiled code
+  has run to its first failure. So such a row is the interpreter's work and
+  that run before it, in time and in the bytes a parse allocates: it is no
+  second measure of compiled code, and is read beside `fuz_schema`'s row as
+  the same parse with that run before it.
+- **A bundle** is a scenario with `compile.ts`: the compiler, and `parse`,
+  which a compiled parse calls for an input that fails and where
+  `new Function` is refused.
+- **Creation holds the compile.** The creation figures of
+  `benchmark:allocations`, the `create` stage of a cold start and every stage
+  after it, are of a schema built and compiled, the compiler's work among them,
+  and the retained heap's totals hold the compiler's module and the function it
+  makes, with what the engine keeps for one. The figure per further schema is of
+  a schema compiled again each time, and leaves out machine code and the trusted
+  spaces, as it does for every library.
+- **Its unbundled cold start and its types are read from the build**, as
+  `fuz_schema`'s are: `dist/compile.js` beside `dist/schema.js`, and their
+  declarations. The type benchmark's module calls `compile_parse` on each
+  schema, and its reads are of what the function `compile_parse` returns gives
+  for a match, so its figures are the interpreter's types and what the
+  compile's add.
+- **No process refuses `new Function`.** Where an environment does, as under a
+  content security policy without `unsafe-eval`, the functions a compile
+  returns run the interpreter, and its figures there would be `fuz_schema`'s
+  with the compiler's bytes.
+- **The harvested sets have no side of it**, see [head to head](#head-to-head),
+  and `grade` grades the interpreter: no case of `cases.ts` compiles.
 
 ## Method
 
@@ -332,8 +404,9 @@ whoever runs it.
   after the first parse, so parses 2 to 100 are timed inside one process,
   not as a difference of two stages' medians. Bundled and unbundled entries:
   the unbundled one of this library loads its build, `dist/schema.js`, what
-  the package publishes, and refuses to run when that is missing or older
-  than `src/lib/schema.ts`, so run `gro build` first. The build syncs the
+  the package publishes, and `dist/compile.js` for the library compiled, and
+  refuses to run when one is missing or older than `src/lib/schema.ts` or
+  `src/lib/compile.ts`, so run `gro build` first. The build syncs the
   dependencies first, and when that updated Gro or a package Gro had loaded,
   as it does when `node_modules` is behind the lockfile, it stops and asks to
   be run again. Compile cache off, rounds interleaved, medians: every process
@@ -350,9 +423,10 @@ whoever runs it.
   file that reads properties of the types its schemas module infers
   (`ScenarioTypes`), as a consumer's code reads a value of an inferred type,
   beside what the reads add to the schemas module alone. This library is read
-  from its built `dist/schema.d.ts`, as every other library is from its
-  declarations, and the script refuses to run when that is missing or older
-  than `src/lib/schema.ts`: run `gro build` first. Instantiations are the same
+  from its built `dist/schema.d.ts`, and `dist/compile.d.ts` for the library
+  compiled, as every other library is from its declarations, and the script
+  refuses to run when one is missing or older than `src/lib/schema.ts` or
+  `src/lib/compile.ts`: run `gro build` first. Instantiations are the same
   on every run, and check time is the median of `--runs` runs, 3 by default.
   `--lib` picks the libraries.
 - **wasm**: rows timed a round at a time, each round starting a row later,
@@ -625,6 +699,15 @@ published run.
   and strict, and every reader goes through `parse_benchmark_results`: the
   run before it writes, the publish step, and the site's build. Beyond each
   section's shape it holds the sections to the roster the file carries.
+- **A file's libraries are the ones its roster names**, and every table and
+  chart is of those. A run records the roster it measured, `LIB_NAMES` at its
+  commit, so a file from a run without a library has no column of it, and
+  parses and renders as it is: `src/test/results_roster.test.ts` holds a file
+  with `fuz_schema_compiled` and one without to parsing, rendering, and
+  bearing the README's claims. A library in another mode is an entry of the
+  roster like any other, labeled with its library's label first. The page
+  says of one the maintainer also maintains that it is that library and not
+  another, and compares this library with the rest.
 - **A run is publishable** by `benchmark_results_is_publishable`, whose rule
   is in [results/README.md](../results/README.md#a-run). A file says what it
   is in `meta.kind`: `full`, `smoke`, or `fixture`. A publishable run is
@@ -668,7 +751,12 @@ published run.
   (`src/test/readme_claims.ts`), each with the libraries it names and a
   predicate over a results file that reads a difference as the page does, and
   `src/test/readme_measurements.test.ts` holds the README to the published
-  run once `README_CLAIMS_HELD` is set.
+  run once `README_CLAIMS_HELD` is set. Every claim is about `fuz_schema`, the
+  library as it is imported. One that names "the libraries compared" is
+  checked against the other libraries of the file's roster, and not against
+  this library's own modes, the entries the roster records with its package:
+  `fuz_schema_compiled` is this library, and no claim sets the two modes
+  against each other.
 
 ## Reading the numbers
 
@@ -730,6 +818,10 @@ Each was checked against the installed library's source:
   root and not the global `import "zod/compile"`, which would compile plain
   `zod`'s schemas too in a process that loads both. Its bundles carry the
   compiler, and its cold start compiles while the schema is built.
+- **`fuz_schema_compiled` is this library and its compiler**, see
+  [this library compiled](#this-library-compiled): compiled code on a valid
+  input and as a guard, the interpreter's parse on an invalid one, and the
+  compiler in every bundle, creation, cold start, and retained total.
 - **`zod_compiled` has no time where `z.compile` hands the root back.** It
   hands back a root it can't compile unchanged, which the recursive
   `type_json` is. Timed in `zod_compiled`'s process, that root is neither
@@ -827,11 +919,17 @@ and never a table.
   `scenario_<name>` export in every module under `libs/`, and a
   `schema_<name>` export in every module under `libs/schemas/`.
 - A library: a module in `libs/`, its schemas module in `libs/schemas/`, an
-  entry in `LIBS`, and its name in
+  entry in `LIBS`, its name in
   `LIB_NAMES` (`lib_names.ts`), which the process and type benchmarks read and
-  `src/test/benchmarks.test.ts` holds `LIBS` to.
+  `src/test/benchmarks.test.ts` holds `LIBS` to, and its entry in
+  `RESULTS_LIB_INFO` (`results_plan.ts`), with a note for each kind of figure
+  that is not like another library's. A library in another mode, as
+  `zod_compiled` and `fuz_schema_compiled` are, follows its library in
+  `LIB_NAMES`, takes a label that begins with its library's, and has its
+  factories held to its library's text.
 - A survey shape: an entry in `SURVEY_SHAPES`, with a builder for each
-  library or a reason one has none, and for every input its verdict and what
+  library or a reason one has none, a reason where this library compiled has
+  no form of what its builder calls, and for every input its verdict and what
   the parse of it does.
 - A case: an entry in a group in `cases.ts`, with the path it takes, which
   `grade` and `src/test/cases.test.ts` check. Add to `real` only what is a

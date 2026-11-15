@@ -7,12 +7,15 @@
 
 	import { format_date } from './docs/benchmarks/benchmark_format.ts';
 	import { BENCHMARK_SECTION_TITLES } from './docs/benchmarks/benchmark_headline.ts';
+	import { to_maintained_columns } from './docs/benchmarks/benchmark_matrix.ts';
 	import BenchmarksChart from './docs/benchmarks/BenchmarksChart.svelte';
 	import type { PageProps } from './$types.js';
 
 	const { data }: PageProps = $props();
 
 	const benchmarks = $derived(data.benchmarks);
+	// the columns that are this library in another mode, which a file may have none of
+	const modes = $derived(benchmarks ? to_maintained_columns(benchmarks.columns).modes : []);
 </script>
 
 <main class="px_lg pb_xl9">
@@ -41,12 +44,16 @@
 					.filter((column) => !column.by_maintainer)
 					.map((column) => column.label)
 					.join(', ')}, from one run on {benchmarks.machine} on
-				{format_date(benchmarks.generated_at)}. Each bar's ratio is to the least figure in its
-				chart, which reads <code>1.00×</code>, and hovering a bar compares the others against it
-				instead. A figure is read with what it ranges over, and two that overlap are marked
-				<code>≈</code> and not ranked, the least among them too. The libraries don't all do the same
-				work for a figure: under a chart is what sets a library's figure there apart from another's.
-				These are summaries: each heading links to every row behind its figure, and
+				{format_date(benchmarks.generated_at)}.
+				{#each modes as { column, of } (column.id)}
+					{column.label} is {of.label} in another mode, and not another library.
+				{/each}
+				Each bar's ratio is to the least figure in its chart, which reads <code>1.00×</code>, and
+				hovering a bar compares the others against it instead. A figure is read with what it ranges
+				over, and two that overlap are marked <code>≈</code> and not ranked, the least among them
+				too. The libraries don't all do the same work for a figure: under a chart is what sets a
+				library's figure there apart from another's. These are summaries: each heading links to
+				every row behind its figure, and
 				<a href={resolve('/docs/benchmarks')}>the benchmarks page</a> says how each was measured and
 				what it leaves out.
 			</p>

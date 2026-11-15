@@ -12,8 +12,9 @@
  * with its types stripped, importing its package from `node_modules`, so Node
  * resolves and loads every file the package reaches, as a server without a
  * bundler does. This repo's library is then its built `dist/schema.js`, what
- * the package publishes, and a version given as a variant is its `schema.ts`
- * with the types stripped, there being no build of it.
+ * the package publishes, with `dist/compile.js` beside it for the module that
+ * compiles, and a version given as a variant is its `schema.ts` with the types
+ * stripped, there being no build of it.
  *
  * @module
  */
@@ -69,17 +70,33 @@ const strip_types = (path: string): string => {
 	}
 };
 
-const SCHEMA_SOURCE_PATH = fileURLToPath(new URL('../lib/schema.ts', import.meta.url));
-const SCHEMA_BUILT_PATH = fileURLToPath(new URL('../../dist/schema.js', import.meta.url));
-const SCHEMA_DECLARATIONS_PATH = fileURLToPath(new URL('../../dist/schema.d.ts', import.meta.url));
+const LIB_DIR = fileURLToPath(new URL('../lib/', import.meta.url));
+const DIST_DIR = fileURLToPath(new URL('../../dist/', import.meta.url));
 
-// a file of the build, or the script says to build it and exits, which is no
-// error of the harness
-const to_built_path = (path: string, name: string, reader: string): string => {
+/**
+ * The modules of this library a library module in `libs/` imports, by the
+ * specifier it imports each by, each with its name in `src/lib/` and in the
+ * build: `schema.ts`, and `compile.ts` for the library compiled.
+ */
+export const BUILT_LIB_MODULES: Readonly<Record<string, string>> = {
+	'#lib/schema.ts': 'schema',
+	'#lib/compile.ts': 'compile'
+};
+
+// A file of the build, or the script says to build it and exits, which is no
+// error of the harness. A build writes every module, so a file older than the
+// source of any of them is of a build before a change.
+const to_built_path = (file: string, reader: string): string => {
+	const path = DIST_DIR + file;
 	const built = existsSync(path) && statSync(path).mtimeMs;
-	if (!built || built < statSync(SCHEMA_SOURCE_PATH).mtimeMs) {
+	const newer =
+		built &&
+		Object.values(BUILT_LIB_MODULES).find(
+			(module) => built < statSync(`${LIB_DIR}${module}.ts`).mtimeMs
+		);
+	if (!built || newer) {
 		console.error(
-			`${reader} the built \`${name}\`, which is ${built ? 'older than `src/lib/schema.ts`' : 'missing'}: ` +
+			`${reader} the built \`dist/${file}\`, which is ${newer ? `older than \`src/lib/${newer}.ts\`` : 'missing'}: ` +
 				'run `gro build` first'
 		);
 		process.exit(1);
@@ -88,22 +105,28 @@ const to_built_path = (path: string, name: string, reader: string): string => {
 };
 
 /**
- * The built `dist/schema.js`, which an unbundled entry of the working tree's
- * library loads, as a consumer's server does the published package. When it
- * is missing or older than `src/lib/schema.ts` the script says to build it and
- * exits, which is no error of the harness.
+ * A built module of the library, `dist/<module>.js`, which an unbundled entry
+ * of the working tree's library loads, as a consumer's server does the
+ * published package. When it is missing or older than `src/lib/schema.ts` or
+ * `src/lib/compile.ts` the script says to build it and exits, which is no
+ * error of the harness.
+ *
+ * @param module - a value of `BUILT_LIB_MODULES`
  */
-export const to_built_schema_path = (): string =>
-	to_built_path(SCHEMA_BUILT_PATH, 'dist/schema.js', 'the unbundled entry loads');
+export const to_built_module_path = (module: string): string =>
+	to_built_path(`${module}.js`, 'the unbundled entry loads');
 
 /**
- * The built `dist/schema.d.ts`, what a consumer's compiler reads of the
- * library, which the type benchmark checks this library against, as it checks
- * every other library against its declarations. Missing or older than
- * `src/lib/schema.ts`, the script says to build it and exits.
+ * The built declarations of a module of the library, `dist/<module>.d.ts`,
+ * what a consumer's compiler reads of it, which the type benchmark checks this
+ * library against, as it checks every other library against its declarations.
+ * Missing or older than `src/lib/schema.ts` or `src/lib/compile.ts`, the
+ * script says to build it and exits.
+ *
+ * @param module - a value of `BUILT_LIB_MODULES`
  */
-export const to_built_schema_declarations_path = (): string =>
-	to_built_path(SCHEMA_DECLARATIONS_PATH, 'dist/schema.d.ts', 'the type benchmark reads');
+export const to_built_declarations_path = (module: string): string =>
+	to_built_path(`${module}.d.ts`, 'the type benchmark reads');
 
 /**
  * Another version of this repo's library to build an entry against, for
@@ -148,17 +171,21 @@ export const prepare_entry = async (
 	let source = strip_types(
 		variant?.lib_path ?? fileURLToPath(new URL(`./libs/${lib}.ts`, import.meta.url))
 	);
-	if (source.includes('#lib/schema.ts')) {
-		// this repo's own library is its build, and a variant, which has none, its stripped source
-		let schema_specifier: string;
-		if (variant) {
+	// this repo's own library is its build, and a variant, which has none, its stripped source
+	for (const [specifier, module] of Object.entries(BUILT_LIB_MODULES)) {
+		if (!source.includes(specifier)) continue;
+		let built_specifier: string;
+		if (!variant) {
+			built_specifier = pathToFileURL(to_built_module_path(module)).href;
+		} else if (module === 'schema') {
 			const schema_name = `schema.lib.${variant.id}.mjs`;
 			write_if_changed(join(CHILD_DIR, 'unbundled', schema_name), strip_types(variant.schema_path));
-			schema_specifier = `./${schema_name}`;
+			built_specifier = `./${schema_name}`;
 		} else {
-			schema_specifier = pathToFileURL(to_built_schema_path()).href;
+			// a variant is a version of `schema.ts` alone, and a module beside it imports the working tree's
+			throw new Error(`${lib} imports ${specifier}, which a variant of the library has none of`);
 		}
-		source = source.replace('#lib/schema.ts', schema_specifier);
+		source = source.replaceAll(specifier, built_specifier);
 	}
 	write_if_changed(path, source);
 	return path;

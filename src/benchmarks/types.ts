@@ -13,11 +13,18 @@
  * it doesn't predict a large codebase.
  *
  * **This library as a consumer's compiler reads it.** Every other library is
- * read from the declarations it publishes, so this one is too: its modules are
- * checked against the built `dist/schema.d.ts`, through copies whose import of
- * `#lib/schema.ts` is the build, and the script refuses to run when the build
- * is missing or older than `src/lib/schema.ts`. Its source would have `tsc`
- * check the library's function bodies as well, which no consumer pays.
+ * read from the declarations it publishes, so this one is too, as it is
+ * imported and compiled: a module that imports `#lib/schema.ts` or
+ * `#lib/compile.ts` is checked against the built `dist/schema.d.ts` and
+ * `dist/compile.d.ts`, through a copy whose imports of them are the build, and
+ * the script refuses to run when the build is missing or older than its
+ * source. The source would have `tsc` check the library's function bodies as
+ * well, which no consumer pays.
+ *
+ * **`fuz_schema_compiled` is this library's schemas through `compile.ts`.** Its
+ * scenario module calls `compile_parse` on each schema, and its reads are of
+ * what the function `compile_parse` returns gives for a match, so its figures
+ * are the interpreter's and what the compile's types add.
  *
  * Usage:
  *   gro run src/benchmarks/types.ts
@@ -28,7 +35,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 import {
 	DataArg,
@@ -40,7 +47,7 @@ import {
 	write_benchmark_data
 } from './args.ts';
 import type { TypeCost } from './results_schema.ts';
-import { to_built_schema_declarations_path } from './child.ts';
+import { BUILT_LIB_MODULES, to_built_declarations_path } from './child.ts';
 import { LIB_NAMES } from './lib_names.ts';
 import { COMPARED_LIB_PACKAGES, format_benchmark_header } from './machine.ts';
 import { format_table, median } from './measure.ts';
@@ -59,7 +66,15 @@ const Args = s.object({
 
 const args = parse_args(Args);
 
-const declarations_path = to_built_schema_declarations_path();
+// what a module of this library is checked against, by the specifier it is imported
+// by: the build's module, which `tsc` reads the declarations beside. Each is asked
+// for here, so a build that is missing or stale stops the script before it measures.
+const built_specifiers: Record<string, string> = Object.fromEntries(
+	Object.entries(BUILT_LIB_MODULES).map(([specifier, module]) => [
+		specifier,
+		to_built_declarations_path(module).replace(/\.d\.ts$/, '.js')
+	])
+);
 
 console.log(format_benchmark_header([...COMPARED_LIB_PACKAGES, 'typescript']));
 
@@ -86,30 +101,42 @@ const READS = [
 	't.list[0]?.email'
 ];
 
+const LIB_IMPORT_MATCHER = /'(#lib\/[^']+)'/g;
+
+// whether a module imports this repo's library, and so is checked through a copy
+const imports_lib = (path: string): boolean => readFileSync(path, 'utf8').includes("'#lib/");
+
+// the name of a module's copy: a library's name, with `.schemas` for its schemas module
+const to_copy_name = (path: string): string =>
+	basename(path, '.ts') + (basename(dirname(path)) === 'schemas' ? '.schemas' : '');
+
 /**
- * The file `tsc` checks for a module: the module itself, or for this library
- * a copy whose `#lib/schema.ts` is the build's declarations and whose relative
- * imports are absolute.
+ * The file `tsc` checks for a module: the module itself, or for a module of
+ * this library a copy whose imports of the library are the build's
+ * declarations and whose relative imports are absolute. A relative import of
+ * another module of this library, as the schemas of the library compiled
+ * import the interpreter's, is that module's copy, so both read one build.
  */
-const to_checked_module = (lib: string, path: string, name: string): string => {
-	if (lib !== 'fuz_schema') return path;
+const to_checked_module = (path: string): string => {
+	if (!imports_lib(path)) return path;
 	const source = readFileSync(path, 'utf8')
-		.replaceAll("'#lib/schema.ts'", JSON.stringify(declarations_path.replace(/\.d\.ts$/, '.js')))
+		.replace(LIB_IMPORT_MATCHER, (_, specifier: string) => {
+			const built = built_specifiers[specifier];
+			if (!built)
+				throw new Error(`${path} imports ${specifier}, which the build has no module for`);
+			return JSON.stringify(built);
+		})
 		.replace(/'(\.\.?\/[^']+)'/g, (_, relative: string) =>
-			JSON.stringify(resolve(path, '..', relative))
+			JSON.stringify(to_checked_module(resolve(path, '..', relative)))
 		);
-	const copy = resolve(dir, `${name}.ts`);
+	const copy = resolve(dir, `${to_copy_name(path)}.ts`);
 	writeFileSync(copy, source);
 	return copy;
 };
 
 // a file that reads a library's inferred types as a consumer does
 const to_reads_file = (lib: string): string => {
-	const schemas = to_checked_module(
-		lib,
-		resolve(BENCHMARKS_DIR, 'libs/schemas', `${lib}.ts`),
-		`${lib}.schemas`
-	);
+	const schemas = to_checked_module(resolve(BENCHMARKS_DIR, 'libs/schemas', `${lib}.ts`));
 
 	const path = resolve(dir, `${lib}.reads.ts`);
 	writeFileSync(
@@ -196,7 +223,7 @@ console.log(
 			lib,
 			...(measured_modules[lib] = measure(
 				lib,
-				to_checked_module(lib, resolve(BENCHMARKS_DIR, 'libs', `${lib}.ts`), lib)
+				to_checked_module(resolve(BENCHMARKS_DIR, 'libs', `${lib}.ts`))
 			))
 		])
 	])
@@ -214,11 +241,7 @@ console.log(
 			const reads = measure(`${lib}.reads`, to_reads_file(lib));
 			const alone = measure(
 				`${lib}.schemas`,
-				to_checked_module(
-					lib,
-					resolve(BENCHMARKS_DIR, 'libs/schemas', `${lib}.ts`),
-					`${lib}.schemas`
-				)
+				to_checked_module(resolve(BENCHMARKS_DIR, 'libs/schemas', `${lib}.ts`))
 			);
 			measured_reads[lib] = { reads, alone };
 			return [lib, reads[0]!, String(Number(reads[0]) - Number(alone[0])), ...reads.slice(1)];

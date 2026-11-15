@@ -30,7 +30,7 @@ npm run benchmark:heap        # memory still held after building and parsing
 npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_wasm
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
-npm run benchmark:survey      # many small shapes against valibot, zod, and zod compiled, by what a parse does
+npm run benchmark:survey      # many small shapes against itself compiled, valibot, zod, and zod compiled, by what a parse does
 npm run results               # every benchmark in turn into one results file, see results/README.md
 npm run results:publish       # copy a publishable run to results/latest.json, which the site renders
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
@@ -144,8 +144,11 @@ dev server.
 - `src/test/benchmarks.test.ts` - every library must agree on which scenario
   inputs match, its guard with its factory, and its output with this
   library's, so the benchmarks compare like with like; the app's schemas one
-  by one; every builder of `libs/schemas/` with its factory's text, and
-  `zod_compiled`'s factories with Zod's; and which roots `z.compile` compiles
+  by one; every builder of `libs/schemas/` with its factory's text,
+  `zod_compiled`'s factories with Zod's and `fuz_schema_compiled`'s with this
+  library's; which roots `z.compile` compiles; and that `fuz_schema_compiled`
+  compiles each schema once, in its factory, its guard, and its parse, and
+  never in a call
 - `src/test/cases.test.ts` - every case of the matrix matches or not as it
   says and takes the path it names, and the grader builds the `create` cases
   with a library of their own
@@ -260,12 +263,19 @@ dev server.
   standing in and the tree read as it starts and as it ends, the reading of
   the commit against a repository made for the test, publishing, and
   `results/README.md` against the commands
+- `src/test/results_roster.test.ts` - a results file with
+  `fuz_schema_compiled` and one without, and the published run, each parsing,
+  rendering every table with a cell for each library of its roster and for no
+  other, and bearing the README's claims, with "the libraries compared" read
+  as the roster less this library's own modes
 - `src/test/benchmark_*.test.ts`, `site_benchmarks.test.ts` - the
   benchmarks page's derivations over the fixture run, and which file the
   site renders
 - `src/test/results_test_helpers.ts` - what the tests of the results file and
   the site share: the fixture as a fresh copy, the same under the kind of a
-  full run, a section's data, and a parse that must fail where it is told
+  full run, a file without a library (`remove_lib`,
+  `load_fixture_without_compiled`), a section's data, and a parse that must
+  fail where it is told
 - `src/test/site_imports.test.ts` - the library imports nothing of the
   benchmarks or the site, and only a server load loads the results schema,
   a results file, or the fixture
@@ -316,9 +326,9 @@ dev server.
   - `run_rows.ts`, `harvest_sets.ts`, `survey_rows.ts` - what a timing
     process loads its rows through: one library's scenarios, one side of a
     harvested set, with the sets' declarations, and one library's survey rows
-  - `survey.ts`, `survey_shapes.ts` - many small shapes in this library,
-    Valibot, Zod, and Zod compiled, timed row by row and summarized by what a
-    parse does
+  - `survey.ts`, `survey_shapes.ts` - many small shapes in this library, as
+    it is imported and compiled, Valibot, Zod, and Zod compiled, timed row by
+    row and summarized by what a parse does
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.

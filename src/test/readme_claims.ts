@@ -75,7 +75,14 @@ export const README_CLAIMS_SUBJECT = 'fuz_schema';
 
 const SUBJECT = README_CLAIMS_SUBJECT;
 
-/** What a claim that names "the libraries compared" is checked against: every other library of the roster. */
+/**
+ * What a claim that names "the libraries compared" is checked against: the
+ * other libraries of the roster, this library's own modes left out. A mode of
+ * this library, as `fuz_schema_compiled` is, is the entry the roster records
+ * with this library's package, which a mode shares with its library: it is
+ * this library and not one compared with it, so these claims never set the
+ * two modes against each other.
+ */
 export const README_CLAIMS_EVERY_OTHER = 'every other';
 
 /** A claim the README makes. */
@@ -97,11 +104,29 @@ export interface ReadmeClaim {
 	check: (results: BenchmarkResults, others: ReadonlyArray<string>) => string | null;
 }
 
-/** The libraries a claim compares this one with, in a results file. */
-export const to_claim_others = (claim: ReadmeClaim, results: BenchmarkResults): Array<string> =>
-	claim.others === README_CLAIMS_EVERY_OTHER
-		? results.meta.libs.map((lib) => lib.id).filter((id) => id !== SUBJECT)
-		: [...claim.others];
+/**
+ * The entries of a results file's roster that are this library, in any mode:
+ * those of the package the roster records for it. Empty where the roster
+ * lacks it.
+ */
+export const to_subject_modes = (results: BenchmarkResults): Array<string> => {
+	const subject = results.meta.libs.find((lib) => lib.id === SUBJECT);
+	if (!subject) return [];
+	return results.meta.libs.filter((lib) => lib.package === subject.package).map((lib) => lib.id);
+};
+
+/**
+ * The libraries a claim compares this one with, in a results file: those it
+ * names, or for `README_CLAIMS_EVERY_OTHER` every entry of the roster that is
+ * not this library in any of its modes.
+ */
+export const to_claim_others = (claim: ReadmeClaim, results: BenchmarkResults): Array<string> => {
+	if (claim.others !== README_CLAIMS_EVERY_OTHER) return [...claim.others];
+	const modes = to_subject_modes(results);
+	return results.meta.libs
+		.map((lib) => lib.id)
+		.filter((id) => id !== SUBJECT && !modes.includes(id));
+};
 
 // the rows of an input's parse times, as the page draws them, without its mean
 const to_time_rows = (results: BenchmarkResults, input: TimeInput): Array<MatrixRow> | string => {

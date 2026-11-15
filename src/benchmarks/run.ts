@@ -24,6 +24,13 @@
  * of its parses, so neither runs in code the other shaped. `--no-guard` leaves
  * them out.
  *
+ * **`fuz_schema_compiled` is this library in its compiled mode**, and no
+ * other library: its parses are the functions `compile_parse` makes of the
+ * scenarios' schemas and its guards the ones `compile_guard` makes, each made
+ * as its process builds the scenario. Compiled code builds no issue, so its
+ * rows of invalid input are the interpreter's parse after the compiled code
+ * has run to its first failure.
+ *
  * **`zod_compiled` has no figure where `z.compile` hands the root back**
  * uncompiled (`find_uncompiled_scenarios`): its process still builds and runs
  * that scenario, as every process holds every scenario, and times none of its
@@ -245,9 +252,10 @@ console.log(
 			: '') +
 		(guard_row_names.length
 			? ".\nA scenario's third table, `guard`, is each library's guard on the valid input, which " +
-				'returns a\nverdict and not the output: `is` in this library and Valibot, `z.validate` in ' +
-				"Zod, TypeBox's `Check`,\nArkType's `allows`. Valibot's `is`, and Zod's where a schema " +
-				'has no compiled path, run the parser,\nwhich still copies what it reads, and drop the copy'
+				'returns a\nverdict and not the output: `is` in this library and Valibot, the guard ' +
+				"`compile_guard` makes in this\nlibrary compiled, `z.validate` in Zod, TypeBox's `Check`, " +
+				"ArkType's `allows`. Valibot's `is`, and Zod's\nwhere a schema has no compiled path, run " +
+				'the parser, which still copies what it reads, and drop the copy'
 			: '')
 );
 for (const scenario of scenarios) {
@@ -301,6 +309,13 @@ if (uncompiled.length) {
 		'\n`-` is a row a library has no equivalent of. `zod_compiled` is each root through ' +
 			`\`z.compile\`,\nwhich hands ${uncompiled.join(' and ')} back uncompiled: it times none of ` +
 			'those rows.'
+	);
+}
+if (libs.some((lib) => lib.name === 'fuz_schema_compiled')) {
+	console.log(
+		'\n`fuz_schema_compiled` is this library and no other: each schema through `compile_parse`, ' +
+			'and through\n`compile_guard` for its guard. Its compiled code builds no issue, so its ' +
+			"invalid rows are the\ninterpreter's parse after the compiled code has run to its first failure."
 	);
 }
 if (libs.some((lib) => lib.name === 'typebox')) {

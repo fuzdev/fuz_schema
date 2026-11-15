@@ -6,23 +6,31 @@ import Layout from '#routes/+layout.svelte';
 import Home from '#routes/+page.svelte';
 import { to_headline_charts } from '#routes/docs/benchmarks/benchmark_headline.ts';
 import {
+	to_allocation_groups,
 	to_coldstart_groups,
 	to_creation_group,
 	to_harvest_sets,
 	to_lib_columns,
 	to_survey_columns,
 	to_survey_summary,
-	to_time_groups
+	to_time_groups,
+	to_types_group
 } from '#routes/docs/benchmarks/benchmark_sections.ts';
 import { to_column_notes } from '#routes/docs/benchmarks/benchmark_matrix.ts';
 import BenchmarksChart from '#routes/docs/benchmarks/BenchmarksChart.svelte';
+import BenchmarksIntro from '#routes/docs/benchmarks/BenchmarksIntro.svelte';
 import BenchmarksNotes from '#routes/docs/benchmarks/BenchmarksNotes.svelte';
 import BenchmarksProvenance from '#routes/docs/benchmarks/BenchmarksProvenance.svelte';
 import BenchmarksSurveySummary from '#routes/docs/benchmarks/BenchmarksSurveySummary.svelte';
 import BenchmarksTable from '#routes/docs/benchmarks/BenchmarksTable.svelte';
 import BenchmarksText from '#routes/docs/benchmarks/BenchmarksText.svelte';
 import SiteHarness from './SiteHarness.svelte';
-import { load_fixture, load_full_run, to_measured } from './results_test_helpers.ts';
+import {
+	load_fixture,
+	load_fixture_without_compiled,
+	load_full_run,
+	to_measured
+} from './results_test_helpers.ts';
 
 /**
  * What a component renders on the server, as the text a reader sees: the
@@ -306,6 +314,199 @@ describe('a chart and a table mark what is not a difference', () => {
 	});
 });
 
+describe('this library in its compiled mode is a column of its own, and reads as this library', () => {
+	const charts = to_headline_charts(results);
+	const to_chart_text = (title: string): string => {
+		const chart = charts.find((c) => c.title === title)!;
+		return render_text(BenchmarksChart, {
+			columns,
+			row: chart.row,
+			title: chart.title,
+			note: chart.note,
+			about: chart.about
+		});
+	};
+	const without = to_lib_columns(load_fixture_without_compiled().meta.libs);
+
+	test("its label begins with the library's, beside it, and it carries the library's mark", () => {
+		const text = render_text(BenchmarksTable, {
+			columns,
+			groups: to_time_groups(results),
+			heading: 'scenario',
+			label: 'times'
+		});
+		assert.include(
+			text,
+			"scenario fuz_schema maintainer's fuz_schema compiled maintainer's Valibot Zod"
+		);
+		// and no other column is marked
+		assert.lengthOf(text.match(/maintainer's/g)!, 2);
+	});
+
+	test('the introduction names one library compared with the others, and the mode as that library', () => {
+		const text = render_text(BenchmarksIntro, { columns });
+		assert.match(
+			text,
+			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, and ArkType ?:/
+		);
+		assert.include(
+			text,
+			"fuz_schema compiled maintainer's is fuz_schema in another mode and not another library, a column of its own beside it: what its figures include is under each table."
+		);
+		assert.match(
+			text,
+			/also maintains fuz_schema ?, so that library is marked wherever it is named, in each mode ?, and/
+		);
+		// it is not among what this library is compared with, and not a second library maintained
+		assert.notMatch(text, /with[^:]*fuz_schema compiled[^:]*:/);
+		assert.notMatch(text, /also maintains[^,]*compiled/);
+	});
+
+	test('the introduction of a file with no such column says nothing of a mode', () => {
+		const text = render_text(BenchmarksIntro, { columns: without });
+		assert.match(
+			text,
+			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, and ArkType ?:/
+		);
+		assert.match(
+			text,
+			/also maintains fuz_schema ?, so that library is marked wherever it is named ?, and/
+		);
+		assert.notInclude(text, 'another mode');
+		assert.notInclude(text, 'in each mode');
+		assert.notInclude(text, 'fuz_schema compiled');
+	});
+
+	test('under a figure is what a compiled figure of that kind includes', () => {
+		// a parse of valid input is compiled code, and gives the input back where the interpreter does
+		assert.include(
+			to_chart_text('Parsing valid input'),
+			'fuz_schema compiled: Each schema through compile_parse , whose compiled code builds what parse returns for a valid input: the input itself where nothing changed.'
+		);
+		// a parse of invalid input is the interpreter's
+		const invalid = to_chart_text('Rejecting invalid input');
+		assert.include(
+			invalid,
+			"fuz_schema compiled: Compiled code builds no issue: an invalid input is handed to parse , so a figure is the interpreter's parse after the compiled code has run to its first failure."
+		);
+		assert.notInclude(invalid, 'whose compiled code builds what');
+		assert.include(
+			to_chart_text('Answering only whether it matches'),
+			'fuz_schema compiled: Each schema through compile_guard , which gives what is gives.'
+		);
+		// the bytes shipped, a cold start, and what is held each carry the compiler and the compile
+		for (const title of ['Bundle size', 'Cold start', 'Memory held']) {
+			const text = to_chart_text(title);
+			assert.include(
+				text,
+				'fuz_schema compiled: It carries the compiler of compile.ts , and compiles while the schema is built.',
+				title
+			);
+			assert.notInclude(text, 'handed to parse', title);
+		}
+	});
+
+	test('under the tables of creation, allocation, and type-checking too', () => {
+		const to_table_text = (groups: Array<unknown>, about: Array<string>): string =>
+			render_text(BenchmarksTable, {
+				columns,
+				groups,
+				heading: 'scenario',
+				label: 'a table',
+				about
+			});
+		assert.include(
+			to_table_text([to_creation_group(results)!], ['creation']),
+			'fuz_schema compiled: It carries the compiler of compile.ts , and compiles while the schema is built.'
+		);
+		const allocation = to_table_text(to_allocation_groups(results), ['allocation', 'creation']);
+		assert.include(allocation, 'fuz_schema compiled: Each schema through compile_parse');
+		assert.include(allocation, 'an invalid input is handed to parse');
+		assert.include(allocation, 'compiles while the schema is built');
+		assert.include(
+			to_table_text([to_types_group(results)!], ['types']),
+			'fuz_schema compiled: Its module calls compile_parse on each schema, and its reads are of what a compiled parse gives'
+		);
+	});
+
+	test('a table of a file with no such column has no line of it', () => {
+		const older = load_fixture_without_compiled();
+		const text = render_text(BenchmarksTable, {
+			columns: without,
+			groups: to_time_groups(older),
+			heading: 'scenario',
+			label: 'times',
+			about: ['valid', 'invalid', 'guard']
+		});
+		assert.notInclude(text, 'compile_parse');
+		assert.notInclude(text, 'fuz_schema compiled');
+		assert.include(text, "scenario fuz_schema maintainer's Valibot Zod");
+	});
+
+	test('the landing page compares against the other libraries, and says the mode is this library', () => {
+		const to_home = (of: typeof results): string =>
+			render_text(Home, {
+				data: {
+					benchmarks: {
+						columns: to_lib_columns(of.meta.libs),
+						charts: to_headline_charts(of),
+						machine: of.meta.machine.name,
+						generated_at: of.meta.generated_at
+					}
+				}
+			});
+		const home = to_home(results);
+		assert.match(
+			home,
+			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, ArkType, from one run/
+		);
+		assert.include(
+			home,
+			'fuz_schema compiled is fuz_schema in another mode, and not another library.'
+		);
+		// each chart has its bar, marked as the library's is
+		assert.lengthOf(home.match(/fuz_schema compiled maintainer's/g)!, charts.length);
+		const older = to_home(load_fixture_without_compiled());
+		assert.match(
+			older,
+			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, ArkType, from one run/
+		);
+		assert.notInclude(older, 'another mode');
+		assert.notInclude(older, 'fuz_schema compiled');
+	});
+
+	test('the survey summary is of this library as it is imported, over each other column, the mode among them', () => {
+		const survey_columns = to_survey_columns(results);
+		const text = render_text(BenchmarksSurveySummary, {
+			rows: to_survey_summary(to_measured(results, 'survey')),
+			subject: survey_columns[0],
+			others: survey_columns.slice(1)
+		});
+		assert.match(text, /The time of fuz_schema maintainer's over that of each other column/);
+		assert.include(
+			text,
+			"over fuz_schema compiled maintainer's over Valibot over Zod over Zod compiled"
+		);
+		// a roster with the mode before the library still reads the subject the file names
+		const reordered = load_fixture();
+		reordered.meta.libs = [reordered.meta.libs[1]!, reordered.meta.libs[0]!].concat(
+			reordered.meta.libs.slice(2)
+		);
+		assert.deepStrictEqual(
+			to_survey_columns(reordered).map((column) => column.id),
+			['fuz_schema', 'fuz_schema_compiled', 'valibot', 'zod', 'zod_compiled']
+		);
+	});
+
+	test("the provenance says it is this repository's source compiled, and no other library", () => {
+		const text = render_text(SiteHarness, { component: BenchmarksProvenance, props: { results } });
+		assert.match(
+			text,
+			/fuz_schema compiled: @fuzdev\/fuz_schema \S+\. This repository's source at the run's commit, with each schema through compile_parse , or compile_guard for a guard: fuz_schema in its compiled mode, and no other library\./
+		);
+	});
+});
+
 describe('a harvested set', () => {
 	const [set] = to_harvest_sets(results);
 	const props = {
@@ -333,6 +534,14 @@ describe('a harvested set', () => {
 		assert.include(text, 'Zod jitless');
 		assert.include(text, 'Zod compiled');
 		assert.notInclude(text, 'zod jitless');
+	});
+
+	test('has this library as it is imported, and no side of it compiled', () => {
+		for (const of_set of to_harvest_sets(results)) {
+			const ids = of_set.columns.map((column) => column.id);
+			assert.include(ids, 'fuz_schema', of_set.name);
+			assert.notInclude(ids, 'fuz_schema_compiled', of_set.name);
+		}
 	});
 });
 

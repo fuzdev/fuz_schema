@@ -1,7 +1,10 @@
 /**
  * A survey of this library against Valibot and Zod over many small shapes,
  * to see where another library is ahead: `survey_shapes.ts` has the shapes,
- * and a row is one input of one.
+ * and a row is one input of one. Two more columns are a library in another
+ * mode: this one with each shape's schema compiled, `fuz_schema_compiled`,
+ * which shows what the compile changes of each kind of work, and Zod with
+ * each root through `z.compile`.
  *
  * It is a benchmark and no gate. The scenarios of `run.ts` are a few schemas
  * for every library, each with one figure for a match and one for a miss.
@@ -60,6 +63,7 @@ import {
 	SURVEY_SHAPES,
 	to_survey_builder_name,
 	to_survey_row_name,
+	to_survey_skip,
 	type SurveyDoes,
 	type SurveyLibName,
 	type Zod
@@ -148,6 +152,14 @@ if (!rows.length) {
 const uncompiled = [...uncompiled_shapes].filter((shape) =>
 	rows.some((row) => row.name.startsWith(`${shape}/`))
 );
+// the shapes this library compiled is left out of, among the rows asked for
+const no_compiled_form = others.includes('fuz_schema_compiled')
+	? SURVEY_SHAPES.filter(
+			(shape) =>
+				to_survey_skip(shape, 'fuz_schema_compiled') !== undefined &&
+				rows.some((row) => row.name.startsWith(`${shape.name}/`))
+		).map((shape) => shape.name)
+	: [];
 
 // A row is warmed this long before its timing. A process that holds one row
 // has everything still to compile, so it warms for longer. The rows are many
@@ -334,6 +346,17 @@ console.log(
 		`A row where either library takes\n${format_number(call_floor_ns)} ns or less, twice that, is at the call floor: ` +
 		'it is marked `~`, its ratio is mostly of\ntwo calls, it is in no mean of the summary, and it is never marked `<`.'
 );
+if (others.includes('fuz_schema_compiled')) {
+	console.log(
+		'\n`fuz_schema_compiled` is this library and no other: the schema of each shape through ' +
+			'`compile_parse`, or\n`compile_guard` where the shape is a guard. Its compiled code builds ' +
+			"no issue, so a row that fails is\nthe interpreter's parse after the compiled code has run " +
+			'to its first failure' +
+			(no_compiled_form.length
+				? `. It has no equivalent of\n${no_compiled_form.join(', ')}, whose rows are \`-\`.`
+				: '.')
+	);
+}
 if (uncompiled.length) {
 	console.log(
 		'\n`zod_compiled` is Zod with the root of each shape through `z.compile`, which hands back ' +
@@ -375,8 +398,10 @@ if (args.data !== undefined) {
 						return { ns: timed.ns, spread: Number.isNaN(timed.spread) ? null : timed.spread };
 					}
 					const builder = to_survey_builder_name(lib);
-					if (!shape[builder])
-						return { none: 'no_equivalent', why: shape.skips?.[builder] ?? null };
+					const skip = to_survey_skip(shape, lib);
+					if (!shape[builder] || skip !== undefined) {
+						return { none: 'no_equivalent', why: skip ?? null };
+					}
 					const differs = input.differs?.[builder];
 					if (differs !== undefined) return { none: 'differs', why: differs };
 					return { none: 'uncompiled', why: '`z.compile` hands the root back uncompiled' };

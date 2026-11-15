@@ -126,7 +126,9 @@ export const BENCHMARK_MISSING_REASONS = ['uncompiled', 'no_equivalent', 'differ
  *
  * - `uncompiled` - `zod_compiled` where `z.compile` hands the root back as it
  *   was, so the row would be Zod's own parser in another library's process
- * - `no_equivalent` - the library can't express the shape
+ * - `no_equivalent` - the library can't express the shape, or has no form of
+ *   what the shape calls, as this library compiled has none of a parse that
+ *   throws
  * - `differs` - the library gives the other verdict on the input, so the row
  *   would compare different work
  */
@@ -619,7 +621,14 @@ export const BenchmarkLibNote = s.object({
 });
 export type BenchmarkLibNote = s.Infer<typeof BenchmarkLibNote>;
 
-/** One library under comparison. The roster of these is the columns of every table. */
+/**
+ * One library under comparison, or one in another mode, as `zod_compiled` is
+ * Zod with each root compiled and `fuz_schema_compiled` this library with each
+ * schema compiled: an entry of its own, whose id and label begin with its
+ * library's. The roster of these is the columns of every table, and a file's
+ * roster is what its run measured: a file has no cell of a library its roster
+ * doesn't name.
+ */
 export const BenchmarkLib = s.object({
 	id: BenchmarkLibId,
 	label: NonEmptyString,
@@ -633,7 +642,10 @@ export const BenchmarkLib = s.object({
 			'a run must know which version it measured'
 		)
 	),
-	/** Whether the maintainer of these benchmarks also maintains the library. The site marks it. */
+	/**
+	 * Whether the maintainer of these benchmarks also maintains the library. The
+	 * site marks it, and a library in another mode as its library is marked.
+	 */
 	by_maintainer: s.boolean,
 	/** What of the package was measured, where that is not the package as it is imported. */
 	note: s.nullable(NonEmptyString),

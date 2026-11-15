@@ -9,12 +9,13 @@
 	import TomeLink from '@fuzdev/fuz_ui/TomeLink.svelte';
 	import TomeSection from '@fuzdev/fuz_ui/TomeSection.svelte';
 	import TomeSectionHeader from '@fuzdev/fuz_ui/TomeSectionHeader.svelte';
-	import { DOCS_PATH, docs_slugify } from '@fuzdev/fuz_ui/docs_helpers.svelte.ts';
+	import { DOCS_PATH } from '@fuzdev/fuz_ui/docs_helpers.svelte.ts';
 	import { site_context } from '@fuzdev/fuz_ui/site.svelte.ts';
 	import { tome_get_by_slug } from '@fuzdev/fuz_ui/tome.ts';
 
 	import { format_bytes, format_ns, format_percent } from './benchmark_format.ts';
 	import { BENCHMARK_SECTION_TITLES as TITLES } from './benchmark_headline.ts';
+	import { to_maintained_columns } from './benchmark_matrix.ts';
 	import {
 		ALLOCATION_TOLERANCE,
 		HEAP_FURTHER_TOLERANCE_BYTES,
@@ -35,7 +36,7 @@
 		to_types_group
 	} from './benchmark_sections.ts';
 	import { format_run_regime } from './benchmark_provenance.ts';
-	import BenchmarksLabel from './BenchmarksLabel.svelte';
+	import BenchmarksIntro from './BenchmarksIntro.svelte';
 	import BenchmarksLegend from './BenchmarksLegend.svelte';
 	import BenchmarksProvenance from './BenchmarksProvenance.svelte';
 	import BenchmarksSurveySummary from './BenchmarksSurveySummary.svelte';
@@ -56,8 +57,8 @@
 
 	const results = $derived(data?.benchmarks.results ?? null);
 	const columns = $derived(results ? to_lib_columns(results.meta.libs) : []);
-	const maintained = $derived(columns.filter((column) => column.by_maintainer));
-	const compared = $derived(columns.filter((column) => !column.by_maintainer));
+	// the maintainer's columns that are its library in another mode, as a file has them
+	const modes = $derived(to_maintained_columns(columns).modes);
 
 	const size_groups = $derived(
 		results
@@ -104,20 +105,7 @@
 		</section>
 	{:else}
 		<section>
-			<p>
-				This page compares
-				{#each maintained as column (column.id)}<BenchmarksLabel {column} />{/each}
-				with
-				{#each compared as column, i (column.id)}
-					{i === 0 ? '' : i === compared.length - 1 ? ', and ' : ', '}{column.label}
-				{/each}: the bytes each ships, how long a parse takes, what a fresh process pays before its
-				first parse, what stays in memory, and what the types cost the compiler. The maintainer of
-				these benchmarks also maintains
-				{#each maintained as column (column.id)}{column.label}{/each}, so that library is marked
-				wherever it is named, and
-				<a href="#{docs_slugify(TITLES.method)}">how every number was measured</a> is published with
-				the numbers.
-			</p>
+			<BenchmarksIntro {columns} />
 			<p>
 				Every figure here is rendered from one results file, of one run. Beside a number is its
 				ratio to the least in its row, or the most where higher is better, which reads
@@ -488,6 +476,11 @@
 						The sets are all from projects of this library's maintainer, not a sample of the
 						ecosystem.
 					</li>
+					{#each modes as { column, of } (column.id)}
+						<li>
+							The sets have no side of {column.label}: {of.label} is here as it is imported.
+						</li>
+					{/each}
 				</ul>
 			</aside>
 		</TomeSection>

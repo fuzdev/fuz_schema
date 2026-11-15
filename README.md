@@ -47,7 +47,7 @@ with a human steering the design.
 
 ## Measurements
 
-The benchmarks in `src/benchmarks/` compare this library with Valibot, Zod (as it is imported,
+The benchmarks in `src/benchmarks/` compare this library, as it is imported and with each schema compiled by `compile_parse` and `compile_guard`, with Valibot, Zod (as it is imported,
 with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, and ArkType.
 [The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
@@ -104,8 +104,8 @@ Caveats:
 ## When not to use it
 
 - Where a schema is checked often enough to be worth compiling: [`compile.ts`](#compiling-a-schema) compiles one to straight-line code,
-  where code generated at runtime is allowed. It is not in the [measurements](#measurements) below, which are of the interpreter,
-  and it leaves the issues of an input that fails to the interpreter.
+  where code generated at runtime is allowed. The benchmarks enter it as a library of its own, `fuz_schema_compiled`,
+  and the claims of [Measurements](#measurements) are of the interpreter. It leaves the issues of an input that fails to the interpreter.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -1042,7 +1042,7 @@ npm run benchmark:allocations # heap bytes per parse and per schema built
 npm run benchmark:coldstart   # a fresh process: import, build, first parse, peak memory, after gro build
 npm run benchmark:heap        # memory still held after building and parsing
 npm run benchmark:types       # what each library costs the TypeScript checker, after gro build
-npm run benchmark:survey      # many small shapes against Valibot, Zod, and compiled Zod, by what a parse does
+npm run benchmark:survey      # many small shapes against itself compiled, Valibot, Zod, and compiled Zod, by what a parse does
 npm run benchmark:harvest     # consumers' own schemas and data, in their library and in this one
 npm run benchmark:wasm        # the Rust crate as wasm against this library, after npm run build:wasm
 npm run results -- --smoke    # each of them but the wasm, which --wasm adds, into one results file, briefly
