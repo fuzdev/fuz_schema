@@ -388,6 +388,8 @@ dev server.
     where the rendered results came from, for the banner every page of a
     build over the fixture or an unpublished run carries, and the landing
     page's headline figures, worked out from the file at build time
+  - `logo.ts` - `logo_fuz_schema`, the logo as data, a fossilized femur, which
+    `static/logo.svg` and `static/favicon.png` are drawn from
   - `docs/benchmarks/` - the `benchmarks` tome and its modules, which the
     landing page's summary imports too: `site_benchmarks.server.ts` (which
     results file is rendered, read in the server loads), `benchmark_matrix.ts`

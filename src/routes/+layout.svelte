@@ -8,12 +8,13 @@
 	import pkg_json from 'virtual:pkg.json';
 
 	import BenchmarksBanner from './docs/benchmarks/BenchmarksBanner.svelte';
+	import { logo_fuz_schema } from './logo.ts';
 	import type { LayoutProps } from './$types.js';
 
 	const { children, data }: LayoutProps = $props();
 
 	// `glyph` and `repo_url` derive from `pkg_json`.
-	site_context.set(new SiteState({ pkg_json }));
+	site_context.set(new SiteState({ icon: logo_fuz_schema, pkg_json }));
 </script>
 
 <svelte:head>

@@ -6,7 +6,8 @@
 	import EcosystemLinksPanel from '@fuzdev/fuz_ui/EcosystemLinksPanel.svelte';
 	import Breadcrumb from '@fuzdev/fuz_ui/Breadcrumb.svelte';
 	import Svg from '@fuzdev/fuz_ui/Svg.svelte';
-	import { logo_fuz } from '@fuzdev/fuz_ui/logos.ts';
+
+	import { logo_fuz_schema } from '#routes/logo.ts';
 
 	const site = site_context.get();
 
@@ -16,7 +17,7 @@
 <main class="width_atmost_md pb_xl9">
 	<section class="box">
 		<header class="box pt_xl">
-			<Svg data={logo_fuz} size="var(--icon_size_xl)" />
+			<Svg data={logo_fuz_schema} size="var(--icon_size_xl)" />
 			<h1 class="mt_xl2">fuz_schema</h1>
 		</header>
 		<div style:--font_size="var(--font_size_xl)">
