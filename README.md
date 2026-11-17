@@ -1,5 +1,7 @@
 # fuz_schema
 
+[<img src="static/logo.svg" alt="a fossilized femur" align="right" width="192" height="192">](https://schema.fuz.dev/)
+
 > a performance-focused schema library for JS - [schema.fuz.dev](https://schema.fuz.dev/)
 
 fuz_schema is a schema validation library for TypeScript and JS.
