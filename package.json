@@ -1,6 +1,6 @@
 {
   "name": "@fuzdev/fuz_schema",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "a performance-focused schema library for JS",
   "glyph": "🦴",
   "logo": "logo.svg",
