@@ -5,10 +5,10 @@
 
 	import ThemeRoot from '@fuzdev/fuz_ui/ThemeRoot.svelte';
 	import { SiteState, site_context } from '@fuzdev/fuz_ui/site.svelte.ts';
+	import { logo_fuz_schema } from '@fuzdev/fuz_ui/logos.ts';
 	import pkg_json from 'virtual:pkg.json';
 
 	import BenchmarksBanner from './docs/benchmarks/BenchmarksBanner.svelte';
-	import { logo_fuz_schema } from './logo.ts';
 	import type { LayoutProps } from './$types.js';
 
 	const { children, data }: LayoutProps = $props();

@@ -6,8 +6,7 @@
 	import EcosystemLinksPanel from '@fuzdev/fuz_ui/EcosystemLinksPanel.svelte';
 	import Breadcrumb from '@fuzdev/fuz_ui/Breadcrumb.svelte';
 	import Svg from '@fuzdev/fuz_ui/Svg.svelte';
-
-	import { logo_fuz_schema } from '#routes/logo.ts';
+	import { logo_fuz_schema } from '@fuzdev/fuz_ui/logos.ts';
 
 	const site = site_context.get();
 
