@@ -7,7 +7,8 @@ import {
 import {
 	matrix_row_entry,
 	matrix_row_value,
-	to_matrix_bars
+	to_matrix_bars,
+	to_ranked_columns
 } from '#routes/docs/benchmarks/benchmark_matrix.ts';
 import {
 	HEAP_TOTAL_TOLERANCE_BYTES,
@@ -100,6 +101,31 @@ describe('to_headline_charts', () => {
 			const entry = matrix_row_entry(size.row, column);
 			assert.ok(entry.kind === 'value' && entry.band === null, column);
 		}
+	});
+
+	test('a chart ranks its bars best first, and those with no number last', () => {
+		const results = load_fixture();
+		const columns = results.meta.libs.map((lib) => lib.id);
+		for (const { row, title } of to_headline_charts(results)) {
+			const values = to_ranked_columns(row, columns).map((column) =>
+				matrix_row_value(row, column)!
+			);
+			const sorted = values.toSorted((a, b) => (row.direction === 'lower' ? a - b : b - a));
+			assert.deepStrictEqual(values, sorted, title);
+		}
+		// a column with no number goes last, and equals keep the order given
+		const { row } = to_headline_charts(results)[0]!;
+		const rest = Object.fromEntries(
+			Object.entries(row.entries).filter(([column]) => column !== columns[0])
+		);
+		const ranked = to_ranked_columns({ ...row, entries: rest }, columns);
+		assert.strictEqual(ranked.at(-1), columns[0]);
+		const level = Object.fromEntries(columns.map((column) => [column, row.entries[columns[0]!]!]));
+		assert.deepStrictEqual(to_ranked_columns({ ...row, entries: level }, columns), columns);
+		assert.deepStrictEqual(
+			to_ranked_columns({ ...row, direction: 'higher' }, columns),
+			to_ranked_columns(row, columns).reverse()
+		);
 	});
 
 	test('memory held is a mean of totals, each read with what a total repeats to', () => {

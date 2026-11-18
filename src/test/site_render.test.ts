@@ -16,7 +16,7 @@ import {
 	to_time_groups,
 	to_types_group
 } from '#routes/docs/benchmarks/benchmark_sections.ts';
-import { to_column_notes } from '#routes/docs/benchmarks/benchmark_matrix.ts';
+import { matrix_row_value, to_column_notes } from '#routes/docs/benchmarks/benchmark_matrix.ts';
 import BenchmarksChart from '#routes/docs/benchmarks/BenchmarksChart.svelte';
 import BenchmarksIntro from '#routes/docs/benchmarks/BenchmarksIntro.svelte';
 import BenchmarksNotes from '#routes/docs/benchmarks/BenchmarksNotes.svelte';
@@ -282,6 +282,26 @@ describe('a chart and a table mark what is not a difference', () => {
 		}
 		// a baseline another number is level with is marked and untinted with it
 		assert.ok(level.some((cell) => cell.text.includes('≈1.00×')));
+	});
+
+	test("a chart's bars are ranked best first, whatever the order of its columns", () => {
+		const html = render_html(BenchmarksChart, { columns, row: guard.row, title: guard.title });
+		const shown = [...html.matchAll(/data-column="([^"]+)"/g)].map((match) => match[1]);
+		const reversed = render_html(BenchmarksChart, {
+			columns: columns.toReversed(),
+			row: guard.row,
+			title: guard.title
+		});
+		assert.lengthOf(shown, columns.length);
+		assert.deepStrictEqual(
+			[...reversed.matchAll(/data-column="([^"]+)"/g)].map((match) => match[1]),
+			shown
+		);
+		const values = shown.map((column) => matrix_row_value(guard.row, column!)!);
+		assert.deepStrictEqual(
+			values,
+			values.toSorted((a, b) => a - b)
+		);
 	});
 
 	test('a level bar of a chart has no ratio color, and a bar that differs has one', () => {

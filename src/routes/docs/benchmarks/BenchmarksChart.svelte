@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { format_ratio } from './benchmark_format.ts';
-	import { to_matrix_bars, type MatrixColumn, type MatrixRow } from './benchmark_matrix.ts';
+	import {
+		to_matrix_bars,
+		to_ranked_columns,
+		type MatrixColumn,
+		type MatrixRow
+	} from './benchmark_matrix.ts';
 	import { to_ratio_color } from './benchmark_ratio.ts';
 	import BenchmarksLabel from './BenchmarksLabel.svelte';
 	import BenchmarksNotes from './BenchmarksNotes.svelte';
@@ -13,7 +18,7 @@
 		about = [],
 		href = null
 	}: {
-		/** The libraries shown, in bar order. */
+		/** The libraries shown: the bars are ranked best first, and the notes keep this order. */
 		columns: ReadonlyArray<MatrixColumn>;
 		row: MatrixRow;
 		/** What the chart measures, as a heading. */
@@ -33,8 +38,15 @@
 	// otherwise the best in the row, as in the tables
 	let hovered: string | null = $state(null);
 
-	const column_ids = $derived(columns.map((column) => column.id));
-	const bars = $derived(to_matrix_bars(row, column_ids, hovered));
+	const columns_by_id = $derived(new Map(columns.map((column) => [column.id, column])));
+	// best first, which hovering leaves as it is: the numbers don't change, only the ratios
+	const ranked = $derived(
+		to_ranked_columns(
+			row,
+			columns.map((column) => column.id)
+		)
+	);
+	const bars = $derived(to_matrix_bars(row, ranked, hovered));
 	const level = $derived(bars.some((bar) => bar.ratio?.level === 'spread'));
 </script>
 
@@ -68,8 +80,8 @@
 			}}
 			onpointerleave={() => (hovered = null)}
 		>
-			{#each bars as bar, i (bar.column)}
-				{@const column = columns[i]!}
+			{#each bars as bar (bar.column)}
+				{@const column = columns_by_id.get(bar.column)!}
 				<div
 					class={['bar-row', { 'benchmarks-anchor': bar.ratio?.baseline, missing: !bar.has_value }]}
 					role="row"

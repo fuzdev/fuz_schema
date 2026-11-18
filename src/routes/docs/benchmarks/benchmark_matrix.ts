@@ -478,6 +478,29 @@ export const format_matrix_entry = (entry: MatrixEntry, unit: MatrixUnit): strin
 		? (entry.text ?? format_matrix_value(entry.value, unit)) + (entry.mark?.text ?? '')
 		: entry.text;
 
+/**
+ * The columns ordered best first by their number in the row, by its direction,
+ * and those with no number last, each kept in the order given among equals.
+ */
+export const to_ranked_columns = (
+	row: MatrixRow,
+	columns: ReadonlyArray<string>
+): Array<string> => {
+	const sign = row.direction === 'lower' ? 1 : -1;
+	return columns
+		.map((column) => ({ column, value: matrix_row_value(row, column) }))
+		.sort((a, b) =>
+			a.value === null
+				? b.value === null
+					? 0
+					: 1
+				: b.value === null
+					? -1
+					: sign * (a.value - b.value)
+		)
+		.map(({ column }) => column);
+};
+
 /** One column's bar in a chart of a row. */
 export interface MatrixBar {
 	column: string;
