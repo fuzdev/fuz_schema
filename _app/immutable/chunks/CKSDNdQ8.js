@@ -1,0 +1,1 @@
+import{i as e,r as t}from"./Cm1g2RFi.js";var n=n=>t(e(e(n,`https://`),`www.`),`/`);export{n as t};
