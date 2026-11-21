@@ -42,7 +42,10 @@ export type MatrixUnit = 'ns' | 'ms' | 'seconds' | 'bytes' | 'count';
 export interface MatrixColumn {
 	id: string;
 	label: string;
-	/** Whether the maintainer of these benchmarks also maintains it. A page marks it wherever it is named. */
+	/**
+	 * Whether the maintainer of these benchmarks also maintains it. The benchmarks page marks
+	 * it wherever it is named, and the landing page's charts don't.
+	 */
 	by_maintainer: boolean;
 	/** The color of its bars, the same in every chart. */
 	color: string;

@@ -299,7 +299,8 @@ guard, each a function of straight-line code made with `new Function`, that
 answers as `parse` and `is` do. It is a mode of this library and no other
 library: its schemas are the interpreter's, its answers are held to the
 interpreter's, and the roster names it `fuz_schema compiled` and marks it as
-the maintainer's, as it marks `fuz_schema`. It is entered as a library of its
+the maintainer's, as it marks `fuz_schema`, which the benchmarks page shows and
+the landing page's charts don't. It is entered as a library of its
 own, as `zod_compiled` is for Zod, so every table of the scenarios has both,
 and so has the survey.
 

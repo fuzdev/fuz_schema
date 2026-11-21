@@ -484,8 +484,10 @@ describe('this library in its compiled mode is a column of its own, and reads as
 			home,
 			'fuz_schema compiled is fuz_schema in another mode, and not another library.'
 		);
-		// each chart has its bar, marked as the library's is
-		assert.lengthOf(home.match(/fuz_schema compiled maintainer's/g)!, charts.length);
+		// each chart has its bar, the label not followed by a note's colon or the intro's
+		// sentence, and no chart marks the maintainer's libraries
+		assert.lengthOf(home.match(/fuz_schema compiled(?!:| is )/g)!, charts.length);
+		assert.notInclude(home, "maintainer's");
 		const older = to_home(load_fixture_without_compiled());
 		assert.match(
 			older,

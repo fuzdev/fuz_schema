@@ -7,7 +7,6 @@
 		type MatrixRow
 	} from './benchmark_matrix.ts';
 	import { to_ratio_color } from './benchmark_ratio.ts';
-	import BenchmarksLabel from './BenchmarksLabel.svelte';
 	import BenchmarksNotes from './BenchmarksNotes.svelte';
 
 	const {
@@ -87,7 +86,7 @@
 					role="row"
 					data-column={bar.ratio === undefined ? undefined : bar.column}
 				>
-					<span class="bar-label" role="rowheader"><BenchmarksLabel {column} /></span>
+					<span class="bar-label" role="rowheader">{column.label}</span>
 					<div class="bar-track" aria-hidden="true">
 						{#if bar.fraction > 0}
 							<div
