@@ -1,1 +1,0 @@
-export{t as component}from"../chunks/Dmo27V4T.js";
