@@ -13,10 +13,11 @@
  *
  * `fuz_schema_compiled` is this library in its compiled mode, with factors
  * that run the way the mode does: a bigger bundle than the interpreter's, a
- * slower cold start, and more held, for a faster parse of valid input and a
- * faster guard. On invalid input it is level with the interpreter, a little
- * over it and inside the two spreads, as its parse of one is the interpreter's
- * after compiled code has run to its first failure. It has a figure of every
+ * slower cold start, and more held, for a parse of valid input and a guard
+ * faster than every other library's as a mean. On invalid input it is level
+ * with the interpreter, a little over it and inside the two spreads, as its
+ * parse of one is the interpreter's after compiled code has run to its first
+ * failure. It has a figure of every
  * scenario, and of every survey row but one of a shape that throws.
  *
  * `fixture_run.json` beside this is what it builds, written by
@@ -52,7 +53,7 @@ type Factors = Readonly<Record<LibName, number>>;
 // what each library is taken to cost, as a multiple of this library's figure
 const VALID: Factors = {
 	fuz_schema: 1,
-	fuz_schema_compiled: 0.6,
+	fuz_schema_compiled: 0.15,
 	valibot: 2.4,
 	zod: 1.9,
 	zod_compiled: 0.4,
@@ -75,7 +76,7 @@ const INVALID: Factors = {
 // so are the two means inside each other's bands
 const GUARD: Factors = {
 	fuz_schema: 1,
-	fuz_schema_compiled: 0.5,
+	fuz_schema_compiled: 0.12,
 	valibot: 6.5,
 	zod: 1.6,
 	zod_compiled: 0.25,
@@ -83,6 +84,9 @@ const GUARD: Factors = {
 	typebox: 0.18,
 	arktype: 0.19
 };
+// a cold start's parses run code the engine has not optimized yet, where the compiled
+// mode's lead over the interpreter is less, as the published run has it
+const COLD_VALID: Factors = { ...VALID, fuz_schema_compiled: 0.6 };
 const SIZE: Factors = {
 	fuz_schema: 1,
 	fuz_schema_compiled: 14,
@@ -119,9 +123,10 @@ const TYPES: Factors = {
  * scenario and input: a library that is the slower as a mean and the faster
  * on a row, as plain Zod and ArkType are on a list, and the recursive
  * scenario, where TypeBox and ArkType are the slower on valid input and as
- * guards.
+ * guards, and a flat object, where TypeBox is faster than this library compiled.
  */
 const ROW_FACTORS: Readonly<Record<string, Partial<Factors>>> = {
+	'object_flat:valid': { fuz_schema_compiled: 0.3 },
 	'list:valid': { zod: 0.8, arktype: 0.8 },
 	'list:guard': { zod: 0.8 },
 	'type_json:valid': { typebox: 1.2 },
@@ -520,7 +525,7 @@ const create_coldstart = (): BenchmarkData['coldstart'] => ({
 			libs: to_libs((lib) => {
 				// loading the code is most of a cold start, so it follows the bytes
 				const load = round((form === 'bundled' ? 0.4 : 1.5) * (1 + (SIZE[lib] - 1) / 4));
-				const first = round(load + (scenario.ns * VALID[lib]) / 1000);
+				const first = round(load + (scenario.ns * COLD_VALID[lib]) / 1000);
 				const to_stage = (work_ms: number) => ({ work_ms: round(work_ms), band_ms: 0.05 });
 				return {
 					stages: {
@@ -530,8 +535,8 @@ const create_coldstart = (): BenchmarkData['coldstart'] => ({
 						parse_10: to_stage(first + 0.12),
 						parse_100: to_stage(first + 0.25)
 					},
-					later_ms: round(0.17 * VALID[lib]),
-					later_band_ms: round(0.017 * VALID[lib], 3),
+					later_ms: round(0.17 * COLD_VALID[lib]),
+					later_band_ms: round(0.017 * COLD_VALID[lib], 3),
 					// under the bare band for the lightest, which a page must not draw as an addition
 					added_ms: round(first + 0.07),
 					added_rss_kb: Math.round(1300 * SIZE[lib] ** 0.5),

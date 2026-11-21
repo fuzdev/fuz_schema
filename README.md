@@ -28,8 +28,10 @@ else result.issues; // [{kind, expected, received, path, message}]
 ```
 
 Of the libraries it is measured against, it has the smallest bundle, the quickest cold start, and the least memory held,
-and it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster,
+and as it is imported it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster,
 and ArkType's `allows` answers a guard faster.
+With each schema compiled by its opt-in [`compile.ts`](#compiling-a-schema), it checks valid input and answers a guard faster than each of them as a mean,
+though TypeBox is still faster on some scenarios, and its bundle is no longer the smallest.
 Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 [Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
@@ -55,8 +57,8 @@ with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox,
 [The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
 A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
-which `z.compile` hands back uncompiled. The claims are of this library as it is imported:
-"the libraries compared" are the others, and the compiled mode is in none of them.
+which `z.compile` hands back uncompiled. The claims are of this library as it is imported, but the one marked **Compiled**:
+"the libraries compared" are the others, and no claim sets the two modes against each other.
 `src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
 
 <!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
@@ -69,6 +71,8 @@ which `z.compile` hands back uncompiled. The claims are of this library as it is
 - **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
   though Zod as it is imported is faster on at least one of them; TypeBox, ArkType, and compiled Zod are faster as a mean over the scenarios each has a figure of.
 - **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, TypeBox, and ArkType.
+- **Compiled,** with each schema through `compile_parse` or `compile_guard`: faster on valid input and as a guard than each of the libraries compared, as a geometric mean over the scenarios each has a figure of,
+  though TypeBox is faster on at least one scenario of valid input.
 - **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario;
   TypeBox's check, which builds no output, allocates fewer on at least one, and so do compiled Zod and ArkType.
 - **Allocation on invalid input:** a parse allocates fewer heap bytes than one of Valibot, ArkType, or Zod in each of its modes on every scenario;
@@ -108,10 +112,10 @@ Caveats:
 
 ## When not to use it
 
-- Where the fastest check of valid input matters most, and code generated at runtime is allowed:
-  [Measurements](#measurements) names the libraries faster there, and its claims are of the interpreter.
-  [`compile.ts`](#compiling-a-schema) compiles a schema to straight-line code, which the benchmarks enter as a library of its own,
-  `fuz_schema_compiled`, and how it compares with those is not yet claimed.
+- Where the fastest parse of valid input matters most and code generated at runtime is not allowed:
+  [Measurements](#measurements) names the libraries faster than the interpreter there.
+  Where it is allowed, [`compile.ts`](#compiling-a-schema) compiles a schema to straight-line code, faster than each of them as a mean;
+  where it is not, `to_guard_source` writes a guard as a module ahead of time, which no benchmark measures.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -965,6 +969,7 @@ The interpreter is the oracle: the verdict, the output, the input coming back as
 and the issues are `is`'s and `parse`'s. Compiled code builds no issue, so a compiled parse of an input that fails calls `parse`.
 What it costs is the module's bytes, a compile for each schema, and `new Function`:
 where that is refused, as under a content security policy without `unsafe-eval`, the functions returned run the interpreter.
+What it gains is the claim marked **Compiled** in [Measurements](#measurements); an input that fails costs about what it costs `parse`.
 
 - A schema of a kind the compiler has no code for, [one of your own](#writing-a-schema) among them, is run in place by its own `run`,
   and the code around it is compiled. A compiled parse does the same for a `keyed_record`, an `object_with_rest`,

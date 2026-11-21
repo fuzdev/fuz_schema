@@ -88,9 +88,14 @@ describe('to_headline_charts', () => {
 				assert.isBelow(entry.band.low, entry.band.high, `${title} ${column}`);
 			}
 		}
-		// the fixture's TypeBox and ArkType are level as guards: the bars say so
+		// the fixture's TypeBox and ArkType are level as guards, the best but for the compiled
+		// mode: the bars say so
 		const guard = charts.find((chart) => chart.title === 'Answering only whether it matches')!;
-		const bars = to_matrix_bars(guard.row, columns, null);
+		const bars = to_matrix_bars(
+			guard.row,
+			columns.filter((column) => column !== 'fuz_schema_compiled'),
+			null
+		);
 		const of = (column: string) => bars.find((bar) => bar.column === column)!.ratio!;
 		assert.ok(of('typebox').baseline);
 		assert.strictEqual(of('arktype').level, 'spread');

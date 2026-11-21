@@ -287,10 +287,10 @@ dev server.
   layout gives
 - `src/test/readme_claims.ts`, `readme_claims.test.ts`,
   `readme_measurements.test.ts` - the README's claims, each its sentence, the
-  libraries it names, and a predicate over a results file that reads a
-  difference as the benchmarks page does; the checker over the fixture, with
-  a change that fails each claim for every library it names; and the README
-  itself against `results/latest.json`
+  mode of this library it is of, the libraries it names, and a predicate over
+  a results file that reads a difference as the benchmarks page does; the
+  checker over the fixture, with a change that fails each claim for every
+  library it names; and the README itself against `results/latest.json`
 - `src/test/readme_recipes.test.ts` - the README's recipes, each as it is
   printed and what the README says it gives, and the README's blocks marked
   `<!-- recipe: <name> -->` held to them

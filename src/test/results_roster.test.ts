@@ -275,12 +275,18 @@ describe('each kind of file renders', () => {
 
 describe("each kind of file bears the README's claims", () => {
 	for (const [name, load] of FILES.slice(0, 2)) {
-		test(`${name}: every claim holds, each about this library as it is imported`, () => {
+		test(`${name}: every claim of a mode it measured holds, and one of a mode it lacks fails`, () => {
 			const results = load()!;
+			const modes = to_subject_modes(results);
 			for (const claim of README_CLAIMS) {
 				const others = to_claim_others(claim, results);
 				assert.notInclude(others, README_CLAIMS_SUBJECT, claim.sentence);
-				assert.strictEqual(claim.check(results, others), null, claim.sentence);
+				const failure = claim.check(results, others);
+				if (modes.includes(claim.subject ?? README_CLAIMS_SUBJECT)) {
+					assert.strictEqual(failure, null, claim.sentence);
+				} else {
+					assert.isString(failure, claim.sentence);
+				}
 				// "the libraries compared" are the other libraries of the roster the file has,
 				// never this library's compiled mode, which is this library
 				if (claim.others === README_CLAIMS_EVERY_OTHER) {
@@ -337,7 +343,10 @@ describe("each kind of file bears the README's claims", () => {
 				}
 			]
 		];
-		const every_other = README_CLAIMS.filter((claim) => claim.others === README_CLAIMS_EVERY_OTHER);
+		// those of this library as it is imported: the compiled claim's lead is its own
+		const every_other = README_CLAIMS.filter(
+			(claim) => claim.others === README_CLAIMS_EVERY_OTHER && claim.subject === undefined
+		);
 		assert.deepStrictEqual(
 			every_other.map((claim) => claim.sentence.slice(0, claim.sentence.indexOf(':**') + 3)),
 			changes.map(([starts]) => starts)

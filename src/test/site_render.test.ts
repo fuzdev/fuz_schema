@@ -189,6 +189,10 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 });
 
 describe('a chart and a table mark what is not a difference', () => {
+	// without the compiled mode, which leads the fixture's guards, so TypeBox and ArkType,
+	// level with each other, are the best of a guard
+	const results = load_fixture_without_compiled();
+	const columns = to_lib_columns(results.meta.libs);
 	const charts = to_headline_charts(results);
 	const guard = charts.find((chart) => chart.title === 'Answering only whether it matches')!;
 

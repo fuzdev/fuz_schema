@@ -767,9 +767,10 @@ published run.
   predicate over a results file that reads a difference as the page does, and
   `src/test/readme_measurements.test.ts` holds the README to the published
   run once `README_CLAIMS_HELD` is set. Every claim is about `fuz_schema`, the
-  library as it is imported. One that names "the libraries compared" is
-  checked against the other libraries of the file's roster, and not against
-  this library's own modes, the entries the roster records with its package:
+  library as it is imported, but one whose `subject` is `fuz_schema_compiled`,
+  its compiled mode. One that names "the libraries compared" is checked
+  against the other libraries of the file's roster, and not against this
+  library's own modes, the entries the roster records with its package:
   `fuz_schema_compiled` is this library, and no claim sets the two modes
   against each other.
 

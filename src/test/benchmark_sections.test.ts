@@ -42,6 +42,8 @@ import { parse_benchmark_results } from '../benchmarks/results_schema.ts';
 import { load_fixture, to_measured } from './results_test_helpers.ts';
 
 const LIBS = load_fixture().meta.libs.map((lib) => lib.id);
+// every column but the compiled mode, which leads the fixture's guards
+const LIBS_INTERPRETED = LIBS.filter((lib) => lib !== 'fuz_schema_compiled');
 
 const find_row = (groups: ReadonlyArray<MatrixGroup>, key: string) => {
 	const row = groups.flatMap((group) => group.rows).find((r) => r.key === key);
@@ -222,9 +224,9 @@ describe('to_time_groups', () => {
 	});
 
 	test('two means whose bands overlap are level, and are not ranked', () => {
-		// the fixture makes TypeBox and ArkType level as guards
+		// the fixture makes TypeBox and ArkType level as guards, the best but for the compiled mode
 		const mean = find_row(groups, 'time:guard');
-		const ratios = to_matrix_ratios(mean, LIBS, null);
+		const ratios = to_matrix_ratios(mean, LIBS_INTERPRETED, null);
 		assert.ok(ratios.typebox!.baseline);
 		assert.strictEqual(ratios.arktype!.level, 'spread');
 		assert.strictEqual(ratios.zod_compiled!.level, null);
@@ -236,14 +238,18 @@ describe('to_time_groups', () => {
 				if (!('none' in cell)) cell.min_ns = cell.max_ns = cell.ns;
 			}
 		}
-		const of_exact = to_matrix_ratios(find_row(to_time_groups(exact), 'time:guard'), LIBS, null);
+		const of_exact = to_matrix_ratios(
+			find_row(to_time_groups(exact), 'time:guard'),
+			LIBS_INTERPRETED,
+			null
+		);
 		assert.strictEqual(of_exact.arktype!.level, null);
 	});
 
 	test('a row carries its spread, so a gap inside it is not a difference', () => {
 		// the fixture makes ArkType's guard of a flat object level with the best
 		const row = find_row(groups, 'time:guard:object_flat');
-		const ratios = to_matrix_ratios(row, LIBS, null);
+		const ratios = to_matrix_ratios(row, LIBS_INTERPRETED, null);
 		assert.ok(ratios.typebox!.baseline);
 		assert.strictEqual(ratios.arktype!.level, 'spread');
 		assert.strictEqual(ratios.fuz_schema!.level, null);

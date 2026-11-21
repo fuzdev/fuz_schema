@@ -3,6 +3,8 @@ import { assert, describe, test } from 'vitest';
 import {
 	README_CLAIMS,
 	README_CLAIMS_CLOSE,
+	README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID,
+	README_CLAIMS_COMPILED_SUBJECT,
 	README_CLAIMS_EVERY_OTHER,
 	README_CLAIMS_COLDSTART_FORMS,
 	README_CLAIMS_FASTER_AS_GUARD,
@@ -74,15 +76,17 @@ describe('find_readme_claims', () => {
 
 type RunRows = ReturnType<typeof to_measured<'run'>>['rows'];
 
-// every timed row of an input, with one library's time made a multiple of this library's
+// every timed row of an input, with one library's time made a multiple of this library's,
+// or of the mode `subject` names
 const scale_times = (
 	results: BenchmarkResults,
 	input: RunRows[number]['input'],
 	lib: string,
-	factor: number
+	factor: number,
+	subject: string = README_CLAIMS_SUBJECT
 ): void => {
 	for (const row of to_measured(results, 'run').rows) {
-		const ours = row.libs[README_CLAIMS_SUBJECT]!;
+		const ours = row.libs[subject]!;
 		if (row.input !== input || 'none' in ours || 'none' in row.libs[lib]!) continue;
 		row.libs[lib] = {
 			...ours,
@@ -163,6 +167,15 @@ const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: str
 				max_ns: ours.max_ns * 0.5
 			};
 		}
+	],
+	[
+		'**Compiled,**',
+		// TypeBox, said to be faster on some valid row, made slower on all of them; any
+		// other made faster as a guard
+		(results, lib) =>
+			README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID.includes(lib)
+				? scale_times(results, 'valid', lib, 3, README_CLAIMS_COMPILED_SUBJECT)
+				: scale_times(results, 'guard', lib, 0.5, README_CLAIMS_COMPILED_SUBJECT)
 	],
 	[
 		'**Allocation:**',
@@ -279,6 +292,25 @@ describe('the claims', () => {
 					`${starts} ${lib}: ${problems.join('\n')}`
 				);
 			}
+		}
+	});
+
+	test('the compiled claim is of the compiled mode, and never against the library as it is imported', () => {
+		const claim = README_CLAIMS.find((c) => c.sentence.startsWith('**Compiled,**'))!;
+		assert.strictEqual(claim.subject, README_CLAIMS_COMPILED_SUBJECT);
+		const results = load_fixture();
+		const others = to_claim_others(claim, results);
+		assert.notInclude(others, README_CLAIMS_SUBJECT);
+		assert.notInclude(others, README_CLAIMS_COMPILED_SUBJECT);
+		// this library as it is imported made faster than the compiled mode changes nothing
+		scale_times(results, 'guard', README_CLAIMS_SUBJECT, 0.1, README_CLAIMS_COMPILED_SUBJECT);
+		assert.strictEqual(claim.check(results, others), null);
+		// and TypeBox faster on no valid row fails the half that says it is
+		scale_times(results, 'valid', 'typebox', 1.5, README_CLAIMS_COMPILED_SUBJECT);
+		assert.include(claim.check(results, others), 'no row has typebox faster');
+		// no other claim names a subject
+		for (const other of README_CLAIMS) {
+			if (other !== claim) assert.strictEqual(other.subject, undefined, other.sentence);
 		}
 	});
 
@@ -491,7 +523,7 @@ describe('the claims', () => {
 		const results = load_fixture();
 		results.run = { status: 'skipped', reason: 'left out' };
 		const problems = check_readme_claims(to_readme(SENTENCES), results);
-		assert.lengthOf(problems, 4);
+		assert.lengthOf(problems, 5);
 		assert.ok(problems.every((problem) => /the file has no \w+ parse times/.test(problem)));
 	});
 });

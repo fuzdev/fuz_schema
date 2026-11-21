@@ -28,6 +28,10 @@
  * the sentence says which: "over the scenarios", or "over the scenarios each
  * has a figure of".
  *
+ * A claim is of this library as it is imported, but the one whose `subject`
+ * is its compiled mode, `README_CLAIMS_COMPILED_SUBJECT`. Either is compared
+ * with the other libraries and never with the other mode.
+ *
  * @module
  */
 
@@ -70,8 +74,14 @@ export const README_CLAIMS_OPEN =
 /** The line that closes the README's claims. */
 export const README_CLAIMS_CLOSE = '<!-- /claims -->';
 
-/** The library every claim is about. */
+/** The library every claim is about, as it is imported, but the compiled claim. */
 export const README_CLAIMS_SUBJECT = 'fuz_schema';
+
+/**
+ * The library's compiled mode, the subject of the one claim that is not of the
+ * library as it is imported.
+ */
+export const README_CLAIMS_COMPILED_SUBJECT = 'fuz_schema_compiled';
 
 const SUBJECT = README_CLAIMS_SUBJECT;
 
@@ -89,6 +99,11 @@ export const README_CLAIMS_EVERY_OTHER = 'every other';
 export interface ReadmeClaim {
 	/** The sentence, exactly as the README's bullet says it, without the bullet. */
 	sentence: string;
+	/**
+	 * The mode of this library the sentence is of, by id:
+	 * `README_CLAIMS_SUBJECT` when absent, the library as it is imported.
+	 */
+	subject?: string;
 	/**
 	 * The libraries the sentence compares this one with, by id, or
 	 * `README_CLAIMS_EVERY_OTHER`. The predicate is given exactly these, so a
@@ -186,30 +201,32 @@ const check_faster_on_every_row = (
  * call floor. The two must differ: means whose bands overlap bear out neither
  * direction.
  *
- * @param faster - whether this library is claimed to be the faster of the two
+ * @param faster - whether `subject` is claimed to be the faster of the two
+ * @param subject - the mode of this library the claim is of
  */
 const check_geomean = (
 	results: BenchmarkResults,
 	input: TimeInput,
 	other: string,
-	faster: boolean
+	faster: boolean,
+	subject: string = SUBJECT
 ): string | null => {
 	const rows = to_time_rows(results, input);
 	if (typeof rows === 'string') return rows;
-	const columns = [SUBJECT, other];
+	const columns = [subject, other];
 	const mean = to_geomean_row(rows, columns, `claim:${input}:${other}`, 'every scenario');
-	const ours = mean && matrix_row_entry(mean, SUBJECT);
+	const ours = mean && matrix_row_entry(mean, subject);
 	const theirs = mean && matrix_row_entry(mean, other);
 	if (!mean || mean.empty !== null || ours?.kind !== 'value' || theirs?.kind !== 'value') {
-		return `no ${input} row has a figure of both ${SUBJECT} and ${other} past the call floor`;
+		return `no ${input} row has a figure of both ${subject} and ${other} past the call floor`;
 	}
 	const ratio = (ours.value / theirs.value).toFixed(2);
 	if (matrix_values_are_level(ours, theirs)) {
-		return `on ${input} rows the geometric means of ${SUBJECT} and ${other} are inside each other's bands, at ${ratio} times: neither is the faster`;
+		return `on ${input} rows the geometric means of ${subject} and ${other} are inside each other's bands, at ${ratio} times: neither is the faster`;
 	}
 	return ours.value < theirs.value === faster
 		? null
-		: `on ${input} rows ${SUBJECT} takes ${ratio} times what ${other} does, as a geometric mean`;
+		: `on ${input} rows ${subject} takes ${ratio} times what ${other} does, as a geometric mean`;
 };
 
 /**
@@ -296,11 +313,12 @@ export const README_CLAIMS_RECURSIVE_SCENARIO = 'type_json';
  */
 const check_other_faster_on_some_row = (
 	rows: ReadonlyArray<MatrixRow> | string,
-	other: string
+	other: string,
+	subject: string = SUBJECT
 ): string | null => {
 	if (typeof rows === 'string') return rows;
 	for (const row of rows) {
-		const ratio = to_matrix_ratios(row, [SUBJECT, other], other)[SUBJECT];
+		const ratio = to_matrix_ratios(row, [subject, other], other)[subject];
 		if (
 			ratio !== undefined &&
 			ratio.level !== 'floor' &&
@@ -310,12 +328,12 @@ const check_other_faster_on_some_row = (
 			return null;
 		}
 	}
-	return `no row has ${other} faster than ${SUBJECT}`;
+	return `no row has ${other} faster than ${subject}`;
 };
 
 /**
- * Checks a mean claim of one input: this library faster than each of `others`
- * as a geometric mean but those of `faster`, which are the faster, and each of
+ * Checks a mean claim of one input: `subject` faster than each of `others` as
+ * a geometric mean but those of `faster`, which are the faster, and each of
  * `some` the faster on at least one row.
  */
 const check_input_means = (
@@ -323,14 +341,20 @@ const check_input_means = (
 	input: TimeInput,
 	others: ReadonlyArray<string>,
 	faster: ReadonlyArray<string>,
-	some: ReadonlyArray<string>
+	some: ReadonlyArray<string>,
+	subject: string = SUBJECT
 ): string | null =>
 	first_failure([
-		...others.map((other) => check_geomean(results, input, other, !faster.includes(other))),
+		...others.map((other) =>
+			check_geomean(results, input, other, !faster.includes(other), subject)
+		),
 		...others
 			.filter((other) => some.includes(other))
-			.map((other) => check_other_faster_on_some_row(to_time_rows(results, input), other))
+			.map((other) => check_other_faster_on_some_row(to_time_rows(results, input), other, subject))
 	]);
+
+/** The libraries the compiled claim says are faster than the compiled mode on some scenario's valid input. */
+export const README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID: ReadonlyArray<string> = ['typebox'];
 
 /** The libraries the allocation claim says allocate fewer bytes than this one on some scenario's valid input. */
 export const README_CLAIMS_FEWER_BYTES_ON_SOME_VALID: ReadonlyArray<string> = [
@@ -480,6 +504,24 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 				others
 			);
 		}
+	},
+	{
+		sentence:
+			'**Compiled,** with each schema through `compile_parse` or `compile_guard`: faster on valid input and as a guard than each of the libraries compared, as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input.',
+		subject: README_CLAIMS_COMPILED_SUBJECT,
+		others: README_CLAIMS_EVERY_OTHER,
+		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
+			first_failure([
+				check_input_means(
+					results,
+					'valid',
+					others,
+					[],
+					README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID,
+					README_CLAIMS_COMPILED_SUBJECT
+				),
+				check_input_means(results, 'guard', others, [], [], README_CLAIMS_COMPILED_SUBJECT)
+			])
 	},
 	{
 		sentence:

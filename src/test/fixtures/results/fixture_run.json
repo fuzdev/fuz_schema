@@ -2163,10 +2163,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 12,
-							"batch_ns": 11.4,
-							"min_ns": 11.64,
-							"max_ns": 12.36,
+							"ns": 3,
+							"batch_ns": 2.85,
+							"min_ns": 2.91,
+							"max_ns": 3.09,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2287,10 +2287,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 10,
-							"batch_ns": 9.5,
-							"min_ns": 9.7,
-							"max_ns": 10.3,
+							"ns": 2.4,
+							"batch_ns": 2.28,
+							"min_ns": 2.33,
+							"max_ns": 2.47,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2349,10 +2349,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 60,
-							"batch_ns": 57,
-							"min_ns": 58.2,
-							"max_ns": 61.8,
+							"ns": 30,
+							"batch_ns": 28.5,
+							"min_ns": 29.1,
+							"max_ns": 30.9,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2473,10 +2473,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 50,
-							"batch_ns": 47.5,
-							"min_ns": 48.5,
-							"max_ns": 51.5,
+							"ns": 12,
+							"batch_ns": 11.4,
+							"min_ns": 11.64,
+							"max_ns": 12.36,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2535,10 +2535,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 5400,
-							"batch_ns": 5130,
-							"min_ns": 5238,
-							"max_ns": 5562,
+							"ns": 1350,
+							"batch_ns": 1282.5,
+							"min_ns": 1309.5,
+							"max_ns": 1390.5,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2659,10 +2659,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 4500,
-							"batch_ns": 4275,
-							"min_ns": 4365,
-							"max_ns": 4635,
+							"ns": 1080,
+							"batch_ns": 1026,
+							"min_ns": 1047.6,
+							"max_ns": 1112.4,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2721,10 +2721,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 900,
-							"batch_ns": 855,
-							"min_ns": 873,
-							"max_ns": 927,
+							"ns": 225,
+							"batch_ns": 213.75,
+							"min_ns": 218.25,
+							"max_ns": 231.75,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2839,10 +2839,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 750,
-							"batch_ns": 712.5,
-							"min_ns": 727.5,
-							"max_ns": 772.5,
+							"ns": 180,
+							"batch_ns": 171,
+							"min_ns": 174.6,
+							"max_ns": 185.4,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2898,10 +2898,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 1080,
-							"batch_ns": 1026,
-							"min_ns": 1047.6,
-							"max_ns": 1112.4,
+							"ns": 270,
+							"batch_ns": 256.5,
+							"min_ns": 261.9,
+							"max_ns": 278.1,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -3022,10 +3022,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 900,
-							"batch_ns": 855,
-							"min_ns": 873,
-							"max_ns": 927,
+							"ns": 216,
+							"batch_ns": 205.2,
+							"min_ns": 209.52,
+							"max_ns": 222.48,
 							"spread": 0.03
 						},
 						"valibot": {
