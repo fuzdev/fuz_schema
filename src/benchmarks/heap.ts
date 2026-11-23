@@ -33,7 +33,7 @@
  * code per schema holds a compile of its own for each, as an app's distinct
  * schemas, whose texts differ, do, where V8 would otherwise share one compile
  * of the one text among them. A library that keeps the schema of a definition
- * and hands it back for the same one, as ArkType does, is still flattered:
+ * and hands it back for the same one, see `INTERNING_LIBS`, is still flattered:
  * an app's schemas are distinct definitions, which cost it far more each. A
  * figure of distinct definitions needs a factory that varies its definition,
  * in every library's scenario module, which would change their bundles.

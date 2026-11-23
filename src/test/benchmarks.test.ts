@@ -55,9 +55,29 @@ describe('benchmark guard parity', () => {
 	}
 });
 
+// `value` without the own keys of its objects that hold `undefined`, at any depth
+const drop_undefined_keys = (value: unknown): unknown => {
+	if (Array.isArray(value)) return value.map(drop_undefined_keys);
+	if (typeof value !== 'object' || value === null) return value;
+	return Object.fromEntries(
+		Object.entries(value)
+			.filter(([, of_key]) => of_key !== undefined)
+			.map(([key, of_key]) => [key, drop_undefined_keys(of_key)])
+	);
+};
+
+// Where a library's output is declared to differ from the others', and what is set aside
+// to compare the rest. Sury's generated parse writes every key of an object schema, so an
+// optional key the input lacks is in its output as `undefined`, where the others leave
+// it out.
+const OUTPUT_DIFFERENCES: Partial<Record<string, (value: unknown) => unknown>> = {
+	sury: drop_undefined_keys
+};
+
 // The libraries that return an output return the same one, as the survey holds
 // its shapes to. This library's is the reference, and the comparison is deep and
-// strict, so a library that kept a key another drops fails.
+// strict, so a library that kept a key another drops fails, but for what
+// `OUTPUT_DIFFERENCES` declares.
 describe('benchmark output parity', () => {
 	const reference = LIBS.find((lib) => lib.name === 'fuz_schema')!;
 	for (const scenario of SCENARIOS) {
@@ -69,12 +89,29 @@ describe('benchmark output parity', () => {
 				const output = to_scenario_output(lib.schemas, scenario);
 				if (!output) continue;
 				const result = output(scenario.valid);
-				if (!result.ok || !isDeepStrictEqual(result.value, expected.value)) wrong.push(lib.name);
+				const set_aside = OUTPUT_DIFFERENCES[lib.name];
+				if (
+					!result.ok ||
+					!isDeepStrictEqual(set_aside ? set_aside(result.value) : result.value, expected.value)
+				) {
+					wrong.push(lib.name);
+				}
 				if (output(scenario.invalid).ok) wrong.push(`${lib.name} on the invalid input`);
 			}
 			assert.deepEqual(wrong, []);
 		});
 	}
+
+	test('a declared difference is one: the output differs as it is, on some scenario', () => {
+		for (const [name, set_aside] of Object.entries(OUTPUT_DIFFERENCES)) {
+			const lib = LIBS.find((l) => l.name === name)!;
+			const differs = SCENARIOS.some((scenario) => {
+				const result = to_scenario_output(lib.schemas, scenario)!(scenario.valid);
+				return result.ok && !isDeepStrictEqual(result.value, set_aside!(result.value));
+			});
+			assert.ok(differs, name);
+		}
+	});
 
 	test('only typebox returns no output', () => {
 		assert.deepEqual(
@@ -293,12 +330,14 @@ const take_literals = (text: string): { code: string; literals: Array<string> } 
 // What a factory and its builder must agree on: the text of the definition,
 // less comments, whitespace, the calls of a runner around the schema, and the
 // prefix of a name, so `scenario_object_flat` and `schema_object_flat` are one.
+// Valita's runner of a scenario that drops keys, and the mark its builder puts on the
+// schema in its place, are such calls too.
 // None of that is done inside a string, template, or regex literal, which are
 // compared as they are written.
 const to_comparable = (text: string): string => {
 	const { code, literals } = take_literals(text);
 	let out = code.replace(/\s+/g, '').replace(/\b(?:scenario|schema)_(?=\w)/g, '');
-	for (const wrapper of ['to_runner(', 'to_app_runner(']) {
+	for (const wrapper of ['to_runner(', 'to_app_runner(', 'to_strip_runner(', 'to_strip(']) {
 		for (let at = out.indexOf(wrapper); at >= 0; at = out.indexOf(wrapper)) {
 			const open = at + wrapper.length - 1;
 			const end = to_call_end(out, open);
@@ -314,6 +353,9 @@ const to_comparable = (text: string): string => {
 const RUNNER_HELPERS = [
 	'to_runner',
 	'to_app_runner',
+	'to_strip_runner',
+	'to_strip',
+	'STRIPPED',
 	'to_guard',
 	'to_output',
 	'compile_each',
@@ -437,11 +479,7 @@ describe('every builder is its factory', () => {
 			[...builders].map(([name, text]) => [name, to_comparable(text)]),
 			SCENARIOS.map(({ name }) => [
 				name,
-				name === 'extra_keys'
-					? 'object_flat;'
-					: name === 'app'
-						? '()=>compile_each(zod.app());'
-						: `()=>z.compile(zod.${name}());`
+				name === 'app' ? '()=>compile_each(zod.app());' : `()=>z.compile(zod.${name}());`
 			])
 		);
 	});
@@ -462,10 +500,7 @@ describe('every builder is its factory', () => {
 		);
 		assert.deepEqual(
 			[...builders].map(([name, text]) => [name, to_comparable(text)]),
-			SCENARIOS.map(({ name }) => [
-				name,
-				name === 'extra_keys' ? 'object_flat;' : `()=>fuz_schema.${name}();`
-			])
+			SCENARIOS.map(({ name }) => [name, `()=>fuz_schema.${name}();`])
 		);
 	});
 
@@ -509,12 +544,12 @@ describe('every builder is its factory', () => {
 			'app:'
 		],
 		[
-			'a key that is no longer dropped',
-			'arktype',
+			'an object that is no longer strict',
+			'zod',
 			'builder',
-			"'+': 'delete',\n\t\tname: '1 <= string <= 50'",
-			"name: '1 <= string <= 50'",
-			'pipe:'
+			'address: z.strictObject({ street',
+			'address: z.object({ street',
+			'strict_nested:'
 		],
 		[
 			'a constant every strict scenario shares',
@@ -524,8 +559,8 @@ describe('every builder is its factory', () => {
 			'additionalProperties: true',
 			'STRICT:'
 		],
-		['whitespace inside a string', 'fuz_schema', 'factory', "'member'", "'mem ber'", 'app:'],
-		['a comment marker inside a string', 'fuz_schema', 'factory', "'member'", "'mem//ber'", 'app:'],
+		['whitespace inside a string', 'fuz_schema', 'factory', "'owner'", "'own er'", 'app:'],
+		['a comment marker inside a string', 'fuz_schema', 'factory', "'owner'", "'own//er'", 'app:'],
 		[
 			'a constant only one side has',
 			'typebox',
@@ -586,16 +621,16 @@ test('which scenarios a library hands back the schema of, built again', () => {
 		'fuz_schema string',
 		// the same constant, which a compile reads: its guard and parse are made anew
 		'fuz_schema_compiled string',
-		...['string', 'object_flat', 'extra_keys', 'strict_nested', 'pipe', 'union', 'list'].map(
-			(name) => `arktype ${name}`
-		)
+		// each library's `string` is one schema too
+		'valita string',
+		'sury string'
 	]);
-	assert.deepEqual(INTERNING_LIBS, ['arktype']);
+	assert.deepEqual(INTERNING_LIBS, []);
 });
 
 describe('benchmark scenario inputs', () => {
 	// what `list` is there to measure: several issues, with paths two and three deep
-	test('the invalid list fails at six places, two of them a level down', () => {
+	test('the invalid list fails at six places, two of them a level down, the first halfway', () => {
 		const List = s.array(
 			s.object({
 				id: s.number,
@@ -614,30 +649,40 @@ describe('benchmark scenario inputs', () => {
 		assert.deepEqual(
 			result.issues.map((issue) => issue.path),
 			[
-				[3, 'id'],
-				[13, 'tags', 0],
-				[40, 'active'],
+				[50, 'id'],
+				[53, 'tags', 0],
 				[58, 'role'],
+				[62, 'active'],
 				[71, 'tags', 1],
 				[99, 'email']
 			]
 		);
 	});
 
-	// what `extra_keys` is there to measure: a copy without the keys the schema doesn't name
-	test('the extra keys are dropped by the schema of object_flat', () => {
-		const extra_keys = SCENARIOS.find((scenario) => scenario.name === 'extra_keys')!;
-		const result = to_scenario_output(fuz_schema_schemas, extra_keys)!(extra_keys.valid);
+	// what `object_copy` is there to measure: an output that is another object than the
+	// input, with the keys the schema doesn't name dropped, a default filled in, and a
+	// string lowercased
+	test('the valid input of object_copy is copied: keys dropped, a default, a lowercase', () => {
+		const object_copy = SCENARIOS.find((scenario) => scenario.name === 'object_copy')!;
+		const result = to_scenario_output(fuz_schema_schemas, object_copy)!(object_copy.valid);
 		assert(result.ok);
+		assert.notStrictEqual(result.value, object_copy.valid);
 		assert.deepEqual(result.value, {
 			id: 1,
 			name: 'Ada',
 			email: 'ada@example.com',
-			active: true
+			role: 'member'
 		});
-		for (const lib of LIBS) {
-			assert.strictEqual(lib.scenarios.scenario_extra_keys, lib.scenarios.scenario_object_flat);
-			assert.strictEqual(lib.schemas.schema_extra_keys, lib.schemas.schema_object_flat);
+		// and it is the one scenario of a schema that is: this library returns the others' inputs
+		for (const scenario of SCENARIOS) {
+			if (scenario.many_schemas || typeof scenario.valid !== 'object') continue;
+			const output = to_scenario_output(fuz_schema_schemas, scenario)!(scenario.valid);
+			assert(output.ok);
+			assert.strictEqual(
+				output.value === scenario.valid,
+				scenario.name !== 'object_copy',
+				scenario.name
+			);
 		}
 	});
 });

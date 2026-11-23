@@ -264,19 +264,39 @@ export const RESULTS_LIB_INFO: Readonly<
 			}
 		]
 	},
-	arktype: {
-		label: 'ArkType',
-		package: 'arktype',
+	valita: {
+		label: 'Valita',
+		package: '@badrap/valita',
 		by_maintainer: false,
 		note: null,
 		notes: [
 			{
-				about: ['valid', 'invalid', 'allocation'],
-				text: 'A parse that drops keys deep-clones its input before it runs.'
+				about: ['valid', 'allocation'],
+				text: 'As this library does, it hands back a valid input that needs no change, and builds no copy of it.'
 			},
 			{
-				about: ['creation', 'heap'],
-				text: 'It keeps one schema of a definition and hands it back when the same definition is built again, which a figure marked `†` is of.'
+				about: ['guard'],
+				text: 'It has no guard of its own: its row is its parse.'
+			}
+		]
+	},
+	sury: {
+		label: 'Sury',
+		package: 'sury',
+		by_maintainer: false,
+		note: null,
+		notes: [
+			{
+				about: ['valid', 'invalid', 'guard'],
+				text: 'Each row is an operation it generates with `new Function`, `parseAsResult` for a parse and `isInput` for a guard, compiled as the schema is built.'
+			},
+			{
+				about: ['valid', 'allocation'],
+				text: 'A parse of valid input returns a new object with every key of its schema, an optional key the input lacks among them, with no value.'
+			},
+			{
+				about: ['bundle', 'coldstart', 'creation', 'heap'],
+				text: 'It carries its compiler, and compiles while the schema is built.'
 			}
 		]
 	}

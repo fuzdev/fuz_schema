@@ -106,7 +106,6 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 			'fuz_schema: A strict or identity parse of valid input returns the input itself, where Valibot and Zod return a copy.'
 		);
 		assert.include(text, 'TypeBox: Every row is a Check');
-		assert.include(text, 'ArkType: A parse that drops keys deep-clones its input');
 	});
 
 	test('an invalid parse says compiled Zod falls back to the regular parser, and TypeBox builds no issues', () => {
@@ -123,7 +122,8 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 	test('a guard says which guards run the parser', () => {
 		const text = to_chart_text('Answering only whether it matches');
 		assert.include(text, 'Valibot: Its guard, is , runs the parser');
-		assert.notInclude(text, 'deep-clones');
+		// what is about a parse alone is not under it
+		assert.notInclude(text, 'returns the input itself');
 	});
 
 	test('a chart prints only the notes about what it measures', () => {
@@ -133,12 +133,15 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 		assert.notInclude(size, 'returns the input itself');
 		assert.include(size, 'Zod compiled: It carries the compiler');
 		const memory = to_chart_text('Memory held');
-		assert.include(memory, 'ArkType: It keeps one schema of a definition');
+		assert.include(memory, 'Zod compiled: It carries the compiler');
 		assert.notInclude(memory, 'Check');
-		// and no two charts of different figures print the same lines
-		const lines = charts.map((chart) =>
-			JSON.stringify(to_column_notes(columns, chart.about).map(({ texts }) => texts))
-		);
+		// and no two charts of different figures print the same lines, but the memory held,
+		// whose notes are those of the bundle: what a compiled mode carries
+		const lines = charts
+			.filter((chart) => chart.title !== 'Memory held')
+			.map((chart) =>
+				JSON.stringify(to_column_notes(columns, chart.about).map(({ texts }) => texts))
+			);
 		assert.strictEqual(new Set(lines).size, lines.length);
 	});
 
@@ -189,7 +192,7 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 });
 
 describe('a chart and a table mark what is not a difference', () => {
-	// without the compiled mode, which leads the fixture's guards, so TypeBox and ArkType,
+	// without the compiled mode, which leads the fixture's guards, so TypeBox and compiled Zod,
 	// level with each other, are the best of a guard
 	const results = load_fixture_without_compiled();
 	const columns = to_lib_columns(results.meta.libs);
@@ -316,7 +319,7 @@ describe('a chart and a table mark what is not a difference', () => {
 		assert.lengthOf(ratios, columns.length);
 		const level = ratios.filter((ratio) => ratio.text.startsWith('≈'));
 		const differs = ratios.filter((ratio) => /^\d/.test(ratio.text));
-		// the fixture's TypeBox and ArkType, the least of them among the level
+		// the fixture's TypeBox and compiled Zod, the least of them among the level
 		assert.deepStrictEqual(level.map((ratio) => ratio.text).sort(), ['≈1.00×', '≈1.05×']);
 		assert.isAbove(differs.length, 0);
 		for (const ratio of level) assert.notInclude(ratio.tag, 'color', ratio.text);
@@ -371,7 +374,7 @@ describe('this library in its compiled mode is a column of its own, and reads as
 		const text = render_text(BenchmarksIntro, { columns });
 		assert.match(
 			text,
-			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, and ArkType ?:/
+			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, Valita ?, and Sury ?:/
 		);
 		assert.include(
 			text,
@@ -390,7 +393,7 @@ describe('this library in its compiled mode is a column of its own, and reads as
 		const text = render_text(BenchmarksIntro, { columns: without });
 		assert.match(
 			text,
-			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, and ArkType ?:/
+			/This page compares fuz_schema maintainer's with Valibot ?, Zod ?, Zod compiled ?, Zod Mini ?, TypeBox ?, Valita ?, and Sury ?:/
 		);
 		assert.match(
 			text,
@@ -482,20 +485,26 @@ describe('this library in its compiled mode is a column of its own, and reads as
 		const home = to_home(results);
 		assert.match(
 			home,
-			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, ArkType, from one run/
+			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, Valita, Sury, from one run/
 		);
 		assert.include(
 			home,
 			'fuz_schema compiled is fuz_schema in another mode, and not another library.'
 		);
 		// each chart has its bar, the label not followed by a note's colon or the intro's
-		// sentence, and no chart marks the maintainer's libraries
-		assert.lengthOf(home.match(/fuz_schema compiled(?!:| is )/g)!, charts.length);
+		// sentence, and the chart of invalid input names it once more, as level with the
+		// library as it is imported, which no ratio marks. No chart marks the maintainer's
+		// libraries
+		assert.lengthOf(home.match(/fuz_schema compiled(?!:| is )/g)!, charts.length + 1);
+		assert.match(
+			home,
+			/Level with each other, their readings overlapping, in whatever order they are drawn: fuz_schema and fuz_schema compiled/
+		);
 		assert.notInclude(home, "maintainer's");
 		const older = to_home(load_fixture_without_compiled());
 		assert.match(
 			older,
-			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, ArkType, from one run/
+			/Against Valibot, Zod, Zod compiled, Zod Mini, TypeBox, Valita, Sury, from one run/
 		);
 		assert.notInclude(older, 'another mode');
 		assert.notInclude(older, 'fuz_schema compiled');

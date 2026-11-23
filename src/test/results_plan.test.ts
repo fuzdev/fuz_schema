@@ -157,7 +157,7 @@ describe('the roster', () => {
 		);
 		assert.strictEqual(libs.find((lib) => lib.id === 'valibot')!.version, '1.2.3');
 		// a version that can't be read is one the schema refuses
-		assert.strictEqual(libs.find((lib) => lib.id === 'arktype')!.version, 'missing');
+		assert.strictEqual(libs.find((lib) => lib.id === 'typebox')!.version, 'missing');
 	});
 
 	test("marks this library as the maintainer's, as it is imported and compiled, and no other", () => {

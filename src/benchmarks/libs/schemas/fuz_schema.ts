@@ -44,7 +44,13 @@ export const schema_object_flat = () =>
 		role: s.optional(s.string)
 	});
 
-export const schema_extra_keys = schema_object_flat;
+export const schema_object_copy = () =>
+	s.strip_object({
+		id: s.number,
+		name: s.string,
+		email: s.pipe(s.string, s.to_lower_case),
+		role: s.with_default(s.one_of(['member', 'admin']), 'member')
+	});
 
 export const schema_strict_nested = () =>
 	s.object({

@@ -47,8 +47,8 @@ describe('to_headline_charts', () => {
 		const by_title = new Map(charts.map((chart) => [chart.title, chart.row]));
 		// the one bundle of every scenario
 		assert.strictEqual(
-			matrix_row_value(by_title.get('Bundle size')!, 'arktype'),
-			to_measured(results, 'bundle').all.arktype!.gzip
+			matrix_row_value(by_title.get('Bundle size')!, 'typebox'),
+			to_measured(results, 'bundle').all.typebox!.gzip
 		);
 		// a mean over every scenario all the libraries have past the call floor, not a scenario
 		// picked for its outcome
@@ -56,13 +56,13 @@ describe('to_headline_charts', () => {
 		const rows = run.rows.filter(
 			(row) =>
 				row.input === 'guard' &&
-				Object.values(row.libs).every(
-					(cell) => !('none' in cell) && cell.ns > to_run_call_floor(run)
+				Object.values(row.libs).every((cell) =>
+					'none' in cell ? cell.none === 'uncompiled' : cell.ns > to_run_call_floor(run)
 				)
 		);
 		assert.approximately(
-			matrix_row_value(by_title.get('Answering only whether it matches')!, 'arktype')!,
-			to_geomean(rows.map((row) => (row.libs.arktype as { ns: number }).ns))!,
+			matrix_row_value(by_title.get('Answering only whether it matches')!, 'typebox')!,
+			to_geomean(rows.map((row) => (row.libs.typebox as { ns: number }).ns))!,
 			1e-9
 		);
 		assert.include(charts[1]!.note, `${rows.length} of`);
@@ -88,7 +88,7 @@ describe('to_headline_charts', () => {
 				assert.isBelow(entry.band.low, entry.band.high, `${title} ${column}`);
 			}
 		}
-		// the fixture's TypeBox and ArkType are level as guards, the best but for the compiled
+		// the fixture's TypeBox and compiled Zod are level as guards, the best but for the compiled
 		// mode: the bars say so
 		const guard = charts.find((chart) => chart.title === 'Answering only whether it matches')!;
 		const bars = to_matrix_bars(
@@ -98,7 +98,7 @@ describe('to_headline_charts', () => {
 		);
 		const of = (column: string) => bars.find((bar) => bar.column === column)!.ratio!;
 		assert.ok(of('typebox').baseline);
-		assert.strictEqual(of('arktype').level, 'spread');
+		assert.strictEqual(of('zod_compiled').level, 'spread');
 		assert.strictEqual(of('fuz_schema').level, null);
 		// the bytes of a bundle are exact, so its figures have no band and every gap is a difference
 		const size = charts.find((chart) => chart.title === 'Bundle size')!;
@@ -210,7 +210,7 @@ describe('to_headline_charts', () => {
 		// and a mean no scenario is complete for has no number
 		const partial = load_fixture();
 		for (const row of to_measured(partial, 'run').rows) {
-			if (row.input === 'guard') row.libs.zod_compiled = { none: 'uncompiled', why: null };
+			if (row.input === 'guard') row.libs.zod_compiled = { none: 'differs', why: null };
 		}
 		assert.notInclude(to_titles(to_headline_charts(partial)), 'Answering only whether it matches');
 	});

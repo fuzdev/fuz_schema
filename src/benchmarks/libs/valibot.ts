@@ -20,7 +20,15 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
-export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+export const scenario_object_copy: ScenarioModule['scenario_object_copy'] = () =>
+	to_runner(
+		v.object({
+			id: v.number(),
+			name: v.string(),
+			email: v.pipe(v.string(), v.toLowerCase()),
+			role: v.optional(v.picklist(['member', 'admin']), 'member')
+		})
+	);
 
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(

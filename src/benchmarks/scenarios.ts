@@ -5,9 +5,10 @@
  * A factory builds its schema and returns a `ScenarioRunner`, so bundling a
  * single factory measures exactly what that schema costs to ship.
  *
- * `extra_keys` is the schema of `object_flat` on other inputs, so its factory
- * is that scenario's under a second name: its bundle is the same bytes, and
- * in a bundle of every scenario it adds a call and no definition.
+ * `object_copy` is the scenario whose valid parse returns another object than
+ * it was given: a key the schema doesn't name is dropped, a default is filled
+ * in, and a string is lowercased. Every other scenario of one schema returns
+ * its input, in a library that does.
  *
  * Each module in `libs/` has a schemas module in `libs/schemas/`, of the same
  * schemas as builders, see `scenario_schemas.ts`.
@@ -43,7 +44,7 @@ export interface Scenario {
 export type ScenarioName =
 	| 'string'
 	| 'object_flat'
-	| 'extra_keys'
+	| 'object_copy'
 	| 'strict_nested'
 	| 'pipe'
 	| 'union'
@@ -93,7 +94,9 @@ const LIST_TAGS = ['math', 'engines', 'notes'];
 // A hundred records, parsed as a response body is, so no object in it is
 // shared with another. With `bad`, six of them are wrong, each at another
 // field: four issues with a path of an index and a key, and two a level down,
-// in `tags`.
+// in `tags`. The first of them is halfway down, where the one failure of a
+// document is as likely to come before as after: a library that stops at its
+// first failure walks half of the list, not three records of it.
 const to_list = (bad: boolean): unknown => {
 	const list: Array<Record<string, any>> = JSON.parse(
 		JSON.stringify(
@@ -108,27 +111,27 @@ const to_list = (bad: boolean): unknown => {
 		)
 	);
 	if (bad) {
-		list[3]!.id = '3';
-		list[13]!.tags[0] = null;
-		list[40]!.active = 'yes';
+		list[50]!.id = '50';
+		list[53]!.tags[0] = null;
 		list[58]!.role = 5;
+		list[62]!.active = 'yes';
 		list[71]!.tags[1] = 7;
 		list[99]!.email = null;
 	}
 	return list;
 };
 
-// what `object_flat` matches, among keys its schema doesn't name
-const to_extra_keys = (active: unknown): unknown => ({
+// A record among keys its schema doesn't name, with no `role`, which the schema
+// fills in, and an `email` it lowercases: with `role`, one the schema doesn't have.
+const to_object_copy = (role?: string): unknown => ({
 	id: 1,
 	created_at: '2024-01-01T00:00:00Z',
 	name: 'Ada',
-	email: 'ada@example.com',
+	email: 'Ada@Example.com',
 	avatar_url: 'https://example.com/ada.png',
-	active,
 	followers: 12,
 	settings: { theme: 'dark' },
-	links: ['https://example.com/ada']
+	...(role === undefined ? {} : { role })
 });
 
 /** The keys of an `app` payload, one for each of its schemas, which parse the value under their key. */
@@ -291,8 +294,8 @@ export const SCENARIOS: Array<Scenario> = [
 		valid: { id: 1, name: 'Ada', email: 'ada@example.com', active: true },
 		invalid: { id: '1', name: 'Ada', email: 'ada@example.com', active: 'yes' }
 	},
-	// the same schema, given keys it doesn't name, which it drops
-	{ name: 'extra_keys', valid: to_extra_keys(true), invalid: to_extra_keys('yes') },
+	// the one whose valid parse is a copy: keys dropped, a default filled in, a string lowercased
+	{ name: 'object_copy', valid: to_object_copy(), invalid: to_object_copy('owner') },
 	{
 		name: 'strict_nested',
 		valid: {

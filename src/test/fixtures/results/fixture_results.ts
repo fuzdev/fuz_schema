@@ -7,9 +7,10 @@
  *
  * It has one of every kind of cell a page must draw: a row `zod_compiled`
  * has no figure of, a survey shape a library can't express and an input one
- * answers otherwise, a row at the call floor, a figure of one kept definition,
- * a spread wide enough that a gap is inside it, and two libraries whose means
- * are inside each other's bands.
+ * answers otherwise, a row at the call floor, a spread wide enough that a gap
+ * is inside it, and two libraries whose means are inside each other's bands.
+ * No library of it keeps a definition's schema, so a test that draws a figure
+ * of one kept definition marks a copy.
  *
  * `fuz_schema_compiled` is this library in its compiled mode, with factors
  * that run the way the mode does: a bigger bundle than the interpreter's, a
@@ -59,7 +60,8 @@ const VALID: Factors = {
 	zod_compiled: 0.4,
 	zod_mini: 4.2,
 	typebox: 0.2,
-	arktype: 6
+	valita: 1.3,
+	sury: 0.3
 };
 // this library compiled is level with the interpreter: each row inside its two spreads
 const INVALID: Factors = {
@@ -70,23 +72,25 @@ const INVALID: Factors = {
 	zod_compiled: 10,
 	zod_mini: 16,
 	typebox: 0.2,
-	arktype: 90
+	valita: 3,
+	sury: 1.2
 };
-// TypeBox and ArkType are level as guards: each row is inside its two spreads, and
-// so are the two means inside each other's bands
+// TypeBox and compiled Zod are level as guards: each row is inside its two spreads,
+// and so are the two means inside each other's bands
 const GUARD: Factors = {
 	fuz_schema: 1,
 	fuz_schema_compiled: 0.12,
 	valibot: 6.5,
 	zod: 1.6,
-	zod_compiled: 0.25,
+	zod_compiled: 0.19,
 	zod_mini: 4.3,
 	typebox: 0.18,
-	arktype: 0.19
+	valita: 1.4,
+	sury: 0.4
 };
 // a cold start's parses run code the engine has not optimized yet, where the compiled
 // mode's lead over the interpreter is less, as the published run has it
-const COLD_VALID: Factors = { ...VALID, fuz_schema_compiled: 0.6 };
+const COLD_VALID: Factors = { ...VALID, fuz_schema_compiled: 0.6, sury: 1.2 };
 const SIZE: Factors = {
 	fuz_schema: 1,
 	fuz_schema_compiled: 14,
@@ -95,7 +99,8 @@ const SIZE: Factors = {
 	zod_compiled: 31,
 	zod_mini: 5.5,
 	typebox: 38,
-	arktype: 46
+	valita: 1.2,
+	sury: 4
 };
 const HELD: Factors = {
 	fuz_schema: 1,
@@ -105,7 +110,8 @@ const HELD: Factors = {
 	zod_compiled: 25,
 	zod_mini: 5,
 	typebox: 32,
-	arktype: 470
+	valita: 1.3,
+	sury: 6
 };
 const TYPES: Factors = {
 	fuz_schema: 1,
@@ -115,22 +121,23 @@ const TYPES: Factors = {
 	zod_compiled: 7.8,
 	zod_mini: 1.2,
 	typebox: 0.5,
-	arktype: 6.5
+	valita: 1.6,
+	sury: 2.2
 };
 
 /**
  * Where a library's factor on one row is not its factor on the rest, by
  * scenario and input: a library that is the slower as a mean and the faster
- * on a row, as plain Zod and ArkType are on a list, and the recursive
- * scenario, where TypeBox and ArkType are the slower on valid input and as
- * guards, and a flat object, where TypeBox is faster than this library compiled.
+ * on a row, as plain Zod is on a list, and the recursive scenario, where
+ * TypeBox is the slower on valid input and as a guard, and a flat object,
+ * where TypeBox is faster than this library compiled.
  */
 const ROW_FACTORS: Readonly<Record<string, Partial<Factors>>> = {
 	'object_flat:valid': { fuz_schema_compiled: 0.3 },
-	'list:valid': { zod: 0.8, arktype: 0.8 },
+	'list:valid': { zod: 0.8 },
 	'list:guard': { zod: 0.8 },
 	'type_json:valid': { typebox: 1.2 },
-	'type_json:guard': { typebox: 1.2, arktype: 1.3 }
+	'type_json:guard': { typebox: 1.2, zod: 1.25 }
 };
 
 const UNCOMPILED: BenchmarkMissing = {
@@ -188,8 +195,8 @@ const create_run = (): BenchmarkData['run'] => ({
 			libs: to_libs((lib) =>
 				lib === 'zod_compiled' && scenario.name === 'type_json'
 					? UNCOMPILED
-					: // one spread made wide: ArkType's guard of a flat object, level with the row's best
-						lib === 'arktype' && scenario.name === 'object_flat' && input === 'guard'
+					: // one spread made wide: compiled Zod's guard of a flat object, level with TypeBox's
+						lib === 'zod_compiled' && scenario.name === 'object_flat' && input === 'guard'
 						? to_timing(scenario.ns * GUARD.typebox * 1.04, 0.08)
 						: to_timing(
 								scenario.ns * (ROW_FACTORS[`${scenario.name}:${input}`]?.[lib] ?? factors[lib])
@@ -431,10 +438,6 @@ const create_harvest = (): BenchmarkData['harvest'] => {
 	};
 };
 
-/** The libraries taken to hand back the schema they built before, on a scenario that isn't recursive. */
-const is_interned = (lib: LibName, scenario: { recursive: boolean }): boolean =>
-	lib === 'arktype' && !scenario.recursive;
-
 const create_allocations = (): BenchmarkData['allocations'] => ({
 	rows: SCENARIOS.map((scenario) => ({
 		scenario: scenario.name,
@@ -444,13 +447,12 @@ const create_allocations = (): BenchmarkData['allocations'] => ({
 			// interpreter's. Building its schema allocates more, the compile.
 			const parsed_as = lib === 'fuz_schema_compiled' ? 'fuz_schema' : lib;
 			return {
-				// a check builds nothing, this library returns its input, and compiled Zod and
-				// ArkType are taken to allocate less than it does on one scenario
+				// a check builds nothing, this library returns its input, and compiled Zod is
+				// taken to allocate less than it does on one scenario
 				valid_bytes:
 					parsed_as === 'typebox'
 						? 0
-						: (parsed_as === 'zod_compiled' || parsed_as === 'arktype') &&
-							  scenario.name === 'object_flat'
+						: parsed_as === 'zod_compiled' && scenario.name === 'object_flat'
 							? Math.round(scenario.ns / 20)
 							: Math.round(
 									(scenario.ns / 10) * (parsed_as === 'fuz_schema' ? 1 : VALID[parsed_as] * 3)
@@ -458,7 +460,7 @@ const create_allocations = (): BenchmarkData['allocations'] => ({
 				invalid_bytes: parsed_as === 'typebox' ? 0 : Math.round(scenario.ns * INVALID[parsed_as]),
 				create_bytes: Math.round(scenario.bytes * HELD[lib]),
 				create_ns: round(scenario.bytes * HELD[lib] * 0.15),
-				interned: is_interned(lib, scenario)
+				interned: false
 			};
 		})
 	}))
@@ -505,8 +507,10 @@ const create_types = (): BenchmarkData['types'] => {
 		empty: to_cost(0),
 		modules: to_libs((lib) => to_cost(14_000 * TYPES[lib])),
 		reads: ['t.string.length', 't.object_flat.name'],
+		// TypeBox has fewer for a module that only builds its schemas, and more once their
+		// types are inferred, read or not
 		with_reads: to_libs((lib) => ({
-			...to_cost(12_000 * TYPES[lib]),
+			...to_cost(12_000 * (lib === 'typebox' ? 1.3 : TYPES[lib])),
 			reads_add: Math.round(700 / TYPES[lib])
 		}))
 	};
@@ -556,16 +560,13 @@ const create_heap = (): BenchmarkData['heap'] => ({
 		libs: to_libs((lib) => {
 			const heap_bytes = Math.round(30 * scenario.bytes * HELD[lib]);
 			const code_bytes = Math.round(heap_bytes / 3);
-			const external_bytes = lib === 'arktype' ? 2_400_000 : 0;
-			const interned = is_interned(lib, scenario);
 			return {
 				heap_bytes,
 				code_bytes,
-				external_bytes,
-				total_bytes: heap_bytes + code_bytes + external_bytes,
-				// one kept schema repeated holds next to nothing more a schema
-				further_schema_bytes: interned ? 130 : Math.round(scenario.bytes * HELD[lib] * 0.9),
-				interned
+				external_bytes: 0,
+				total_bytes: heap_bytes + code_bytes,
+				further_schema_bytes: Math.round(scenario.bytes * HELD[lib] * 0.9),
+				interned: false
 			};
 		})
 	}))

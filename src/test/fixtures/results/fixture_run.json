@@ -228,9 +228,9 @@
 				]
 			},
 			{
-				"id": "arktype",
-				"label": "ArkType",
-				"package": "arktype",
+				"id": "valita",
+				"label": "Valita",
+				"package": "@badrap/valita",
 				"version": "0.0.7",
 				"by_maintainer": false,
 				"note": null,
@@ -238,17 +238,49 @@
 					{
 						"about": [
 							"valid",
-							"invalid",
 							"allocation"
 						],
-						"text": "A parse that drops keys deep-clones its input before it runs."
+						"text": "As this library does, it hands back a valid input that needs no change, and builds no copy of it."
 					},
 					{
 						"about": [
+							"guard"
+						],
+						"text": "It has no guard of its own: its row is its parse."
+					}
+				]
+			},
+			{
+				"id": "sury",
+				"label": "Sury",
+				"package": "sury",
+				"version": "0.0.8",
+				"by_maintainer": false,
+				"note": null,
+				"notes": [
+					{
+						"about": [
+							"valid",
+							"invalid",
+							"guard"
+						],
+						"text": "Each row is an operation it generates with `new Function`, `parseAsResult` for a parse and `isInput` for a guard, compiled as the schema is built."
+					},
+					{
+						"about": [
+							"valid",
+							"allocation"
+						],
+						"text": "A parse of valid input returns a new object with every key of its schema, an optional key the input lacks among them, with no value."
+					},
+					{
+						"about": [
+							"bundle",
+							"coldstart",
 							"creation",
 							"heap"
 						],
-						"text": "It keeps one schema of a definition and hands it back when the same definition is built again, which a figure marked `†` is of."
+						"text": "It carries its compiler, and compiles while the schema is built."
 					}
 				]
 			}
@@ -304,10 +336,15 @@
 							"gzip": 15100,
 							"brotli": 13590
 						},
-						"arktype": {
-							"minified": 47580,
-							"gzip": 18300,
-							"brotli": 16470
+						"valita": {
+							"minified": 988,
+							"gzip": 380,
+							"brotli": 342
+						},
+						"sury": {
+							"minified": 3900,
+							"gzip": 1500,
+							"brotli": 1350
 						}
 					}
 				},
@@ -349,10 +386,15 @@
 							"gzip": 15600,
 							"brotli": 14040
 						},
-						"arktype": {
-							"minified": 48880,
-							"gzip": 18800,
-							"brotli": 16920
+						"valita": {
+							"minified": 2288,
+							"gzip": 880,
+							"brotli": 792
+						},
+						"sury": {
+							"minified": 5200,
+							"gzip": 2000,
+							"brotli": 1800
 						}
 					}
 				},
@@ -394,10 +436,15 @@
 							"gzip": 15750,
 							"brotli": 14175
 						},
-						"arktype": {
-							"minified": 49270,
-							"gzip": 18950,
-							"brotli": 17055
+						"valita": {
+							"minified": 2678,
+							"gzip": 1030,
+							"brotli": 927
+						},
+						"sury": {
+							"minified": 5590,
+							"gzip": 2150,
+							"brotli": 1935
 						}
 					}
 				},
@@ -439,10 +486,15 @@
 							"gzip": 16500,
 							"brotli": 14850
 						},
-						"arktype": {
-							"minified": 51220,
-							"gzip": 19700,
-							"brotli": 17730
+						"valita": {
+							"minified": 4628,
+							"gzip": 1780,
+							"brotli": 1602
+						},
+						"sury": {
+							"minified": 7540,
+							"gzip": 2900,
+							"brotli": 2610
 						}
 					}
 				},
@@ -484,10 +536,15 @@
 							"gzip": 17000,
 							"brotli": 15300
 						},
-						"arktype": {
-							"minified": 52520,
-							"gzip": 20200,
-							"brotli": 18180
+						"valita": {
+							"minified": 5928,
+							"gzip": 2280,
+							"brotli": 2052
+						},
+						"sury": {
+							"minified": 8840,
+							"gzip": 3400,
+							"brotli": 3060
 						}
 					}
 				}
@@ -528,10 +585,15 @@
 					"gzip": 17800,
 					"brotli": 16020
 				},
-				"arktype": {
-					"minified": 54600,
-					"gzip": 21000,
-					"brotli": 18900
+				"valita": {
+					"minified": 8008,
+					"gzip": 3080,
+					"brotli": 2772
+				},
+				"sury": {
+					"minified": 10920,
+					"gzip": 4200,
+					"brotli": 3780
 				}
 			},
 			"library": {
@@ -625,11 +687,17 @@
 					"memory_kb": 123500,
 					"check_s": 0.07
 				},
-				"arktype": {
-					"instantiations": 91000,
-					"types": 30418,
-					"memory_kb": 165500,
-					"check_s": 0.91
+				"valita": {
+					"instantiations": 22400,
+					"types": 7552,
+					"memory_kb": 131200,
+					"check_s": 0.22
+				},
+				"sury": {
+					"instantiations": 30800,
+					"types": 10352,
+					"memory_kb": 135400,
+					"check_s": 0.31
 				}
 			},
 			"reads": [
@@ -680,18 +748,25 @@
 					"reads_add": 583
 				},
 				"typebox": {
-					"instantiations": 6000,
-					"types": 2085,
-					"memory_kb": 123000,
-					"check_s": 0.06,
+					"instantiations": 15600,
+					"types": 5285,
+					"memory_kb": 127800,
+					"check_s": 0.16,
 					"reads_add": 1400
 				},
-				"arktype": {
-					"instantiations": 78000,
-					"types": 26085,
-					"memory_kb": 159000,
-					"check_s": 0.78,
-					"reads_add": 108
+				"valita": {
+					"instantiations": 19200,
+					"types": 6485,
+					"memory_kb": 129600,
+					"check_s": 0.19,
+					"reads_add": 438
+				},
+				"sury": {
+					"instantiations": 26400,
+					"types": 8885,
+					"memory_kb": 133200,
+					"check_s": 0.26,
+					"reads_add": 318
 				}
 			}
 		}
@@ -756,12 +831,19 @@
 							"create_ns": 1440,
 							"interned": false
 						},
-						"arktype": {
-							"valid_bytes": 36,
-							"invalid_bytes": 1800,
-							"create_bytes": 141000,
-							"create_ns": 21150,
-							"interned": true
+						"valita": {
+							"valid_bytes": 8,
+							"invalid_bytes": 60,
+							"create_bytes": 390,
+							"create_ns": 58.5,
+							"interned": false
+						},
+						"sury": {
+							"valid_bytes": 2,
+							"invalid_bytes": 24,
+							"create_bytes": 1800,
+							"create_ns": 270,
+							"interned": false
 						}
 					}
 				},
@@ -817,12 +899,19 @@
 							"create_ns": 3840,
 							"interned": false
 						},
-						"arktype": {
-							"valid_bytes": 5,
-							"invalid_bytes": 9000,
-							"create_bytes": 376000,
-							"create_ns": 56400,
-							"interned": true
+						"valita": {
+							"valid_bytes": 39,
+							"invalid_bytes": 300,
+							"create_bytes": 1040,
+							"create_ns": 156,
+							"interned": false
+						},
+						"sury": {
+							"valid_bytes": 9,
+							"invalid_bytes": 120,
+							"create_bytes": 4800,
+							"create_ns": 720,
+							"interned": false
 						}
 					}
 				},
@@ -878,12 +967,19 @@
 							"create_ns": 4560,
 							"interned": false
 						},
-						"arktype": {
-							"valid_bytes": 16200,
-							"invalid_bytes": 810000,
-							"create_bytes": 446500,
-							"create_ns": 66975,
-							"interned": true
+						"valita": {
+							"valid_bytes": 3510,
+							"invalid_bytes": 27000,
+							"create_bytes": 1235,
+							"create_ns": 185.25,
+							"interned": false
+						},
+						"sury": {
+							"valid_bytes": 810,
+							"invalid_bytes": 10800,
+							"create_bytes": 5700,
+							"create_ns": 855,
+							"interned": false
 						}
 					}
 				},
@@ -939,11 +1035,18 @@
 							"create_ns": 8160,
 							"interned": false
 						},
-						"arktype": {
-							"valid_bytes": 2700,
-							"invalid_bytes": 135000,
-							"create_bytes": 799000,
-							"create_ns": 119850,
+						"valita": {
+							"valid_bytes": 585,
+							"invalid_bytes": 4500,
+							"create_bytes": 2210,
+							"create_ns": 331.5,
+							"interned": false
+						},
+						"sury": {
+							"valid_bytes": 135,
+							"invalid_bytes": 1800,
+							"create_bytes": 10200,
+							"create_ns": 1530,
 							"interned": false
 						}
 					}
@@ -1000,11 +1103,18 @@
 							"create_ns": 10560,
 							"interned": false
 						},
-						"arktype": {
-							"valid_bytes": 3240,
-							"invalid_bytes": 162000,
-							"create_bytes": 1034000,
-							"create_ns": 155100,
+						"valita": {
+							"valid_bytes": 702,
+							"invalid_bytes": 5400,
+							"create_bytes": 2860,
+							"create_ns": 429,
+							"interned": false
+						},
+						"sury": {
+							"valid_bytes": 162,
+							"invalid_bytes": 2160,
+							"create_bytes": 13200,
+							"create_ns": 1980,
 							"interned": false
 						}
 					}
@@ -1083,13 +1193,21 @@
 							"further_schema_bytes": 23040,
 							"interned": false
 						},
-						"arktype": {
-							"heap_bytes": 11280000,
-							"code_bytes": 3760000,
-							"external_bytes": 2400000,
-							"total_bytes": 17440000,
-							"further_schema_bytes": 130,
-							"interned": true
+						"valita": {
+							"heap_bytes": 31200,
+							"code_bytes": 10400,
+							"external_bytes": 0,
+							"total_bytes": 41600,
+							"further_schema_bytes": 936,
+							"interned": false
+						},
+						"sury": {
+							"heap_bytes": 144000,
+							"code_bytes": 48000,
+							"external_bytes": 0,
+							"total_bytes": 192000,
+							"further_schema_bytes": 4320,
+							"interned": false
 						}
 					}
 				},
@@ -1152,12 +1270,20 @@
 							"further_schema_bytes": 48960,
 							"interned": false
 						},
-						"arktype": {
-							"heap_bytes": 23970000,
-							"code_bytes": 7990000,
-							"external_bytes": 2400000,
-							"total_bytes": 34360000,
-							"further_schema_bytes": 719100,
+						"valita": {
+							"heap_bytes": 66300,
+							"code_bytes": 22100,
+							"external_bytes": 0,
+							"total_bytes": 88400,
+							"further_schema_bytes": 1989,
+							"interned": false
+						},
+						"sury": {
+							"heap_bytes": 306000,
+							"code_bytes": 102000,
+							"external_bytes": 0,
+							"total_bytes": 408000,
+							"further_schema_bytes": 9180,
 							"interned": false
 						}
 					}
@@ -1387,33 +1513,62 @@
 							"added_rss_kb": 8014,
 							"rss_band_kb": 120
 						},
-						"arktype": {
+						"valita": {
 							"stages": {
 								"import": {
-									"work_ms": 4.9,
+									"work_ms": 0.42,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 4.97,
+									"work_ms": 0.49,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 5.57,
+									"work_ms": 0.62,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 5.62,
+									"work_ms": 0.67,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 5.75,
+									"work_ms": 0.8,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 1.02,
-							"later_band_ms": 0.102,
-							"added_ms": 5.57,
-							"added_rss_kb": 8817,
+							"later_ms": 0.22,
+							"later_band_ms": 0.022,
+							"added_ms": 0.62,
+							"added_rss_kb": 1424,
+							"rss_band_kb": 120
+						},
+						"sury": {
+							"stages": {
+								"import": {
+									"work_ms": 0.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 0.89,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 0.94,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 1.07,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.2,
+							"later_band_ms": 0.02,
+							"added_ms": 0.89,
+							"added_rss_kb": 2600,
 							"rss_band_kb": 120
 						}
 					}
@@ -1625,33 +1780,62 @@
 							"added_rss_kb": 8014,
 							"rss_band_kb": 120
 						},
-						"arktype": {
+						"valita": {
 							"stages": {
 								"import": {
-									"work_ms": 18.38,
+									"work_ms": 1.58,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 18.45,
+									"work_ms": 1.65,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 19.05,
+									"work_ms": 1.78,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 19.1,
+									"work_ms": 1.83,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 19.23,
+									"work_ms": 1.96,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 1.02,
-							"later_band_ms": 0.102,
-							"added_ms": 19.05,
-							"added_rss_kb": 8817,
+							"later_ms": 0.22,
+							"later_band_ms": 0.022,
+							"added_ms": 1.78,
+							"added_rss_kb": 1424,
+							"rss_band_kb": 120
+						},
+						"sury": {
+							"stages": {
+								"import": {
+									"work_ms": 2.63,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 2.7,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2.82,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 2.87,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.2,
+							"later_band_ms": 0.02,
+							"added_ms": 2.82,
+							"added_rss_kb": 2600,
 							"rss_band_kb": 120
 						}
 					}
@@ -1863,33 +2047,62 @@
 							"added_rss_kb": 8014,
 							"rss_band_kb": 120
 						},
-						"arktype": {
+						"valita": {
 							"stages": {
 								"import": {
-									"work_ms": 4.9,
+									"work_ms": 0.42,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 4.97,
+									"work_ms": 0.49,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 15.77,
+									"work_ms": 2.83,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 15.82,
+									"work_ms": 2.88,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 15.95,
+									"work_ms": 3.01,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 1.02,
-							"later_band_ms": 0.102,
-							"added_ms": 15.77,
-							"added_rss_kb": 8817,
+							"later_ms": 0.22,
+							"later_band_ms": 0.022,
+							"added_ms": 2.83,
+							"added_rss_kb": 1424,
+							"rss_band_kb": 120
+						},
+						"sury": {
+							"stages": {
+								"import": {
+									"work_ms": 0.7,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 0.77,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 2.93,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 2.98,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 3.11,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.2,
+							"later_band_ms": 0.02,
+							"added_ms": 2.93,
+							"added_rss_kb": 2600,
 							"rss_band_kb": 120
 						}
 					}
@@ -2101,33 +2314,62 @@
 							"added_rss_kb": 8014,
 							"rss_band_kb": 120
 						},
-						"arktype": {
+						"valita": {
 							"stages": {
 								"import": {
-									"work_ms": 18.38,
+									"work_ms": 1.58,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 18.45,
+									"work_ms": 1.65,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 29.25,
+									"work_ms": 3.99,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 29.3,
+									"work_ms": 4.04,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 29.43,
+									"work_ms": 4.17,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 1.02,
-							"later_band_ms": 0.102,
-							"added_ms": 29.25,
-							"added_rss_kb": 8817,
+							"later_ms": 0.22,
+							"later_band_ms": 0.022,
+							"added_ms": 3.99,
+							"added_rss_kb": 1424,
+							"rss_band_kb": 120
+						},
+						"sury": {
+							"stages": {
+								"import": {
+									"work_ms": 2.63,
+									"band_ms": 0.05
+								},
+								"create": {
+									"work_ms": 2.7,
+									"band_ms": 0.05
+								},
+								"first_parse": {
+									"work_ms": 4.86,
+									"band_ms": 0.05
+								},
+								"parse_10": {
+									"work_ms": 4.91,
+									"band_ms": 0.05
+								},
+								"parse_100": {
+									"work_ms": 5.04,
+									"band_ms": 0.05
+								}
+							},
+							"later_ms": 0.2,
+							"later_band_ms": 0.02,
+							"added_ms": 4.86,
+							"added_rss_kb": 2600,
 							"rss_band_kb": 120
 						}
 					}
@@ -2204,11 +2446,18 @@
 							"max_ns": 4.12,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 120,
-							"batch_ns": 114,
-							"min_ns": 116.4,
-							"max_ns": 123.6,
+						"valita": {
+							"ns": 26,
+							"batch_ns": 24.7,
+							"min_ns": 25.22,
+							"max_ns": 26.78,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 6,
+							"batch_ns": 5.7,
+							"min_ns": 5.82,
+							"max_ns": 6.18,
 							"spread": 0.03
 						}
 					}
@@ -2266,11 +2515,18 @@
 							"max_ns": 4.12,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 1800,
-							"batch_ns": 1710,
-							"min_ns": 1746,
-							"max_ns": 1854,
+						"valita": {
+							"ns": 60,
+							"batch_ns": 57,
+							"min_ns": 58.2,
+							"max_ns": 61.8,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 24,
+							"batch_ns": 22.8,
+							"min_ns": 23.28,
+							"max_ns": 24.72,
 							"spread": 0.03
 						}
 					}
@@ -2308,10 +2564,10 @@
 							"spread": 0.03
 						},
 						"zod_compiled": {
-							"ns": 5,
-							"batch_ns": 4.75,
-							"min_ns": 4.85,
-							"max_ns": 5.15,
+							"ns": 3.8,
+							"batch_ns": 3.61,
+							"min_ns": 3.69,
+							"max_ns": 3.91,
 							"spread": 0.03
 						},
 						"zod_mini": {
@@ -2328,11 +2584,18 @@
 							"max_ns": 3.71,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 3.8,
-							"batch_ns": 3.61,
-							"min_ns": 3.69,
-							"max_ns": 3.91,
+						"valita": {
+							"ns": 28,
+							"batch_ns": 26.6,
+							"min_ns": 27.16,
+							"max_ns": 28.84,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 8,
+							"batch_ns": 7.6,
+							"min_ns": 7.76,
+							"max_ns": 8.24,
 							"spread": 0.03
 						}
 					}
@@ -2390,11 +2653,18 @@
 							"max_ns": 20.6,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 600,
-							"batch_ns": 570,
-							"min_ns": 582,
-							"max_ns": 618,
+						"valita": {
+							"ns": 130,
+							"batch_ns": 123.5,
+							"min_ns": 126.1,
+							"max_ns": 133.9,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 30,
+							"batch_ns": 28.5,
+							"min_ns": 29.1,
+							"max_ns": 30.9,
 							"spread": 0.03
 						}
 					}
@@ -2452,11 +2722,18 @@
 							"max_ns": 20.6,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 9000,
-							"batch_ns": 8550,
-							"min_ns": 8730,
-							"max_ns": 9270,
+						"valita": {
+							"ns": 300,
+							"batch_ns": 285,
+							"min_ns": 291,
+							"max_ns": 309,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 120,
+							"batch_ns": 114,
+							"min_ns": 116.4,
+							"max_ns": 123.6,
 							"spread": 0.03
 						}
 					}
@@ -2494,11 +2771,11 @@
 							"spread": 0.03
 						},
 						"zod_compiled": {
-							"ns": 25,
-							"batch_ns": 23.75,
-							"min_ns": 24.25,
-							"max_ns": 25.75,
-							"spread": 0.03
+							"ns": 18.72,
+							"batch_ns": 17.78,
+							"min_ns": 17.22,
+							"max_ns": 20.22,
+							"spread": 0.08
 						},
 						"zod_mini": {
 							"ns": 430,
@@ -2514,12 +2791,19 @@
 							"max_ns": 18.54,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 18.72,
-							"batch_ns": 17.78,
-							"min_ns": 17.22,
-							"max_ns": 20.22,
-							"spread": 0.08
+						"valita": {
+							"ns": 140,
+							"batch_ns": 133,
+							"min_ns": 135.8,
+							"max_ns": 144.2,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 40,
+							"batch_ns": 38,
+							"min_ns": 38.8,
+							"max_ns": 41.2,
+							"spread": 0.03
 						}
 					}
 				},
@@ -2576,11 +2860,18 @@
 							"max_ns": 1854,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 7200,
-							"batch_ns": 6840,
-							"min_ns": 6984,
-							"max_ns": 7416,
+						"valita": {
+							"ns": 11700,
+							"batch_ns": 11115,
+							"min_ns": 11349,
+							"max_ns": 12051,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 2700,
+							"batch_ns": 2565,
+							"min_ns": 2619,
+							"max_ns": 2781,
 							"spread": 0.03
 						}
 					}
@@ -2638,11 +2929,18 @@
 							"max_ns": 1854,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 810000,
-							"batch_ns": 769500,
-							"min_ns": 785700,
-							"max_ns": 834300,
+						"valita": {
+							"ns": 27000,
+							"batch_ns": 25650,
+							"min_ns": 26190,
+							"max_ns": 27810,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 10800,
+							"batch_ns": 10260,
+							"min_ns": 10476,
+							"max_ns": 11124,
 							"spread": 0.03
 						}
 					}
@@ -2680,10 +2978,10 @@
 							"spread": 0.03
 						},
 						"zod_compiled": {
-							"ns": 2250,
-							"batch_ns": 2137.5,
-							"min_ns": 2182.5,
-							"max_ns": 2317.5,
+							"ns": 1710,
+							"batch_ns": 1624.5,
+							"min_ns": 1658.7,
+							"max_ns": 1761.3,
 							"spread": 0.03
 						},
 						"zod_mini": {
@@ -2700,11 +2998,18 @@
 							"max_ns": 1668.6,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 1710,
-							"batch_ns": 1624.5,
-							"min_ns": 1658.7,
-							"max_ns": 1761.3,
+						"valita": {
+							"ns": 12600,
+							"batch_ns": 11970,
+							"min_ns": 12222,
+							"max_ns": 12978,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 3600,
+							"batch_ns": 3420,
+							"min_ns": 3492,
+							"max_ns": 3708,
 							"spread": 0.03
 						}
 					}
@@ -2759,11 +3064,18 @@
 							"max_ns": 1854,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 9000,
-							"batch_ns": 8550,
-							"min_ns": 8730,
-							"max_ns": 9270,
+						"valita": {
+							"ns": 1950,
+							"batch_ns": 1852.5,
+							"min_ns": 1891.5,
+							"max_ns": 2008.5,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 450,
+							"batch_ns": 427.5,
+							"min_ns": 436.5,
+							"max_ns": 463.5,
 							"spread": 0.03
 						}
 					}
@@ -2818,11 +3130,18 @@
 							"max_ns": 309,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 135000,
-							"batch_ns": 128250,
-							"min_ns": 130950,
-							"max_ns": 139050,
+						"valita": {
+							"ns": 4500,
+							"batch_ns": 4275,
+							"min_ns": 4365,
+							"max_ns": 4635,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 1800,
+							"batch_ns": 1710,
+							"min_ns": 1746,
+							"max_ns": 1854,
 							"spread": 0.03
 						}
 					}
@@ -2853,10 +3172,10 @@
 							"spread": 0.03
 						},
 						"zod": {
-							"ns": 2400,
-							"batch_ns": 2280,
-							"min_ns": 2328,
-							"max_ns": 2472,
+							"ns": 1875,
+							"batch_ns": 1781.25,
+							"min_ns": 1818.75,
+							"max_ns": 1931.25,
 							"spread": 0.03
 						},
 						"zod_compiled": {
@@ -2877,11 +3196,18 @@
 							"max_ns": 1854,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 1950,
-							"batch_ns": 1852.5,
-							"min_ns": 1891.5,
-							"max_ns": 2008.5,
+						"valita": {
+							"ns": 2100,
+							"batch_ns": 1995,
+							"min_ns": 2037,
+							"max_ns": 2163,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 600,
+							"batch_ns": 570,
+							"min_ns": 582,
+							"max_ns": 618,
 							"spread": 0.03
 						}
 					}
@@ -2939,11 +3265,18 @@
 							"max_ns": 370.8,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 10800,
-							"batch_ns": 10260,
-							"min_ns": 10476,
-							"max_ns": 11124,
+						"valita": {
+							"ns": 2340,
+							"batch_ns": 2223,
+							"min_ns": 2269.8,
+							"max_ns": 2410.2,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 540,
+							"batch_ns": 513,
+							"min_ns": 523.8,
+							"max_ns": 556.2,
 							"spread": 0.03
 						}
 					}
@@ -3001,11 +3334,18 @@
 							"max_ns": 370.8,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 162000,
-							"batch_ns": 153900,
-							"min_ns": 157140,
-							"max_ns": 166860,
+						"valita": {
+							"ns": 5400,
+							"batch_ns": 5130,
+							"min_ns": 5238,
+							"max_ns": 5562,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 2160,
+							"batch_ns": 2052,
+							"min_ns": 2095.2,
+							"max_ns": 2224.8,
 							"spread": 0.03
 						}
 					}
@@ -3043,10 +3383,10 @@
 							"spread": 0.03
 						},
 						"zod_compiled": {
-							"ns": 450,
-							"batch_ns": 427.5,
-							"min_ns": 436.5,
-							"max_ns": 463.5,
+							"ns": 342,
+							"batch_ns": 324.9,
+							"min_ns": 331.74,
+							"max_ns": 352.26,
 							"spread": 0.03
 						},
 						"zod_mini": {
@@ -3063,11 +3403,18 @@
 							"max_ns": 333.72,
 							"spread": 0.03
 						},
-						"arktype": {
-							"ns": 342,
-							"batch_ns": 324.9,
-							"min_ns": 331.74,
-							"max_ns": 352.26,
+						"valita": {
+							"ns": 2520,
+							"batch_ns": 2394,
+							"min_ns": 2444.4,
+							"max_ns": 2595.6,
+							"spread": 0.03
+						},
+						"sury": {
+							"ns": 720,
+							"batch_ns": 684,
+							"min_ns": 698.4,
+							"max_ns": 741.6,
 							"spread": 0.03
 						}
 					}

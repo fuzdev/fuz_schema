@@ -42,7 +42,7 @@ export const schema_string = () => fuz_schema.schema_string();
 
 export const schema_object_flat = () => fuz_schema.schema_object_flat();
 
-export const schema_extra_keys = schema_object_flat;
+export const schema_object_copy = () => fuz_schema.schema_object_copy();
 
 export const schema_strict_nested = () => fuz_schema.schema_strict_nested();
 

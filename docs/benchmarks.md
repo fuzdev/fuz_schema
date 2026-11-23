@@ -1,7 +1,8 @@
 # Benchmarks
 
 Everything is in `src/benchmarks/`. The comparison libraries are Valibot, Zod,
-Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, and ArkType.
+Zod with each root compiled (`zod_compiled`), Zod Mini, TypeBox, Valita, and
+Sury.
 This library is entered twice, as it is imported (`fuz_schema`) and with each
 schema compiled (`fuz_schema_compiled`), which is the same library in another
 mode and no other, see [this library compiled](#this-library-compiled).
@@ -18,7 +19,7 @@ mode and no other, see [this library compiled](#this-library-compiled).
 | `npm run benchmark:harvest` | each harvested set in its own library, Valibot or Zod, against this one: bundle, parse time, allocation |
 | `npm run benchmark:survey` | parse time over many small shapes, this library against itself compiled, Valibot, Zod, and Zod compiled, by what a parse does |
 | `npm run grade` | this library against another version of itself ([grading.md](grading.md)) |
-| `npm run results` | every script above but `grade`, in turn, into one results file ([below](#one-results-file)) |
+| `npm run results` | every script above but `grade`, and `benchmark:wasm` only with `--wasm`, in turn, into one results file ([below](#one-results-file)) |
 | `npm run results:publish` | copies a publishable run to `results/latest.json`, which the site renders |
 
 `npm run differential` and `npm run mutate` are tests and not measurements, see
@@ -37,17 +38,19 @@ end (`machine.ts`), so a saved output can be read on its own.
   schema from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo); the
   rest are synthetic. `list` is a hundred strict records, and its invalid
   input has several of them wrong, each at another field, so its issues have
-  an index in their path and some a level below that. `extra_keys` is the
-  schema of `object_flat`, which drops what it doesn't name, given keys it
-  doesn't name: its factory is that scenario's under a second name, so its
-  bundle is the same bytes and it adds a call to a bundle of every scenario
-  and no definition. `app` is the distinct schemas an app defines, a user,
+  an index in their path and some a level below that. The first of them is
+  halfway down, where the one failure of a document is as likely to come
+  before as after, so a library that stops at its first failure walks half of
+  the list. `object_copy` is the one scenario of a schema whose valid parse
+  returns another object than it was given: keys its schema doesn't name are
+  dropped, a default is filled in, and a string is lowercased. On every
+  other, a library that returns its input where nothing changed returns it,
+  as this library and Valita do. `app` is the distinct schemas an app defines, a user,
   a post, a page envelope, an error envelope, settings, an order, an event
   variant among them, each parsing its own key of one payload: every other
   scenario is one schema, and in this one the schemas' definitions, not the
-  library's code, are most of the bytes. The grader's backstop reads
-  only the scenarios of one schema, and reports `app` beside Valibot and Zod
-  Mini, not priced, see [grading.md](grading.md#bytes). A test holds every library to
+  library's code, are most of the bytes. The grader's backstop leaves
+  it out, see [grading.md](grading.md#bytes). A test holds every library to
   the same answer on each, and on `app` to refusing a payload broken under
   any one of its keys.
 - **Schemas modules** (`libs/schemas/`, `scenario_schemas.ts`) hold each
@@ -87,9 +90,8 @@ end (`machine.ts`), so a saved output can be read on its own.
   Every case names its path: `identity` returns the input itself, `copy`
   returns another value, `issues` fails through `parse`, `probe` goes
   through `is`, and `create` builds a schema. A creation is in its group's
-  summary and its path's, and in no other: not in `all`, and not in rule
-  6, which reads parses. A creation case confirmed slower is listed with the
-  rest. Schemas are written as literals and inputs come from
+  summary and its path's, and in no other, see [grading.md](grading.md#rules).
+  Schemas are written as literals and inputs come from
   `JSON.parse`, as a consumer's do: an object built key by key can be a
   different kind of object to the engine, and cost differently, which one
   case of `fuz_app` is.
@@ -235,16 +237,16 @@ primitive, a wrapper, an object returned as it came or copied, a union, a
 variant, a pipe, a recursive schema, and issues by how many there are and how
 deep their paths go. The scenarios give a library one figure for a match and
 one for a miss, on a few schemas, and a library that is ahead on one kind of
-work can hide in them. It is a benchmark and no gate: nothing reads it but
-whoever runs it.
+work can hide in them. It is a benchmark and no gate: no rule of the grader and no claim of the
+README reads it, and the benchmarks page renders it.
 
 - **A shape is written three times**, taking its library as a parameter, so a
   process that times one library loads no other. Zod is as its scenario
   module has it, compiling where the environment lets it. `zod_compiled` runs
   Zod's builder with its root through `z.compile`, so it leaves out and
-  differs where Zod does, and it has no equivalent of a shape whose root
-  `z.compile` hands back uncompiled: those rows are `-` in its columns, built
-  and run in its process and timed in none, and the run names the shapes. A
+  differs where Zod does, and a shape whose root `z.compile` hands back uncompiled is `-` in
+  its columns, see [comparing like with like](#comparing-like-with-like): the
+  run names the shapes. A
   shape one library has no equivalent of leaves it out and says why. Zod's
   guard is `z.validate`.
 - **`fuz_schema_compiled` runs this library's builder** with the shape's
@@ -418,10 +420,7 @@ and so has the survey.
   the unbundled one of this library loads its build, `dist/schema.js`, what
   the package publishes, and `dist/compile.js` for the library compiled, and
   refuses to run when one is missing or older than `src/lib/schema.ts` or
-  `src/lib/compile.ts`, so run `gro build` first. The build syncs the
-  dependencies first, and when that updated Gro or a package Gro had loaded,
-  as it does when `node_modules` is behind the lockfile, it stops and asks to
-  be run again. Compile cache off, rounds interleaved, medians: every process
+  `src/lib/compile.ts`, so run `gro build` first. Compile cache off, rounds interleaved, medians: every process
   runs once a round, another leading each round and each after another
   neighbor (`to_coldstart_order`). `--lib` and `--scenario` pick what runs,
   every library and `object_flat`, `type_json`, and `app` by default, `--form` is
@@ -445,19 +444,10 @@ and so has the survey.
   medians. See [below](#wasm). `--rounds` is the rounds, 15 by default, and
   `--round-ms` what one timing of a row aims to take, 20 by default.
 - **Args**: every script takes `--help`, which prints its args with their
-  defaults and descriptions, and refuses an arg it doesn't have and a name of
-  a library, scenario, or set it doesn't know, saying which there are. Each
-  script that `npm run results` starts takes `--data`, see
-  [one results file](#one-results-file), and `grade` doesn't: it keeps what
-  it measured in a directory of its own. The
-  scripts parse their command-line args with this library,
-  through instances no measurement uses: the schemas are built with
-  `schema.ts` and `meta.ts` imported under `?args` by `args.ts`, and
-  `args_parse` runs them through the published `@fuzdev/fuz_schema` that
-  fuz_util imports. Parsing them then runs no function of the instance a
-  measurement uses, which a process that measures in itself, as
-  `benchmark:allocations` and `benchmark:wasm` do, would otherwise have run
-  first.
+  defaults, and refuses an arg it doesn't have and a name of a library,
+  scenario, or set it doesn't know, saying which there are. The scripts parse
+  their args with this library, through an instance no measurement uses
+  (`args.ts`), so parsing them runs no function a measurement times.
 
 ### The whole library
 
@@ -592,10 +582,10 @@ and `survey_rows.ts` are what a process loads its rows through.
   two such rows says little.
 - **Time is taken under no flags of its own.** A timing process is started
   with none, and refuses the ones bytes need on its command line. `run.ts`,
-  `survey.ts`, `harvest.ts`, and `grade.ts` refuse to start under any
-  `NODE_OPTIONS`, which every process they start would inherit; the
-  processes that measure bytes are given their flags on their command line.
-  `wasm.ts`, which times in its own process, refuses both.
+  `survey.ts`, `harvest.ts`, `grade.ts`, and `wasm.ts` refuse to start under
+  any `NODE_OPTIONS`, which every process they start would inherit, and with
+  the flags bytes need on their own command line; `harvest.ts` and `grade.ts`
+  give those flags to the processes that measure their bytes.
 - **`--duration`** is the milliseconds each row of each library is timed for
   in all, shared out over the passes. More passes at one duration cost the
   warming and the processes again, not the timing.
@@ -627,60 +617,12 @@ version of Node.
 
 ### Grading
 
-`grade.ts` plans processes and measures, `grade_plan.ts` is what it plans
-with, `grade_read.ts` reads what they measured into the verdict,
-`grade_child.ts` is one process, `grade_arm.ts` and `timing.ts` are what a
-process loads once for
-each instance, the case matrix and the loops, `program.ts` is what a process
-of the `apart` regime runs before its case, and `grade_job.ts` is what the
-first two share. [grading.md](grading.md) says what is measured and how a
-difference is decided, and the module comments of `grade_child.ts` and
-`grade_arm.ts` say why each of these holds. What the code has to hold to:
-
-- **An instance is a module instance of everything it is called through**:
-  the library, the case matrix, and the loops, each under a URL with the
-  instance's own query, which a resolve hook passes on to what they import.
-  A process checks that two instances of one file share no function before it
-  measures.
-- **Nothing one instance has run is known to another.** A function two
-  versions share is specialized by the engine to the first version's `parse`,
-  so each instance has its own. The byte sampler, `measure_bytes` in
-  `measure.ts`, is one for the process: it measures two functions of its own
-  first, its primers, so that it inlines no case into its loops.
-- **Every instance is treated alike**, down to the calls that check a case
-  before it is measured.
-- **The loops that call a case have seen many functions** before they see
-  one, so the engine never inlines a case into its loop.
-- **Both versions load from one directory**, `.gro/grade/`, see
-  [grading.md](grading.md#apart).
-- **Every process checks its job** before it loads an instance, see
-  [grading.md](grading.md#how-it-measures).
-- **Order is rotated.** Which instance is loaded first moves on by a run, so
-  at an odd count of runs one version is loaded first once more than the
-  other, and the default count is even. Which instance runs a case first, and
-  which order of a round leads, move on by a case and by a run.
-- **Time is taken under no flags of its own**, as
-  [above](#timing-across-libraries). Bytes are taken in processes of their
-  own, which are not timed and so run several at once.
-- **A process of the `apart` regime holds one version**, runs the program
-  through an instance that is not timed, and does the same whichever version
-  it holds.
-- **The program uses every kind of schema**, which `src/test/program.test.ts`
-  holds it to.
-- **The graded version builds every group of cases**, and a group of its that
-  throws fails the grade, by name, as does a case it builds on its own. A
-  baseline with an older API is compared on the groups and cases it can build.
-- **What only some instances have runs after the rest**, see
-  [grading.md](grading.md) on a case the baseline lacks.
-- **The `create` cases call a library instance of their own**, one for each
-  timed instance, which nothing else calls, see `grade_arm.ts`.
-- **Warm by time with a floor of calls**, never by a count alone, and force no
-  collection.
-
-With all of that held, two instances of one file can still settle apart on a
-case for the life of a process, whatever the warmup or the order. So that is
-measured and not removed: several instances of each version, and whole runs
-repeated.
+`grade.ts` and its modules measure as
+[grading.md](grading.md#how-it-measures) says, and the module comments of
+`grade_child.ts` and `grade_arm.ts` say why each of its guards holds. With all
+of them held, two instances of one file can still settle apart on a case for
+the life of a process, whatever the warmup or the order. So that is measured
+and not removed: several instances of each version, and whole runs repeated.
 
 ## One results file
 
@@ -698,18 +640,11 @@ published run.
   root back, `no_equivalent` for a survey shape a library can't express, and
   `differs` for an input it answers otherwise. A figure of one kept
   definition repeated carries `interned`.
-- **`npm run results`** (`results_run.ts`, with what it plans in
-  `results_plan.ts`) starts each script through its npm script, so under the
-  node flags that script gives it, one at a time, each in a process that has
-  exited before the next starts, its output going to a file. It measures
-  nothing itself. It composes the sections with the machine's name
-  (`--machine`, required for a full run), the machine's state as the run
-  started and ended, Node's and V8's versions, every library's and tool's
-  installed version, the commit and whether the tree was clean, read as the
-  run starts and again as it ends, since a run is long enough for an edit or a
-  commit to land in it, and what each script was started with and how long it
-  took. Its flags, and what a script that fails does to a run, are in
-  [results/README.md](../results/README.md#a-run).
+- **`npm run results`** (`results_run.ts`, planned in `results_plan.ts`)
+  starts each script through its npm script, one at a time, and composes
+  their `--data` into one file. It measures nothing itself.
+  [results/README.md](../results/README.md#a-run) has what a run records, its
+  flags, what makes one publishable, and where it is written.
 - **The file has one schema**, `results_schema.ts`, written in this library
   and strict, and every reader goes through `parse_benchmark_results`: the
   run before it writes, the publish step, and the site's build. Beyond each
@@ -723,13 +658,6 @@ published run.
   roster like any other, labeled with its library's label first. The page
   says of one the maintainer also maintains that it is that library and not
   another, and compares this library with the rest.
-- **A run is publishable** by `benchmark_results_is_publishable`, whose rule
-  is in [results/README.md](../results/README.md#a-run). A file says what it
-  is in `meta.kind`: `full`, `smoke`, or `fixture`. A publishable run is
-  written to `results/<UTC date>_<machine>.json`, and any other to
-  `results/scratch/`, which git ignores. `npm run results:publish` copies a
-  publishable run to `results/latest.json` and refuses any other with the
-  reasons.
 - **The site reads the file at build time**, in server loads, and fails the
   build on a published file that doesn't parse or isn't publishable, whatever
   the build was asked to render. With no published run it shows no measured
@@ -744,8 +672,10 @@ published run.
   the mean of their slowest, and two means whose bands overlap are level. A
   time at or under twice what an empty call took is at the call floor, which
   is the survey's rule applied to the scenarios too, and its row is in no
-  mean. A level number is marked and not ranked, in a table and in a chart,
-  and so is the least of a row where another is level with it. Where a script
+  mean. A number level with its row's least is marked and not ranked, in a
+  table and in a chart, and so is the least of a row where another is level
+  with it. A mark is of the least alone, so under a chart's bars are the
+  pairs level with each other and not with it. Where a script
   takes one figure a process, the page compares with what this document says
   such a figure repeats within, [below](#reading-the-numbers): a percent
   either side of the heap bytes a parse allocates, a kilobyte either side of a
@@ -761,18 +691,10 @@ published run.
   table prints the ones about what it measures: that this library returns its
   input on a valid parse where Valibot and Zod return a copy is under a valid
   parse, and not under the bytes of a bundle.
-- **The README's claims are held to the file.** The comparative sentences of
-  its Measurements section are rows of `README_CLAIMS`
-  (`src/test/readme_claims.ts`), each with the libraries it names and a
-  predicate over a results file that reads a difference as the page does, and
-  `src/test/readme_measurements.test.ts` holds the README to the published
-  run once `README_CLAIMS_HELD` is set. Every claim is about `fuz_schema`, the
-  library as it is imported, but one whose `subject` is `fuz_schema_compiled`,
-  its compiled mode. One that names "the libraries compared" is checked
-  against the other libraries of the file's roster, and not against this
-  library's own modes, the entries the roster records with its package:
-  `fuz_schema_compiled` is this library, and no claim sets the two modes
-  against each other.
+- **The README's claims are held to the file**: each comparative sentence of
+  its Measurements section is a row of `README_CLAIMS`
+  (`src/test/readme_claims.ts`), with a predicate over a results file that
+  reads a difference as the page does, see the README.
 
 ## Reading the numbers
 
@@ -782,8 +704,8 @@ published run.
   on a small case and within a few bytes on most large ones, and the largest
   copy has read over a tenth of a percent apart. Which code the engine runs is
   settled per process, and not always the same way. `grade` holds two
-  instances of the baseline in a bytes process and marks a case they differ
-  on. A row of
+  instances of each version in a bytes process and marks a case the two of
+  either version differ on. A row of
   `benchmark:allocations` repeats within about a percent, with one kind of
   exception: a row can settle at one of a few figures, tens of bytes apart, a
   few hundred, or a couple of kilobytes, each process at one of them and
@@ -805,8 +727,10 @@ published run.
   and one just outside it is not much of one. `benchmark:allocations` times
   once, in a process for each library, and `benchmark:wasm` once in one
   process, so a small gap on a single row there is not a finding.
-- Valibot's bytes pay for more features than this library's. What else isn't
-  like-for-like is [below](#comparing-like-with-like).
+- Valibot's bundles carry what this library leaves out or makes opt-in:
+  messages looked up by language, the failed value in each issue, and a
+  Standard Schema property on every schema. What else isn't like-for-like is
+  [below](#comparing-like-with-like).
 - Cold start reports work inside the process, which resolves sub-millisecond
   gaps. The whole process over bare is also reported, but can't be told from
   zero inside the bare process's own spread. Each stage is processes of its
@@ -844,7 +768,12 @@ Each was checked against the installed library's source:
   library's figure: Zod's runtime parser, in a process of compiled schemas,
   reads its valid parse well above the `zod` column, mostly in collection, so
   `npm run benchmark`'s three tables print `-` for it there, and the survey
-  and the harvest do the same for theirs (`compile_zod_root` in
+  and the harvest do the same for theirs. The page's mean of a parse time
+  counts the row all the same, with the `zod` column's time standing in for
+  it, as Zod's parser is what runs there, and says so under the mean: left
+  out, the one real schema would be in no library's mean. That time is the
+  lower of the two, so the stand-in favors `zod_compiled`. The survey and the
+  harvest leave such a row out of their means, as before (`compile_zod_root` in
   `zod_compile.ts` is the one test). The other benchmarks print a figure of
   it, and it is what it says: the bundle of `type_json` carries the compiler
   it can't use, cold start's import and create pay for the compiler and the
@@ -858,7 +787,7 @@ Each was checked against the installed library's source:
   the first failure and builds no issues and no output, in every table: its
   parse is a guard. Its objects allow keys they don't name unless made
   strict, so on the scenarios of a `strip_object` (`object_flat`,
-  `extra_keys`, `pipe`) its check never reads the input's other keys, where
+  `object_copy`, `pipe`) its check never reads the input's other keys, where
   this library's parse enumerates them to know whether to copy, and copies
   where there are any. That loop and the copy are what the parse rows of
   those scenarios hold beyond TypeBox's work; the guard rows hold neither,
@@ -866,21 +795,32 @@ Each was checked against the installed library's source:
   no compiled path that drops them: its `Parse` is its `Check`, returning
   the input, and its `Clean` is interpreted and deletes the keys from the
   input in place, which a timing cycling through copies would see only on
-  the first lap. Its strict objects compare the count of the input's own
-  keys with the entries', the check [declined here](declined.md#the-unknown-key-check-by-counting-the-keys-compiled).
-- **ArkType keeps one schema of a definition**, and hands it back when the
-  same definition is built again. Retained heap's figure per further schema
-  and the creation figures of `benchmark:allocations` build each schema from
-  the scenario's one definition, so ArkType reads far lower there than for an
-  app's distinct definitions, and those cells are marked `†`: the libraries
-  that keep a definition's schema are `INTERNING_LIBS` in `lib_names.ts`, and
-  a cell of one is marked where its builder hands back the schema it built
-  before (`is_scenario_schema_kept`). ArkType does for a `type` and not for a
-  `scope`, which `type_json` and `app` are built with, so those are not
-  marked, and `src/test/benchmarks.test.ts` holds which are. A figure of
-  distinct definitions would need each library's factories to vary their
-  definitions, which would change their bundles, so the output marks it
-  instead.
+  the first lap. On `object_copy` it fills in no default and lowercases
+  nothing either, as it builds no output. Its strict objects compare the
+  count of the input's own keys with the entries', the check
+  [declined here](declined.md#the-unknown-key-check-by-counting-the-keys-compiled).
+- **Valita returns its input too**, where nothing changed, so on a strict or
+  identity scenario its parse row is a check, as this library's is. What it
+  does with a key the schema doesn't name is an option of each parse and not
+  of the schema, `strict` by default: its scenarios that drop one parse with
+  `{mode: 'strip'}`. It has no guard of its own, so its guard rows are its
+  parse.
+- **Sury's rows are generated code**: `parseAsResult` and, for a guard,
+  `isInput`, each made with `new Function` when the scenario's schema is
+  built, so its bundles carry its compiler and its cold start and creation
+  pay for the compile. Its parse builds a new object of every key of its
+  schema, so an optional key the input lacks is in its output as `undefined`,
+  the one difference `src/test/benchmarks.test.ts` sets aside to hold its
+  output to the others'.
+- **A library that keeps one schema of a definition**, and hands it back
+  when the same definition is built again, would read far lower than an app's
+  distinct definitions cost it in retained heap's figure per further schema
+  and in the creation figures of `benchmark:allocations`, which build each
+  schema from the scenario's one definition. None of the libraries compared
+  does: `INTERNING_LIBS` in `lib_names.ts` is empty, and
+  `src/test/benchmarks.test.ts` fails when a builder comes to hand back the
+  schema it built before (`is_scenario_schema_kept`). A cell of one is marked
+  `†`.
 - **A library that makes code pays each compile.** V8 keeps what it compiled
   of a `new Function`'s text and hands it back for the same text, so where a
   figure builds a scenario's schema from its one definition again and again, a
@@ -896,20 +836,12 @@ Each was checked against the installed library's source:
   make no code read the same. The bytes of a parse are read without the
   flag, which moved Zod's by up to about one percent, and the totals, of one
   schema each, too. The flag doesn't turn off a library's own keeping, which
-  is ArkType's mark above.
-- **ArkType's dropping parse clones.** It keeps a key the schema doesn't name
-  by default; its scenarios drop one with `'+': 'delete'` where the others'
-  do, and refuse one with `'+': 'reject'` where theirs do. A `'delete'` makes
-  the type a morph, and a morph's call deep-clones its input before it runs
-  (`@ark/schema`'s default `clone`), so the parse rows of `object_flat`,
-  `extra_keys`, and `pipe` are a clone and a check, and read far above what
-  ArkType takes on an object it returns as it came. Its guard rows, `allows`,
-  clone nothing, and are where its speed on those shapes shows.
+  is what the mark above is for.
 - **On a strict or identity scenario this library returns its input** where
   Valibot and Zod return a copy, so a parse row there compares a check with a
   check and a copy. The guard regime sets that aside: each library's guard on
   the valid input, `is` here and in Valibot, `z.validate` in Zod, TypeBox's
-  `Check`, ArkType's `allows`. Valibot's `is`, and Zod's `z.validate` on a
+  `Check`. Valibot's `is`, and Zod's `z.validate` on a
   schema with no compiled path, still run the parser, which copies.
 
 ## wasm

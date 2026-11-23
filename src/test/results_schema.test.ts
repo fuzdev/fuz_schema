@@ -67,8 +67,8 @@ describe('the fixture run', () => {
 		const allocations = to_measured(results, 'allocations').rows.flatMap((row) =>
 			Object.values(row.libs)
 		);
-		assert.ok(allocations.some((figures) => figures.interned));
-		assert.ok(allocations.some((figures) => !figures.interned));
+		// no library of the fixture keeps a definition's schema
+		assert.ok(allocations.every((figures) => !figures.interned));
 		assert.ok(allocations.some((figures) => figures.valid_bytes === 0));
 	});
 });
@@ -156,8 +156,8 @@ describe('the sections agree with the roster and with themselves', () => {
 		libs.joi = libs.zod!;
 		assert_rejects(results2, 'bundle.data.all.joi: unknown library "joi"');
 		const results3 = load_fixture();
-		delete to_measured(results3, 'types').with_reads.arktype;
-		assert_rejects(results3, 'types.data.with_reads: library "arktype" has no entry here');
+		delete to_measured(results3, 'types').with_reads.zod_mini;
+		assert_rejects(results3, 'types.data.with_reads: library "zod_mini" has no entry here');
 	});
 
 	test('refuses a library id twice, and a row twice', () => {

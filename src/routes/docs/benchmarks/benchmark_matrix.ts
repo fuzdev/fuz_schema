@@ -441,6 +441,13 @@ export const to_geomean_row = (
 		);
 	}
 	const covers = `${complete.length} of ${rows.length} ${rows.length === 1 ? 'row' : 'rows'}`;
+	// the rows left out, each with why: a time at the call floor, or a library with no number
+	const left_out = rows
+		.filter((row) => !complete.includes(row))
+		.map(
+			(row) =>
+				`\`${row.label}\` (${matrix_row_is_complete(row, columns) ? 'a time at the call floor' : 'no number of it for a library shown'})`
+		);
 	return to_matrix_row({
 		key,
 		kind: 'summary',
@@ -448,7 +455,10 @@ export const to_geomean_row = (
 		note:
 			complete.length === rows.length || complete.length === 0
 				? `geometric mean over ${covers}`
-				: `geometric mean over ${covers}: the others have no number to compare for one of these${rows.some((row) => row.call_floor !== null) ? ', or a time at the call floor,' : ''} and are left out`,
+				: // each by name, while they are few enough to read
+					left_out.length <= 3
+					? `geometric mean over ${covers}, without ${left_out.join(' and ')}`
+					: `geometric mean over ${covers}: the others have no number of one for a library shown, or a time at the call floor`,
 		unit: first.unit,
 		direction: first.direction,
 		entries,
@@ -457,6 +467,39 @@ export const to_geomean_row = (
 				? 'no row has a number that can be compared for every library shown'
 				: null
 	});
+};
+
+/**
+ * The pairs of columns whose numbers in a row are level with each other,
+ * their readings overlapping, in the order of `columns`: what a chart says
+ * under its bars, as a ratio marks only what is level with the row's
+ * baseline. A pair with `baseline` in it is left out, as the bars mark it,
+ * and so is one with a number that can't be ranked or a time at the row's
+ * call floor.
+ *
+ * @param baseline - the column the row's ratios are taken against, or null
+ */
+export const to_matrix_level_pairs = (
+	row: MatrixRow,
+	columns: ReadonlyArray<string>,
+	baseline: string | null
+): Array<[string, string]> => {
+	const ranked = columns
+		.filter((column) => column !== baseline)
+		.map((column) => ({ column, entry: matrix_row_entry(row, column) }))
+		.filter(
+			(of): of is { column: string; entry: MatrixValue } =>
+				is_ranked(of.entry) && !(row.call_floor !== null && of.entry.value <= row.call_floor)
+		);
+	const pairs: Array<[string, string]> = [];
+	for (let i = 0; i < ranked.length; i++) {
+		for (let j = i + 1; j < ranked.length; j++) {
+			if (matrix_values_are_level(ranked[i]!.entry, ranked[j]!.entry)) {
+				pairs.push([ranked[i]!.column, ranked[j]!.column]);
+			}
+		}
+	}
+	return pairs;
 };
 
 /** A row's number as text, in the row's unit. */

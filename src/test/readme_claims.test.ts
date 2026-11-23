@@ -3,6 +3,7 @@ import { assert, describe, test } from 'vitest';
 import {
 	README_CLAIMS,
 	README_CLAIMS_CLOSE,
+	README_CLAIMS_COMPILED_COSTS_MORE_THAN,
 	README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID,
 	README_CLAIMS_COMPILED_SUBJECT,
 	README_CLAIMS_EVERY_OTHER,
@@ -13,6 +14,7 @@ import {
 	README_CLAIMS_FASTER_ON_VALID,
 	README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID,
 	README_CLAIMS_FEWER_BYTES_ON_SOME_VALID,
+	README_CLAIMS_FEWER_INSTANTIATIONS_UNINFERRED,
 	README_CLAIMS_RECURSIVE_SCENARIO,
 	README_CLAIMS_OPEN,
 	README_CLAIMS_SUBJECT,
@@ -200,8 +202,20 @@ const FLIPS: Array<[starts: string, change: (results: BenchmarkResults, lib: str
 	],
 	[
 		'**Type-checking cost:**',
+		// a library said to have more made to have one, and TypeBox, said to have fewer for a
+		// module that infers nothing, made to have more there
 		(results, lib) => {
-			to_measured(results, 'types').modules[lib]!.instantiations = 1;
+			const { modules } = to_measured(results, 'types');
+			modules[lib]!.instantiations = README_CLAIMS_FEWER_INSTANTIATIONS_UNINFERRED.includes(lib)
+				? modules[README_CLAIMS_SUBJECT]!.instantiations + 1
+				: 1;
+		}
+	],
+	[
+		"**On a consumer's schemas,**",
+		(results, lib) => {
+			const set = to_measured(results, 'harvest').sets.find((s) => s.reference === lib)!;
+			set.bundles[lib]!.gzip = 1;
 		}
 	]
 ];
@@ -218,8 +232,7 @@ const LIB_NAMES_IN_PROSE: Array<[RegExp, Array<string> | typeof README_CLAIMS_EV
 	[/Zod Mini/, ['zod_mini']],
 	[/Zod/, ['zod']],
 	[/Valibot/, ['valibot']],
-	[/TypeBox/, ['typebox']],
-	[/ArkType/, ['arktype']]
+	[/TypeBox/, ['typebox']]
 ];
 
 // the libraries a sentence names, read from its words alone
@@ -308,6 +321,23 @@ describe('the claims', () => {
 		// and TypeBox faster on no valid row fails the half that says it is
 		scale_times(results, 'valid', 'typebox', 1.5, README_CLAIMS_COMPILED_SUBJECT);
 		assert.include(claim.check(results, others), 'no row has typebox faster');
+		// what the mode costs is half of the sentence: Valibot's bundle made the larger fails it,
+		// and so does Valibot made to hold more
+		assert.deepStrictEqual(README_CLAIMS_COMPILED_COSTS_MORE_THAN, ['valibot']);
+		const smaller = load_fixture();
+		to_measured(smaller, 'bundle').all.valibot!.gzip =
+			to_measured(smaller, 'bundle').all[README_CLAIMS_COMPILED_SUBJECT]!.gzip + 1;
+		assert.include(
+			claim.check(smaller, to_claim_others(claim, smaller)),
+			"valibot's gzipped bundle is not under"
+		);
+		const lighter = load_fixture();
+		const held = to_measured(lighter, 'heap').rows[0]!.libs;
+		held.valibot!.total_bytes = held[README_CLAIMS_COMPILED_SUBJECT]!.total_bytes * 2;
+		assert.include(
+			claim.check(lighter, to_claim_others(claim, lighter)),
+			"valibot's retained heap is not under"
+		);
 		// no other claim names a subject
 		for (const other of README_CLAIMS) {
 			if (other !== claim) assert.strictEqual(other.subject, undefined, other.sentence);

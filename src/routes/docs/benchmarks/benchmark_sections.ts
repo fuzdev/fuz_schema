@@ -48,7 +48,8 @@ export const LIB_COLORS: ReadonlyArray<string> = [
 	'var(--palette_e_40)',
 	'var(--palette_j_40)',
 	'var(--palette_f_40)',
-	'var(--palette_b_40)'
+	'var(--palette_b_40)',
+	'var(--palette_c_40)'
 ];
 
 /** The color of the library at `index` in the roster, cycling past the last. */
@@ -191,10 +192,27 @@ export const to_run_call_floor = (data: BenchmarkData['run']): number =>
 	CALL_FLOOR_CALLS * data.call.max_ns;
 
 /**
+ * The library a column that has no figure of an uncompiled root runs there:
+ * the column its id is a mode of, `zod` for `zod_compiled`, the longest id
+ * the column's begins with.
+ */
+const find_uncompiled_stand_in = (column: string, columns: ReadonlyArray<string>): string | null =>
+	columns
+		.filter((other) => column.startsWith(`${other}_`))
+		.sort((a, b) => b.length - a.length)[0] ?? null;
+
+/**
  * Parse time: a group for each of `TIME_INPUTS`, led by the geometric mean
  * over the scenarios every library has a figure of, then a row a scenario.
  * A row carries the call floor, read as the survey reads its own, and each
  * time its fastest and slowest pass, which a mean's band is made of.
+ *
+ * A row a compiled mode has no figure of, as its compiler handed the root
+ * back uncompiled, is in the mean all the same, with the time of the library
+ * the mode is of standing in for it there: that library's parser is what a
+ * consumer of the mode runs on such a root. The mean's note names each such
+ * row, and the row itself keeps its cell without a figure. Without the stand-in
+ * one column would take a row out of every library's mean.
  *
  * @returns the groups, none when the file timed no scenario
  */
@@ -227,8 +245,29 @@ export const to_time_groups = (results: BenchmarkResults): Array<MatrixGroup> =>
 					)
 				})
 			);
-		const mean = to_geomean_row(rows, columns, `time:${id}`, 'every scenario');
-		return mean ? [{ key: `time:${id}`, label, note: null, rows: [mean, ...rows] }] : [];
+		// the rows the mean is of: each, with a stand-in for a cell that is uncompiled
+		const stood_in: Array<string> = [];
+		const of_input = data.rows.filter((row) => row.input === id);
+		const mean_rows = rows.map((row, i) => {
+			const entries = { ...row.entries };
+			for (const [column, cell] of Object.entries(of_input[i]!.libs)) {
+				if (!is_missing(cell) || cell.none !== 'uncompiled') continue;
+				const stand_in = find_uncompiled_stand_in(column, columns);
+				const entry = stand_in === null ? undefined : row.entries[stand_in];
+				if (entry?.kind !== 'value') continue;
+				entries[column] = entry;
+				const label_of = (lib: string): string =>
+					results.meta.libs.find((l) => l.id === lib)?.label ?? lib;
+				stood_in.push(
+					`\`${row.label}\` counts for ${label_of(column)} at the time of ${label_of(stand_in!)}, which is what runs where its root comes back uncompiled`
+				);
+			}
+			return { ...row, entries };
+		});
+		const mean = to_geomean_row(mean_rows, columns, `time:${id}`, 'every scenario');
+		if (!mean) return [];
+		const note = stood_in.length ? [mean.note, ...stood_in].join('; ') : mean.note;
+		return [{ key: `time:${id}`, label, note: null, rows: [{ ...mean, note }, ...rows] }];
 	});
 };
 

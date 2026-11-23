@@ -48,7 +48,13 @@ export const schema_object_flat = () =>
 		role: z.optional(z.string())
 	});
 
-export const schema_extra_keys = schema_object_flat;
+export const schema_object_copy = () =>
+	z.object({
+		id: z.number(),
+		name: z.string(),
+		email: z.string().check(z.toLowerCase()),
+		role: z._default(z.enum(['member', 'admin']), 'member')
+	});
 
 export const schema_strict_nested = () =>
 	z.strictObject({

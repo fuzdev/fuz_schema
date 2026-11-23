@@ -27,7 +27,15 @@ export const scenario_object_flat: ScenarioModule['scenario_object_flat'] = () =
 		})
 	);
 
-export const scenario_extra_keys: ScenarioModule['scenario_extra_keys'] = scenario_object_flat;
+export const scenario_object_copy: ScenarioModule['scenario_object_copy'] = () =>
+	to_runner(
+		Type.Object({
+			id: Type.Number(),
+			name: Type.String(),
+			email: Type.String(),
+			role: Type.Optional(Type.Union([Type.Literal('member'), Type.Literal('admin')]))
+		})
+	);
 
 export const scenario_strict_nested: ScenarioModule['scenario_strict_nested'] = () =>
 	to_runner(

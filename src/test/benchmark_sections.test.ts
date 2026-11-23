@@ -98,7 +98,7 @@ describe('columns', () => {
 		// of a harvested set's sides
 		assert.strictEqual(of('zod_mini'), 'zod');
 		assert.strictEqual(of('zod_jitless'), 'zod');
-		for (const id of ['fuz_schema', 'valibot', 'zod', 'typebox', 'arktype']) {
+		for (const id of ['fuz_schema', 'valibot', 'zod', 'typebox']) {
 			assert.strictEqual(of(id), undefined, id);
 		}
 	});
@@ -187,14 +187,17 @@ describe('to_time_groups', () => {
 		for (const row of invalid_rows) assert.strictEqual(of(row.key).level, 'spread', row.key);
 	});
 
-	// the rows of an input the mean covers: every library has a figure, and none at the call floor
+	// the rows of an input the mean covers: every library has a figure, or a root its
+	// compiler handed back, which another's time stands in for, and none is at the call floor
 	const to_covered = (input: 'valid' | 'invalid' | 'guard') => {
 		const data = to_measured(results, 'run');
 		const floor = to_run_call_floor(data);
 		return data.rows.filter(
 			(row) =>
 				row.input === input &&
-				Object.values(row.libs).every((cell) => !('none' in cell) && cell.ns > floor)
+				Object.values(row.libs).every((cell) =>
+					'none' in cell ? cell.none === 'uncompiled' : cell.ns > floor
+				)
 		);
 	};
 
@@ -203,11 +206,49 @@ describe('to_time_groups', () => {
 		const mean = groups[0]!.rows[0]!;
 		const complete = to_covered('valid');
 		const valid = data.rows.filter((row) => row.input === 'valid');
-		// the fixture leaves out one row for a library with no figure, and one at the call floor
-		assert.strictEqual(complete.length, valid.length - 2);
+		// the fixture leaves out one row, at the call floor
+		assert.strictEqual(complete.length, valid.length - 1);
 		assert.include(mean.note, `${complete.length} of ${valid.length} rows`);
 		const expected = to_geomean(complete.map((row) => (row.libs.valibot as { ns: number }).ns))!;
 		assert.approximately(matrix_row_value(mean, 'valibot')!, expected, 1e-9);
+	});
+
+	test('a root a compiled mode has no figure of is in the mean, at the time of its library', () => {
+		const mean = groups[0]!.rows[0]!;
+		const complete = to_covered('valid');
+		// the fixture's compiled Zod has no figure of the recursive scenario
+		const uncompiled = complete.filter((row) => 'none' in row.libs.zod_compiled!);
+		assert.deepStrictEqual(
+			uncompiled.map((row) => row.scenario),
+			['type_json']
+		);
+		assert.approximately(
+			matrix_row_value(mean, 'zod_compiled')!,
+			to_geomean(
+				complete.map(
+					(row) =>
+						(('none' in row.libs.zod_compiled! ? row.libs.zod : row.libs.zod_compiled) as {
+							ns: number;
+						}).ns
+				)
+			)!,
+			1e-9
+		);
+		assert.include(mean.note, '`type_json` counts for Zod compiled at the time of Zod');
+		// the row itself keeps its cell without a figure, and no other library's mean moves
+		assert.strictEqual(
+			matrix_row_entry(find_row(groups, 'time:valid:type_json'), 'zod_compiled').kind,
+			'none'
+		);
+		// a cell missing for another reason takes its row out of the mean, as before
+		const other = load_fixture();
+		for (const row of to_measured(other, 'run').rows) {
+			if (row.scenario === 'type_json') row.libs.zod_compiled = { none: 'differs', why: null };
+		}
+		assert.include(
+			to_time_groups(other)[0]!.rows[0]!.note,
+			`${complete.length - 1} of ${complete.length + 1} rows`
+		);
 	});
 
 	test("a mean's band is the mean of its rows' fastest passes to the mean of their slowest", () => {
@@ -224,12 +265,13 @@ describe('to_time_groups', () => {
 	});
 
 	test('two means whose bands overlap are level, and are not ranked', () => {
-		// the fixture makes TypeBox and ArkType level as guards, the best but for the compiled mode
+		// the fixture makes TypeBox and compiled Zod level as guards, the best but for this
+		// library's compiled mode
 		const mean = find_row(groups, 'time:guard');
 		const ratios = to_matrix_ratios(mean, LIBS_INTERPRETED, null);
 		assert.ok(ratios.typebox!.baseline);
-		assert.strictEqual(ratios.arktype!.level, 'spread');
-		assert.strictEqual(ratios.zod_compiled!.level, null);
+		assert.strictEqual(ratios.zod_compiled!.level, 'spread');
+		assert.strictEqual(ratios.zod!.level, null);
 		assert.strictEqual(ratios.fuz_schema!.level, null);
 		// with every pass of a row the same, the means are exact and the same gap is a difference
 		const exact = load_fixture();
@@ -243,15 +285,15 @@ describe('to_time_groups', () => {
 			LIBS_INTERPRETED,
 			null
 		);
-		assert.strictEqual(of_exact.arktype!.level, null);
+		assert.strictEqual(of_exact.zod_compiled!.level, null);
 	});
 
 	test('a row carries its spread, so a gap inside it is not a difference', () => {
-		// the fixture makes ArkType's guard of a flat object level with the best
+		// the fixture makes compiled Zod's guard of a flat object level with the best
 		const row = find_row(groups, 'time:guard:object_flat');
 		const ratios = to_matrix_ratios(row, LIBS_INTERPRETED, null);
 		assert.ok(ratios.typebox!.baseline);
-		assert.strictEqual(ratios.arktype!.level, 'spread');
+		assert.strictEqual(ratios.zod_compiled!.level, 'spread');
 		assert.strictEqual(ratios.fuz_schema!.level, null);
 	});
 
@@ -357,7 +399,7 @@ describe('to_coldstart_groups', () => {
 				'zod'
 			);
 			assert.strictEqual(ratios.zod_mini!.level, 'spread', id);
-			assert.strictEqual(ratios.arktype!.level, null, id);
+			assert.strictEqual(ratios.typebox!.level, null, id);
 		}
 	});
 
@@ -440,17 +482,26 @@ describe('memory', () => {
 	});
 
 	test('a figure of one kept definition is marked and not ranked, only where it is one', () => {
+		// no library of the fixture keeps a definition's schema, so a copy says TypeBox does,
+		// of the scenarios that aren't recursive
+		const kept = load_fixture();
+		for (const row of to_measured(kept, 'allocations').rows) {
+			if (row.scenario !== 'type_json') row.libs.typebox!.interned = true;
+		}
+		for (const row of to_measured(kept, 'heap').rows) {
+			if (row.scenario !== 'type_json') row.libs.typebox!.interned = true;
+		}
 		const groups = [
-			...to_allocation_groups(results),
-			to_creation_group(results)!,
-			...to_heap_groups(results)
+			...to_allocation_groups(kept),
+			to_creation_group(kept)!,
+			...to_heap_groups(kept)
 		];
 		for (const key of [
 			'allocation:create_bytes:string',
 			'creation:string',
 			'heap:further:object_flat'
 		]) {
-			const entry = matrix_row_entry(find_row(groups, key), 'arktype');
+			const entry = matrix_row_entry(find_row(groups, key), 'typebox');
 			assert.ok(entry.kind === 'value', key);
 			assert.strictEqual(entry.mark, INTERNED_MARK, key);
 			assert.ok(entry.unranked !== null, key);
@@ -462,7 +513,7 @@ describe('memory', () => {
 			'allocation:valid_bytes:string',
 			'heap:total:object_flat'
 		]) {
-			const entry = matrix_row_entry(find_row(groups, key), 'arktype');
+			const entry = matrix_row_entry(find_row(groups, key), 'typebox');
 			assert.ok(entry.kind === 'value' && entry.mark === null && entry.unranked === null, key);
 		}
 	});

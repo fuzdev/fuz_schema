@@ -28,10 +28,10 @@ else result.issues; // [{kind, expected, received, path, message}]
 ```
 
 Of the libraries it is measured against, it has the smallest bundle, the quickest cold start, and the least memory held,
-and as it is imported it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input faster,
-and ArkType's `allows` answers a guard faster.
+and as it is imported it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input and answer a guard faster,
+and TypeBox's `Check`, which builds no issues, refuses invalid input faster.
 With each schema compiled by its opt-in [`compile.ts`](#compiling-a-schema), it checks valid input and answers a guard faster than each of them as a mean,
-though TypeBox is still faster on some scenarios, and its bundle is no longer the smallest.
+though TypeBox is still faster on some scenarios of valid input, and its bundle and the memory it holds are then larger than Valibot's.
 Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 [Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
@@ -53,7 +53,7 @@ with a human steering the design.
 
 The benchmarks in `src/benchmarks/` compare this library, as it is imported and with each schema compiled by
 `compile_parse` and `compile_guard`, with Valibot, Zod (as it is imported,
-with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, and ArkType.
+with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, Valita, and Sury.
 [The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
 A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
@@ -64,22 +64,24 @@ which `z.compile` hands back uncompiled. The claims are of this library as it is
 <!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
 
 - **Size:** the smallest bundle of the libraries compared, minified and gzipped, for every scenario and for all of them together.
-- **On valid input:** faster than Valibot, Zod as it is imported, Zod Mini, and ArkType as a geometric mean over the scenarios, though Zod as it is imported and ArkType are each faster on at least one of them;
+- **On valid input:** faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on at least one of them;
   Zod with its roots compiled ahead of time by `z.compile` is faster as a mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues, over all of them.
-- **On invalid input:** faster than Valibot, ArkType, and Zod in each of its modes on every scenario each has a figure of;
+- **On invalid input:** faster than Valibot and Zod in each of its modes on every scenario each has a figure of;
   TypeBox, whose check stops at the first failure and builds no issues, is faster as a geometric mean.
 - **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
-  though Zod as it is imported is faster on at least one of them; TypeBox, ArkType, and compiled Zod are faster as a mean over the scenarios each has a figure of.
-- **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, TypeBox, and ArkType.
+  though Zod as it is imported is faster on at least one of them; TypeBox and compiled Zod are faster as a mean over the scenarios each has a figure of.
+- **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, and TypeBox.
 - **Compiled,** with each schema through `compile_parse` or `compile_guard`: faster on valid input and as a guard than each of the libraries compared, as a geometric mean over the scenarios each has a figure of,
-  though TypeBox is faster on at least one scenario of valid input.
+  though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.
 - **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario;
-  TypeBox's check, which builds no output, allocates fewer on at least one, and so do compiled Zod and ArkType.
-- **Allocation on invalid input:** a parse allocates fewer heap bytes than one of Valibot, ArkType, or Zod in each of its modes on every scenario;
+  TypeBox's check, which builds no output, allocates fewer on at least one, and so does compiled Zod.
+- **Allocation on invalid input:** a parse allocates fewer heap bytes than Valibot's or that of Zod in each of its modes on every scenario;
   TypeBox's check, which builds no issues, allocates fewer on at least one.
 - **Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
 - **Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.
-- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, compiled Zod, and ArkType, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.
+- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, and compiled Zod, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer;
+  TypeBox has fewer for the module, which infers nothing, and more once the types are inferred, read or not.
+- **On a consumer's schemas,** svelte-docinfo's, as it wrote them in Valibot and written again in this library: a smaller bundle, faster as a geometric mean over its documents, and fewer heap bytes a parse on every one.
 
 <!-- /claims -->
 
@@ -88,23 +90,24 @@ except where something makes a new value: a copy where an entry changed or a key
 `to_lower_case` the string it returns whatever its case,
 `to_integer` the number it gives where the engine boxes one, as past `2 ** 31 - 1` either way, the `-0` it reads before giving `0`, and with `trim` a copy of a string that holds U+0085,
 and a `memo_union` its memo when it is probed.
-Against TypeBox, which has fewer instantiations turns on whether the schemas' types are inferred:
-TypeBox has fewer for a module that only builds its schemas, and this library fewer once their types are inferred, read or not.
 The exact bytes of this library's bundles, per scenario and per export, are in [`src/benchmarks/sizes.json`](src/benchmarks/sizes.json), which `src/test/sizes.test.ts` keeps current.
 
 Caveats:
 
 - The scenarios are few and small. `type_json` is a real schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
-  the rest are synthetic. The page has two wider readings no claim here is of: a survey of many small shapes, row by row,
-  and harvested sets, consumers' own schemas and data in the library each was written in and in this one.
+  the rest are synthetic. The page has two wider readings: a survey of many small shapes, row by row, which no claim here is of,
+  and harvested sets, consumers' own schemas and data in the library each was written in and in this one, of which the last claim is of one.
 - Timings come from one machine, which the page names with its state as the run started and ended, and nothing is pinned or isolated.
   Bundle sizes are exact. Allocation is exact for the code the engine is running when it is sampled,
   which a process settles and not always the same way, so a figure repeats within about a percent,
   but for a row that settles at one of a few figures further apart.
-- It isn't like-for-like. Valibot does more, TypeBox's check builds no output and no issues,
+- It isn't like-for-like. Valibot's bundles carry what this library leaves out or makes opt-in,
+  messages looked up by language, the failed value in each issue, and a Standard Schema property on every schema,
+  TypeBox's check builds no output and no issues,
   and where this library returns its input Valibot and Zod return a copy of it.
-  A guard row sets the copy aside only where the guard builds no output: Valibot's `is`,
-  and Zod's `z.validate` where a schema has no compiled path, run the parser, which still copies what it reads.
+  A guard row sets the copy aside only where the guard builds none: Valibot's `is`,
+  Zod's `z.validate` where a schema has no compiled path, and this library's `is` of a `strip_object` given a key to drop
+  run the parser, which still copies.
 - `src/test/benchmarks.test.ts` holds every library to the same answer on every scenario's valid and invalid input,
   so the benchmarks at least compare the same question.
 
@@ -113,9 +116,9 @@ Caveats:
 ## When not to use it
 
 - Where the fastest parse of valid input matters most and code generated at runtime is not allowed:
-  [Measurements](#measurements) names the libraries faster than the interpreter there.
-  Where it is allowed, [`compile.ts`](#compiling-a-schema) compiles a schema to straight-line code, faster than each of them as a mean;
-  where it is not, `to_guard_source` writes a guard as a module ahead of time, which no benchmark measures.
+  the libraries [Measurements](#measurements) names as faster than the interpreter there each make code at runtime to be so,
+  as [`compile.ts`](#compiling-a-schema) does, which is faster than each of them as a mean.
+  Where that is refused the interpreter runs, and `to_guard_source` writes a guard as a module ahead of time, which no benchmark measures.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -152,17 +155,17 @@ Where the library can see a hazard at no one's cost it refuses it:
 
 ## What's different from Valibot
 
-- **One shape.** Every schema and action is the same `{kind, def, run}` object.
-  There's no separate action object, `pipe` is a loop,
-  and every schema shares one hidden class in V8.
+- **One shape.** Every schema and action is the same `{kind, def, run}` object, sharing one hidden class in V8,
+  where Valibot's schemas carry the fields of their kind and its actions are objects of another shape.
 - **Constants where there are no options.** `s.string`, not `s.string()`.
 - **Output is copy-on-write.** A valid value that needs no defaults, transforms,
   or stripped keys comes back as the same object, with nothing allocated for it.
   A change copies only the path to it.
-- **Failures are counted, issues are built late.** Valid input never builds a path,
-  a `union` tries its options without building an issue, and `s.is` stops at the first failure.
+- **Failures are counted, issues are built late.** A `union` tries its options without building an issue, and `s.is` builds none,
+  where Valibot's `union` builds each failed option's issues and its `is` the first.
 - **Issues are data, and hold no value of the input.** `{kind, expected, received, path, message}`,
-  where `received` is the type of the value that failed, not the value, and `path` the keys to it.
+  where `received` is the type of the value that failed, not the value, and `path` the keys to it:
+  a Valibot issue holds the value, as its `input` and in each item of its path.
   Text is derived by `format_issue`, which is only bundled if used. No i18n registry.
 - **`variant` dispatches by map**, not by scanning its options, so each option's discriminator is a `literal`.
 
@@ -189,7 +192,8 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 
 ### Other differences in behavior
 
-- `pipe` stops at its first failing step.
+- `pipe` stops at its first failing step, where Valibot and Zod run the checks after a failed one and report each:
+  `pipe(string, min_length(5), regex(/x/))` given `'ab'` reports one issue, where both report two.
 - A failed `union` reports one issue, not its options' issues, even with one option, and names each option once, as `received` names values:
   `union([nullable(string), one_of(['a', 'b']), pipe(number, check(..))])` reads `expected string | null | "a" | "b" | number`,
   by the rule in [`docs/design.md`](docs/design.md#issues).
@@ -203,11 +207,6 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   `pipe(string, iso_datetime)` takes `2024-02-29T23:59:59.123Z` in UTC with a real date, as Zod's does,
   and a fraction of at most 9 digits, as Valibot's `isoTimestamp` does,
   and refuses an offset and a space for the `T`, which `isoTimestamp` takes. See [`docs/formats.md`](docs/formats.md).
-- `pipe(string, to_lower_case)` gives `toLowerCase()` of the string, as Zod's `toLowerCase` and Valibot's do,
-  and the steps after it are given the lowercase: `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')`
-  takes a UUID in either case and gives it lowercase.
-  A `brand` or `flavor` goes outside a step that changes the value, as there:
-  one on a step before it is dropped, as the output is a new string.
 - `pipe(string, to_integer())` reads Rust's integer grammar, `str::parse::<i64>`, where Zod's `z.coerce.number()` and Valibot's `toNumber` read `Number`'s,
   so it refuses `''`, white space, an exponent, hex, a fraction, and an integer past the safe range, and a `-0` gives `0`, where both give `-0`.
   See [`docs/formats.md`](docs/formats.md#integers).
@@ -217,13 +216,13 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
   where Zod fills in a copy and Valibot what its schema makes of it,
   so an array or object default is shared by every output it fills.
   `s.with_default_fn(s.array(s.string), () => [])` calls its function for each value it fills in.
-  Neither validates the default, as in Zod.
+  Neither runs the default through its schema, as in Zod, where Valibot's is validated and transformed.
 - `object` rejects unknown keys, where Valibot's and Zod's `object` drop them.
   `strip_object` drops them and `loose_object` keeps them.
 - No object schema, `record`, `keyed_record`, or `variant` takes an array, as in Zod, where Valibot's take one as an object.
 - `variant` reads each option's discriminator as a `literal`. One that is a `one_of` or an `optional`,
   which Valibot's `variant` and Zod's `discriminatedUnion` take, is never picked, and the types don't refuse it.
-  Of two options with one value the later is picked, where Zod throws and Valibot tries both.
+  Of two options with one value the later is picked, where Zod throws on its first parse and Valibot tries both.
 - A recursive `union` walks a node's children once for each option that reads them, as Valibot's does,
   where Zod's walks them once: see [Recursion and deep input](#recursion-and-deep-input) before moving one over from Zod.
 - A failing parse reports its first hundred issues, where both report every one, see [Issues](#issues).
@@ -241,21 +240,25 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `objectWithRest` | `.catchall()` | `object_with_rest` |
 | `picklist` | `enum` | `one_of` |
 | `variant` | `discriminatedUnion` | `variant` |
-| `optional(schema, value)` | `.default(value)` | `with_default`, and `with_default_fn` for an array or object |
-| `record(key, value)` | `record(key, value)`, `partialRecord(key, value)` | `keyed_record(key, value)`, and `record(value)` where any string is a key |
+| `optional(schema, value)` | `.default(value)` | `with_default`, whose value is not run through the schema |
+| `optional(schema, () => value)` | `.default(() => value)` | `with_default_fn`, for an array or object |
+| `record(string(), value)` | `record(string(), value)` | `record(value)` |
+| `record(key, value)` | `partialRecord(key, value)` | `keyed_record(key, value)`, and an `object` for Zod's `record` of an `enum`, which needs every key |
 | `finite` | | nothing: `number` refuses what isn't finite |
+| `integer`, `safeInteger` | `int` | `integer`, and `safe_integer` for Zod's `int`, which refuses an integer past the safe range |
 | `nullish` | `.nullish()` | `optional(nullable(schema))` |
 | `email`, `url` | `z.email()`, `z.url()` | nothing: a `regex` or a `check` of the consumer's, see [`docs/formats.md`](docs/formats.md#not-formats) |
 | `toNumber` | `z.coerce.number()` | `to_integer`, of Rust's integer grammar and not `Number`'s |
 | `isoTimestamp` | `z.iso.datetime()` | `iso_datetime`, in UTC only, see [`docs/formats.md`](docs/formats.md) |
-| `check`, `custom` | `.refine()` | `check`, and `check_at` to report at a key |
+| `check`, `custom` | `.refine()` | `check`, whose second argument is the `expected` of its issue and not a message |
+| `forward`, `partialCheck` | `.refine(fn, {path})` | `check_at` |
 | `description`, `metadata` | `.describe()`, `.meta()` | `meta`, in `meta.ts` |
 | `parse` | `.parse()` | `parse_or_throw` |
 | `safeParse` | `.safeParse()` | `parse` |
 | `ValiError` | `ZodError` | `SchemaError` |
 | `InferOutput`, `InferInput` | `z.infer`, `z.input` | `Infer`, `InferInput` |
-| `GenericSchema` | `ZodType` | `Schema` |
-| `schema.entries` | `schema.shape` | `schema.def` |
+| `GenericSchema<Input, Output>` | `ZodType<Output, Input>` | `Schema<Output, Input>` |
+| `schema.entries` | `schema.shape` | `schema.def`, and `def.entries` of an `object_with_rest` |
 | `schema['~standard']` | `schema['~standard']` | `to_standard_schema(schema)`, in `standard_schema.ts` |
 
 ## API
@@ -331,6 +334,8 @@ and a branded value comes from parsing or a cast.
 Marks compose: a brand of a branded schema, `s.brand(Path, 'DirPath')`, is assignable to `Path` and not the reverse, and so is a flavor of a flavored one.
 Both return the schema itself, so they add nothing to a parse;
 the name ships as a string at the call site and is otherwise unused.
+A mark goes outside a step that changes the value, as in `s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), 'Uuid')`,
+which takes a UUID in either case and gives it lowercase: one on a step before it is dropped, as the output is a new string.
 
 The object schemas differ only on keys the schema doesn't name:
 `object` rejects them, `loose_object` keeps them and is the cheapest when nothing changes,
@@ -1096,7 +1101,7 @@ npm run build:wasm      # needs wasm-pack
 - [`docs/benchmarks.md`](docs/benchmarks.md) — what each benchmark measures and how,
   how far to trust each number, and how to extend them
 - [`docs/testing.md`](docs/testing.md) — what holds the library to more than its own examples:
-  conformance, the differential, the JSON fixtures, and mutants
+  conformance, the differential, the JSON fixtures, the compiler against the interpreter, and mutants
 - [`docs/grading.md`](docs/grading.md) — `npm run grade` and the rules a change is accepted by
 - [`docs/declined.md`](docs/declined.md) — trades that were measured and not taken, each with
   what it gave, what it cost, and what would reopen it
@@ -1117,7 +1122,7 @@ The process-per-sample cold-start and retained-heap methods follow
 which generalizes [Twinkleplop](https://github.com/pngwn/twinkleplop)'s cold-start harness.
 
 Valibot's source was not consulted while writing fuz_schema; the comparison libraries are used only
-through their public APIs, as benchmark baselines.
+through their public APIs, as benchmark baselines and as the oracles of the conformance and differential tests.
 
 ## Contributing
 

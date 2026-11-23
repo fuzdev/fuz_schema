@@ -50,10 +50,10 @@
 				{/each}
 				Each bar's ratio is to the least figure in its chart, which reads <code>1.00×</code>, and
 				hovering a bar compares the others against it instead. A figure is read with what it ranges
-				over, and two that overlap are marked <code>≈</code> and not ranked, the least among them
-				too. The libraries don't all do the same work for a figure: under a chart is what sets a
-				library's figure there apart from another's. These are summaries: each heading links to
-				every row behind its figure, and
+				over: one that overlaps the least is marked <code>≈</code> and not ranked, the least too,
+				and under a chart is which others overlap each other. The libraries don't all do the same
+				work for a figure: under a chart is what sets a library's figure there apart from another's.
+				These are summaries: each heading links to every row behind its figure, and
 				<a href={resolve('/docs/benchmarks')}>the benchmarks page</a> says how each was measured and
 				what it leaves out.
 			</p>

@@ -2,6 +2,7 @@
 	import { format_ratio } from './benchmark_format.ts';
 	import {
 		to_matrix_bars,
+		to_matrix_level_pairs,
 		to_ranked_columns,
 		type MatrixColumn,
 		type MatrixRow
@@ -47,6 +48,10 @@
 	);
 	const bars = $derived(to_matrix_bars(row, ranked, hovered));
 	const level = $derived(bars.some((bar) => bar.ratio?.level === 'spread'));
+	// the pairs level with each other and not with the baseline, which no ratio marks
+	const level_pairs = $derived(
+		to_matrix_level_pairs(row, ranked, bars.find((bar) => bar.ratio?.baseline)?.column ?? null)
+	);
 </script>
 
 <figure class="bar-chart">
@@ -121,6 +126,11 @@
 			{`${row.direction} is better${note ? ` — ${note}` : ''}`}{#if level}
 				. A ratio marked <code>≈</code> is of two figures whose readings overlap: not a difference,
 				and not ranked
+			{/if}{#if level_pairs.length}
+				. Level with each other, their readings overlapping, in whatever order they are drawn:
+				{level_pairs
+					.map((pair) => pair.map((id) => columns_by_id.get(id)!.label).join(' and '))
+					.join('; ')}
 			{/if}
 		</small>
 	</p>

@@ -253,8 +253,8 @@ console.log(
 		(guard_row_names.length
 			? ".\nA scenario's third table, `guard`, is each library's guard on the valid input, which " +
 				'returns a\nverdict and not the output: `is` in this library and Valibot, the guard ' +
-				"`compile_guard` makes in this\nlibrary compiled, `z.validate` in Zod, TypeBox's `Check`, " +
-				"ArkType's `allows`. Valibot's `is`, and Zod's\nwhere a schema has no compiled path, run " +
+				"`compile_guard` makes in this\nlibrary compiled, `z.validate` in Zod, TypeBox's `Check`. " +
+				"Valibot's `is`, and Zod's where a schema has no compiled\npath, run " +
 				'the parser, which still copies what it reads, and drop the copy'
 			: '')
 );

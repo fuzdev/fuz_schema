@@ -111,4 +111,4 @@ export const format_benchmark_header = (packages: ReadonlyArray<string>): string
 };
 
 /** The comparison libraries, as `node_modules` names them. */
-export const COMPARED_LIB_PACKAGES = ['valibot', 'zod', 'typebox', 'arktype'];
+export const COMPARED_LIB_PACKAGES = ['valibot', 'zod', 'typebox', '@badrap/valita', 'sury'];

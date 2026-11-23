@@ -2,7 +2,7 @@
 	"scenarios": {
 		"string": 354,
 		"object_flat": 841,
-		"extra_keys": 841,
+		"object_copy": 1184,
 		"strict_nested": 921,
 		"pipe": 1123,
 		"union": 951,
@@ -10,12 +10,12 @@
 		"type_json": 1710,
 		"app": 2184
 	},
-	"all": 2950,
-	"valibot_all": 3506,
+	"all": 3030,
+	"valibot_all": 3562,
 	"vs_valibot": {
 		"string": 0.4658,
 		"object_flat": 0.6469,
-		"extra_keys": 0.6469,
+		"object_copy": 0.7688,
 		"strict_nested": 0.6732,
 		"pipe": 0.7117,
 		"union": 0.7488,

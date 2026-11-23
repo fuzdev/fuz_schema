@@ -91,7 +91,7 @@
 		<section>
 			<p>
 				The <TomeLink slug="benchmarks" /> compare this library's size, speed, and memory with
-				Valibot, Zod, TypeBox, and ArkType.
+				Valibot, Zod, TypeBox, Valita, and Sury.
 			</p>
 		</section>
 	{:else if !results}
@@ -210,10 +210,6 @@
 					<li>
 						TypeBox's rows are a <code>Check</code> of its compiled validator in every table: it
 						stops at the first failure and builds no issues and no output.
-					</li>
-					<li>
-						ArkType's parse of a scenario that drops unknown keys deep-clones its input before it
-						runs. Its guard, <code>allows</code>, clones nothing.
 					</li>
 					<li>
 						Compiled Zod is each scenario's root through <code>z.compile</code>, which generates a

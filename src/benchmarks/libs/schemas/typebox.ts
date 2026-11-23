@@ -42,7 +42,13 @@ export const schema_object_flat = () =>
 		role: Type.Optional(Type.String())
 	});
 
-export const schema_extra_keys = schema_object_flat;
+export const schema_object_copy = () =>
+	Type.Object({
+		id: Type.Number(),
+		name: Type.String(),
+		email: Type.String(),
+		role: Type.Optional(Type.Union([Type.Literal('member'), Type.Literal('admin')]))
+	});
 
 export const schema_strict_nested = () =>
 	Type.Object(

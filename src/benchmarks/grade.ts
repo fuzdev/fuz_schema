@@ -232,7 +232,7 @@ const LIB_MODULE = 'src/benchmarks/libs/fuz_schema.ts';
 const WORK_DIR = resolve('.gro/grade');
 const CHILD_PATH = fileURLToPath(new URL('./grade_child.ts', import.meta.url));
 
-const COMPARED_PACKAGES = ['valibot', 'zod', 'typebox', 'arktype', 'rolldown'];
+const COMPARED_PACKAGES = ['valibot', 'zod', 'typebox', '@badrap/valita', 'sury', 'rolldown'];
 
 const to_git = (args: Array<string>): string | undefined => {
 	try {

@@ -45,7 +45,7 @@ export const schema_string = () => z.compile(zod.schema_string());
 
 export const schema_object_flat = () => z.compile(zod.schema_object_flat());
 
-export const schema_extra_keys = schema_object_flat;
+export const schema_object_copy = () => z.compile(zod.schema_object_copy());
 
 export const schema_strict_nested = () => z.compile(zod.schema_strict_nested());
 
