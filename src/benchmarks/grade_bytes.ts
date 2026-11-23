@@ -202,7 +202,13 @@ export interface BackstopPin {
  * only what still stands over. So does a pin above its scenario's size, which
  * is lowered to it, so a pin never leaves room for a scenario to grow back.
  */
-export const BACKSTOP_PINS: Readonly<Record<string, BackstopPin>> = {};
+export const BACKSTOP_PINS: Readonly<Record<string, BackstopPin>> = {
+	object_copy: {
+		gzip: 1184,
+		reason:
+			'ruled to stand as it was added: a default of a `one_of` beside a string lowercased in a `pipe` is the mix where this library is closest to Valibot'
+	}
+};
 
 /** The ratio of a scenario's bundle to Valibot's. */
 export const to_vs_valibot = (row: BackstopRow): number => row.gzip / row.valibot;
