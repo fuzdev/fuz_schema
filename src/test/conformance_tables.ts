@@ -643,6 +643,23 @@ const differences = [
 				ours: items_wrong(100)
 			}
 		}
+	},
+	{
+		reason:
+			"a `variant` finds its option by a map of each option's `literal` discriminator, so an option whose discriminator is another schema is never picked, where both take it. By design: the option is found in constant time, and a discriminator that is no `literal` is a `union`'s",
+		status: 'declared',
+		docs: 'An option of a `variant` whose discriminator is no `literal` is never picked',
+		rows: {
+			'variant, a one_of discriminator': { both: 'ok {t: "a", x: "x"}', ours: 'fail at t' },
+			'variant, an optional(literal) discriminator': {
+				both: 'ok {t: "a", x: "x"}',
+				ours: 'fail at t'
+			},
+			'variant, an optional(literal) discriminator, key missing': {
+				both: 'ok {x: "x"}',
+				ours: 'fail at t'
+			}
+		}
 	}
 ] as const satisfies ReadonlyArray<ConformanceDifference>;
 

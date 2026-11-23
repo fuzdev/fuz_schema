@@ -139,7 +139,15 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 		rewrite: (node, side) => {
 			const key = node[MARK + 'variant_key'];
 			if (side !== 'zod' || typeof key !== 'string' || !Array.isArray(node.oneOf)) return;
-			if (node.oneOf.every((o: Doc) => o.properties && 'const' in o.properties[key])) return;
+			// a `const` that the option requires: one it may lack is no `literal` entry
+			if (
+				node.oneOf.every(
+					(o: Doc) =>
+						o.properties && 'const' in o.properties[key] && o.required?.includes(key) === true
+				)
+			) {
+				return;
+			}
 			node.anyOf = node.oneOf;
 			delete node.oneOf;
 		}
@@ -319,6 +327,12 @@ const DIFFERENCES: Record<string, JsonSchemaDifference> = {
 			side: 'ours',
 			message: /: it reads (the lowercase of the input|what the output is the lowercase of)$/
 		}
+	},
+	variant_discriminator_refused: {
+		reason:
+			"a `variant` option whose discriminator is no `literal` entry is refused, as the variant picks it by a value its node doesn't say, where zod writes the option",
+		docs: 'a `variant` option whose discriminator is no `literal` entry is refused',
+		refusal: { side: 'ours', message: /: its discriminator is not a `literal` entry$/ }
 	},
 	step_after_transform: {
 		reason:

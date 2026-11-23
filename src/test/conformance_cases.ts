@@ -83,6 +83,18 @@ const VARIANT = (l: ConformanceLib): any =>
 		l.strict({ t: l.literal('b'), d: l.with_default(l.string, 'D') })
 	]);
 
+// an option whose discriminator is no `literal`: a `one_of`, and an `optional` of a `literal`
+const VARIANT_ONE_OF = (l: ConformanceLib): any =>
+	l.variant('t', [
+		l.strict({ t: l.one_of(['a', 'b']), x: l.string }),
+		l.strict({ t: l.literal('c') })
+	]);
+const VARIANT_OPTIONAL = (l: ConformanceLib): any =>
+	l.variant('t', [
+		l.strict({ t: l.optional(l.literal('a')), x: l.string }),
+		l.strict({ t: l.literal('c') })
+	]);
+
 // the same with `undefined` as the first option's value of `t`
 const VARIANT_UNDEFINED = (l: ConformanceLib): any =>
 	l.variant('t', [l.strict({ t: l.undef, x: l.string }), l.strict({ t: l.literal('b') })]);
@@ -2495,6 +2507,26 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 	{ name: 'variant, the second option, a default', schema: VARIANT, input: () => ({ t: 'b' }) },
 	{ name: 'variant, no option has the value', schema: VARIANT, input: () => ({ t: 'c' }) },
 	{ name: 'variant, key missing', schema: VARIANT, input: () => ({ x: 'x' }) },
+	{
+		name: 'variant, a one_of discriminator',
+		schema: VARIANT_ONE_OF,
+		input: () => ({ t: 'a', x: 'x' })
+	},
+	{
+		name: 'variant, a one_of discriminator, the other option',
+		schema: VARIANT_ONE_OF,
+		input: () => ({ t: 'c' })
+	},
+	{
+		name: 'variant, an optional(literal) discriminator',
+		schema: VARIANT_OPTIONAL,
+		input: () => ({ t: 'a', x: 'x' })
+	},
+	{
+		name: 'variant, an optional(literal) discriminator, key missing',
+		schema: VARIANT_OPTIONAL,
+		input: () => ({ x: 'x' })
+	},
 	{
 		name: 'variant, a literal(undefined) discriminator, key missing',
 		schema: VARIANT_UNDEFINED,

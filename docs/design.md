@@ -579,13 +579,13 @@ What a `union` costs on recursive input, and the ways to bound it.
   An option that walks a node's children before the entry that rules it out
   fails only after the walk, and the next option walks them again, at every
   level: `lazy(() => union([object({args: array(Node), op: literal('a')}),
-  ...]))`. With two such options the time doubles with each level: on Node
-  26.13 an input of 420 bytes of JSON, 20 levels deep, took 177 ms, and on
+  ...]))`. With two such options the time doubles with each level, and on
   untrusted input of that shape one of the ways out below is needed. Valibot
-  does the same, and Zod is linear on it, in its classic form and its mini
-  form, through a memo of what a schema gave an object, as the Rust crate is
-  through the verdicts such a union keeps, see
-  [rust.md](rust.md#two-evaluators). There are ways out. `variant`, when
+  does the same, and so does `zod/mini` unless it is configured with Zod's
+  memoizer. `zod` is linear on it, through a memo its object and array
+  schemas keep in a recursive schema, as the Rust crate is through the
+  verdicts such a union keeps, see [rust.md](rust.md#two-evaluators). There
+  are ways out. `variant`, when
   the options have a `literal` discriminator, finds the option in constant
   time, so the children are walked once. Otherwise each option puts the entries
   that rule it out cheaply first, as a `literal`, and a probed option fails
@@ -638,8 +638,8 @@ What a `union` costs on recursive input, and the ways to bound it.
   `union`, the same verdicts and outputs, and `union([...options])` tells
   them apart. The mark is for [the compiler](#compiling), which runs a schema
   by other code than its `run`. What a `memo_union` holds for it is the entry
-  of the set, see [declined.md](declined.md#the-compiler) for the keys not
-  taken.
+  of the set, see [declined.md](declined.md#a-memo_union-told-by-its-run) for the keys
+  not taken.
 
 ## Issues
 
@@ -1195,6 +1195,8 @@ Where zod writes something else, this library:
   whose discriminator is no `literal` entry is kept, either of which more than
   one option can match, where zod writes `oneOf`, which refuses a value two
   options match.
+- a `variant` option whose discriminator is no `literal` entry is refused, as
+  the variant never picks it, where zod, which does, writes it.
 - an entry named like a member of `Object.prototype` is refused, as the
   library reads that entry through the prototype when the key is missing.
 - a `with_default` of `undefined` writes no `default`, and leaves its key
@@ -1601,6 +1603,12 @@ issues. These it holds:
   array, or a record one of whose entries or items fails only a check is not
   run, where both run it and report it too, at the container's path. By
   design: a step runs only on a value every step before it accepted.
+- An option of a `variant` whose discriminator is no `literal` is never
+  picked, a `one_of` or an `optional` of a `literal` among them, and the
+  types don't refuse it, where Valibot's `variant` and Zod's
+  `discriminatedUnion` take both. By design: the option is found in constant
+  time, by a map of the literals, and options told apart by another schema
+  are a `union`'s.
 - A parse reports its first hundred failures as issues and counts the rest,
   where both report every one. By design: an issue's path is as long as the
   failing value is deep, so issues without a bound hold memory in the product of the
@@ -1839,6 +1847,8 @@ API, or in the names:
   compares each with the other libraries' schema that does the same. By
   design: rejecting is the safe default, so it has the default name.
 - `variant` dispatches by map; its options need a `literal` discriminator.
+  Of two options with one value the later is picked, where Zod throws on its
+  first parse and Valibot tries both, which no case of the matrix has.
   What it does with an input is in the matrix: what both do, but Zod's on an
   array and on the entries of an option whose discriminator is missing, see
   above.
@@ -1846,9 +1856,9 @@ API, or in the names:
 - `memo_union` gives back what it kept for an object it is probed with
   again, so a `transform` under it runs fewer times than under Valibot's
   `union`, or Zod's, which differ from each other in that count, and an
-  object the input holds twice gets one output object in both places, as
-  under Zod's recursive `union`, which keeps a memo of its own, and where
-  Valibot's gives two. Verdicts, outputs as values, and issues are the union's,
+  object the input holds twice gets one output object in both places, where
+  Valibot's gives two, and Zod's one only where the output is the copy of an
+  object or array schema, which keep a memo in a recursive schema. Verdicts, outputs as values, and issues are the union's,
   which the matrix holds. By design: it is opt-in, for a recursive union
   that is otherwise exponential.
 - A `message` function is handed a copy of the issue and the value the
@@ -1863,3 +1873,8 @@ API, or in the names:
 - `parse` returns a result and does not throw; the throwing form is `parse_or_throw`.
   Code ported from Valibot or Zod that calls `parse` expecting a throw will get a result
   object instead, which TypeScript catches in typed code and nothing catches in untyped code.
+- A check after a check that failed is not run, where Valibot and Zod run
+  it and report it too: `pipe(string, min_length(5), regex(/x/))` given
+  `'ab'` is one issue here and two in both. The test compares the issues'
+  paths and not their count, so it holds only the case above, of a check
+  after a container. By design: as there.

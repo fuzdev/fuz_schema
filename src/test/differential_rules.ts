@@ -250,6 +250,12 @@ export const DIFFERENTIAL_UNRULED: Partial<Record<ConformanceDifferencesRow, str
 		'the generator makes no `to_integer`, a step that changes the value, which the rules read as only a `map` does: the conformance matrix holds its grammar, and the JSON Schema differential its documents',
 	'to_integer, -0':
 		'the generator makes no `to_integer`, a step that changes the value, which the rules read as only a `map` does: the conformance matrix holds what a `-0` gives',
+	'variant, a one_of discriminator':
+		'the generator gives every option of a `variant` a `literal` discriminator: the conformance matrix holds what one that is no `literal` does',
+	'variant, an optional(literal) discriminator':
+		'the generator gives every option of a `variant` a `literal` discriminator: the conformance matrix holds what one that is no `literal` does',
+	'variant, an optional(literal) discriminator, key missing':
+		'the generator gives every option of a `variant` a `literal` discriminator: the conformance matrix holds what one that is no `literal` does',
 	'array of strings, a hundred and one items wrong':
 		'the generated inputs are small: over eight seeds of a hundred thousand cases none failed more than fourteen times, short of the hundred'
 };
