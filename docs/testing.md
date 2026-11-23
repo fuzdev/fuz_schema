@@ -89,15 +89,16 @@ for each: strings both grammars take, and near misses of them, by a
 character, the version or variant of a UUID, the case of the max UUID, the
 length of a fraction, an offset, or a day the month doesn't have. Where Zod
 and Valibot agree on one, this library must too. Where they disagree, the
-entries of `FORMAT_SPLIT_RECOGNIZERS` whose trigger it has, each of a `SIDES`
-row, taken away in turn, must leave a string both take, all of their rows of
-one side, each of whose rows records the verdicts Zod and Valibot gave, and
-this library's result is that side's. Anything else is a
-finding, and the report tallies the strings by row.
+entries of `FORMAT_SPLIT_RECOGNIZERS` the string triggers must explain it:
+taking their triggers away in turn leaves a string both take, their `SIDES`
+rows are all of one side and record the verdicts Zod and Valibot gave, and
+this library's result is that side's. Anything else is a finding, and the
+report tallies the strings by row.
 
 Every case also runs through this library's invariants: the input is not
 mutated, every issue is the five fields, `is` agrees with `parse`, a second
-parse gives the same, and the context's count is kept. A case with a `union`
+parse gives the same, the context's count is kept, and a probe leaves
+`ctx.issues` alone, is still a probe after, and gives `parse`'s verdict. A case with a `union`
 is run again with every `union` a `memo_union`, which must give the same
 result of `parse`, and of `is`, alone and under a `union` of one option.
 
@@ -134,7 +135,7 @@ script checks for that and runs Node directly otherwise.
 
 Not generated, as no counterpart in Zod and Valibot exists or as they have no
 run-time effect: a length, value, or `regex` action alone as an entry, `flavor`,
-`brand`, `meta`, a recursive `lazy`, and an entry named `__proto__`. Nor are
+`brand`, `meta`, `check_at`, a recursive `lazy`, and an entry named `__proto__`. Nor are
 `to_lower_case` and `to_integer`, which change the value, as the rules read
 only a `map` doing so: the matrix holds both, and the JSON Schema
 differential's family of its own holds `to_integer`. A
@@ -167,7 +168,7 @@ triggers it, and its rewritten document may differ only by a `default` and keys
 taken out of the `required` of a schema in it. A `transform` that gives
 `undefined` is explained by the parse of the same input with each `transform`
 giving a value instead: that output must differ and the original document take
-it. Its variants are varied past what the generator makes for zod, a
+it. Its `variant` schemas go past what the generator makes for Zod: a
 discriminator shadowed, `0` beside `-0`, or no `literal`. Each schema is written
 again with `unrepresentable: 'any'`, which `{}` loosens past exactness, and held
 one way: the document takes every input `is` takes and every output of `parse`.

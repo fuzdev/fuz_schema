@@ -196,6 +196,19 @@ what a case is listed for, the case is marked `~` and left out of the lists,
 and a case is listed as allocating more only when both instances of the
 graded version read past both of the baseline's.
 
+**An instance is a module instance** of everything it is called through,
+the library, the case matrix, and the loops, each under a URL with the
+instance's own query, which a resolve hook passes on to what they import: a
+function two versions shared would be specialized by the engine to the first
+version's `parse`. A process checks that two instances of one file share no
+function before it measures. The byte sampler, `measure_bytes` in
+`measure.ts`, is one for the process, and measures two functions of its own
+first, its primers, so that it inlines no case into its loops.
+
+**The graded version builds every group of cases**, and a group of its that
+throws fails the grade, by name, as does a case it builds on its own. A
+baseline with an older API is compared on the groups and cases it can build.
+
 **Every process checks its job** before it loads an instance, and fails
 otherwise: every instance loads from one directory, a timing runs under no
 flags of its own and no `NODE_OPTIONS`, a bytes process holds two instances
@@ -330,10 +343,10 @@ A path's line rests on the realistic cases that take the path. Those that
 copy fill defaults in, as a config does and as svelte-docinfo's modules do,
 of a component, a class, functions, and types, and as fuz_app's list
 request with no params does, or drop keys, as a form posted with fields of
-its own and a process's environment do. Those through `is` are a guard that
-fails inside a list and the check of a JSON-RPC frame every fuz_app server
-makes, too few for the warning to read their line, which it prints,
-[below](#rules).
+its own and a process's environment do. The one through `is` is the check of a JSON-RPC frame every fuz_app server
+makes, too few for the warning to read its line, which it prints,
+[below](#rules). A guard that fails inside a list is among the realistic
+invalid cases.
 
 The 3.3 was set by resampling two ten-run A/As of one desktop machine, four
 runs at a time as a grade takes them, `apart` left out. That is a few grades'

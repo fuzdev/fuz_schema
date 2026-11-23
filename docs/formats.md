@@ -64,7 +64,8 @@ where `<space>` is nothing, or with `trim` a run of Unicode `White_Space`:
 
 and with `unsigned` the sign is a `+` alone. The digits are ASCII, leading
 zeros taken, and must spell a safe integer, from `-(2 ** 53 - 1)` to
-`2 ** 53 - 1`, so no string rounds to another integer. A `-0` gives `0`.
+`2 ** 53 - 1`, so no string rounds to another integer. Without `unsigned`, a
+`-0` gives `0`.
 
 The grammar is Rust's: `str::parse::<i64>`, and with `unsigned`
 `str::parse::<u64>`, and `trim` drops what `str::trim` drops before either,
@@ -74,8 +75,9 @@ the Rust side, so that a value read here and by a Rust twin, as a query
 parameter or an environment variable, reads as the same integer or fails in
 both. So it
 refuses `''`, which `Number` reads as `0`, an exponent, hex, binary, octal,
-a fraction, `_`, and digits of other scripts, takes U+0085 with `trim`, and
-refuses U+FEFF, where `Number` does the reverse.
+and a fraction, each of which `Number` reads, and takes U+0085 with `trim`
+and refuses U+FEFF, where `Number` does the reverse. As `Number` does, it
+refuses `_` and digits of other scripts.
 
 Its issue is of kind `to_integer`, whether the grammar or the range failed,
 `expected` `a safe integer in decimal digits` or, with `unsigned`, `an
@@ -117,7 +119,7 @@ valibot both accept it.
 ## How a grammar is held
 
 - **`uuid` reads char codes**, which takes less time than a `RegExp` of its
-  grammar, and `src/test/schema.formats.test.ts` holds it to the grammar
+  grammar, see [declined.md](declined.md#other-forms-of-the-uuid-test), and `src/test/schema.formats.test.ts` holds it to the grammar
   above with every char at every position of a set of UUIDs, every version
   and variant, and every length around 36. `to_json_schema` writes the grammar as its
   `pattern`.

@@ -10,18 +10,16 @@ library as it was then, which later changes can have moved. The figures were
 measured on this repo's benchmarks, on Node 24.14.1 unless the entry names
 another: time by [`npm run grade`](grading.md) or in processes of their own,
 bytes as gzipped bundles where they say "gzip" and as heap allocated where
-they don't. "Core" is the
-`strict_nested` scenario's bundle, the bytes every consumer of an object schema
-pays, which with `parse` alone is core in [grading.md](grading.md#bytes), where
-every class but `speed` prices both, and the rules are
+they don't. "Core" is the `strict_nested` scenario's bundle, the bytes every
+consumer of an object schema pays. With `parse` alone it is core in
+[grading.md](grading.md#bytes), and the rules are
 [grading.md](grading.md#rules)'s. A ratio is the trade's time over the library's
 without it, as the library was when it was measured, so under 1 is faster. A
 part with nothing to say is left out.
 
-Some entries were declined under a former rule 5: a ceiling on the bundle of
-every scenario together, as a share of Valibot's, where the rules have a
-price per class and a backstop per scenario. Such an entry names the ceiling
-it was over.
+Some entries were declined under a former rule 5, a ceiling on the bundle of
+every scenario together as a share of Valibot's, and name the ceiling they
+were over. The rules now have a price per class and a backstop per scenario.
 
 The parts, by what they change:
 
@@ -78,9 +76,9 @@ the parse runs.
 length first, since a path of one key or none is its own reverse.
 
 - **Gave**: 5 gzip on the core and on every scenario, 13 on `parse` alone.
-- **Cost**: a call to `reverse` for every issue: in a quiet grade nine
-  invalid cases slower in the matrix, up to 1.13x on `each/string/invalid`,
-  and the `fixed` group's invalid cases 1.14x alone.
+- **Cost**: a call to `reverse` for every issue: nine invalid cases slower
+  in the matrix, up to 1.13x on `each/string/invalid`, and the `fixed`
+  group's invalid cases 1.14x alone.
 - **Why**: slower on the invalid path for a few bytes.
 - **Reopens**: nothing: the length check is cheaper than the call it skips.
 - **Measured**: before v0.5.1.
@@ -460,9 +458,9 @@ after them.
   failure nothing.
 - **Measured**: before v0.2.0.
 
-Three forms of it were built beside it, and kept its costs on valid input: a
-`union` whose last option matches 1.07x to 1.24x and an entry that changes
-with no key to drop 1.10x to 1.16x in each.
+Forms built beside it kept its costs on valid input: a `union` whose last
+option matches 1.07x to 1.24x and an entry that changes with no key to drop
+1.10x to 1.16x in each.
 
 - A flag passed to the loop in place of the copy, begun at the first entry:
   17 gzip fewer on all the scenarios together and +17 on the core, and a
@@ -498,8 +496,8 @@ after the enumeration, as `run_entries` runs them.
   dictionary-mode input in the same program.
 - **Measured**: before v0.2.0.
 
-Re-made later, before v0.2.0, in two variants, the entries run eagerly and a
-flag passed to the loop. Unpoisoned, the eager form is +44 gzip on all the
+Two variants were built too, the entries run eagerly and a flag passed to
+the loop. Unpoisoned, the eager form is +44 gzip on all the
 scenarios together, over the ceiling of 0.75 rule 5 had then, and slower than
 the current loop on `6_of_7_keys_first_optional_absent` (1.10x) and on a nested
 `strip_object` (1.17x alone); the flag form is +100. Poisoned by one input in
@@ -518,9 +516,7 @@ when one fails or has nothing to drop, under which the next parse runs a loop
 of its own that writes each entry's output to a copy as it goes, so no key is
 read twice and the copy is ready when the enumeration finds a key to drop. The
 flag is closure state, not a field of the schema, and the shape test passes
-against it.
-Output is the same as without it; only time and allocation depend on what the
-schema parsed before.
+against it. The output is the same as without it.
 
 - **Gave**: an input with a key to drop, at six keys and at twenty to forty,
   0.79x to 0.85x and 0.76x to 0.80x in the matrix, 0.74x to 0.80x and 0.70x to
@@ -541,7 +537,7 @@ schema parsed before.
   allows and the path with nothing to drop nothing alone.
 - **Measured**: before v0.5.7, on Node 26.13.
 
-Three forms of it were built beside it:
+Built beside it:
 
 - The flag set by any copy, a change's too, filled by a helper of its own:
   a flat object with a key to drop or a late default 0.72x to 0.83x, and
@@ -561,7 +557,7 @@ Three forms of it were built beside it:
   it is +90 against +71, `pipe` still over the backstop at 0.758, and an entry runs twice on
   that parse, which a test refuses.
 
-Two more were weighed and not built:
+Weighed and not built:
 
 - **A key to drop known from a count**: an input with more own enumerable
   keys than the schema has entries must have one to drop, which is sound in
@@ -668,8 +664,7 @@ The issue as it is, written by `format_issue` as `props: unknown key`.
   `parse_or_throw` alone. A change to documented text, which the Rust side's
   `Display`, the fixtures' formatted text, and a consumer's message lines
   move with.
-- **Why**: a breaking change to documented text for a papercut. Kept as it
-  is.
+- **Why**: a breaking change to documented text for a papercut.
 - **Reopens**: a release that changes issue text anyway, or a consumer
   misled by it.
 - **Measured**: before v0.5.7, on Node 26.13.
@@ -695,7 +690,7 @@ The issue as it is, written by `format_issue` as `props: unknown key`.
 
 ### Helpers for extend, pick, omit, and partial
 
-Three sets of helpers, in place of spreading `def` into a factory, see
+Sets of helpers, in place of spreading `def` into a factory, see
 [design.md](design.md#composing). Plain ones, `extend`, `pick`, `omit`, and
 `partial` over an object schema, returning an `object`. Kind-preserving
 ones, the same returning a schema of the source's kind. And entries-level
@@ -817,18 +812,16 @@ its input, and starts only when an object comes back.
 - **Why**: the bytes land on every `lazy`, and the time on recursion that
   doesn't need it, where `variant` or the cheap entries first in each option
   are the way out of the curve.
-- **Reopens**: a form whose bytes land only on schemas that recurse through
-  a union. That is `memo_union`, whose bytes land only where it is used, and
-  whose memo is kept by the union and not by the `lazy`. In the core, as
-  here, it stays declined.
+- **Reopens**: nothing in the core. A form whose bytes land only on schemas
+  that recurse through a union is `memo_union`, whose memo is kept by the
+  union and not by the `lazy`.
 - **Measured**: before v0.2.0.
 
 ### That memo in place of `memo_union`
 
 The same memo, kept for one parse by each probed object or array, made the
 plain recursive `union` linear on hostile input so `memo_union` could go.
-Four forms were built and graded with `--class security --runs 5` on a quiet
-machine:
+Its forms, graded as a fix of security:
 
 - **Ungated**, a memo on every probe: linear on every union shape, but
   `real/package_json/valid` 1.35x in the matrix with 5.6 times the bytes
@@ -914,10 +907,8 @@ key, and the retry over `options.slice(0, i)`.
   core +0.
 - **Cost**: a call into the shared body on every parse of a union that
   doesn't take the key, and a test of `parent` per option in the one that
-  does. Graded `--runs 5`, the matrix figures from a full grade on a quiet
-  machine and the alone and apart ones from a grade of the union cases: five
-  union valid cases slower
-  in the matrix, `each/union_3_primitives_first/valid` 1.086x and
+  does. Five union valid cases slower in the matrix,
+  `each/union_3_primitives_first/valid` 1.086x and
   `each/union_nested_inner_miss/valid` 1.072x, the others about 1.03x; the
   union cases' valid time 1.080x alone and 1.107x apart, the `each` group's
   1.190x apart. Retained heap +64 B per further `union`, past
@@ -931,8 +922,7 @@ key, and the retry over `options.slice(0, i)`.
   same names: locals are named by slot after the parameters, and default
   parameters break the forwarding of `lazy` and `message`. The scenario is
   under the backstop, by a union naming its object options by one test of the
-  kind, which keeps a `record` and a `variant` as `object`, and this trade
-  stays declined.
+  kind, which keeps a `record` and a `variant` as `object`.
 - **Reopens**: a form that keeps the two closures and finds the bytes
   elsewhere.
 - **Measured**: before v0.5.1.
@@ -1007,14 +997,12 @@ it, in place of running them in a loop of its own.
   in, −5 on `app` and on all the scenarios together.
 - **Cost**: with the key there, a pipe of an `optional` and a `check` 1.13x
   in the matrix, where a process holds every case's schemas, and the same
-  under a `message`. Timed apart, a version to a process, and alone, a case
-  to a process, 1.00x, and without the key 1.00x in all three. Every `pipe`,
+  under a `message`. Apart and alone 1.00x, and without the key 1.00x in all
+  three. Every `pipe`,
   whatever it starts with, retains 40 bytes more once made, and making one
   allocates about 40 more.
 - **Why**: slower in a process of many schemas, which is where a consumer's
-  pipes run, and more memory for every pipe. It was the form taken while
-  rule 5 had a ceiling on all the scenarios together, which the loop went
-  over.
+  pipes run, and more memory for every pipe.
 - **Reopens**: a need for those bytes on the `pipe` scenario.
 - **Measured**: before v0.6.1, on Node 26.13.
 
@@ -1153,8 +1141,8 @@ it refused the infinities.
 - **Cost**: it takes `Infinity` and `-Infinity`, which `number` refuses. And
   whole numbers slower in the matrix: `each/number` 1.065x, and an array of
   10 numbers 1.056x and of 10,000 1.067x.
-- **Why**: it is a form that takes the infinities, and slows whole numbers. Of
-  the forms that refuse them, none was faster on fractional doubles in a
+- **Why**: it takes the infinities, and slows whole numbers. Of the forms
+  that refuse them, none was faster on fractional doubles in a
   microbenchmark of a scalar and of an array of 100: `typeof` beside
   `Number.isFinite` measured equal, but for one faster reading on a scalar
   that a second run didn't repeat, `!==` each infinity was faster on a whole
@@ -1171,7 +1159,7 @@ What was taken: `uuid` reads its 36 chars by char codes in one loop, a `-`
 at the positions a mask of the dashes names and a hex digit elsewhere, then
 its version and its variant each by a bit of a mask, and the nil and the max
 UUID by a small `RegExp` only when those fail. Against the `RegExp` it
-replaced, over 6 runs: the realistic valid path 1.6% faster alone, past its
+replaced: the realistic valid path 1.6% faster alone, past its
 A/A of 0.6%, and 0.8% in the matrix, inside its A/A of 1.7%,
 `real/fuz_app_cell_list_output_50/valid` 0.951x in the matrix, confirmed, and
 0.934x alone, `each/pipe_uuid_distinct/valid` 0.972x, for `uuid` +79
@@ -1190,8 +1178,8 @@ the `RegExp`.
 A function that reads a group of hex digits and the `-` after it, called
 once for each of the five groups.
 
-- **Gave**: 49 ns valid and 46 invalid. In the grader, 6 runs, faster on the
-  UUID cases than the scan taken: `each/pipe_uuid_distinct/valid` 0.850x in the
+- **Gave**: 49 ns valid and 46 invalid. In the grader, faster on the UUID
+  cases than the scan taken: `each/pipe_uuid_distinct/valid` 0.850x in the
   matrix and 0.867x apart, `each/pipe_uuid/valid` 0.865x and 0.886x.
 - **Cost**: 192 and 349, +103 and +88. And on the realistic cases no gain
   past the A/A: the valid path +0.2% in the matrix and +0.1% alone,
@@ -1230,7 +1218,7 @@ numbers, the day against its month's length and the year's leap, and a loop
 over the fraction.
 
 - **Gave**: 31 ns a test against the `RegExp`'s 36 in the microbenchmark. In
-  the grader, 4 runs: `each/pipe_iso_datetime_distinct/valid` 0.978x in the
+  the grader: `each/pipe_iso_datetime_distinct/valid` 0.978x in the
   matrix, 0.863x alone, and 0.802x apart, and on the invalid cases 0.50x to
   0.84x.
 - **Cost**: `iso_datetime` +94 gzip last in, +103 alone. And
@@ -1256,8 +1244,8 @@ uppercase ASCII letter or a code past 127, and the same with
   bytes a parse.
 - **Cost**: time. `toLowerCase` reads a string many chars at a time: 15 ns on
   a lowercase string of 36 chars and 37 ns on one of 400, with the copy, where
-  the loop took 46 and 506, and the `RegExp` 32 and 188. In the grader, 4
-  runs, the loop 1.945x on `each/pipe_to_lower_case/valid` in the matrix,
+  the loop took 46 and 506, and the `RegExp` 32 and 188. In the grader, the
+  loop 1.945x on `each/pipe_to_lower_case/valid` in the matrix,
   2.427x alone, 2.330x apart, and 1.046x to 1.104x on an uppercase input,
   `each/pipe_to_lower_case_upper/valid`; the `RegExp` 1.291x to 1.491x on the
   first and 1.353x to 1.552x on the second, all confirmed. `to_lower_case`
@@ -1411,15 +1399,14 @@ Every schema a Standard Schema natively, in place of the
 
 ## The compiler
 
-What was taken, in `compile.ts`: see [design.md](design.md#compiling). These
-were built, in a prototype of it or in the module before it took this form.
-An entry rests on what is exact wherever it can: counted runs, heap bytes a
-call, gzip. A time is given only where the trade is about time. Each was
-read in processes of their own, a contender to a process, passes
-interleaved, as
-[the timing across libraries](benchmarks.md#timing-across-libraries) is
-taken, on a machine that was not quiet, so it is exploratory, and its entry
-says what the same run's A/A was, or that the run had none.
+What was taken is in [design.md](design.md#compiling). These were built in a
+prototype of `compile.ts` or an earlier form of it. An entry rests on what is
+exact where it can, counted runs, heap bytes a call, and gzip, and gives a
+time only where the trade is about time. A time was read a contender to a
+process, passes interleaved, as
+[the timing across libraries](benchmarks.md#timing-across-libraries) is, on
+a machine that was not quiet: it is exploratory, and its entry says the
+run's A/A, or that it had none.
 
 ### The unknown-key check by counting the keys, compiled
 
@@ -1491,8 +1478,7 @@ refusing the unions the library walks in exponential time.
   container between the root and it, is a schema with the `kind` and the
   `def` of what it wraps, so a twin made from those has lost it: `parse`
   gives the issue its text and the twin's has none. And bytes:
-  `compile_parse` alone 7765 gzip with it against 5395 without, in the module
-  as it was then.
+  `compile_parse` alone 7765 gzip with it against 5395 without.
 - **Why**: the issues are the library's by construction, and a twin's are
   not.
 - **Reopens**: a reader that tells a `message`, as `is_memo_union` tells a
@@ -1526,9 +1512,9 @@ output.
   prototype, 4614 bytes over the library against 6053. And a document that
   comes back as itself in 1094 ns against 1423.
 - **Cost**: the harvested documents it answers without the interpreter: none
-  of the 131 of the docinfo set, whose every module has a default filled in
-  below the root, and 1 of the 24 package manifests, as it can't say a
-  `transform` gave its input back, where the form taken answers all of both.
+  of the docinfo set's modules, each with a default filled in below the root,
+  and one of the package manifests, as it can't say a `transform` gave its
+  input back, where the form taken answers all of both.
   And a `check` runs twice on every input whose output is a copy. In time, a
   document with defaults filled in 6921 ns against 2339. Both times are of
   one run, whose A/As were within 3%.
@@ -1634,8 +1620,7 @@ it when `Array.isArray` throws, so a primitive's `parse` returns its issue.
   process. Zod's primitives throw the same `TypeError` from their issues on
   a revoked object or array, except `literal` and `enum`, its containers
   throw from the parse, and Valibot throws on every schema but `unknown`,
-  `any`, and an `object` with no entries. And it would fix the primitives,
-  and the containers not at all for a revoked object or array.
+  `any`, and an `object` with no entries.
 - **Reopens**: a form that costs the core nothing, or a value of that kind
   that data-shaped input can produce.
 - **Measured**: before v0.5.0.

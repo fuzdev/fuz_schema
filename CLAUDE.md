@@ -44,30 +44,14 @@ gro task src/test/fixtures/results/update.task.ts # regenerate the fixture resul
 BENCH_RESULTS_FIXTURE=1 gro build # build the site over the fixture run (invented numbers, marked on every page)
 ```
 
-`npm run benchmark` takes `--scenario`, `--lib`, `--no-invalid`, `--no-guard`,
-`--duration`, `--passes`, and `--alone`, see `src/benchmarks/run.ts`.
-`npm run benchmark:allocations` and `npm run benchmark:heap` take `--scenario`
-and `--lib`, `npm run benchmark:coldstart` takes those and `--form`,
-`--samples`, and `--discard`, `npm run benchmark:types` takes `--lib` and `--runs`,
-`npm run benchmark:bundle` takes `--raw`, and `npm run benchmark:wasm` takes
-`--rounds` and `--round-ms`, see `docs/benchmarks.md`. Every benchmark script
-takes `--help`, and each of those above and of `benchmark:harvest` and
-`benchmark:survey` takes `--data`, a path to also write what it measured to
-as JSON. `npm run results` takes `--machine`, `--smoke`, `--only`
-(repeatable), `--wasm`, and `--plan`, and `npm run results:publish` the path
-of a run, see `results/README.md`.
-`npm run grade` takes `--against`, `--against-file`, `--against-libs-file`,
-`--new-file`, `--filter`, `--runs`, `--alone`, `--no-alone`, `--apart`,
-`--no-apart`, `--slice`, `--bundle`, `--no-bundle`, `--process`,
-`--no-process`, `--samples`, `--class`, and `--replay`, see `docs/grading.md`.
-`npm run grade:aa` takes the directories of grades. `npm run benchmark:harvest` takes `--set`,
-`--passes`, and `--duration`. `npm run benchmark:survey` takes `--filter`,
-`--lib`, `--passes`, `--duration`, and `--alone`. `npm run differential` takes
-`--seed` (repeatable), `--count`, `--focus`, `--limit`, `--neither`, and
-`--json-schema`, and
-`npm run mutate` takes `--filter`, `--workers`, `--timeout`, `--deep`, and
-`--keep`, see `docs/testing.md`. `npm run fixtures:deep` takes `--seed`
-(repeatable), `--count`, `--cases`, and `--dir`, see `docs/rust.md`.
+Every benchmark script, `grade`, `results`, and `results:publish` takes
+`--help`, which prints its flags and their defaults, and every benchmark
+script takes `--data`, a path to also write what it measured to as JSON.
+`npm run grade:aa` takes the directories of grades. The flags are described
+in `docs/benchmarks.md` for the benchmarks, `docs/grading.md` for `grade` and
+`grade:aa`, `results/README.md` for `results` and `results:publish`,
+`docs/testing.md` for `differential` and `mutate`, and `docs/rust.md` for
+`fixtures:deep`, which three take no `--help`.
 
 IMPORTANT for AI agents: Do NOT run `gro dev` — the developer manages the
 dev server.
@@ -97,307 +81,151 @@ dev server.
 - `src/test/schema.test.ts`, `standard_schema.test.ts`, `meta.test.ts` -
   behavior and type inference: `schema.test.ts` holds the primitives, the
   wrappers, the context, `def`, `is_schema`, flavor and brand, and the types
-- `src/test/schema.formats.test.ts` - the format tests: `uuid` against its
-  grammar in `docs/formats.md`, `uuid` and `iso_datetime` in a `pipe`, and
-  `to_integer` against its grammar there under each option
-- `src/test/schema.object.test.ts` - the object schemas: `object`, arrays
-  are not objects, copy on write, object keys, `loose_object`'s copy,
-  `object_with_rest`, and composing them by spreading `def`
-- `src/test/schema.missing_keys.test.ts` - what a missing key does in every
-  schema and flavor
-- `src/test/schema.keyed_record.test.ts` - `keyed_record`: its keys, what a
-  key gives, a key refused and its `invalid_key`, `__proto__`, probe mode, and
-  the cap
-- `src/test/schema.union.test.ts` - `array`, `union`, `variant`, and probe mode
-- `src/test/schema.memo_union.test.ts` - `memo_union` against `union`: its
-  verdicts, issues, memo, and the inputs it walks once, and `is_memo_union`
-  with its registry
-- `src/test/schema.pipe.test.ts` - `pipe` and actions, `check_at`, and `message`
-- `src/test/schema.issues.test.ts` - a revoked `Proxy`, `parse_or_throw`, the
-  issues, `format_issue`, `get_issue_value`, and `format_issue_with_value`
-- `src/test/schema_test_helpers.ts` - `issues_of`, which the `schema.*`
-  test files above share
-- `src/test/schema.inference.test.ts` - what every schema and action infers
-  in each position that has lost a type before, and what an object schema
-  composed by spreading `def` infers
-- `src/test/schema.emit.test.ts` - the declarations a consumer emits for its
-  generic helpers over the library compile where they are read, those of its
-  exported schemas write every factory's type by its name, and every export
-  of `schema.ts` and `meta.ts` that is or makes a schema declares a named type
-- `src/test/schema.invariants.test.ts` - every factory of `schema.ts` and
-  `meta.ts` carries `// @__NO_SIDE_EFFECTS__`, every export of the library
-  has a doc comment of its own, and the package has no dependencies, with
-  `schema_exports_test_helpers.ts`, the exports that are or make a schema,
-  which `schema.emit.test.ts` reads too
-- `src/test/schema.docs.test.ts` - a property of a type inferred from an
-  object schema has its entry's doc comment and the entry as its definition,
-  asked of TypeScript's language service
-- `src/test/schema.shape.test.ts` - every schema the library makes has one
-  hidden class and no field written to, asked of the engine in a process of
-  its own, `shape_test_child.ts`, over the samples in `shape_test_helpers.ts`
-- `src/test/schema.fresh_input.test.ts` - an input changed in place after a
-  parse gives the next parse's answer, through every kind of container, so a
-  cache keyed by the input fails a test and not only a benchmark
-- `src/test/engine_state.test.ts` - every protector of the engine intact
-  after the grader's program, and a heap that doesn't grow with the count of
-  distinct inputs, asked in processes of their own, `engine_state_test_child.ts`
-- `src/test/benchmarks.test.ts` - every library must agree on which scenario
-  inputs match, its guard with its factory, and its output with this
-  library's, so the benchmarks compare like with like; the app's schemas one
-  by one; every builder of `libs/schemas/` with its factory's text,
-  `zod_compiled`'s factories with Zod's and `fuz_schema_compiled`'s with this
-  library's; which roots `z.compile` compiles; and that `fuz_schema_compiled`
-  compiles each schema once, in its factory, its guard, and its parse, and
-  never in a call
-- `src/test/cases.test.ts` - every case of the matrix matches or not as it
-  says and takes the path it names, and the grader builds the `create` cases
-  with a library of their own
-- `src/test/program.test.ts` - the program of the grader's `apart` regime has
-  every kind of schema and runs
-- `src/test/survey.test.ts` - every library gives the verdict each input of
-  a survey shape names, and one output where it matches, and a row named for
-  the depth of its issue has its first issue that deep
+- `src/test/schema.formats.test.ts`, `schema.object.test.ts`,
+  `schema.missing_keys.test.ts`, `schema.keyed_record.test.ts`,
+  `schema.union.test.ts`, `schema.memo_union.test.ts`, `schema.pipe.test.ts`,
+  `schema.issues.test.ts` - the core by topic, as each is named, the formats
+  against their grammars in `docs/formats.md`, sharing `issues_of` from
+  `schema_test_helpers.ts`
+- `src/test/schema.inference.test.ts`, `schema.emit.test.ts`,
+  `schema.docs.test.ts`, `schema.shape.test.ts`, `schema.fresh_input.test.ts`,
+  `engine_state.test.ts` - the types from a consumer's side and in an editor,
+  the schemas' one hidden class, an input read afresh, and the engine's
+  state, see `docs/testing.md`. The shape and the engine's state are asked in
+  processes of their own, `shape_test_child.ts`, over the samples in
+  `shape_test_helpers.ts`, and `engine_state_test_child.ts`
+- `src/test/schema.invariants.test.ts` - `// @__NO_SIDE_EFFECTS__` on every
+  factory of `schema.ts` and `meta.ts`, a doc comment on every export, and no
+  dependencies, with `schema_exports_test_helpers.ts`, the exports that are or
+  make a schema, which `schema.emit.test.ts` reads too
+- `src/test/benchmarks.test.ts`, `survey.test.ts`, `cases.test.ts`,
+  `program.test.ts` - every library's verdict and output on what a benchmark
+  times, the builders of `libs/schemas/` held to their factories' text, and
+  the compiled modes' compiles, see `docs/benchmarks.md`; every case of the
+  matrix on the path it names; and the program of the grader's `apart` regime
 - `src/test/docinfo.test.ts`, `src/test/harvest.test.ts` - a harvested set's
-  two forms, the consumer's and this library's, give the same answers on its
-  data: the first for the valibot set, the second for the zod ones, with its
-  helpers in `harvest_test_helpers.ts`
-- `src/test/schema_json.test.ts` - what `to_schema_json` writes and refuses
-- `src/test/json_schema.test.ts` - what `to_json_schema` writes and refuses,
-  on both sides and in both modes
-- `src/test/json_schema.conformance.test.ts` - `to_json_schema` against zod's
-  `toJSONSchema` over every case of the conformance matrix and its own, each
-  difference declared in its `DIFFERENCES` and in `docs/design.md`
-- `src/test/json_schema.differential.test.ts` - the documents `to_json_schema`
-  writes, read by a checker, against `is` on the input side and `parse`'s
-  output on the output side, and those of `unrepresentable: 'any'` one way,
-  over generated schemas and JSON inputs from fixed seeds, a family of
-  `to_integer` pipes over texts of its grammar among them, each disagreement
-  explained by an entry of
-  `JSON_SCHEMA_DIFFERENCES`, with a pinned case for each. Its modules, each
-  importing only those before it: `json_schema_check.ts`, a validator of
-  exactly the keywords the emitter writes, which throws on any other;
-  `json_schema_differential.ts`, the run, the declared differences and their
-  recognizers, the minimizer, and the report
-- `src/test/compile.test.ts` - `compile_guard` and `compile_parse` against
-  `is` and `parse` over a hand table, every scenario, and the cases a table
-  doesn't draw, with `compile_test_helpers.ts`, the comparison and the table
-- `src/test/compile.source.test.ts` - what a compile reads, refuses, and
-  emits: a frozen schema, hostile schema data, a schema held in many places,
-  a kind run in place, and the fallback, in a process of its own,
-  `compile_fallback_test_child.ts`
-- `src/test/compile.union.test.ts` - recursive unions and pipes by counted
-  runs: what is refused and its text, what is not, a `memo_union`'s bound and
-  outputs, a cyclic input, and the state of a call through a call made
-  inside it
-- `src/test/compile.refusal.test.ts` - every condition of the refusal, a
-  shape for each: the kinds a cycle is seen through, what could take an array
-  and what an object, what tells options apart, and that what an error says
-  to write compiles
-- `src/test/compile.emit.test.ts` - `to_guard_source`: a written module
-  imported and run against `is` and `compile_guard`, names and patterns that
-  stay data, and what has no text and is refused
-- `src/test/compile.bounds.test.ts` - the bound of compiled code, counted: a
-  slice of an enumeration of small recursive schemas, each refused or within
-  the size of the input times its depth, and a call that runs out of stack
-- `src/test/compile.differential.test.ts` - the same oracle over generated
-  schemas and inputs from fixed seeds, with every `union` and with every one
-  a `memo_union`, over recursive unions on inputs that reuse nodes, and over
-  wide objects whose every entry has a function of its own. A recursive
-  `union` the compiler refuses is counted and left out
+  two forms agree on its data, with `harvest_test_helpers.ts`
+- `src/test/schema_json.test.ts`, `json_schema.test.ts`,
+  `json_schema.conformance.test.ts` - what `to_schema_json` and
+  `to_json_schema` write and refuse, and the second against zod's
+  `toJSONSchema`, each difference declared in its `DIFFERENCES` and in
+  `docs/design.md`
+- `src/test/json_schema.differential.test.ts` - its documents against `is`
+  and `parse` over generated cases, each disagreement an entry of
+  `JSON_SCHEMA_DIFFERENCES` with a pinned case, see `docs/testing.md` § The
+  differential. Its modules, each importing only those before it:
+  `json_schema_check.ts`, the checker, then `json_schema_differential.ts`
+- `src/test/compile.test.ts`, `compile.source.test.ts`,
+  `compile.union.test.ts`, `compile.refusal.test.ts`, `compile.emit.test.ts`,
+  `compile.bounds.test.ts`, `compile.differential.test.ts` - `compile.ts`
+  against the interpreter, see `docs/testing.md` § The compiler, with
+  `compile_test_helpers.ts`, the comparison and the hand table, and
+  `compile_fallback_test_child.ts`, the fallback's process
 - `src/test/introspect.test.ts` - the readers, with a row for every kind
   that the types require
-- `src/test/schema.conformance.test.ts` - where zod and valibot agree this
-  library does the same, or the difference is in the tables of
-  `conformance_tables.ts`: the declared differences, which of the two it goes
-  with where they disagree, and what arktype and typebox do, pinned. Its
-  modules, each importing only those before it: `conformance_adapters.ts`,
-  the libraries and what a parse did reduced to a result; `conformance_cases.ts`,
-  the matrix of cases and their inputs; `conformance_test_helpers.ts`, the
-  running and the comparison
-- `src/test/schema.differential.test.ts` - the same rule over schemas and
-  inputs generated from fixed seeds, each difference explained by a rule of a
-  declared one, with this library's invariants on every case, `memo_union`
-  held to `union` on recursive schemas over inputs that reuse nodes, and a
-  pinned case for each entry of `SPLIT_RECOGNIZERS`. Its modules, each
-  importing only those before it: `differential_generate.ts`, the generated
-  schemas and inputs and the run of a library on them;
-  `differential_rules.ts`, the rules and the rewrites and comparison they are
-  made of;
-  `differential_recognizers.ts`, `SPLIT_RECOGNIZERS` and `split_side`, and
-  `FORMAT_SPLIT_RECOGNIZERS` for the strings of the format tests;
-  `differential_classify.ts`, the classifying, invariants, minimizer, and
-  report. `differential.ts` is `npm run differential`, a deeper run of any
-  seed
-- `src/test/seeded_rng.ts` - the seeded generator the differential and the
-  generated JSON fixtures draw from
-- `src/test/mutants.ts`, `mutate.ts`, `mutants.test.ts` - the table of mutants, small breaks
-  of the library or of a table the tests read, and `npm run mutate`, which
-  runs the tests on a copy of the working tree with each applied and fails
-  on an error or on one that survives unexplained, and the test that holds
-  every mutant's anchors to its file
-- `src/test/fixtures/json/` - the fixtures shared with the Rust crate
+- `src/test/schema.conformance.test.ts` - zod and valibot over a matrix of
+  cases, each difference in the tables of `conformance_tables.ts`, see
+  `docs/testing.md`. Its modules, each importing only those before it:
+  `conformance_adapters.ts`, `conformance_cases.ts`,
+  `conformance_test_helpers.ts`
+- `src/test/schema.differential.test.ts` - the same over generated cases, see
+  `docs/testing.md` § The differential. Its modules, each importing only
+  those before it: `differential_generate.ts`, `differential_rules.ts`,
+  `differential_recognizers.ts` (`SPLIT_RECOGNIZERS` and
+  `FORMAT_SPLIT_RECOGNIZERS`), `differential_classify.ts`. `differential.ts`
+  is `npm run differential`, and `src/test/seeded_rng.ts` the generator it
+  and the generated JSON fixtures draw from
+- `src/test/mutants.ts`, `mutate.ts`, `mutants.test.ts` - the table of
+  mutants, `npm run mutate`, and the test that holds every mutant's anchors to
+  its file, see `docs/testing.md` § Mutants
+- `src/test/fixtures/json/` - the fixtures shared with the Rust crate, see
+  `docs/rust.md` § Fixtures
   - `<group>/fixture.ts` - authored: a schema and named JSON texts
   - `<group>/expected.json` - generated by the update task, never hand-edited
   - `contract.json` - generated too: the constants both sides hold, and the
     rows of `refusals.ts`
-  - `refusals.ts` - authored: each refusal both sides make of a document, as
-    a schema `to_schema_json` refuses with the message it gives, the document
-    a writer without the refusal would write, and the crate's
-    `SchemaBuildErrorKind`
+  - `refusals.ts` - authored: each refusal both sides make of a document
   - `json_test_helpers.ts`, `update.task.ts` - the oracle, the loader, and the
     task that regenerates
-  - `json_syntax_texts.ts` - texts several groups share
-  - `json_generate.ts` - a random schema and texts aimed at it from a seed,
-    what the `generated_*` groups export
+  - `json_syntax_texts.ts`, `json_generate.ts` - texts several groups share,
+    and what the `generated_*` groups export, from a seed
   - `deep.ts` - `npm run fixtures:deep`, many more generated groups, written
-    outside the repo and run through the Rust fixture tests
+    outside the repo
 - `src/test/json.fixtures.test.ts` - fails when a generated file is stale
 - `src/test/sizes.test.ts` - fails when `src/benchmarks/sizes.json` is stale
-- `src/test/results_schema.test.ts` - the results schema: the fixture run,
-  what it refuses and where, what is publishable, and a stale
-  `fixtures/results/fixture_run.json`, which `fixture_results.ts` builds from
-  invented numbers and `update.task.ts` beside it writes
-- `src/test/results_plan.test.ts`, `results_run.test.ts`,
-  `results_publish.test.ts`, `results_docs.test.ts` - a run's steps against
-  `package.json` and the scripts' `--data`, a whole run with every script
-  standing in and the tree read as it starts and as it ends, the reading of
-  the commit against a repository made for the test, publishing, and
-  `results/README.md` against the commands
-- `src/test/results_roster.test.ts` - a results file with
-  `fuz_schema_compiled` and one without, and the published run, each parsing,
-  rendering every table with a cell for each library of its roster and for no
-  other, and bearing the README's claims, with "the libraries compared" read
-  as the roster less this library's own modes
-- `src/test/benchmark_*.test.ts`, `site_benchmarks.test.ts` - the
-  benchmarks page's derivations over the fixture run, and which file the
-  site renders
-- `src/test/results_test_helpers.ts` - what the tests of the results file and
-  the site share: the fixture as a fresh copy, the same under the kind of a
-  full run, a file without a library (`remove_lib`,
-  `load_fixture_without_compiled`), a section's data, and a parse that must
-  fail where it is told
+- `src/test/results_schema.test.ts`, `results_plan.test.ts`,
+  `results_run.test.ts`, `results_publish.test.ts`, `results_docs.test.ts`,
+  `results_roster.test.ts` - the results file, `npm run results` with its
+  steps against `package.json`, publishing, `results/README.md` against the
+  commands, and a file's roster, with `results_test_helpers.ts`
+  (`remove_lib`, `load_fixture_without_compiled`).
+  `fixtures/results/fixture_run.json` is generated, by `update.task.ts`
+  beside it from the invented numbers of `fixture_results.ts`, and
+  `results_schema.test.ts` fails on a stale one
+- `src/test/benchmark_*.test.ts`, `site_benchmarks.test.ts`,
+  `site_render.test.ts` - the benchmarks page's derivations over the fixture
+  run, the file the site renders, and what its components render on the
+  server, with `SiteHarness.svelte`, the context the root layout gives
 - `src/test/site_imports.test.ts` - the library imports nothing of the
   benchmarks or the site, and only a server load loads the results schema,
   a results file, or the fixture
-- `src/test/site_render.test.ts` - what the site's components render on the
-  server, as the text a reader sees without a pointer: the banner of a build
-  over the fixture or an unpublished run, what was measured of each library
-  under a chart, the marks of what is not a difference, a harvested set
-  folded, and the provenance, with `SiteHarness.svelte`, the context the root
-  layout gives
 - `src/test/readme_claims.ts`, `readme_claims.test.ts`,
-  `readme_measurements.test.ts` - the README's claims, each its sentence, the
-  mode of this library it is of, the libraries it names, and a predicate over
-  a results file that reads a difference as the benchmarks page does; the
-  checker over the fixture, with a change that fails each claim for every
-  library it names; and the README itself against `results/latest.json`
-- `src/test/readme_recipes.test.ts` - the README's recipes, each as it is
-  printed and what the README says it gives, and the README's blocks marked
-  `<!-- recipe: <name> -->` held to them
-- `src/test/grade_bytes.test.ts`, `grade_heap.test.ts` - the grader's prices
-  of bytes and of retained heap, over figures made up for them
-- `src/test/grade_stats.test.ts` - the grader's statistics over made-up
-  samples: floors, marks, and the A/A, and how often two copies fail rule 6
-  under noise of the shape a grade reads
-- `src/test/grade_read.test.ts`, `grade_plan.test.ts` - the grader's reading
-  over grades made up for it, and the names it plans with held to the cases and
-  scenarios they name
-- `src/test/measure.test.ts` - a median of the byte measurement starts with
-  the young generation free, by allocating until it is collected
-- `src/test/coldstart.test.ts` - the order cold start runs a round's
-  processes in moves on each round, in who leads and who follows whom
-- `src/benchmarks/` - the benchmarks; never imported by the library, and by
-  the site only for the results schema, at runtime in its server loads alone
-  - `scenarios.ts`, `libs/`, `libs.ts`, `lib_names.ts` - the cross-library
-    scenarios, one module per library, and the libraries' names, which import
-    none of them
-  - `libs/schemas/`, `scenario_schemas.ts` - each library's scenarios again
-    as builders, with its guard and parse, which no bundle reaches: the guard
-    regime, the type benchmark's reads, and the parity tests read them
-  - `zod_compile.ts` - `compile_zod_root`, whether `z.compile` compiles a
-    root, by which every timing leaves `zod_compiled` without a figure
-  - `run.ts`, `bundle.ts`, `allocations.ts`, `types.ts` - parse time, bundle
-    size, allocation, type-checking cost
-  - `timing_passes.ts`, `timing_child.ts`, `timing_job.ts`, `timing.ts` -
-    timing across libraries, for `run.ts`, `harvest.ts`, and `survey.ts`: the passes of
-    processes and their pooling, one process, what those two share, and the
-    loops a function is called and timed from, which the grader's processes
-    load too
-  - `run_rows.ts`, `harvest_sets.ts`, `survey_rows.ts` - what a timing
-    process loads its rows through: one library's scenarios, one side of a
-    harvested set, with the sets' declarations, and one library's survey rows
-  - `survey.ts`, `survey_shapes.ts` - many small shapes in this library, as
-    it is imported and compiled, Valibot, Zod, and Zod compiled, timed row by
-    row and summarized by what a parse does
+  `readme_measurements.test.ts`, `readme_recipes.test.ts` - the README's
+  claims, each a predicate over a results file, held to `results/latest.json`
+  (`results/README.md` § Publishing a run), and its recipes, which its blocks
+  marked `<!-- recipe: <name> -->` are held to
+- `src/test/grade_bytes.test.ts`, `grade_heap.test.ts`, `grade_stats.test.ts`,
+  `grade_read.test.ts`, `grade_plan.test.ts`, `measure.test.ts`,
+  `coldstart.test.ts` - the grader's prices, statistics, reading, and plan,
+  the byte measurement, and the order of cold start's processes
+- `src/benchmarks/` - the benchmarks, see `docs/benchmarks.md`; never
+  imported by the library, and by the site only for the results schema, at
+  runtime in its server loads alone
+  - `scenarios.ts`, `libs/`, `libs.ts`, `lib_names.ts` - the scenarios, one
+    module per library, and the libraries' names, which import none of them
+  - `libs/schemas/`, `scenario_schemas.ts` - the scenarios again as builders,
+    with each library's guard and parse, which no bundle reaches
+  - `zod_compile.ts` - `compile_zod_root`, whether `z.compile` compiles a root
+  - `run.ts`, `bundle.ts`, `allocations.ts`, `types.ts`, `wasm.ts`,
+    `harvest.ts`, `survey.ts` with `survey_shapes.ts` - the scripts of the
+    benchmarks
   - `coldstart.ts`, `run_coldstart.ts`, `heap.ts`, `run_heap.ts`, `child.ts` -
     cold start and retained heap, each sample in a generated process.
     `child.ts` also starts the processes of the grader and of the timing.
-  - `args.ts` - what the scripts parse their args through: the library
-    imported under `?args`, an instance no measurement uses, the arg schemas
-    the scripts share, and `--help`
-  - `machine.ts` - what the machine is and was doing, the header every
-    script prints first
-  - `inputs.ts` - the copies of an input every timed function cycles
-    through, a copy a call
-  - `cases.ts`, `grade.ts` - the case matrix and the A/B grader
-  - `grade_bytes.ts` - how the grader prices bytes: core and opt-in, the
-    class of a change, and the backstop against Valibot
-  - `grade_stats.ts` - how the grader reads its timings: a case's runs
-    against its floor, and a set of cases as one figure against its A/A
-  - `grade_heap.ts` - how the grader prices retained heap: the figure per
-    further schema, of each scenario and each export alone, and its allowance
-  - `grade_read.ts`, `grade_plan.ts`, `grade_aa.ts` - how the grader reads a
-    grade, its rules and lists from a record and its jobs, for a grade and
-    for `--replay`; what it plans before a process runs, the arms, the jobs
-    apart, and the lock; and the A/A of every line rule 6 and the warning
-    read, over saved grades of two copies of one file
-  - `grade_child.ts`, `grade_arm.ts`, `grade_job.ts` - a process of the
-    grader, what it loads once for each instance of a version, and what the
-    grader and its processes share, the paths of a case among it
-  - `program.ts` - one schema of every kind, built and run: what a process of
-    the grader's `apart` regime runs before it times a case
+  - `timing_passes.ts`, `timing_child.ts`, `timing_job.ts`, `timing.ts`,
+    `run_rows.ts`, `harvest_sets.ts`, `survey_rows.ts` - timing across
+    libraries, whose loops the grader's processes load too, and the rows a
+    timing process loads
+  - `args.ts`, `machine.ts`, `inputs.ts`, `measure.ts`, `bundle_size.ts` -
+    what the scripts share: their args and `--help`, through an instance of
+    the library no measurement uses, the machine's header, the copies of an
+    input a timed function cycles through, the measurement, and the bundling
+  - `cases.ts`, `grade.ts`, `grade_bytes.ts`, `grade_stats.ts`,
+    `grade_heap.ts`, `grade_read.ts`, `grade_plan.ts`, `grade_aa.ts`,
+    `grade_child.ts`, `grade_arm.ts`, `grade_job.ts`, `program.ts` - the case
+    matrix and the A/B grader, see `docs/grading.md`: its prices, its reading,
+    its plan, its A/A, its processes, and the program of its `apart` regime
   - `docinfo/`, `repos_status/`, `package_json/`, `bench_results/`,
-    `fuz_app/` - the harvested sets: a consumer's schemas as it writes them
-    (valibot or zod), the same in this library, and its data, for the cases.
-    `fuz_app/` is written in this library already and has the one side, with
-    frames and bodies its in-memory app wrote. Snapshots, not kept in step,
-    see `docs/benchmarks.md`
-  - `wasm.ts` - the wasm build against the library, which also runs the JSON
-    fixtures through the wasm
-  - `harvest.ts` - each harvested set's own library against this one on its
-    schemas and data: bundle size, parse time, allocation, a side of a set to
-    a process
-  - `measure.ts`, `bundle_size.ts` - shared measurement helpers, the second
-    with the bundling: a library's scenarios, and this library whole and
-    export by export
-  - `results_schema.ts` - the schema of a results file, one run of every
-    benchmark, written in this library: each script's data, the sections, the
-    roster, what is publishable, and `parse_benchmark_results`, which every
-    reader goes through
-  - `results_plan.ts`, `results_run.ts`, `results_publish.ts` -
-    `npm run results`, which starts each script through its npm script with
-    `--data` and composes one file, what it plans, and
-    `npm run results:publish`
+    `fuz_app/` - the harvested sets, snapshots not kept in step
+  - `results_schema.ts`, `results_plan.ts`, `results_run.ts`,
+    `results_publish.ts` - the schema of a results file, with
+    `parse_benchmark_results`, which every reader goes through,
+    `npm run results` and its plan, and `npm run results:publish`, see
+    `results/README.md`
   - `sizes.ts`, `sizes.json`, `update_sizes.task.ts` - the committed snapshot
-    of this library's gzipped sizes, generated and never hand-edited: what it
-    holds, the file, and the task that regenerates it
+    of this library's gzipped sizes, generated and never hand-edited
 - `src/routes/` - the static SvelteKit site, with API docs generated by the
   `svelte-docinfo` Vite plugin under `src/routes/docs/`, deployed to
   schema.fuz.dev (`static/CNAME`)
-  - `+layout.server.ts`, `+page.server.ts` - the server loads of the root:
-    where the rendered results came from, for the banner every page of a
-    build over the fixture or an unpublished run carries, and the landing
-    page's headline figures, worked out from the file at build time
+  - `+layout.server.ts`, `+page.server.ts` - the root's server loads: where
+    the rendered results came from, for the banner, and the landing page's
+    headline figures
   - `docs/benchmarks/` - the `benchmarks` tome and its modules, which the
-    landing page's summary imports too: `site_benchmarks.server.ts` (which
-    results file is rendered, read in the server loads), `benchmark_matrix.ts`
-    (the rows every table and chart share, their baseline, ratios, and means,
-    and when two numbers are level: a row's inside its spreads, two means
-    where their bands overlap),
-    `benchmark_sections.ts` (each section's rows from a results file, and the
-    tolerance a figure with no spread of its own is compared by),
-    `benchmark_headline.ts` (the landing page's figures),
-    `benchmark_ratio.ts`, `benchmark_format.ts`, `benchmark_provenance.ts`,
+    landing page's summary imports too: `site_benchmarks.server.ts`, which
+    results file is rendered; `benchmark_matrix.ts`, the rows every table and
+    chart share and when two numbers are level; `benchmark_sections.ts`, each
+    section's rows; `benchmark_headline.ts`, the landing page's figures;
+    `benchmark_ratio.ts`, `benchmark_format.ts`, `benchmark_provenance.ts`;
     and the `Benchmarks*.svelte` components
 - `results/` - the published run, `latest.json`, which the site renders, the
   dated runs it was copied from, and `scratch/`, git-ignored, for every run
