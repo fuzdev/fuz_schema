@@ -1,8 +1,8 @@
 # Design
 
-The internals of `src/lib/schema.ts` and the modules beside it. The strategy is
+The internals of `src/lib/schema.ts` and the modules beside it. The approach is
 [Valibot](https://valibot.dev/)'s: one tree-shakeable export per schema and
-action, schemas as plain data, `pipe` for refinement. This is where it differs.
+action, schemas as plain objects, `pipe` for refinement. This is where it differs.
 The form `to_schema_json` writes a schema in, and the Rust crate that reads
 it, are in [rust.md](rust.md#the-interchange-form).
 

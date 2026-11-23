@@ -26,8 +26,10 @@
 			<p class="text-align:left">a performance-focused<br />schema library for JS</p>
 		</header>
 		<p>
-			Valibot's strategy pushed on bundle size, speed, and memory with simpler internals. It is
-			published as <code>@fuzdev/fuz_schema</code> and is pre-1.0: its API still changes.
+			fuz_schema takes Valibot's approach — a tree-shakeable function per schema, schemas as plain
+			objects, <code>pipe</code> for refinement — and pushes it further on bundle size, speed, and
+			memory, with simpler internals. It's published as <code>@fuzdev/fuz_schema</code> and is
+			pre-1.0: its API still changes, and feedback is welcome.
 		</p>
 		<p>
 			<a href={resolve('/about')}>about</a> · <a href={resolve('/docs')}>docs</a> ·
@@ -48,14 +50,8 @@
 				{#each modes as { column, of } (column.id)}
 					{column.label} is {of.label} in another mode, and not another library.
 				{/each}
-				Each bar's ratio is to the least figure in its chart, which reads <code>1.00×</code>, and
-				hovering a bar compares the others against it instead. A figure is read with what it ranges
-				over: one that overlaps the least is marked <code>≈</code> and not ranked, the least too,
-				and under a chart is which others overlap each other. The libraries don't all do the same
-				work for a figure: under a chart is what sets a library's figure there apart from another's.
-				These are summaries: each heading links to every row behind its figure, and
-				<a href={resolve('/docs/benchmarks')}>the benchmarks page</a> says how each was measured and
-				what it leaves out.
+				Each heading links to the rows behind its figure, and
+				<a href={resolve('/docs/benchmarks')}>the benchmarks page</a> says how each was measured.
 			</p>
 			<div class="charts">
 				{#each benchmarks.charts as chart (chart.row.key)}

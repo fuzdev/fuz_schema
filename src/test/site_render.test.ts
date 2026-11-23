@@ -164,7 +164,7 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 		assert.isBelow(home.match(/Every row is a Check/g)!.length, charts.length);
 	});
 
-	test('the landing page says what 1.00× is without calling it the best', () => {
+	test('the landing page calls no library the best', () => {
 		const home = render_text(Home, {
 			data: {
 				benchmarks: {
@@ -175,7 +175,6 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 				}
 			}
 		});
-		assert.include(home, 'the least figure in its chart, which reads 1.00×');
 		assert.notMatch(home, /is the best|the best library/);
 	});
 
