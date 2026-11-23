@@ -95,6 +95,8 @@ Everything below runs on the publishing machine, from the root of the checkout.
    ```
    It runs every script once, briefly, and composes a file under `scratch/`,
    so a script that fails shows in this short run and not in the long one.
+   It needs no `--machine`: without one it is named for the hostname, as
+   `scratch/smoke_<hostname>.json`.
 5. **Quiet the machine.** Timed numbers are one machine's, and comparable
    between runs only when it is prepared the same way each time: on AC power
    with the `performance` governor, nothing else running, no suspend, and a few
@@ -132,7 +134,8 @@ Everything below runs on the publishing machine, from the root of the checkout.
     gro build --no-install
     ```
     The build parses `latest.json` and fails, saying why, if the run is not
-    publishable.
+    publishable. `--no-install` keeps the versions `npm ci` installed in step
+    2, which the run recorded.
 11. **Hold the README to it.** The README's Measurements section makes its
     comparative claims as bullets between two marker comments, and
     `src/test/readme_measurements.test.ts` holds each to `latest.json` by a
@@ -155,8 +158,10 @@ Everything below runs on the publishing machine, from the root of the checkout.
 - [ ] **Every section was measured.** The summary says `measured` for each,
       and `skipped` for none but `wasm`.
 - [ ] **The machine held still.** In the file's `meta`, `machine_start` and
-      `machine_end` name the same governor and driver, and neither load average
-      is far above zero.
+      `machine_end` name the same governor and driver, and neither one-minute
+      load average is far above zero. No threshold is checked: after the idle
+      minutes of step 5, a figure near 1 or more at the start means something
+      else was running.
 - [ ] **The spreads are narrow enough to read the tables by.** Each timed
       figure has the spread of its passes beside it, and a gap inside two
       spreads is not a difference: wide spreads throughout mean the machine was

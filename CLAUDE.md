@@ -31,7 +31,7 @@ npm run build:wasm            # the Rust crate as wasm, into target/fuz_schema_w
 npm run benchmark:wasm        # that wasm against the library, on JSON texts
 npm run benchmark:harvest     # each harvested set, in valibot or zod, against this library
 npm run benchmark:survey      # many small shapes against itself compiled, valibot, zod, and zod compiled, by what a parse does
-npm run results               # every benchmark in turn into one results file, see results/README.md
+npm run results               # every benchmark in turn into one results file: the one command of a full run, see results/README.md
 npm run results:publish       # copy a publishable run to results/latest.json, which the site renders
 npm run grade                 # grade the working tree against HEAD, see docs/grading.md
 npm run grade:aa              # what saved grades of one file against itself say of each line's A/A
