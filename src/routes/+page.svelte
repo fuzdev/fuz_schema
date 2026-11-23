@@ -31,9 +31,9 @@
 			<p class="text-align:left">a performance-focused<br />schema library for JS</p>
 		</header>
 		<p>
-			fuz_schema takes Valibot's approach, with a tree-shakeable function per schema, schemas as
-			plain objects, <code>pipe</code> for refinement, and pushes it further on bundle size, speed,
-			and memory, with simpler internals. It's published as
+			fuz_schema takes Valibot's approach, with a tree-shakeable function per schema and
+			<code>pipe</code> for refinement, and pushes it further on bundle size, speed, and memory,
+			with simpler internals. It's published as
 			<a href="https://www.npmjs.com/package/@fuzdev/fuz_schema"><code>@fuzdev/fuz_schema</code></a>
 			and is pre-1.0; feedback is welcome in the
 			<a href="https://github.com/fuzdev/fuz_schema/issues">issues</a> and

@@ -6,7 +6,7 @@
 
 fuz_schema is a schema validation library for TypeScript and JS.
 It takes [Valibot](https://valibot.dev/)'s approach,
-a tree-shakeable function per schema, schemas as plain objects, `pipe` for refinement,
+a tree-shakeable function per schema and `pipe` for refinement,
 and pushes it further on bundle size, speed, and memory,
 with simpler internals.
 It's published as [`@fuzdev/fuz_schema`](https://www.npmjs.com/package/@fuzdev/fuz_schema)

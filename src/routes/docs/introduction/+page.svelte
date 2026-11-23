@@ -14,9 +14,9 @@
 <TomeContent {tome}>
 	<section>
 		<p>
-			fuz_schema takes Valibot's approach, with a tree-shakeable function per schema, schemas as
-			plain objects, <code>pipe</code> for refinement, with and pushes it further on bundle size,
-			speed, and memory, with simpler internals. It's pre-1.0; feedback is welcome in the
+			fuz_schema takes Valibot's approach, with a tree-shakeable function per schema and
+			<code>pipe</code> for refinement, and pushes it further on bundle size, speed, and memory,
+			with simpler internals. It's pre-1.0; feedback is welcome in the
 			<a href="https://github.com/fuzdev/fuz_schema/issues">issues</a> and
 			<a href="https://github.com/fuzdev/fuz_schema/discussions">discussions</a>.
 		</p>
