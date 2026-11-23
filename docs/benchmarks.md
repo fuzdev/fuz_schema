@@ -790,8 +790,9 @@ Each was checked against the installed library's source:
   `object_copy`, `pipe`) its check never reads the input's other keys, where
   this library's parse enumerates them to know whether to copy, and copies
   where there are any. That loop and the copy are what the parse rows of
-  those scenarios hold beyond TypeBox's work; the guard rows hold neither,
-  as `is` doesn't look at a key a `strip_object` doesn't name. TypeBox has
+  those scenarios hold beyond TypeBox's work, and the guard rows hold both
+  too: `is` runs the schema as a probe, and a `strip_object` enumerates and
+  copies in one as it does in a parse. TypeBox has
   no compiled path that drops them: its `Parse` is its `Check`, returning
   the input, and its `Clean` is interpreted and deletes the keys from the
   input in place, which a timing cycling through copies would see only on
