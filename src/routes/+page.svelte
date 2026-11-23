@@ -23,7 +23,7 @@
 		<!-- the tagline sits to the right of the name, and wraps under it where they don't fit -->
 		<header class="row_wrap justify-content:center gap_lg mt_xl2 mb_lg">
 			<h1>fuz_schema</h1>
-			<p class="text-align:left">a performance-focused<br />schema library<br />for JS</p>
+			<p class="text-align:left">a performance-focused<br />schema library for JS</p>
 		</header>
 		<p>
 			Valibot's strategy pushed on bundle size, speed, and memory with simpler internals. It is
