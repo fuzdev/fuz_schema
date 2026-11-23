@@ -35,6 +35,10 @@
 			<a href="https://github.com/fuzdev/fuz_schema/discussions">discussions</a>.
 		</p>
 		<p>
+			For now this site has only benchmarks and the generated API reference docs. For usage docs,
+			see the <a href="https://github.com/fuzdev/fuz_schema#readme">README</a>.
+		</p>
+		<p>
 			<a href={resolve('/about')}>about</a> · <a href={resolve('/docs')}>docs</a> ·
 			<a href={resolve('/docs/benchmarks')}>benchmarks</a> ·
 			<a href="https://github.com/fuzdev/fuz_schema">source</a>

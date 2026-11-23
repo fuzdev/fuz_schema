@@ -1,8 +1,17 @@
 import type { Tome } from '@fuzdev/fuz_ui/tome.ts';
 import ApiPage from './api/+page.svelte';
+import IntroductionPage from './introduction/+page.svelte';
 import BenchmarksPage from './benchmarks/+page.svelte';
 
 export const tomes: Array<Tome> = [
+	{
+		slug: 'introduction',
+		category: 'guide',
+		Component: IntroductionPage,
+		related_tomes: ['benchmarks', 'api'],
+		related_modules: [],
+		related_declarations: []
+	},
 	{
 		slug: 'benchmarks',
 		category: 'guide',
