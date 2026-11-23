@@ -856,7 +856,18 @@ Each was checked against the installed library's source:
   `$ZodObject`, which has no generated parser.
 - **TypeBox's rows are a `Check`** of its compiled validator, which stops at
   the first failure and builds no issues and no output, in every table: its
-  parse is a guard.
+  parse is a guard. Its objects allow keys they don't name unless made
+  strict, so on the scenarios of a `strip_object` (`object_flat`,
+  `extra_keys`, `pipe`) its check never reads the input's other keys, where
+  this library's parse enumerates them to know whether to copy, and copies
+  where there are any. That loop and the copy are what the parse rows of
+  those scenarios hold beyond TypeBox's work; the guard rows hold neither,
+  as `is` doesn't look at a key a `strip_object` doesn't name. TypeBox has
+  no compiled path that drops them: its `Parse` is its `Check`, returning
+  the input, and its `Clean` is interpreted and deletes the keys from the
+  input in place, which a timing cycling through copies would see only on
+  the first lap. Its strict objects compare the count of the input's own
+  keys with the entries', the check [declined here](declined.md#the-unknown-key-check-by-counting-the-keys-compiled).
 - **ArkType keeps one schema of a definition**, and hands it back when the
   same definition is built again. Retained heap's figure per further schema
   and the creation figures of `benchmark:allocations` build each schema from

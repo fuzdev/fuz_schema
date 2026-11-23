@@ -1439,6 +1439,10 @@ present, in place of comparing each key with the entries' names.
   hundred objects.
 - **Reopens**: nothing known. Enumerating is the cost: with no check at all
   the hundred objects took 620 ns, so the names compared are the smaller part.
+  TypeBox's strict objects check this way, by
+  `Object.getOwnPropertyNames(value).length` after asking `in` of each
+  required key, and have the hole: `in` reads through the prototype, so a
+  strict object whose one entry is named `toString` accepts `{"z": 1}`.
 - **Measured**: before v0.6.1, on Node 26.13.
 
 ### A `union`'s verdicts kept in compiled code
