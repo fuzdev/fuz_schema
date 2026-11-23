@@ -135,10 +135,10 @@ describe("what qualifies a library's figure is on the page as text, where the fi
 		const memory = to_chart_text('Memory held');
 		assert.include(memory, 'Zod compiled: It carries the compiler');
 		assert.notInclude(memory, 'Check');
-		// and no two charts of different figures print the same lines, but the memory held,
+		// and no two charts of different figures print the same lines, but those of memory,
 		// whose notes are those of the bundle: what a compiled mode carries
 		const lines = charts
-			.filter((chart) => chart.title !== 'Memory held')
+			.filter((chart) => !chart.title.startsWith('Memory'))
 			.map((chart) =>
 				JSON.stringify(to_column_notes(columns, chart.about).map(({ texts }) => texts))
 			);
@@ -422,7 +422,7 @@ describe('this library in its compiled mode is a column of its own, and reads as
 			'fuz_schema compiled: Each schema through compile_guard , which gives what is gives.'
 		);
 		// the bytes shipped, a cold start, and what is held each carry the compiler and the compile
-		for (const title of ['Bundle size', 'Cold start', 'Memory held']) {
+		for (const title of ['Bundle size', 'Cold start', 'Memory held', 'Memory per further schema']) {
 			const text = to_chart_text(title);
 			assert.include(
 				text,

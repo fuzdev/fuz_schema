@@ -56,10 +56,12 @@ export const HEADLINE_COLDSTART_FORM = 'bundled';
 /**
  * The headline figures: the bundle of every scenario gzipped, parse time on
  * valid input, on invalid input, and as a guard, the cold start of a bundled
- * entry to its first parse, and the memory held after one schema. Each timed
- * one is a geometric mean over the rows every library has a figure of, and
- * its note says how many of how many. A figure the file holds no number for
- * is left out.
+ * entry to its first parse, the memory held after one schema, and what each
+ * further schema adds to it. Memory is two figures, as the first is mostly a
+ * library's own code, paid once, and the second is what an app of many
+ * schemas pays for each. Each timed one is a geometric mean over the rows
+ * every library has a figure of, and its note says how many of how many. A
+ * figure the file holds no number for is left out.
  */
 export const to_headline_charts = (results: BenchmarkResults): Array<HeadlineChart> => {
 	const columns = results.meta.libs.map((lib) => lib.id);
@@ -122,6 +124,23 @@ export const to_headline_charts = (results: BenchmarkResults): Array<HeadlineCha
 			note: to_note(
 				'what a process holds after one schema is built and has parsed once, over a bare one',
 				memory
+			),
+			about: ['heap'],
+			section: 'memory'
+		});
+	}
+
+	const further_group = to_heap_groups(results).find((group) => group.key === 'heap:further');
+	const further =
+		further_group &&
+		to_geomean_row(further_group.rows, columns, 'headline:memory_further', 'every scenario');
+	if (further_group && further) {
+		charts.push({
+			row: further,
+			title: 'Memory per further schema',
+			note: to_note(
+				`what each further schema adds to what a process holds, ${further_group.note}`,
+				further
 			),
 			about: ['heap'],
 			section: 'memory'

@@ -30,7 +30,8 @@ describe('to_headline_charts', () => {
 			'Rejecting invalid input',
 			'Answering only whether it matches',
 			'Cold start',
-			'Memory held'
+			'Memory held',
+			'Memory per further schema'
 		]);
 		for (const { row, section } of charts) {
 			assert.strictEqual(row.empty, null, row.key);
@@ -175,8 +176,32 @@ describe('to_headline_charts', () => {
 			'Rejecting invalid input': ['invalid'],
 			'Answering only whether it matches': ['guard'],
 			'Cold start': ['coldstart'],
-			'Memory held': ['heap']
+			'Memory held': ['heap'],
+			'Memory per further schema': ['heap']
 		});
+	});
+
+	test('memory is two figures: what one schema leaves held, and what each further one adds', () => {
+		const results = load_fixture();
+		const charts = to_headline_charts(results);
+		const rows = to_measured(results, 'heap').rows;
+		const further = charts.find((chart) => chart.title === 'Memory per further schema')!;
+		assert.approximately(
+			matrix_row_value(further.row, 'valibot')!,
+			to_geomean(rows.map((row) => row.libs.valibot!.further_schema_bytes))!,
+			1e-6
+		);
+		assert.include(further.note, 'read between processes holding');
+		// and not the total, which is another chart's
+		const held = charts.find((chart) => chart.title === 'Memory held')!;
+		assert.notStrictEqual(
+			matrix_row_value(further.row, 'valibot'),
+			matrix_row_value(held.row, 'valibot')
+		);
+		// a file with no retained heap has neither
+		const without = load_fixture();
+		without.heap = { status: 'skipped', reason: 'left out' };
+		assert.notInclude(to_titles(to_headline_charts(without)), 'Memory per further schema');
 	});
 
 	test('cold start reads the bundled form, and memory the total held', () => {
