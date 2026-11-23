@@ -378,7 +378,9 @@ and so has the survey.
   free: when less is, it allocates until the young generation is collected,
   the collection the samples would have run into, not a forced one. The
   function is run between medians until two in a row agree within half a
-  percent. The measurement throws when the used heap fell in too many samples
+  percent, each sampled with the calls the first median sized: calls sized
+  from each median fed back, through a figure that steps with its sample's
+  calls, into medians that took turns between two figures and never agreed. The measurement throws when the used heap fell in too many samples
   or the bytes never settle. The sampling loop is
   the engine's code as well: given one function it inlines it, and an object
   the function only returns is then never allocated. So a process measures

@@ -249,11 +249,15 @@ export const measure_bytes = (fn: () => unknown, settle_ms = SETTLE_MS): number 
 	let bytes = measure_bytes_median(fn, 1);
 	// every median, for the error of bytes that never settle
 	const medians = [bytes];
+	// The calls of a sample are chosen once, from the first median, and held. Chosen
+	// afresh from each median, they fed back: a figure that depends on the calls of
+	// its sample, as one can by a step of the heap near `SAMPLE_BYTES`, flipped the
+	// calls, which flipped the figure, and two medians in a row never agreed.
+	const calls = Math.max(1, Math.min(SAMPLE_CALLS_MAX, Math.floor(SAMPLE_BYTES / bytes)));
 	for (let tries = 0; tries < SETTLE_TRIES; tries++) {
 		const until = performance.now() + settle_ms;
 		do fn();
 		while (performance.now() < until);
-		const calls = Math.max(1, Math.min(SAMPLE_CALLS_MAX, Math.floor(SAMPLE_BYTES / bytes)));
 		const next = measure_bytes_median(fn, calls);
 		const settled = Math.abs(next - bytes) <= bytes * SETTLED_WITHIN;
 		bytes = next;
