@@ -19,16 +19,16 @@
 </script>
 
 <main class="px_lg pb_xl9">
-	<section class="box width_atmost_sm">
+	<section class="box width_atmost_md">
 		<!-- the tagline sits to the right of the name, and wraps under it where they don't fit -->
-		<header class="row_wrap justify-content:center gap_lg mt_xl2 mb_lg">
+		<header class="width_atmost_sm row_wrap justify-content:center gap_lg mt_xl2 mb_lg">
 			<h1>fuz_schema</h1>
 			<p class="text-align:left">a performance-focused<br />schema library for JS</p>
 		</header>
 		<p>
-			fuz_schema takes Valibot's approach - a tree-shakeable function per schema, schemas as plain
-			objects, <code>pipe</code> for refinement - and pushes it further on bundle size, speed, and
-			memory, with simpler internals. It's published as
+			fuz_schema takes Valibot's approach, with a tree-shakeable function per schema, schemas as
+			plain objects, <code>pipe</code> for refinement, and pushes it further on bundle size, speed,
+			and memory, with simpler internals. It's published as
 			<a href="https://www.npmjs.com/package/@fuzdev/fuz_schema"><code>@fuzdev/fuz_schema</code></a>
 			and is pre-1.0; feedback is welcome in the
 			<a href="https://github.com/fuzdev/fuz_schema/issues">issues</a> and
