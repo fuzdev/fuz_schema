@@ -4,6 +4,8 @@
 
 	import { resolve } from '$app/paths';
 	import { docs_slugify } from '@fuzdev/fuz_ui/docs_helpers.svelte.ts';
+	import Svg from '@fuzdev/fuz_ui/Svg.svelte';
+	import { logo_fuz_schema } from '@fuzdev/fuz_ui/logos.ts';
 
 	import { format_date } from './docs/benchmarks/benchmark_format.ts';
 	import { BENCHMARK_SECTION_TITLES } from './docs/benchmarks/benchmark_headline.ts';
@@ -22,7 +24,10 @@
 	<section class="box width_atmost_md">
 		<!-- the tagline sits to the right of the name, and wraps under it where they don't fit -->
 		<header class="width_atmost_sm row_wrap justify-content:center gap_lg mt_xl2 mb_lg">
-			<h1>fuz_schema</h1>
+			<h1 class="row gap_sm mb_0">
+				fuz_schema
+				<Svg data={logo_fuz_schema} size="1lh" aria-hidden="true" />
+			</h1>
 			<p class="text-align:left">a performance-focused<br />schema library for JS</p>
 		</header>
 		<p>
