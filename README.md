@@ -71,10 +71,10 @@ which `z.compile` hands back uncompiled. The claims are of this library as it is
 - **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
   though Zod as it is imported is faster on at least one of them; TypeBox and compiled Zod are faster as a mean over the scenarios each has a figure of.
 - **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, and TypeBox.
-- **Compiled,** with each schema through `compile_parse` or `compile_guard`: faster on valid input and as a guard than each of the libraries compared, as a geometric mean over the scenarios each has a figure of,
-  though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.
+- **Compiled,** with each schema through `compile_parse` or `compile_guard`: faster as a guard than each of the libraries compared, and on valid input than each but Sury,
+  as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.
 - **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario;
-  TypeBox's check, which builds no output, allocates fewer on at least one, and so does compiled Zod.
+  TypeBox's check, which builds no output, allocates fewer on at least one.
 - **Allocation on invalid input:** a parse allocates fewer heap bytes than Valibot's or that of Zod in each of its modes on every scenario;
   TypeBox's check, which builds no issues, allocates fewer on at least one.
 - **Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.

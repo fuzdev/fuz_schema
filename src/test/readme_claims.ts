@@ -354,11 +354,11 @@ const check_input_means = (
 /** The libraries the compiled claim says are faster than the compiled mode on some scenario's valid input. */
 export const README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID: ReadonlyArray<string> = ['typebox'];
 
+/** The libraries the compiled claim leaves out of its valid-input half, which says nothing of them. */
+export const README_CLAIMS_COMPILED_UNCOMPARED_ON_VALID: ReadonlyArray<string> = ['sury'];
+
 /** The libraries the allocation claim says allocate fewer bytes than this one on some scenario's valid input. */
-export const README_CLAIMS_FEWER_BYTES_ON_SOME_VALID: ReadonlyArray<string> = [
-	'typebox',
-	'zod_compiled'
-];
+export const README_CLAIMS_FEWER_BYTES_ON_SOME_VALID: ReadonlyArray<string> = ['typebox'];
 
 /**
  * The libraries the compiled claim says have a smaller bundle and hold less
@@ -603,7 +603,7 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			"**Compiled,** with each schema through `compile_parse` or `compile_guard`: faster on valid input and as a guard than each of the libraries compared, as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.",
+			"**Compiled,** with each schema through `compile_parse` or `compile_guard`: faster as a guard than each of the libraries compared, and on valid input than each but Sury, as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.",
 		subject: README_CLAIMS_COMPILED_SUBJECT,
 		others: README_CLAIMS_EVERY_OTHER,
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
@@ -611,7 +611,7 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 				check_input_means(
 					results,
 					'valid',
-					others,
+					others.filter((other) => !README_CLAIMS_COMPILED_UNCOMPARED_ON_VALID.includes(other)),
 					[],
 					README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID,
 					README_CLAIMS_COMPILED_SUBJECT
@@ -625,8 +625,8 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 	},
 	{
 		sentence:
-			"**Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario; TypeBox's check, which builds no output, allocates fewer on at least one, and so does compiled Zod.",
-		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'zod_compiled'],
+			"**Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario; TypeBox's check, which builds no output, allocates fewer on at least one.",
+		others: ['valibot', 'zod', 'zod_mini', 'typebox'],
 		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
 			check_bytes_of_input(
 				results,

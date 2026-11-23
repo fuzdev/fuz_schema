@@ -432,10 +432,11 @@ along: CI fails a release build over the ceiling in
 Figures are the wasm's time over the fastest JS of the same holding, under 1
 being faster, for an array of the `strict_nested` item. They are one
 published run's, the medians of 15 rounds of `npm run benchmark:wasm` with
-its defaults, and move with the build and the machine: the current published
-run's are in the `wasm` section of
-[`results/latest.json`](../results/latest.json), with every row, the machine
-and Node it ran on, and the size of the `.wasm`.
+its defaults, and move with the build and the machine. A run measures the
+wasm only with `--wasm`, so the published run,
+[`results/latest.json`](../results/latest.json), can have no `wasm` section:
+the latest run in `results/` with one has every row, the machine and Node it
+ran on, and the size of the `.wasm`.
 
 | Input | wasm over JS |
 |---|---|
