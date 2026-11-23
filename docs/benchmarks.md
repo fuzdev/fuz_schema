@@ -380,8 +380,9 @@ and so has the survey.
   function is run between medians until two in a row agree within half a
   percent, each sampled with the calls the first median sized: calls sized
   from each median fed back, through a figure that steps with its sample's
-  calls, into medians that took turns between two figures and never agreed. The measurement throws when the used heap fell in too many samples
-  or the bytes never settle. The sampling loop is
+  calls, into medians that took turns between two figures and never agreed.
+  The measurement throws when the used heap fell in too many samples or the
+  bytes never settle. The sampling loop is
   the engine's code as well: given one function it inlines it, and an object
   the function only returns is then never allocated. So a process measures
   two functions and throws them away before the first it keeps. The scripts
