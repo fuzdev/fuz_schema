@@ -17,7 +17,7 @@
 		type MatrixRatio,
 		type MatrixRow
 	} from './benchmark_matrix.ts';
-	import { to_ratio_color } from './benchmark_ratio.ts';
+	import { RATIO_LEVEL_COLOR, to_ratio_color } from './benchmark_ratio.ts';
 	import BenchmarksLabel from './BenchmarksLabel.svelte';
 	import BenchmarksNotes from './BenchmarksNotes.svelte';
 
@@ -177,7 +177,8 @@
 								{#each columns as column (column.id)}
 									{@const entry = matrix_row_entry(row, column.id)}
 									{@const ratio = ratios[column.id]}
-									{@const tinted = colored && ratio !== undefined && ratio.level === null}
+									<!-- a ratio that is no difference is tinted as level, whatever it reads -->
+									{@const tinted = colored && ratio !== undefined}
 									<td
 										class={[
 											'benchmarks-num',
@@ -187,7 +188,11 @@
 												text_70: entry.kind === 'none'
 											}
 										]}
-										style:--ratio_color={tinted ? to_ratio_color(ratio.ratio) : undefined}
+										style:--ratio_color={tinted
+											? ratio.level === null
+												? to_ratio_color(ratio.ratio)
+												: RATIO_LEVEL_COLOR
+											: undefined}
 										data-column={entry.kind === 'value' ? column.id : undefined}
 										title={to_title(entry)}
 									>

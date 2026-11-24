@@ -15,11 +15,15 @@
  * `fuz_schema_compiled` is this library in its compiled mode, with factors
  * that run the way the mode does: a bigger bundle than the interpreter's, a
  * slower cold start, and more held, for a parse of valid input and a guard
- * faster than every other library's as a mean. On invalid input it is level
- * with the interpreter, a little over it and inside the two spreads, as its
- * parse of one is the interpreter's after compiled code has run to its first
- * failure. It has a figure of every
+ * faster as a mean than every other library's but Sury's, which it is about
+ * equal to. On invalid input it is level with the interpreter, a little over
+ * it and inside the two spreads, as its parse of one is the interpreter's
+ * after compiled code has run to its first failure. It has a figure of every
  * scenario, and of every survey row but one of a shape that throws.
+ *
+ * The factors bear out the README's claims, `src/test/readme_claims.ts`: each
+ * library ahead or behind where a claim says it is, and Valita and Sury about
+ * equal to the mode of their kind.
  *
  * `fixture_run.json` beside this is what it builds, written by
  * `update.task.ts`, and `src/test/results_schema.test.ts` fails when the file
@@ -61,9 +65,12 @@ const VALID: Factors = {
 	zod_mini: 4.2,
 	typebox: 0.2,
 	valita: 1.3,
-	sury: 0.3
+	// level with this library compiled as a mean, the two bands inside each other
+	sury: 0.17
 };
-// this library compiled is level with the interpreter: each row inside its two spreads
+// this library compiled is level with the interpreter: each row inside its two spreads.
+// Valita is the faster of the libraries that interpret, and of the ones that generate
+// code only TypeBox's check is faster than this library compiled
 const INVALID: Factors = {
 	fuz_schema: 1.5,
 	fuz_schema_compiled: 1.55,
@@ -72,25 +79,27 @@ const INVALID: Factors = {
 	zod_compiled: 10,
 	zod_mini: 16,
 	typebox: 0.2,
-	valita: 3,
-	sury: 1.2
+	valita: 1.3,
+	sury: 2
 };
 // TypeBox and compiled Zod are level as guards: each row is inside its two spreads,
 // and so are the two means inside each other's bands
 const GUARD: Factors = {
 	fuz_schema: 1,
-	fuz_schema_compiled: 0.12,
+	fuz_schema_compiled: 0.165,
 	valibot: 6.5,
 	zod: 1.6,
 	zod_compiled: 0.19,
 	zod_mini: 4.3,
 	typebox: 0.18,
-	valita: 1.4,
-	sury: 0.4
+	valita: 1.3,
+	// about equal to this library compiled as a mean, as it is on valid input, and past
+	// the two that are level as guards
+	sury: 0.33
 };
 // a cold start's parses run code the engine has not optimized yet, where the compiled
 // mode's lead over the interpreter is less, as the published run has it
-const COLD_VALID: Factors = { ...VALID, fuz_schema_compiled: 0.6, sury: 1.2 };
+const COLD_VALID: Factors = { ...VALID, fuz_schema_compiled: 0.8, sury: 1.2 };
 const SIZE: Factors = {
 	fuz_schema: 1,
 	fuz_schema_compiled: 14,
@@ -100,7 +109,8 @@ const SIZE: Factors = {
 	zod_mini: 5.5,
 	typebox: 38,
 	valita: 1.2,
-	sury: 4
+	// more than this library compiled, as each library that generates code carries
+	sury: 16
 };
 const HELD: Factors = {
 	fuz_schema: 1,
@@ -128,16 +138,19 @@ const TYPES: Factors = {
 /**
  * Where a library's factor on one row is not its factor on the rest, by
  * scenario and input: a library that is the slower as a mean and the faster
- * on a row, as plain Zod is on a list, and the recursive scenario, where
+ * on a row, as plain Zod is on a list and Valita on a string, and the recursive scenario, where
  * TypeBox is the slower on valid input and as a guard, and a flat object,
  * where TypeBox is faster than this library compiled.
  */
 const ROW_FACTORS: Readonly<Record<string, Partial<Factors>>> = {
+	'string:valid': { valita: 0.8 },
+	'string:guard': { valita: 0.8 },
 	'object_flat:valid': { fuz_schema_compiled: 0.3 },
 	'list:valid': { zod: 0.8 },
 	'list:guard': { zod: 0.8 },
 	'type_json:valid': { typebox: 1.2 },
-	'type_json:guard': { typebox: 1.2, zod: 1.25 }
+	// compiled code is taken to gain least on the recursive scenario
+	'type_json:guard': { typebox: 1.2, zod: 1.25, fuz_schema_compiled: 1.15 }
 };
 
 const UNCOMPILED: BenchmarkMissing = {
@@ -442,21 +455,24 @@ const create_allocations = (): BenchmarkData['allocations'] => ({
 	rows: SCENARIOS.map((scenario) => ({
 		scenario: scenario.name,
 		libs: to_libs((lib) => {
-			// This library compiled is taken to allocate a parse what the interpreter does:
-			// it returns the same result, and its parse of an invalid input is the
-			// interpreter's. Building its schema allocates more, the compile.
+			// This library compiled is taken to allocate a parse of an invalid input what the
+			// interpreter does, as that parse is the interpreter's, and less than it on a
+			// valid one. Building its schema allocates more, the compile.
 			const parsed_as = lib === 'fuz_schema_compiled' ? 'fuz_schema' : lib;
 			return {
-				// a check builds nothing, this library returns its input, and compiled Zod is
-				// taken to allocate less than it does on one scenario
+				// a check builds nothing, this library returns its input, and compiled Zod and
+				// Valita are each taken to allocate less than it does on one scenario
 				valid_bytes:
 					parsed_as === 'typebox'
 						? 0
-						: parsed_as === 'zod_compiled' && scenario.name === 'object_flat'
-							? Math.round(scenario.ns / 20)
-							: Math.round(
-									(scenario.ns / 10) * (parsed_as === 'fuz_schema' ? 1 : VALID[parsed_as] * 3)
-								),
+						: lib === 'fuz_schema_compiled'
+							? Math.floor(scenario.ns / 25)
+							: (parsed_as === 'zod_compiled' && scenario.name === 'object_flat') ||
+								  (parsed_as === 'valita' && scenario.name === 'string')
+								? Math.round(scenario.ns / 20)
+								: Math.round(
+										(scenario.ns / 10) * (parsed_as === 'fuz_schema' ? 1 : VALID[parsed_as] * 3)
+									),
 				invalid_bytes: parsed_as === 'typebox' ? 0 : Math.round(scenario.ns * INVALID[parsed_as]),
 				create_bytes: Math.round(scenario.bytes * HELD[lib]),
 				create_ns: round(scenario.bytes * HELD[lib] * 0.15),

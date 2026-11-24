@@ -342,9 +342,9 @@
 							"brotli": 342
 						},
 						"sury": {
-							"minified": 3900,
-							"gzip": 1500,
-							"brotli": 1350
+							"minified": 16380,
+							"gzip": 6300,
+							"brotli": 5670
 						}
 					}
 				},
@@ -392,9 +392,9 @@
 							"brotli": 792
 						},
 						"sury": {
-							"minified": 5200,
-							"gzip": 2000,
-							"brotli": 1800
+							"minified": 17680,
+							"gzip": 6800,
+							"brotli": 6120
 						}
 					}
 				},
@@ -442,9 +442,9 @@
 							"brotli": 927
 						},
 						"sury": {
-							"minified": 5590,
-							"gzip": 2150,
-							"brotli": 1935
+							"minified": 18070,
+							"gzip": 6950,
+							"brotli": 6255
 						}
 					}
 				},
@@ -492,9 +492,9 @@
 							"brotli": 1602
 						},
 						"sury": {
-							"minified": 7540,
-							"gzip": 2900,
-							"brotli": 2610
+							"minified": 20020,
+							"gzip": 7700,
+							"brotli": 6930
 						}
 					}
 				},
@@ -542,9 +542,9 @@
 							"brotli": 2052
 						},
 						"sury": {
-							"minified": 8840,
-							"gzip": 3400,
-							"brotli": 3060
+							"minified": 21320,
+							"gzip": 8200,
+							"brotli": 7380
 						}
 					}
 				}
@@ -591,9 +591,9 @@
 					"brotli": 2772
 				},
 				"sury": {
-					"minified": 10920,
-					"gzip": 4200,
-					"brotli": 3780
+					"minified": 23400,
+					"gzip": 9000,
+					"brotli": 8100
 				}
 			},
 			"library": {
@@ -790,7 +790,7 @@
 							"interned": false
 						},
 						"fuz_schema_compiled": {
-							"valid_bytes": 2,
+							"valid_bytes": 0,
 							"invalid_bytes": 30,
 							"create_bytes": 450,
 							"create_ns": 67.5,
@@ -832,15 +832,15 @@
 							"interned": false
 						},
 						"valita": {
-							"valid_bytes": 8,
-							"invalid_bytes": 60,
+							"valid_bytes": 1,
+							"invalid_bytes": 26,
 							"create_bytes": 390,
 							"create_ns": 58.5,
 							"interned": false
 						},
 						"sury": {
-							"valid_bytes": 2,
-							"invalid_bytes": 24,
+							"valid_bytes": 1,
+							"invalid_bytes": 40,
 							"create_bytes": 1800,
 							"create_ns": 270,
 							"interned": false
@@ -858,7 +858,7 @@
 							"interned": false
 						},
 						"fuz_schema_compiled": {
-							"valid_bytes": 10,
+							"valid_bytes": 4,
 							"invalid_bytes": 150,
 							"create_bytes": 1200,
 							"create_ns": 180,
@@ -901,14 +901,14 @@
 						},
 						"valita": {
 							"valid_bytes": 39,
-							"invalid_bytes": 300,
+							"invalid_bytes": 130,
 							"create_bytes": 1040,
 							"create_ns": 156,
 							"interned": false
 						},
 						"sury": {
-							"valid_bytes": 9,
-							"invalid_bytes": 120,
+							"valid_bytes": 5,
+							"invalid_bytes": 200,
 							"create_bytes": 4800,
 							"create_ns": 720,
 							"interned": false
@@ -926,7 +926,7 @@
 							"interned": false
 						},
 						"fuz_schema_compiled": {
-							"valid_bytes": 900,
+							"valid_bytes": 360,
 							"invalid_bytes": 13500,
 							"create_bytes": 1425,
 							"create_ns": 213.75,
@@ -969,14 +969,14 @@
 						},
 						"valita": {
 							"valid_bytes": 3510,
-							"invalid_bytes": 27000,
+							"invalid_bytes": 11700,
 							"create_bytes": 1235,
 							"create_ns": 185.25,
 							"interned": false
 						},
 						"sury": {
-							"valid_bytes": 810,
-							"invalid_bytes": 10800,
+							"valid_bytes": 459,
+							"invalid_bytes": 18000,
 							"create_bytes": 5700,
 							"create_ns": 855,
 							"interned": false
@@ -994,7 +994,7 @@
 							"interned": false
 						},
 						"fuz_schema_compiled": {
-							"valid_bytes": 150,
+							"valid_bytes": 60,
 							"invalid_bytes": 2250,
 							"create_bytes": 2550,
 							"create_ns": 382.5,
@@ -1037,14 +1037,14 @@
 						},
 						"valita": {
 							"valid_bytes": 585,
-							"invalid_bytes": 4500,
+							"invalid_bytes": 1950,
 							"create_bytes": 2210,
 							"create_ns": 331.5,
 							"interned": false
 						},
 						"sury": {
-							"valid_bytes": 135,
-							"invalid_bytes": 1800,
+							"valid_bytes": 77,
+							"invalid_bytes": 3000,
 							"create_bytes": 10200,
 							"create_ns": 1530,
 							"interned": false
@@ -1062,7 +1062,7 @@
 							"interned": false
 						},
 						"fuz_schema_compiled": {
-							"valid_bytes": 180,
+							"valid_bytes": 72,
 							"invalid_bytes": 2700,
 							"create_bytes": 3300,
 							"create_ns": 495,
@@ -1105,14 +1105,14 @@
 						},
 						"valita": {
 							"valid_bytes": 702,
-							"invalid_bytes": 5400,
+							"invalid_bytes": 2340,
 							"create_bytes": 2860,
 							"create_ns": 429,
 							"interned": false
 						},
 						"sury": {
-							"valid_bytes": 162,
-							"invalid_bytes": 2160,
+							"valid_bytes": 92,
+							"invalid_bytes": 3600,
 							"create_bytes": 13200,
 							"create_ns": 1980,
 							"interned": false
@@ -1350,21 +1350,21 @@
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 1.83,
+									"work_ms": 1.85,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 1.88,
+									"work_ms": 1.9,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 2.01,
+									"work_ms": 2.03,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 0.1,
-							"later_band_ms": 0.01,
-							"added_ms": 1.83,
+							"later_ms": 0.14,
+							"later_band_ms": 0.014,
+							"added_ms": 1.85,
 							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
@@ -1545,30 +1545,30 @@
 						"sury": {
 							"stages": {
 								"import": {
-									"work_ms": 0.7,
+									"work_ms": 1.9,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 0.77,
+									"work_ms": 1.97,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 0.89,
+									"work_ms": 2.09,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 0.94,
+									"work_ms": 2.14,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 1.07,
+									"work_ms": 2.27,
 									"band_ms": 0.05
 								}
 							},
 							"later_ms": 0.2,
 							"later_band_ms": 0.02,
-							"added_ms": 0.89,
-							"added_rss_kb": 2600,
+							"added_ms": 2.09,
+							"added_rss_kb": 5200,
 							"rss_band_kb": 120
 						}
 					}
@@ -1617,21 +1617,21 @@
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 6.51,
+									"work_ms": 6.53,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 6.56,
+									"work_ms": 6.58,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 6.69,
+									"work_ms": 6.71,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 0.1,
-							"later_band_ms": 0.01,
-							"added_ms": 6.51,
+							"later_ms": 0.14,
+							"later_band_ms": 0.014,
+							"added_ms": 6.53,
 							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
@@ -1812,30 +1812,30 @@
 						"sury": {
 							"stages": {
 								"import": {
-									"work_ms": 2.63,
+									"work_ms": 7.13,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 2.7,
+									"work_ms": 7.2,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 2.82,
+									"work_ms": 7.32,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 2.87,
+									"work_ms": 7.37,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 3,
+									"work_ms": 7.5,
 									"band_ms": 0.05
 								}
 							},
 							"later_ms": 0.2,
 							"later_band_ms": 0.02,
-							"added_ms": 2.82,
-							"added_rss_kb": 2600,
+							"added_ms": 7.32,
+							"added_rss_kb": 5200,
 							"rss_band_kb": 120
 						}
 					}
@@ -1884,21 +1884,21 @@
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 2.85,
+									"work_ms": 3.21,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 2.9,
+									"work_ms": 3.26,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 3.03,
+									"work_ms": 3.39,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 0.1,
-							"later_band_ms": 0.01,
-							"added_ms": 2.85,
+							"later_ms": 0.14,
+							"later_band_ms": 0.014,
+							"added_ms": 3.21,
 							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
@@ -2079,30 +2079,30 @@
 						"sury": {
 							"stages": {
 								"import": {
-									"work_ms": 0.7,
+									"work_ms": 1.9,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 0.77,
+									"work_ms": 1.97,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 2.93,
+									"work_ms": 4.13,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 2.98,
+									"work_ms": 4.18,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 3.11,
+									"work_ms": 4.31,
 									"band_ms": 0.05
 								}
 							},
 							"later_ms": 0.2,
 							"later_band_ms": 0.02,
-							"added_ms": 2.93,
-							"added_rss_kb": 2600,
+							"added_ms": 4.13,
+							"added_rss_kb": 5200,
 							"rss_band_kb": 120
 						}
 					}
@@ -2151,21 +2151,21 @@
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 7.53,
+									"work_ms": 7.89,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 7.58,
+									"work_ms": 7.94,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 7.71,
+									"work_ms": 8.07,
 									"band_ms": 0.05
 								}
 							},
-							"later_ms": 0.1,
-							"later_band_ms": 0.01,
-							"added_ms": 7.53,
+							"later_ms": 0.14,
+							"later_band_ms": 0.014,
+							"added_ms": 7.89,
 							"added_rss_kb": 4864,
 							"rss_band_kb": 120
 						},
@@ -2346,30 +2346,30 @@
 						"sury": {
 							"stages": {
 								"import": {
-									"work_ms": 2.63,
+									"work_ms": 7.13,
 									"band_ms": 0.05
 								},
 								"create": {
-									"work_ms": 2.7,
+									"work_ms": 7.2,
 									"band_ms": 0.05
 								},
 								"first_parse": {
-									"work_ms": 4.86,
+									"work_ms": 9.36,
 									"band_ms": 0.05
 								},
 								"parse_10": {
-									"work_ms": 4.91,
+									"work_ms": 9.41,
 									"band_ms": 0.05
 								},
 								"parse_100": {
-									"work_ms": 5.04,
+									"work_ms": 9.54,
 									"band_ms": 0.05
 								}
 							},
 							"later_ms": 0.2,
 							"later_band_ms": 0.02,
-							"added_ms": 4.86,
-							"added_rss_kb": 2600,
+							"added_ms": 9.36,
+							"added_rss_kb": 5200,
 							"rss_band_kb": 120
 						}
 					}
@@ -2447,17 +2447,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 26,
-							"batch_ns": 24.7,
-							"min_ns": 25.22,
-							"max_ns": 26.78,
+							"ns": 16,
+							"batch_ns": 15.2,
+							"min_ns": 15.52,
+							"max_ns": 16.48,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 6,
-							"batch_ns": 5.7,
-							"min_ns": 5.82,
-							"max_ns": 6.18,
+							"ns": 3.4,
+							"batch_ns": 3.23,
+							"min_ns": 3.3,
+							"max_ns": 3.5,
 							"spread": 0.03
 						}
 					}
@@ -2516,17 +2516,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 60,
-							"batch_ns": 57,
-							"min_ns": 58.2,
-							"max_ns": 61.8,
+							"ns": 26,
+							"batch_ns": 24.7,
+							"min_ns": 25.22,
+							"max_ns": 26.78,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 24,
-							"batch_ns": 22.8,
-							"min_ns": 23.28,
-							"max_ns": 24.72,
+							"ns": 40,
+							"batch_ns": 38,
+							"min_ns": 38.8,
+							"max_ns": 41.2,
 							"spread": 0.03
 						}
 					}
@@ -2543,10 +2543,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 2.4,
-							"batch_ns": 2.28,
-							"min_ns": 2.33,
-							"max_ns": 2.47,
+							"ns": 3.3,
+							"batch_ns": 3.14,
+							"min_ns": 3.2,
+							"max_ns": 3.4,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2585,17 +2585,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 28,
-							"batch_ns": 26.6,
-							"min_ns": 27.16,
-							"max_ns": 28.84,
+							"ns": 16,
+							"batch_ns": 15.2,
+							"min_ns": 15.52,
+							"max_ns": 16.48,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 8,
-							"batch_ns": 7.6,
-							"min_ns": 7.76,
-							"max_ns": 8.24,
+							"ns": 6.6,
+							"batch_ns": 6.27,
+							"min_ns": 6.4,
+							"max_ns": 6.8,
 							"spread": 0.03
 						}
 					}
@@ -2661,10 +2661,10 @@
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 30,
-							"batch_ns": 28.5,
-							"min_ns": 29.1,
-							"max_ns": 30.9,
+							"ns": 17,
+							"batch_ns": 16.15,
+							"min_ns": 16.49,
+							"max_ns": 17.51,
 							"spread": 0.03
 						}
 					}
@@ -2723,17 +2723,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 300,
-							"batch_ns": 285,
-							"min_ns": 291,
-							"max_ns": 309,
+							"ns": 130,
+							"batch_ns": 123.5,
+							"min_ns": 126.1,
+							"max_ns": 133.9,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 120,
-							"batch_ns": 114,
-							"min_ns": 116.4,
-							"max_ns": 123.6,
+							"ns": 200,
+							"batch_ns": 190,
+							"min_ns": 194,
+							"max_ns": 206,
 							"spread": 0.03
 						}
 					}
@@ -2750,10 +2750,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 12,
-							"batch_ns": 11.4,
-							"min_ns": 11.64,
-							"max_ns": 12.36,
+							"ns": 16.5,
+							"batch_ns": 15.67,
+							"min_ns": 16,
+							"max_ns": 17,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2792,17 +2792,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 140,
-							"batch_ns": 133,
-							"min_ns": 135.8,
-							"max_ns": 144.2,
+							"ns": 130,
+							"batch_ns": 123.5,
+							"min_ns": 126.1,
+							"max_ns": 133.9,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 40,
-							"batch_ns": 38,
-							"min_ns": 38.8,
-							"max_ns": 41.2,
+							"ns": 33,
+							"batch_ns": 31.35,
+							"min_ns": 32.01,
+							"max_ns": 33.99,
 							"spread": 0.03
 						}
 					}
@@ -2868,10 +2868,10 @@
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 2700,
-							"batch_ns": 2565,
-							"min_ns": 2619,
-							"max_ns": 2781,
+							"ns": 1530,
+							"batch_ns": 1453.5,
+							"min_ns": 1484.1,
+							"max_ns": 1575.9,
 							"spread": 0.03
 						}
 					}
@@ -2930,17 +2930,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 27000,
-							"batch_ns": 25650,
-							"min_ns": 26190,
-							"max_ns": 27810,
+							"ns": 11700,
+							"batch_ns": 11115,
+							"min_ns": 11349,
+							"max_ns": 12051,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 10800,
-							"batch_ns": 10260,
-							"min_ns": 10476,
-							"max_ns": 11124,
+							"ns": 18000,
+							"batch_ns": 17100,
+							"min_ns": 17460,
+							"max_ns": 18540,
 							"spread": 0.03
 						}
 					}
@@ -2957,10 +2957,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 1080,
-							"batch_ns": 1026,
-							"min_ns": 1047.6,
-							"max_ns": 1112.4,
+							"ns": 1485,
+							"batch_ns": 1410.75,
+							"min_ns": 1440.45,
+							"max_ns": 1529.55,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -2999,17 +2999,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 12600,
-							"batch_ns": 11970,
-							"min_ns": 12222,
-							"max_ns": 12978,
+							"ns": 11700,
+							"batch_ns": 11115,
+							"min_ns": 11349,
+							"max_ns": 12051,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 3600,
-							"batch_ns": 3420,
-							"min_ns": 3492,
-							"max_ns": 3708,
+							"ns": 2970,
+							"batch_ns": 2821.5,
+							"min_ns": 2880.9,
+							"max_ns": 3059.1,
 							"spread": 0.03
 						}
 					}
@@ -3072,10 +3072,10 @@
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 450,
-							"batch_ns": 427.5,
-							"min_ns": 436.5,
-							"max_ns": 463.5,
+							"ns": 255,
+							"batch_ns": 242.25,
+							"min_ns": 247.35,
+							"max_ns": 262.65,
 							"spread": 0.03
 						}
 					}
@@ -3131,17 +3131,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 4500,
-							"batch_ns": 4275,
-							"min_ns": 4365,
-							"max_ns": 4635,
+							"ns": 1950,
+							"batch_ns": 1852.5,
+							"min_ns": 1891.5,
+							"max_ns": 2008.5,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 1800,
-							"batch_ns": 1710,
-							"min_ns": 1746,
-							"max_ns": 1854,
+							"ns": 3000,
+							"batch_ns": 2850,
+							"min_ns": 2910,
+							"max_ns": 3090,
 							"spread": 0.03
 						}
 					}
@@ -3158,10 +3158,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 180,
-							"batch_ns": 171,
-							"min_ns": 174.6,
-							"max_ns": 185.4,
+							"ns": 1725,
+							"batch_ns": 1638.75,
+							"min_ns": 1673.25,
+							"max_ns": 1776.75,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -3197,17 +3197,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 2100,
-							"batch_ns": 1995,
-							"min_ns": 2037,
-							"max_ns": 2163,
+							"ns": 1950,
+							"batch_ns": 1852.5,
+							"min_ns": 1891.5,
+							"max_ns": 2008.5,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 600,
-							"batch_ns": 570,
-							"min_ns": 582,
-							"max_ns": 618,
+							"ns": 495,
+							"batch_ns": 470.25,
+							"min_ns": 480.15,
+							"max_ns": 509.85,
 							"spread": 0.03
 						}
 					}
@@ -3273,10 +3273,10 @@
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 540,
-							"batch_ns": 513,
-							"min_ns": 523.8,
-							"max_ns": 556.2,
+							"ns": 306,
+							"batch_ns": 290.7,
+							"min_ns": 296.82,
+							"max_ns": 315.18,
 							"spread": 0.03
 						}
 					}
@@ -3335,17 +3335,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 5400,
-							"batch_ns": 5130,
-							"min_ns": 5238,
-							"max_ns": 5562,
+							"ns": 2340,
+							"batch_ns": 2223,
+							"min_ns": 2269.8,
+							"max_ns": 2410.2,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 2160,
-							"batch_ns": 2052,
-							"min_ns": 2095.2,
-							"max_ns": 2224.8,
+							"ns": 3600,
+							"batch_ns": 3420,
+							"min_ns": 3492,
+							"max_ns": 3708,
 							"spread": 0.03
 						}
 					}
@@ -3362,10 +3362,10 @@
 							"spread": 0.03
 						},
 						"fuz_schema_compiled": {
-							"ns": 216,
-							"batch_ns": 205.2,
-							"min_ns": 209.52,
-							"max_ns": 222.48,
+							"ns": 297,
+							"batch_ns": 282.15,
+							"min_ns": 288.09,
+							"max_ns": 305.91,
 							"spread": 0.03
 						},
 						"valibot": {
@@ -3404,17 +3404,17 @@
 							"spread": 0.03
 						},
 						"valita": {
-							"ns": 2520,
-							"batch_ns": 2394,
-							"min_ns": 2444.4,
-							"max_ns": 2595.6,
+							"ns": 2340,
+							"batch_ns": 2223,
+							"min_ns": 2269.8,
+							"max_ns": 2410.2,
 							"spread": 0.03
 						},
 						"sury": {
-							"ns": 720,
-							"batch_ns": 684,
-							"min_ns": 698.4,
-							"max_ns": 741.6,
+							"ns": 594,
+							"batch_ns": 564.3,
+							"min_ns": 576.18,
+							"max_ns": 611.82,
 							"spread": 0.03
 						}
 					}

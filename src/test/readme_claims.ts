@@ -7,9 +7,22 @@
  * the README carries no hand-copied timed figure. Only those tests read this
  * module: the site renders the file, and makes no claim of its own.
  *
- * In the README the claims are the bullets between `README_CLAIMS_OPEN` and
- * `README_CLAIMS_CLOSE`. A bullet there with no row here fails, and so does a
- * row whose sentence is gone.
+ * In the README the claims are the bullets between a `README_CLAIMS_OPEN` and
+ * the `README_CLAIMS_CLOSE` after it, of every such block of the section. A
+ * bullet there with no row here fails, and so does a row whose sentence is
+ * gone.
+ *
+ * The claims are like for like. A library either interprets a schema or
+ * generates code for one, and this one does either: as it is imported it is
+ * set against the libraries that interpret, `README_CLAIMS_INTERPRETERS`, and
+ * with each schema compiled against those that generate code,
+ * `README_CLAIMS_GENERATORS`. A claim whose `subject` is
+ * `README_CLAIMS_COMPILED_SUBJECT` is of the compiled mode, and any other of
+ * the library as it is imported. Neither mode is set against the other. Three
+ * claims of the library as it is imported hold against every library, whatever
+ * it does: its bundle, its cold start, and the memory it holds. The claims
+ * come in three blocks: what each mode is ahead on in its tier, and then
+ * where either is behind, across the tiers and inside them.
  *
  * A direction holds only outside what the numbers range over, by the rules
  * the benchmarks page marks a difference by, through the functions it draws
@@ -20,6 +33,12 @@
  * allocates and bytes retained are compared with the tolerance the page gives
  * each. Bundle bytes and instantiations are exact, and compared as they are.
  *
+ * A close call is not given a direction. Two libraries whose geometric means
+ * are within `README_CLAIMS_ABOUT_EQUAL` of each other are called about
+ * equal, whichever is ahead and whether or not their bands overlap: a gap
+ * that small is one the next run can close or turn round, and a sentence that
+ * named the faster would be rewritten at each.
+ *
  * The rule is the page's and the rows are not always. A mean here is of two
  * libraries, over the rows both have a figure of, where a mean on the page is
  * of every library shown, over the rows they all have: a claim about Valibot
@@ -27,11 +46,6 @@
  * figure of it. So a claim and the page's mean can be of different rows, and
  * the sentence says which: "over the scenarios", or "over the scenarios each
  * has a figure of".
- *
- * A claim is of this library as it is imported, but the one whose `subject`
- * is its compiled mode, `README_CLAIMS_COMPILED_SUBJECT`. Either is compared
- * with the other libraries and never with the other mode. The compiled claim
- * also says what the mode costs, where it is behind Valibot.
  *
  * @module
  */
@@ -57,12 +71,12 @@ import {
 import type { BenchmarkResults } from '../benchmarks/results_schema.ts';
 
 /**
- * Whether the README's Measurements section carries its claims block, and so
+ * Whether the README's Measurements section carries its claims, and so
  * whether `readme_measurements.test.ts` holds it to the published run. While
  * it is `false` that test holds the README to having no claims block, so the
- * block and this can only change together: a README that gains the block fails
- * until this is `true`, and from then a missing published run, a missing
- * block, and a claim the results don't bear out each fail.
+ * blocks and this can only change together: a README that gains one fails
+ * until this is `true`, and from then a missing published run, a README with
+ * no block, and a claim the results don't bear out each fail.
  */
 export const README_CLAIMS_HELD = true;
 
@@ -76,14 +90,26 @@ export const README_CLAIMS_OPEN =
 /** The line that closes the README's claims. */
 export const README_CLAIMS_CLOSE = '<!-- /claims -->';
 
-/** The library every claim is about, as it is imported, but the compiled claim. */
+/** The library every claim is about, as it is imported, but a claim of its compiled mode. */
 export const README_CLAIMS_SUBJECT = 'fuz_schema';
 
-/**
- * The library's compiled mode, the subject of the one claim that is not of the
- * library as it is imported.
- */
+/** The library's compiled mode, the subject of the claims that are not of the library as it is imported. */
 export const README_CLAIMS_COMPILED_SUBJECT = 'fuz_schema_compiled';
+
+/**
+ * The libraries that interpret a schema, which this library as it is imported
+ * is set against. Zod as it is imported is among them, though it generates
+ * code for an object schema where it may: it is what an import of it gives.
+ */
+export const README_CLAIMS_INTERPRETERS: ReadonlyArray<string> = [
+	'valibot',
+	'valita',
+	'zod',
+	'zod_mini'
+];
+
+/** The libraries that generate code for a schema, which this library's compiled mode is set against. */
+export const README_CLAIMS_GENERATORS: ReadonlyArray<string> = ['zod_compiled', 'typebox', 'sury'];
 
 const SUBJECT = README_CLAIMS_SUBJECT;
 
@@ -103,7 +129,9 @@ export interface ReadmeClaim {
 	sentence: string;
 	/**
 	 * The mode of this library the sentence is of, by id:
-	 * `README_CLAIMS_SUBJECT` when absent, the library as it is imported.
+	 * `README_CLAIMS_SUBJECT` when absent, the library as it is imported. A
+	 * sentence is of one mode, so a file that lacks a mode fails only the
+	 * claims of it.
 	 */
 	subject?: string;
 	/**
@@ -113,12 +141,19 @@ export interface ReadmeClaim {
 	 */
 	others: ReadonlyArray<string> | typeof README_CLAIMS_EVERY_OTHER;
 	/**
-	 * Whether the results bear the sentence out.
+	 * Whether the results bear the sentence out. Called through
+	 * `check_readme_claim`, which hands it the claim's own subject, so a
+	 * predicate reads the mode from what it is given and can't be of another.
 	 *
 	 * @param others - the libraries of `others`, by id
+	 * @param subject - the mode of this library the sentence is of, by id
 	 * @returns null when they do, and otherwise what they show instead
 	 */
-	check: (results: BenchmarkResults, others: ReadonlyArray<string>) => string | null;
+	check: (
+		results: BenchmarkResults,
+		others: ReadonlyArray<string>,
+		subject: string
+	) => string | null;
 }
 
 /**
@@ -145,6 +180,18 @@ export const to_claim_others = (claim: ReadmeClaim, results: BenchmarkResults): 
 		.filter((id) => id !== SUBJECT && !modes.includes(id));
 };
 
+/**
+ * Checks a claim against a results file, as of the mode the claim is of.
+ *
+ * @param others - the libraries to ask the results about, the claim's own by default
+ * @returns null when the results bear the sentence out, and otherwise what they show instead
+ */
+export const check_readme_claim = (
+	claim: ReadmeClaim,
+	results: BenchmarkResults,
+	others: ReadonlyArray<string> = to_claim_others(claim, results)
+): string | null => claim.check(results, others, claim.subject ?? README_CLAIMS_SUBJECT);
+
 // the rows of an input's parse times, as the page draws them, without its mean
 const to_time_rows = (results: BenchmarkResults, input: TimeInput): Array<MatrixRow> | string => {
 	const group = to_time_groups(results).find((g) => g.key === `time:${input}`);
@@ -157,44 +204,70 @@ const to_time_rows = (results: BenchmarkResults, input: TimeInput): Array<Matrix
  * marks a difference by: the gap is more than the two spreads together, and
  * neither time is at the row's call floor.
  */
-const check_row_is_faster = (row: MatrixRow, other: string): string | null => {
-	const ratio = to_matrix_ratios(row, [SUBJECT, other], other)[SUBJECT];
-	if (ratio === undefined) return `${row.key}: ${SUBJECT} and ${other} have no figures to compare`;
+const check_row_is_faster = (row: MatrixRow, other: string, subject: string): string | null => {
+	const ratio = to_matrix_ratios(row, [subject, other], other)[subject];
+	if (ratio === undefined) return `${row.key}: ${subject} and ${other} have no figures to compare`;
 	if (ratio.level === 'floor') {
-		return `${row.key}: a time of ${SUBJECT} or ${other} is at the call floor, so the two are not told apart`;
+		return `${row.key}: a time of ${subject} or ${other} is at the call floor, so the two are not told apart`;
 	}
 	if (ratio.level === 'spread') {
-		return `${row.key}: ${SUBJECT} and ${other} are inside what the two range over`;
+		return `${row.key}: ${subject} and ${other} are inside what the two range over`;
 	}
-	return ratio.ratio < 1 ? null : `${row.key}: ${SUBJECT} is not faster than ${other}`;
+	return ratio.ratio < 1 ? null : `${row.key}: ${subject} is not faster than ${other}`;
 };
 
 /**
- * Checks that this library is faster than each of `others` on every row both
+ * Checks that `subject` is faster than each of `others` on every row both
  * have a figure of. A row either has no figure of is not compared, which a
  * sentence held by this must say, and a library with no row to compare fails.
  */
 const check_faster_on_every_row = (
 	rows: ReadonlyArray<MatrixRow> | string,
-	others: ReadonlyArray<string>
+	others: ReadonlyArray<string>,
+	subject: string
 ): string | null => {
 	if (typeof rows === 'string') return rows;
 	for (const other of others) {
 		let compared = 0;
 		for (const row of rows) {
 			if (
-				matrix_row_entry(row, SUBJECT).kind !== 'value' ||
+				matrix_row_entry(row, subject).kind !== 'value' ||
 				matrix_row_entry(row, other).kind !== 'value'
 			) {
 				continue;
 			}
 			compared++;
-			const failure = check_row_is_faster(row, other);
+			const failure = check_row_is_faster(row, other, subject);
 			if (failure !== null) return failure;
 		}
-		if (!compared) return `no row has a figure of both ${SUBJECT} and ${other}`;
+		if (!compared) return `no row has a figure of both ${subject} and ${other}`;
 	}
 	return null;
+};
+
+// the geometric means of two libraries' times over the rows of an input both have a
+// figure of and neither has at the call floor, or what the file lacks
+const to_geomeans = (
+	results: BenchmarkResults,
+	input: TimeInput,
+	other: string,
+	subject: string
+): { level: boolean; ours: number; theirs: number; ratio: string } | string => {
+	const rows = to_time_rows(results, input);
+	if (typeof rows === 'string') return rows;
+	const columns = [subject, other];
+	const mean = to_geomean_row(rows, columns, `claim:${input}:${other}`, 'every scenario');
+	const ours = mean && matrix_row_entry(mean, subject);
+	const theirs = mean && matrix_row_entry(mean, other);
+	if (!mean || mean.empty !== null || ours?.kind !== 'value' || theirs?.kind !== 'value') {
+		return `no ${input} row has a figure of both ${subject} and ${other} past the call floor`;
+	}
+	return {
+		level: matrix_values_are_level(ours, theirs),
+		ours: ours.value,
+		theirs: theirs.value,
+		ratio: (ours.value / theirs.value).toFixed(2)
+	};
 };
 
 /**
@@ -211,28 +284,44 @@ const check_geomean = (
 	input: TimeInput,
 	other: string,
 	faster: boolean,
-	subject: string = SUBJECT
+	subject: string
 ): string | null => {
-	const rows = to_time_rows(results, input);
-	if (typeof rows === 'string') return rows;
-	const columns = [subject, other];
-	const mean = to_geomean_row(rows, columns, `claim:${input}:${other}`, 'every scenario');
-	const ours = mean && matrix_row_entry(mean, subject);
-	const theirs = mean && matrix_row_entry(mean, other);
-	if (!mean || mean.empty !== null || ours?.kind !== 'value' || theirs?.kind !== 'value') {
-		return `no ${input} row has a figure of both ${subject} and ${other} past the call floor`;
+	const means = to_geomeans(results, input, other, subject);
+	if (typeof means === 'string') return means;
+	if (means.level) {
+		return `on ${input} rows the geometric means of ${subject} and ${other} are inside each other's bands, at ${means.ratio} times: neither is the faster`;
 	}
-	const ratio = (ours.value / theirs.value).toFixed(2);
-	if (matrix_values_are_level(ours, theirs)) {
-		return `on ${input} rows the geometric means of ${subject} and ${other} are inside each other's bands, at ${ratio} times: neither is the faster`;
-	}
-	return ours.value < theirs.value === faster
+	return means.ours < means.theirs === faster
 		? null
-		: `on ${input} rows ${subject} takes ${ratio} times what ${other} does, as a geometric mean`;
+		: `on ${input} rows ${subject} takes ${means.ratio} times what ${other} does, as a geometric mean`;
 };
 
 /**
- * Checks that this library's bytes are under each of `others`' on every row
+ * How far apart two geometric means may be and still be called about equal:
+ * the greater at most this many times the lesser.
+ */
+export const README_CLAIMS_ABOUT_EQUAL = 1.25;
+
+/**
+ * Checks that the geometric means of two libraries' times are about equal,
+ * the greater within `README_CLAIMS_ABOUT_EQUAL` of the lesser, whichever it
+ * is: what a sentence says of a close call, in place of a direction.
+ */
+const check_geomean_is_about_equal = (
+	results: BenchmarkResults,
+	input: TimeInput,
+	other: string,
+	subject: string
+): string | null => {
+	const means = to_geomeans(results, input, other, subject);
+	if (typeof means === 'string') return means;
+	return Math.max(means.ours / means.theirs, means.theirs / means.ours) <= README_CLAIMS_ABOUT_EQUAL
+		? null
+		: `on ${input} rows ${subject} takes ${means.ratio} times what ${other} does, as a geometric mean: the two are not about equal`;
+};
+
+/**
+ * Checks that `subject`'s bytes are under each of `others`' on every row
  * of a group, by more than what the two figures range over, the tolerance the
  * page gives the group's figures. A zero is a figure here: a parse that
  * allocates nothing allocates less than one that allocates.
@@ -240,21 +329,22 @@ const check_geomean = (
 const check_fewer_bytes_on_every_row = (
 	group: MatrixGroup | undefined,
 	what: string,
-	others: ReadonlyArray<string>
+	others: ReadonlyArray<string>,
+	subject: string
 ): string | null => {
 	if (!group?.rows.length) return `the file has no rows of ${what}`;
 	if (!others.length) return `no library to compare ${what} with`;
 	for (const row of group.rows) {
-		const ours = matrix_row_entry(row, SUBJECT);
-		if (ours.kind !== 'value') return `${row.key}: ${SUBJECT} has no ${what}`;
+		const ours = matrix_row_entry(row, subject);
+		if (ours.kind !== 'value') return `${row.key}: ${subject} has no ${what}`;
 		for (const other of others) {
 			const theirs = matrix_row_entry(row, other);
 			if (theirs.kind !== 'value') return `${row.key}: ${other} has no ${what}`;
 			if (matrix_values_are_level(ours, theirs)) {
-				return `${row.key}: ${SUBJECT}'s ${what} and ${other}'s are inside what the two range over`;
+				return `${row.key}: ${subject}'s ${what} and ${other}'s are inside what the two range over`;
 			}
 			if (!(ours.value < theirs.value)) {
-				return `${row.key}: ${SUBJECT}'s ${what} is not under ${other}'s`;
+				return `${row.key}: ${subject}'s ${what} is not under ${other}'s`;
 			}
 		}
 	}
@@ -265,45 +355,52 @@ const first_failure = (checks: ReadonlyArray<string | null>): string | null =>
 	checks.find((check) => check !== null) ?? null;
 
 /**
- * Checks that this library's figure is the least of every row's, against
+ * Checks that `subject`'s figure is the least of every row's, against
  * each of `others`. The figures are exact: bytes, or instantiations.
  */
 const check_least = <T>(
 	rows: ReadonlyArray<{ name: string; libs: Readonly<Record<string, T>> }>,
 	to_value: (figures: T) => number,
 	what: string,
-	others: ReadonlyArray<string>
+	others: ReadonlyArray<string>,
+	subject: string
 ): string | null => {
 	if (!rows.length) return `the file has no rows of ${what}`;
 	if (!others.length) return `no library to compare ${what} with`;
 	for (const row of rows) {
-		const ours = row.libs[SUBJECT];
-		if (!ours) return `${row.name}: ${SUBJECT} has no ${what}`;
+		const ours = row.libs[subject];
+		if (!ours) return `${row.name}: ${subject} has no ${what}`;
 		for (const other of others) {
 			const theirs = row.libs[other];
 			if (!theirs) return `${row.name}: ${other} has no ${what}`;
 			if (!(to_value(ours) < to_value(theirs))) {
-				return `${row.name}: ${SUBJECT}'s ${what} is not under ${other}'s`;
+				return `${row.name}: ${subject}'s ${what} is not under ${other}'s`;
 			}
 		}
 	}
 	return null;
 };
 
-/** The libraries the valid-input claim says are faster than this one, as a geometric mean. */
-export const README_CLAIMS_FASTER_ON_VALID: ReadonlyArray<string> = ['zod_compiled', 'typebox'];
-
-/** The libraries the valid-input claim says are slower as a mean and faster on some scenario. */
-export const README_CLAIMS_FASTER_ON_SOME_VALID: ReadonlyArray<string> = ['zod'];
-
-/** The libraries the guard claim says are faster than this one, as a geometric mean. */
-export const README_CLAIMS_FASTER_AS_GUARD: ReadonlyArray<string> = ['typebox', 'zod_compiled'];
-
-/** The libraries the guard claim says are slower as a mean and faster on some scenario. */
-export const README_CLAIMS_FASTER_ON_SOME_GUARD: ReadonlyArray<string> = ['zod'];
-
 /** The scenario the claim about the one real recursive schema is of. */
 export const README_CLAIMS_RECURSIVE_SCENARIO = 'type_json';
+
+/**
+ * The libraries the compiled mode's claim of allocation holds of invalid
+ * input too, where it holds of the rest on valid input alone.
+ */
+export const README_CLAIMS_COMPILED_FEWER_BYTES_ON_INVALID: ReadonlyArray<string> = [
+	'zod_compiled'
+];
+
+/**
+ * The libraries the claim of what compiling costs says reach a parse sooner
+ * than the compiled mode, on every row of a cold start, beside having the
+ * smaller bundle and holding less.
+ */
+export const README_CLAIMS_COMPILED_STARTS_SLOWER_THAN: ReadonlyArray<string> = ['valita'];
+
+/** The forms of entry the cold start claims are of, as a row of the file names them. */
+export const README_CLAIMS_COLDSTART_FORMS: ReadonlyArray<string> = ['bundled', 'unbundled'];
 
 /**
  * Checks that another library is the faster on at least one row, by the rule a
@@ -312,7 +409,7 @@ export const README_CLAIMS_RECURSIVE_SCENARIO = 'type_json';
 const check_other_faster_on_some_row = (
 	rows: ReadonlyArray<MatrixRow> | string,
 	other: string,
-	subject: string = SUBJECT
+	subject: string
 ): string | null => {
 	if (typeof rows === 'string') return rows;
 	for (const row of rows) {
@@ -329,54 +426,39 @@ const check_other_faster_on_some_row = (
 	return `no row has ${other} faster than ${subject}`;
 };
 
-/**
- * Checks a mean claim of one input: `subject` faster than each of `others` as
- * a geometric mean but those of `faster`, which are the faster, and each of
- * `some` the faster on at least one row.
- */
-const check_input_means = (
-	results: BenchmarkResults,
-	input: TimeInput,
-	others: ReadonlyArray<string>,
-	faster: ReadonlyArray<string>,
-	some: ReadonlyArray<string>,
-	subject: string = SUBJECT
-): string | null =>
-	first_failure([
-		...others.map((other) =>
-			check_geomean(results, input, other, !faster.includes(other), subject)
-		),
-		...others
-			.filter((other) => some.includes(other))
-			.map((other) => check_other_faster_on_some_row(to_time_rows(results, input), other, subject))
-	]);
+// the gzipped bundles of every scenario and of all of them together, as rows
+const to_bundle_rows = (
+	results: BenchmarkResults
+): Array<{ name: string; libs: Readonly<Record<string, { gzip: number }>> }> | string => {
+	const data = to_section_data(results, 'bundle');
+	if (!data) return 'the file has no bundle sizes';
+	return [
+		...data.rows.map((row) => ({ name: row.scenario, libs: row.libs })),
+		{ name: 'every scenario together', libs: data.all }
+	];
+};
 
-/** The libraries the compiled claim says are faster than the compiled mode on some scenario's valid input. */
-export const README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID: ReadonlyArray<string> = ['typebox'];
+// the rows of a cold start a claim reads, of both forms of entry: a first parse and a hundredth
+const to_coldstart_rows = (results: BenchmarkResults): Array<MatrixRow> | string => {
+	const groups = to_coldstart_groups(results);
+	// both forms, which a sentence names: a file with one of them bears out half
+	for (const form of README_CLAIMS_COLDSTART_FORMS) {
+		if (!groups.some((group) => group.key.endsWith(`:${form}`))) {
+			return `the file has no cold start of an entry that is ${form}`;
+		}
+	}
+	return groups.flatMap((group) =>
+		group.rows.filter(
+			(row) => row.key.endsWith(`:${COLDSTART_SUMMARY_STAGE}`) || row.key.endsWith(':parse_100')
+		)
+	);
+};
 
-/** The libraries the compiled claim leaves out of its valid-input half, which says nothing of them. */
-export const README_CLAIMS_COMPILED_UNCOMPARED_ON_VALID: ReadonlyArray<string> = ['sury'];
+const to_allocation_group = (results: BenchmarkResults, key: string): MatrixGroup | undefined =>
+	to_allocation_groups(results).find((g) => g.key === key);
 
-/** The libraries the allocation claim says allocate fewer bytes than this one on some scenario's valid input. */
-export const README_CLAIMS_FEWER_BYTES_ON_SOME_VALID: ReadonlyArray<string> = ['typebox'];
-
-/**
- * The libraries the compiled claim says have a smaller bundle and hold less
- * memory than the compiled mode, on every scenario: what compiling costs.
- */
-export const README_CLAIMS_COMPILED_COSTS_MORE_THAN: ReadonlyArray<string> = ['valibot'];
-
-/**
- * The libraries the type-checking claim says have fewer instantiations for a
- * module that only builds its schemas, and more once their types are inferred.
- */
-export const README_CLAIMS_FEWER_INSTANTIATIONS_UNINFERRED: ReadonlyArray<string> = ['typebox'];
-
-/** The libraries the claim of allocation on invalid input says allocate fewer bytes on some scenario. */
-export const README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID: ReadonlyArray<string> = ['typebox'];
-
-/** The forms of entry the cold start claim is of, as a row of the file names them. */
-export const README_CLAIMS_COLDSTART_FORMS: ReadonlyArray<string> = ['bundled', 'unbundled'];
+const to_held_group = (results: BenchmarkResults): MatrixGroup | undefined =>
+	to_heap_groups(results).find((group) => group.key === 'heap:total');
 
 /**
  * Checks that another library's bytes are under this library's on at least one
@@ -386,11 +468,12 @@ export const README_CLAIMS_COLDSTART_FORMS: ReadonlyArray<string> = ['bundled', 
 const check_other_fewer_bytes_on_some_row = (
 	group: MatrixGroup | undefined,
 	what: string,
-	other: string
+	other: string,
+	subject: string
 ): string | null => {
 	if (!group?.rows.length) return `the file has no rows of ${what}`;
 	for (const row of group.rows) {
-		const ours = matrix_row_entry(row, SUBJECT);
+		const ours = matrix_row_entry(row, subject);
 		const theirs = matrix_row_entry(row, other);
 		if (
 			ours.kind === 'value' &&
@@ -401,54 +484,28 @@ const check_other_fewer_bytes_on_some_row = (
 			return null;
 		}
 	}
-	return `no row has ${other}'s ${what} under ${SUBJECT}'s`;
+	return `no row has ${other}'s ${what} under ${subject}'s`;
 };
 
 /**
- * Checks an allocation claim of one input: this library's bytes under those of
- * each of `others` on every row but those of `some`, each of which is under
- * this library's on at least one row.
- *
- * @param key - the key of the allocation group the claim is of
+ * Checks what a claim says a mode costs: each of `cheaper` has a smaller
+ * gzipped bundle than `subject`, of every scenario and of all of them
+ * together, and holds less memory on every row, past what the two figures
+ * range over, and each of `sooner` reaches a first parse and a hundredth in
+ * less time, in both forms of entry.
  */
-const check_bytes_of_input = (
+const check_costs = (
 	results: BenchmarkResults,
-	key: string,
-	what: string,
-	others: ReadonlyArray<string>,
-	some: ReadonlyArray<string>
+	cheaper: ReadonlyArray<string>,
+	sooner: ReadonlyArray<string>,
+	subject: string
 ): string | null => {
-	const group = to_allocation_groups(results).find((g) => g.key === key);
-	const fewer = others.filter((other) => !some.includes(other));
-	return first_failure([
-		// with none to be under, the every-row half has nothing to say
-		fewer.length ? check_fewer_bytes_on_every_row(group, what, fewer) : null,
-		...others
-			.filter((other) => some.includes(other))
-			.map((other) => check_other_fewer_bytes_on_some_row(group, what, other))
-	]);
-};
-
-/**
- * Checks what the compiled claim says the mode costs: each of `cheaper` has a
- * smaller gzipped bundle than the compiled mode, of every scenario and of all
- * of them together, and holds less memory on every row, past what the two
- * figures range over.
- */
-const check_compiled_costs = (
-	results: BenchmarkResults,
-	cheaper: ReadonlyArray<string>
-): string | null => {
-	const subject = README_CLAIMS_COMPILED_SUBJECT;
-	const bundle = to_section_data(results, 'bundle');
-	if (!bundle) return 'the file has no bundle sizes';
-	const held = to_heap_groups(results).find((group) => group.key === 'heap:total');
+	const bundles = to_bundle_rows(results);
+	if (typeof bundles === 'string') return bundles;
+	const held = to_held_group(results);
 	if (!held?.rows.length) return 'the file has no rows of retained heap';
 	for (const other of cheaper) {
-		for (const row of [
-			...bundle.rows.map((r) => ({ name: r.scenario, libs: r.libs })),
-			{ name: 'every scenario together', libs: bundle.all }
-		]) {
+		for (const row of bundles) {
 			const ours = row.libs[subject];
 			const theirs = row.libs[other];
 			if (!ours || !theirs) return `${row.name}: ${subject} or ${other} has no gzipped bundle`;
@@ -467,7 +524,10 @@ const check_compiled_costs = (
 			}
 		}
 	}
-	return null;
+	// the other way round: the library named is the faster of the two on every row
+	return first_failure(
+		sooner.map((other) => check_faster_on_every_row(to_coldstart_rows(results), [subject], other))
+	);
 };
 
 /**
@@ -477,7 +537,11 @@ const check_compiled_costs = (
  * allocates fewer heap bytes on every one. The sentence names one consumer, so
  * a file with no such set, or with more than one, fails.
  */
-const check_harvest_set = (results: BenchmarkResults, other: string): string | null => {
+const check_harvest_set = (
+	results: BenchmarkResults,
+	other: string,
+	subject: string
+): string | null => {
 	const names = (to_section_data(results, 'harvest')?.sets ?? [])
 		.filter((set) => set.reference === other)
 		.map((set) => set.name);
@@ -492,101 +556,204 @@ const check_harvest_set = (results: BenchmarkResults, other: string): string | n
 	const bundle = view.groups
 		.find((g) => g.key === `harvest:${view.name}:bundle`)
 		?.rows.find((row) => row.kind === 'summary');
-	const ours_bundle = bundle && matrix_row_entry(bundle, SUBJECT);
+	const ours_bundle = bundle && matrix_row_entry(bundle, subject);
 	const theirs_bundle = bundle && matrix_row_entry(bundle, other);
 	if (ours_bundle?.kind !== 'value' || theirs_bundle?.kind !== 'value') {
-		return `${view.name}: ${SUBJECT} or ${other} has no gzipped bundle`;
+		return `${view.name}: ${subject} or ${other} has no gzipped bundle`;
 	}
 	if (!(ours_bundle.value < theirs_bundle.value)) {
-		return `${view.name}: ${SUBJECT}'s gzipped bundle is not under ${other}'s`;
+		return `${view.name}: ${subject}'s gzipped bundle is not under ${other}'s`;
 	}
 	const times = to_group('time');
 	const mean =
-		times && to_geomean_row(times.rows, [SUBJECT, other], `claim:${view.name}:time`, 'every row');
-	const ours = mean && matrix_row_entry(mean, SUBJECT);
+		times && to_geomean_row(times.rows, [subject, other], `claim:${view.name}:time`, 'every row');
+	const ours = mean && matrix_row_entry(mean, subject);
 	const theirs = mean && matrix_row_entry(mean, other);
 	if (!mean || mean.empty !== null || ours?.kind !== 'value' || theirs?.kind !== 'value') {
-		return `${view.name}: no document has a time of both ${SUBJECT} and ${other}`;
+		return `${view.name}: no document has a time of both ${subject} and ${other}`;
 	}
 	if (matrix_values_are_level(ours, theirs) || !(ours.value < theirs.value)) {
-		return `${view.name}: ${SUBJECT} is not faster than ${other} as a geometric mean`;
+		return `${view.name}: ${subject} is not faster than ${other} as a geometric mean`;
 	}
-	return check_fewer_bytes_on_every_row(to_group('bytes'), `bytes per parse of ${view.name}`, [
-		other
-	]);
+	return check_fewer_bytes_on_every_row(
+		to_group('bytes'),
+		`bytes per parse of ${view.name}`,
+		[other],
+		subject
+	);
 };
 
 /**
- * The claims, in the order the README makes them. Each sentence states a
- * direction and no figure: the numbers are on the benchmarks page, rendered
- * from the same file.
+ * Checks what a sentence says of a library whose module only builds its
+ * schemas: fewer instantiations than this library's for that module, and more
+ * once the types are inferred, a consumer's reads of them counted or not.
+ */
+const check_fewer_instantiations_uninferred = (
+	results: BenchmarkResults,
+	other: string,
+	subject: string
+): string | null => {
+	const data = to_section_data(results, 'types');
+	if (!data) return 'the file has no type-checking cost';
+	const ours = data.modules[subject];
+	const theirs = data.modules[other];
+	if (!ours || !theirs) return `a module of every scenario: ${other} has no instantiations`;
+	if (!(theirs.instantiations < ours.instantiations)) {
+		return `a module of every scenario: ${other}'s instantiations are not under ${subject}'s`;
+	}
+	// the same file before its reads: what inferring the types costs alone
+	const inferred = Object.fromEntries(
+		Object.entries(data.with_reads).map(([lib, cost]) => [
+			lib,
+			{ ...cost, instantiations: cost.instantiations - cost.reads_add }
+		])
+	);
+	return check_least(
+		[
+			{ name: 'the types inferred and read', libs: data.with_reads },
+			{ name: 'the types inferred and not read', libs: inferred }
+		],
+		(cost) => cost.instantiations,
+		'instantiations',
+		[other],
+		subject
+	);
+};
+
+const COMPILED = README_CLAIMS_COMPILED_SUBJECT;
+
+type Check = ReadmeClaim['check'];
+
+// a claim of one input's times: `subject` the faster of each pair as a geometric mean
+const faster_as_a_mean =
+	(input: TimeInput): Check =>
+	(results, others, subject) =>
+		first_failure(others.map((other) => check_geomean(results, input, other, true, subject)));
+
+// a claim of type-checking cost: `subject` has the fewest instantiations, for a module
+// that builds its schemas and for a file that reads the types they infer
+const fewer_instantiations: Check = (results, others, subject) => {
+	const data = to_section_data(results, 'types');
+	if (!data) return 'the file has no type-checking cost';
+	return check_least(
+		[
+			{ name: 'a module of every scenario', libs: data.modules },
+			{ name: "the same with a consumer's reads", libs: data.with_reads }
+		],
+		(cost) => cost.instantiations,
+		'instantiations',
+		others,
+		subject
+	);
+};
+
+// a claim of close calls: `subject` and each other about equal on each of the inputs
+const about_equal =
+	(inputs: ReadonlyArray<TimeInput>): Check =>
+	(results, others, subject) =>
+		first_failure(
+			others.flatMap((other) =>
+				inputs.map((input) => check_geomean_is_about_equal(results, input, other, subject))
+			)
+		);
+
+/**
+ * The claims, in the order the README makes them: what the library is ahead
+ * on as it is imported, what its compiled mode is ahead on, and where either
+ * is behind. Each sentence states a direction, or that two are about equal,
+ * and no figure: the numbers are on the benchmarks page, rendered from the
+ * same file.
  */
 export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
+	// as it is imported
 	{
 		sentence:
 			'**Size:** the smallest bundle of the libraries compared, minified and gzipped, for every scenario and for all of them together.',
 		others: README_CLAIMS_EVERY_OTHER,
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
-			const data = to_section_data(results, 'bundle');
-			if (!data) return 'the file has no bundle sizes';
-			return check_least(
-				[
-					...data.rows.map((row) => ({ name: row.scenario, libs: row.libs })),
-					{ name: 'every scenario together', libs: data.all }
-				],
-				(sizes) => sizes.gzip,
-				'gzipped bundle',
-				others
-			);
+		check: (
+			results: BenchmarkResults,
+			others: ReadonlyArray<string>,
+			subject: string
+		): string | null => {
+			const rows = to_bundle_rows(results);
+			return typeof rows === 'string'
+				? rows
+				: check_least(rows, (sizes) => sizes.gzip, 'gzipped bundle', others, subject);
 		}
 	},
 	{
 		sentence:
-			'**On valid input:** faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on at least one of them; Zod with its roots compiled ahead of time by `z.compile` is faster as a mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues, over all of them.',
-		others: ['valibot', 'zod', 'zod_mini', 'zod_compiled', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_input_means(
-				results,
-				'valid',
-				others,
-				README_CLAIMS_FASTER_ON_VALID,
-				README_CLAIMS_FASTER_ON_SOME_VALID
-			)
+			'**Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.',
+		others: README_CLAIMS_EVERY_OTHER,
+		check: (results, others, subject) =>
+			check_faster_on_every_row(to_coldstart_rows(results), others, subject)
 	},
 	{
 		sentence:
-			'**On invalid input:** faster than Valibot and Zod in each of its modes on every scenario each has a figure of; TypeBox, whose check stops at the first failure and builds no issues, is faster as a geometric mean.',
-		others: ['valibot', 'zod', 'zod_compiled', 'zod_mini', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
+			'**Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.',
+		others: README_CLAIMS_EVERY_OTHER,
+		check: (results, others, subject) =>
+			check_fewer_bytes_on_every_row(to_held_group(results), 'retained heap', others, subject)
+	},
+	{
+		sentence:
+			'**On valid input:** faster than Valibot, Zod, and Zod Mini as a geometric mean over the scenarios.',
+		others: ['valibot', 'zod', 'zod_mini'],
+		check: faster_as_a_mean('valid')
+	},
+	{
+		sentence:
+			'**As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod, and Zod Mini as a geometric mean over the scenarios.',
+		others: ['valibot', 'zod', 'zod_mini'],
+		check: faster_as_a_mean('guard')
+	},
+	{
+		sentence: '**On invalid input:** faster than Valibot, Zod, and Zod Mini on every scenario.',
+		others: ['valibot', 'zod', 'zod_mini'],
+		check: (results, others, subject) =>
+			check_faster_on_every_row(to_time_rows(results, 'invalid'), others, subject)
+	},
+	{
+		sentence:
+			'**Against Valita:** about equal on valid input, on invalid input, and as a guard, as geometric means over the scenarios.',
+		others: ['valita'],
+		check: about_equal(['valid', 'invalid', 'guard'])
+	},
+	{
+		sentence:
+			"**Allocation:** a parse allocates fewer heap bytes than Valibot's, Zod's, or Zod Mini's on every scenario, of valid input and of invalid.",
+		others: ['valibot', 'zod', 'zod_mini'],
+		check: (results, others, subject) =>
 			first_failure([
-				check_faster_on_every_row(
-					to_time_rows(results, 'invalid'),
-					others.filter((other) => other !== 'typebox')
+				check_fewer_bytes_on_every_row(
+					to_allocation_group(results, 'allocation:valid_bytes'),
+					'bytes per valid parse',
+					others,
+					subject
 				),
-				// the half of the sentence about the one library that is the faster
-				...others
-					.filter((other) => other === 'typebox')
-					.map((other) => check_geomean(results, 'invalid', other, false))
+				check_fewer_bytes_on_every_row(
+					to_allocation_group(results, 'allocation:invalid_bytes'),
+					'bytes per invalid parse',
+					others,
+					subject
+				)
 			])
 	},
 	{
 		sentence:
-			'**As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on at least one of them; TypeBox and compiled Zod are faster as a mean over the scenarios each has a figure of.',
-		others: ['valibot', 'zod', 'zod_mini', 'typebox', 'zod_compiled'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_input_means(
-				results,
-				'guard',
-				others,
-				README_CLAIMS_FASTER_AS_GUARD,
-				README_CLAIMS_FASTER_ON_SOME_GUARD
-			)
+			"**Type-checking cost:** fewer instantiations than Valibot, Valita, Zod, and Zod Mini, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.",
+		others: README_CLAIMS_INTERPRETERS,
+		check: fewer_instantiations
 	},
 	{
 		sentence:
-			'**On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, and TypeBox.',
+			'**On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod, Zod Mini, and TypeBox.',
 		others: ['valibot', 'zod', 'zod_mini', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
+		check: (
+			results: BenchmarkResults,
+			others: ReadonlyArray<string>,
+			subject: string
+		): string | null => {
 			const rows = (['valid', 'guard'] as const).flatMap((input) => {
 				const found = to_time_rows(results, input);
 				return typeof found === 'string'
@@ -597,155 +764,224 @@ export const README_CLAIMS: ReadonlyArray<ReadmeClaim> = [
 				rows.length === 2
 					? rows
 					: `the file has no ${README_CLAIMS_RECURSIVE_SCENARIO} parse times`,
-				others
-			);
-		}
-	},
-	{
-		sentence:
-			"**Compiled,** with each schema through `compile_parse` or `compile_guard`: faster as a guard than each of the libraries compared, and on valid input than each but Sury, as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.",
-		subject: README_CLAIMS_COMPILED_SUBJECT,
-		others: README_CLAIMS_EVERY_OTHER,
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			first_failure([
-				check_input_means(
-					results,
-					'valid',
-					others.filter((other) => !README_CLAIMS_COMPILED_UNCOMPARED_ON_VALID.includes(other)),
-					[],
-					README_CLAIMS_COMPILED_FASTER_ON_SOME_VALID,
-					README_CLAIMS_COMPILED_SUBJECT
-				),
-				check_input_means(results, 'guard', others, [], [], README_CLAIMS_COMPILED_SUBJECT),
-				check_compiled_costs(
-					results,
-					others.filter((other) => README_CLAIMS_COMPILED_COSTS_MORE_THAN.includes(other))
-				)
-			])
-	},
-	{
-		sentence:
-			"**Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario; TypeBox's check, which builds no output, allocates fewer on at least one.",
-		others: ['valibot', 'zod', 'zod_mini', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_bytes_of_input(
-				results,
-				'allocation:valid_bytes',
-				'bytes per valid parse',
 				others,
-				README_CLAIMS_FEWER_BYTES_ON_SOME_VALID
-			)
-	},
-	{
-		sentence:
-			"**Allocation on invalid input:** a parse allocates fewer heap bytes than Valibot's or that of Zod in each of its modes on every scenario; TypeBox's check, which builds no issues, allocates fewer on at least one.",
-		others: ['valibot', 'zod', 'zod_compiled', 'zod_mini', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_bytes_of_input(
-				results,
-				'allocation:invalid_bytes',
-				'bytes per invalid parse',
-				others,
-				README_CLAIMS_FEWER_BYTES_ON_SOME_INVALID
-			)
-	},
-	{
-		sentence:
-			'**Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.',
-		others: README_CLAIMS_EVERY_OTHER,
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
-			const groups = to_coldstart_groups(results);
-			// both forms of entry, which the sentence names: a file with one of them bears out half
-			for (const form of README_CLAIMS_COLDSTART_FORMS) {
-				if (!groups.some((group) => group.key.endsWith(`:${form}`))) {
-					return `the file has no cold start of an entry that is ${form}`;
-				}
-			}
-			return check_faster_on_every_row(
-				groups.flatMap((group) =>
-					group.rows.filter(
-						(row) =>
-							row.key.endsWith(`:${COLDSTART_SUMMARY_STAGE}`) || row.key.endsWith(':parse_100')
-					)
-				),
-				others
+				subject
 			);
-		}
-	},
-	{
-		sentence:
-			'**Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.',
-		others: README_CLAIMS_EVERY_OTHER,
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			check_fewer_bytes_on_every_row(
-				to_heap_groups(results).find((group) => group.key === 'heap:total'),
-				'retained heap',
-				others
-			)
-	},
-	{
-		sentence:
-			"**Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, and compiled Zod, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer; TypeBox has fewer for the module, which infers nothing, and more once the types are inferred, read or not.",
-		others: ['valibot', 'zod', 'zod_mini', 'zod_compiled', 'typebox'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null => {
-			const data = to_section_data(results, 'types');
-			if (!data) return 'the file has no type-checking cost';
-			const uninferred = others.filter((other) =>
-				README_CLAIMS_FEWER_INSTANTIATIONS_UNINFERRED.includes(other)
-			);
-			// the same file before its reads: what inferring the types costs alone
-			const inferred = Object.fromEntries(
-				Object.entries(data.with_reads).map(([lib, cost]) => [
-					lib,
-					{ ...cost, instantiations: cost.instantiations - cost.reads_add }
-				])
-			);
-			return first_failure([
-				check_least(
-					[
-						{ name: 'a module of every scenario', libs: data.modules },
-						{ name: "the same with a consumer's reads", libs: data.with_reads }
-					],
-					(cost) => cost.instantiations,
-					'instantiations',
-					others.filter((other) => !uninferred.includes(other))
-				),
-				...uninferred.map((other) => {
-					const ours = data.modules[SUBJECT];
-					const theirs = data.modules[other];
-					if (!ours || !theirs) return `a module of every scenario: ${other} has no instantiations`;
-					return theirs.instantiations < ours.instantiations
-						? null
-						: `a module of every scenario: ${other}'s instantiations are not under ${SUBJECT}'s`;
-				}),
-				uninferred.length
-					? check_least(
-							[
-								{ name: 'the types inferred and read', libs: data.with_reads },
-								{ name: 'the types inferred and not read', libs: inferred }
-							],
-							(cost) => cost.instantiations,
-							'instantiations',
-							uninferred
-						)
-					: null
-			]);
 		}
 	},
 	{
 		sentence:
 			"**On a consumer's schemas,** svelte-docinfo's, as it wrote them in Valibot and written again in this library: a smaller bundle, faster as a geometric mean over its documents, and fewer heap bytes a parse on every one.",
 		others: ['valibot'],
-		check: (results: BenchmarkResults, others: ReadonlyArray<string>): string | null =>
-			first_failure(others.map((other) => check_harvest_set(results, other)))
+		check: (results, others, subject) =>
+			first_failure(others.map((other) => check_harvest_set(results, other, subject)))
+	},
+	// compiled
+	{
+		sentence:
+			"**Compiled size, cold start, and memory:** a smaller bundle than compiled Zod's, TypeBox's, or Sury's, a quicker cold start, bundled or importing the package, to a first parse and to a hundredth, and less memory held, on every scenario measured.",
+		subject: COMPILED,
+		others: README_CLAIMS_GENERATORS,
+		check: (
+			results: BenchmarkResults,
+			others: ReadonlyArray<string>,
+			subject: string
+		): string | null => {
+			const bundles = to_bundle_rows(results);
+			return first_failure([
+				typeof bundles === 'string'
+					? bundles
+					: check_least(bundles, (sizes) => sizes.gzip, 'gzipped bundle', others, subject),
+				check_faster_on_every_row(to_coldstart_rows(results), others, subject),
+				check_fewer_bytes_on_every_row(to_held_group(results), 'retained heap', others, subject)
+			]);
+		}
+	},
+	{
+		sentence:
+			'**Compiled on valid input:** faster than compiled Zod and TypeBox as a geometric mean over the scenarios each has a figure of.',
+		subject: COMPILED,
+		others: ['zod_compiled', 'typebox'],
+		check: faster_as_a_mean('valid')
+	},
+	{
+		sentence:
+			'**Compiled as a guard:** faster than compiled Zod and TypeBox as a geometric mean over the scenarios each has a figure of.',
+		subject: COMPILED,
+		others: ['zod_compiled', 'typebox'],
+		check: faster_as_a_mean('guard')
+	},
+	{
+		sentence:
+			'**Compiled on invalid input:** faster than compiled Zod on every scenario it has a figure of.',
+		subject: COMPILED,
+		others: ['zod_compiled'],
+		check: (results, others, subject) =>
+			check_faster_on_every_row(to_time_rows(results, 'invalid'), others, subject)
+	},
+	{
+		sentence:
+			'**Compiled against Sury:** about equal on valid input and as a guard, as geometric means over the scenarios, and faster on invalid input.',
+		subject: COMPILED,
+		others: ['sury'],
+		check: (results, others, subject) =>
+			first_failure([
+				about_equal(['valid', 'guard'])(results, others, subject),
+				faster_as_a_mean('invalid')(results, others, subject)
+			])
+	},
+	{
+		sentence:
+			"**Compiled allocation:** a parse of valid input allocates fewer heap bytes than compiled Zod's or Sury's on every scenario, and a parse of invalid input fewer than compiled Zod's on every scenario.",
+		subject: COMPILED,
+		others: ['zod_compiled', 'sury'],
+		check: (results, others, subject) =>
+			first_failure([
+				check_fewer_bytes_on_every_row(
+					to_allocation_group(results, 'allocation:valid_bytes'),
+					'bytes per valid parse',
+					others,
+					subject
+				),
+				check_fewer_bytes_on_every_row(
+					to_allocation_group(results, 'allocation:invalid_bytes'),
+					'bytes per invalid parse',
+					others.filter((other) => README_CLAIMS_COMPILED_FEWER_BYTES_ON_INVALID.includes(other)),
+					subject
+				)
+			])
+	},
+	{
+		sentence:
+			"**Compiled type-checking cost:** fewer instantiations than compiled Zod and Sury, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.",
+		subject: COMPILED,
+		others: ['zod_compiled', 'sury'],
+		check: fewer_instantiations
+	},
+	{
+		sentence:
+			'**Compiled across the tiers:** faster on valid input and as a guard than Valibot, Valita, Zod, and Zod Mini too, as a geometric mean over the scenarios.',
+		subject: COMPILED,
+		others: README_CLAIMS_INTERPRETERS,
+		check: (results, others, subject) =>
+			first_failure([
+				faster_as_a_mean('valid')(results, others, subject),
+				faster_as_a_mean('guard')(results, others, subject)
+			])
+	},
+	// where it is behind
+	{
+		sentence:
+			'**Across the tiers:** compiled Zod, TypeBox, and Sury each check valid input and answer a guard faster than this library as it is imported, as a geometric mean over the scenarios each has a figure of.',
+		others: README_CLAIMS_GENERATORS,
+		check: (results, others, subject) =>
+			first_failure(
+				others.flatMap((other) => [
+					check_geomean(results, 'valid', other, false, subject),
+					check_geomean(results, 'guard', other, false, subject)
+				])
+			)
+	},
+	{
+		sentence:
+			"**What compiling costs:** compiled, its bundle is larger than Valibot's and Valita's and it holds more memory than either, on every scenario measured, and it reaches a first parse and a hundredth later than Valita, bundled or importing the package.",
+		subject: COMPILED,
+		others: ['valibot', 'valita'],
+		check: (results, others, subject) =>
+			check_costs(
+				results,
+				others,
+				others.filter((other) => README_CLAIMS_COMPILED_STARTS_SLOWER_THAN.includes(other)),
+				subject
+			)
+	},
+	{
+		sentence:
+			'**Valita** allocates fewer heap bytes than a parse of this library on every scenario of invalid input, and on at least one of valid input.',
+		others: ['valita'],
+		check: (results, others, subject) =>
+			first_failure(
+				others.flatMap((other) => [
+					// the other way round: the library named is the one under this one on every row
+					check_fewer_bytes_on_every_row(
+						to_allocation_group(results, 'allocation:invalid_bytes'),
+						'bytes per invalid parse',
+						[subject],
+						other
+					),
+					check_other_fewer_bytes_on_some_row(
+						to_allocation_group(results, 'allocation:valid_bytes'),
+						'bytes per valid parse',
+						other,
+						subject
+					)
+				])
+			)
+	},
+	{
+		sentence:
+			'**Zod and Valita** are each faster than this library as it is imported on at least one scenario of valid input, and on at least one as a guard.',
+		others: ['zod', 'valita'],
+		check: (results, others, subject) =>
+			first_failure(
+				others.flatMap((other) =>
+					(['valid', 'guard'] as const).map((input) =>
+						check_other_faster_on_some_row(to_time_rows(results, input), other, subject)
+					)
+				)
+			)
+	},
+	{
+		sentence:
+			'**TypeBox,** whose check stops at the first failure and builds no output and no issues, refuses invalid input faster than this library as it is imported, as a geometric mean.',
+		others: ['typebox'],
+		check: (results, others, subject) =>
+			first_failure(others.map((other) => check_geomean(results, 'invalid', other, false, subject)))
+	},
+	{
+		sentence:
+			'**TypeBox against the compiled mode** refuses invalid input faster too, as a geometric mean, and is faster on at least one scenario of valid input.',
+		subject: COMPILED,
+		others: ['typebox'],
+		check: (results, others, subject) =>
+			first_failure(
+				others.flatMap((other) => [
+					check_geomean(results, 'invalid', other, false, subject),
+					check_other_faster_on_some_row(to_time_rows(results, 'valid'), other, subject)
+				])
+			)
+	},
+	{
+		sentence:
+			"**TypeBox's check allocates** fewer heap bytes than a parse of this library on at least one scenario of each input, and TypeBox has fewer instantiations for a module, which infers nothing, though more once the types are inferred, read or not.",
+		others: ['typebox'],
+		check: (results, others, subject) =>
+			first_failure(
+				others.flatMap((other) => [
+					check_other_fewer_bytes_on_some_row(
+						to_allocation_group(results, 'allocation:valid_bytes'),
+						'bytes per valid parse',
+						other,
+						subject
+					),
+					check_other_fewer_bytes_on_some_row(
+						to_allocation_group(results, 'allocation:invalid_bytes'),
+						'bytes per invalid parse',
+						other,
+						subject
+					),
+					check_fewer_instantiations_uninferred(results, other, subject)
+				])
+			)
 	}
 ];
 
 const normalize = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
 /**
- * The claims a README makes: the bullets of its claims block, each on one
- * line with its whitespace collapsed and without its bullet.
+ * The claims a README makes: the bullets of the claims blocks of its
+ * Measurements section, in order, each on one line with its whitespace
+ * collapsed and without its bullet. What is between two blocks is no claim.
  *
  * @returns the sentences, or null when the README has no Measurements section with a claims block
  */
@@ -754,15 +990,23 @@ export const find_readme_claims = (readme: string): Array<string> | null => {
 	if (section_start === -1) return null;
 	const next_section = readme.indexOf('\n## ', section_start + 1);
 	const section = readme.slice(section_start, next_section === -1 ? undefined : next_section);
-	const open = section.indexOf(README_CLAIMS_OPEN);
-	const close = section.indexOf(README_CLAIMS_CLOSE);
-	if (open === -1 || close === -1 || close < open) return null;
-	const block = section.slice(open + README_CLAIMS_OPEN.length, close);
-	return block
-		.split(/\n(?=- )/)
-		.map((bullet) => normalize(bullet))
-		.filter((bullet) => bullet !== '')
-		.map((bullet) => bullet.replace(/^- /, ''));
+	const sentences: Array<string> = [];
+	let from = 0;
+	for (;;) {
+		const open = section.indexOf(README_CLAIMS_OPEN, from);
+		const close = open === -1 ? -1 : section.indexOf(README_CLAIMS_CLOSE, open);
+		if (close === -1) break;
+		const block = section.slice(open + README_CLAIMS_OPEN.length, close);
+		sentences.push(
+			...block
+				.split(/\n(?=- )/)
+				.map((bullet) => normalize(bullet))
+				.filter((bullet) => bullet !== '')
+				.map((bullet) => bullet.replace(/^- /, ''))
+		);
+		from = close + README_CLAIMS_CLOSE.length;
+	}
+	return from ? sentences : null;
 };
 
 /**
@@ -772,9 +1016,10 @@ export const find_readme_claims = (readme: string): Array<string> | null => {
  * @param results - the published results
  * @param claims - the table of claims, `README_CLAIMS` by default
  * @returns what is wrong, a line each: no claims block, a bullet with no row,
- * a row whose sentence is gone, a sentence that states a figure, or a claim
- * the results no longer bear out. None when the README says what the results
- * show.
+ * a row whose sentence is gone, a sentence that states a figure, a claim the
+ * results no longer bear out, or a library of the roster that is in neither
+ * tier or in both, which no claim is then like for like with. None when the
+ * README says what the results show.
  */
 export const check_readme_claims = (
 	readme: string,
@@ -788,6 +1033,18 @@ export const check_readme_claims = (
 		];
 	}
 	const problems: Array<string> = [];
+	const modes = to_subject_modes(results);
+	for (const lib of results.meta.libs.map((entry) => entry.id)) {
+		if (modes.includes(lib)) continue;
+		const tiers =
+			Number(README_CLAIMS_INTERPRETERS.includes(lib)) +
+			Number(README_CLAIMS_GENERATORS.includes(lib));
+		if (tiers !== 1) {
+			problems.push(
+				`the results compare ${lib}, which is in ${tiers ? 'both tiers' : 'neither tier'} of the claims: a library interprets a schema or generates code for one`
+			);
+		}
+	}
 	const known = new Map(claims.map((claim) => [normalize(claim.sentence), claim]));
 	for (const sentence of sentences) {
 		if (!known.has(sentence)) {
@@ -803,7 +1060,7 @@ export const check_readme_claims = (
 			problems.push(`README_CLAIMS has "${sentence}", and the README no longer says it`);
 			continue;
 		}
-		const failure = claim.check(results, to_claim_others(claim, results));
+		const failure = check_readme_claim(claim, results);
 		if (failure !== null) {
 			problems.push(`the results no longer bear out "${sentence}": ${failure}`);
 		}

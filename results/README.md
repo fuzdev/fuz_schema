@@ -137,11 +137,11 @@ Everything below runs on the publishing machine, from the root of the checkout.
     publishable. `--no-install` keeps the versions `npm ci` installed in step
     2, which the run recorded.
 11. **Hold the README to it.** The README's Measurements section makes its
-    comparative claims as bullets between two marker comments, and
-    `src/test/readme_measurements.test.ts` holds each to `latest.json` by a
-    row of `README_CLAIMS` in `src/test/readme_claims.ts`.
+    comparative claims as bullets between marker comments, a block for each
+    of its groups, and `src/test/readme_measurements.test.ts` holds each to
+    `latest.json` by a row of `README_CLAIMS` in `src/test/readme_claims.ts`.
     - **The first time a run is published**, in this order: publish the run
-      (step 9), paste the claims block into the README's Measurements section,
+      (step 9), paste the claims blocks into the README's Measurements section,
       each bullet the sentence of a row word for word, set
       `README_CLAIMS_HELD` to `true` in `src/test/readme_claims.ts`, and run
       `gro check`. Until that constant is `true` the test holds the README to

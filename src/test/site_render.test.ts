@@ -17,6 +17,7 @@ import {
 	to_types_group
 } from '#routes/docs/benchmarks/benchmark_sections.ts';
 import { matrix_row_value, to_column_notes } from '#routes/docs/benchmarks/benchmark_matrix.ts';
+import { RATIO_LEVEL_COLOR, to_ratio_color } from '#routes/docs/benchmarks/benchmark_ratio.ts';
 import BenchmarksChart from '#routes/docs/benchmarks/BenchmarksChart.svelte';
 import BenchmarksIntro from '#routes/docs/benchmarks/BenchmarksIntro.svelte';
 import BenchmarksNotes from '#routes/docs/benchmarks/BenchmarksNotes.svelte';
@@ -265,7 +266,7 @@ describe('a chart and a table mark what is not a difference', () => {
 			.map((match) => ({ tag: match[1]!, text: match[2]!.replace(/<[^>]+>/g, ' ') }))
 			.filter((cell) => matcher.test(cell.text));
 
-	test('a level cell of a table is not tinted, and a cell that differs is', () => {
+	test('a cell that is no difference is tinted as level, whatever its ratio, and one that differs by its ratio', () => {
 		const html = render_html(BenchmarksTable, {
 			columns,
 			groups: to_time_groups(results),
@@ -278,15 +279,21 @@ describe('a chart and a table mark what is not a difference', () => {
 		assert.isAbove(level.length, 0);
 		assert.isAbove(floor.length, 0);
 		assert.isAbove(differs.length, 0);
-		for (const cell of [...level, ...floor]) {
-			assert.notInclude(cell.tag, 'tinted', cell.text);
-			assert.notInclude(cell.tag, '--ratio_color', cell.text);
-		}
-		for (const cell of differs) {
+		for (const cell of [...level, ...floor, ...differs]) {
 			assert.include(cell.tag, 'tinted', cell.text);
 			assert.include(cell.tag, '--ratio_color', cell.text);
 		}
-		// a baseline another number is level with is marked and untinted with it
+		// the level color, of a ratio the scale alone would color otherwise
+		const to_ratio = (text: string): number => Number(/[≈~]([\d.,]+)×/.exec(text)![1]);
+		const untold = [...level, ...floor];
+		for (const cell of untold) assert.include(cell.tag, RATIO_LEVEL_COLOR, cell.text);
+		assert.ok(
+			untold.some((cell) => to_ratio_color(to_ratio(cell.text)) !== RATIO_LEVEL_COLOR),
+			'the fixture has a cell that is no difference whose ratio is outside the level band'
+		);
+		// and a cell that differs is colored by its ratio
+		assert.ok(differs.some((cell) => !cell.tag.includes(RATIO_LEVEL_COLOR)));
+		// a baseline another number is level with is marked, and tinted as level with it
 		assert.ok(level.some((cell) => cell.text.includes('≈1.00×')));
 	});
 
@@ -310,7 +317,7 @@ describe('a chart and a table mark what is not a difference', () => {
 		);
 	});
 
-	test('a level bar of a chart has no ratio color, and a bar that differs has one', () => {
+	test('a level bar of a chart has the level color, and a bar that differs the color of its ratio', () => {
 		const html = render_html(BenchmarksChart, { columns, row: guard.row, title: guard.title });
 		const ratios = [
 			...html.matchAll(/<span\b([^>]*class="[^"]*bar-ratio[^"]*"[^>]*)>([\s\S]*?)<\/span>/g)
@@ -321,8 +328,9 @@ describe('a chart and a table mark what is not a difference', () => {
 		// the fixture's TypeBox and compiled Zod, the least of them among the level
 		assert.deepStrictEqual(level.map((ratio) => ratio.text).sort(), ['≈1.00×', '≈1.05×']);
 		assert.isAbove(differs.length, 0);
-		for (const ratio of level) assert.notInclude(ratio.tag, 'color', ratio.text);
+		for (const ratio of level) assert.include(ratio.tag, RATIO_LEVEL_COLOR, ratio.text);
 		for (const ratio of differs) assert.match(ratio.tag, /style="[^"]*color:/, ratio.text);
+		assert.ok(differs.some((ratio) => !ratio.tag.includes(RATIO_LEVEL_COLOR)));
 	});
 
 	test('a survey mean whose band holds 1 is marked, and prints its band', () => {

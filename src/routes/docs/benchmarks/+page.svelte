@@ -112,15 +112,15 @@
 				<code>1.00×</code>: <code>2.00×</code> is twice as slow or twice as large. Hover a number to
 				compare its row against that library instead. A ratio marked <code>≈</code> is inside what
 				the two numbers range over, and one marked <code>~</code> has a time at the call floor:
-				neither is a difference, and neither is colored. Where a number is level with the row's
-				least, the least is marked <code>≈</code> too: the readings don't tell the two apart, and
-				neither is the better. For two numbers of a row, what they range over is the two spreads
-				together, the <code>±</code> beside each. A geometric mean has a band in place of a spread,
-				printed under it, from the mean of its rows' least readings to the mean of their most, and
-				two means whose bands overlap are level. Each table says how its own figures are compared. A
-				cell with no number says why it has none, and a number marked <code>†</code> is not ranked,
-				nor is its row until a library is hovered. Bytes are in decimal units throughout:
-				<code>1 kB</code> is 1,000 bytes.
+				neither is a difference, and each is colored as level whatever it reads. Where a number is
+				level with the row's least, the least is marked <code>≈</code> too: the readings don't tell
+				the two apart, and neither is the better. For two numbers of a row, what they range over is
+				the two spreads together, the <code>±</code> beside each. A geometric mean has a band in
+				place of a spread, printed under it, from the mean of its rows' least readings to the mean
+				of their most, and two means whose bands overlap are level. Each table says how its own
+				figures are compared. A cell with no number says why it has none, and a number marked
+				<code>†</code> is not ranked, nor is its row until a library is hovered. Bytes are in
+				decimal units throughout: <code>1 kB</code> is 1,000 bytes.
 			</p>
 			<BenchmarksLegend />
 		</section>

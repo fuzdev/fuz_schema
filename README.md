@@ -30,11 +30,16 @@ if (result.ok) result.value;
 else result.issues; // [{kind, expected, received, path, message}]
 ```
 
-Of the libraries it is measured against, it has the smallest bundle, the quickest cold start, and the least memory held,
-and as it is imported it is not the fastest: Zod compiled ahead of time by `z.compile` and TypeBox's compiled `Check` check valid input and answer a guard faster,
-and TypeBox's `Check`, which builds no issues, refuses invalid input faster.
-With each schema compiled by its opt-in [`compile.ts`](#compiling-a-schema), it checks valid input and answers a guard faster than each of them as a mean,
-though TypeBox is still faster on some scenarios of valid input, and its bundle and the memory it holds are then larger than Valibot's.
+Its comparisons pair each mode with the libraries of its kind: as it is imported with those that interpret a schema,
+and with each schema compiled by its opt-in [`compile.ts`](#compiling-a-schema) with those that generate code.
+As it is imported it has the smallest bundle, the quickest cold start, and the least memory held of every library it is measured against,
+and parses valid input faster than Valibot, Zod, and Zod Mini as a mean, and about as fast as Valita.
+Compiled, it is smaller, starts quicker, and holds less than compiled Zod, TypeBox, and Sury,
+and answers a guard faster than compiled Zod and TypeBox as a mean, and about as fast as Sury,
+for a bundle larger than Valibot's and more memory held.
+It is behind in places: TypeBox, whose check builds no issues, refuses invalid input faster,
+Valita allocates less on invalid input,
+and on valid input compiled Zod, TypeBox, and Sury are faster than this one as it is imported.
 Its output is not a fresh copy: a valid input that needs no change comes back as itself, see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 [Measurements](#measurements) has each claim, held by a test to the published benchmark run, and the rest.
 
@@ -54,39 +59,89 @@ with a human steering the design.
 
 ## Measurements
 
-The benchmarks in `src/benchmarks/` compare this library, as it is imported and with each schema compiled by
-`compile_parse` and `compile_guard`, with Valibot, Zod (as it is imported,
-with each root compiled ahead of time by `z.compile`, and as Zod Mini), TypeBox, Valita, and Sury.
+The benchmarks in `src/benchmarks/` compare this library with Valibot, Valita, Zod, Zod Mini, TypeBox, and Sury.
 [The benchmarks page](https://schema.fuz.dev/docs/benchmarks) has the numbers of every comparison, rendered from one published results file,
 [`results/latest.json`](results/latest.json), which names the machine, the versions, and the commit it came from.
-A mean in a claim is of two libraries over the scenarios both have a figure of, where the page's leave out `type_json`,
-which `z.compile` hands back uncompiled. The claims are of this library as it is imported, but the one marked **Compiled**:
-"the libraries compared" are the others, and no claim sets the two modes against each other.
-`src/test/readme_measurements.test.ts` holds each bullet of the list to that file:
+
+A library interprets a schema, walking it for every input, or generates code for one,
+which costs bytes, memory, and a compile at startup, and runs faster after.
+This library does either, so the comparisons pair like with like:
+
+| Library | Interprets | Generates code | Measured |
+| --- | --- | --- | --- |
+| fuz_schema | as it is imported | opt-in, [`compile.ts`](#compiling-a-schema) | in both modes |
+| Valibot | yes | no | interpreting |
+| Valita | yes | no | interpreting |
+| Zod Mini | yes | no | interpreting |
+| Zod | yes | for an object schema where the runtime allows it, and for a whole root with `z.compile` | as it is imported, with the interpreters, and with each root compiled, with the generators |
+| TypeBox | its `Value.Check` | `Compile`, whose `Check` builds no output and no issues | generating code |
+| Sury | no | always | generating code |
+
+The claims below state a direction, or that two are about equal, and no figure, and `src/test/readme_measurements.test.ts` holds each to the published file.
+A mean is geometric, of two libraries over the scenarios both have a figure of, a time that is mostly the cost of the call left out:
+`z.compile` hands the recursive scenario, `type_json`, back uncompiled, so compiled Zod has no figure of it.
+The page's means are of every library it shows, over the scenarios they all have, so one there can be of other rows.
+A close call is given no direction: two libraries are about equal where their means are within a quarter of each other, whichever is ahead,
+a gap the next run can close or turn round.
+
+### As it is imported
+
+Against the libraries that interpret: Valibot, Valita, Zod, and Zod Mini.
+In the first three bullets "the libraries compared" are every library measured, whatever it does,
+and the bullet of the recursive scenario names TypeBox too.
 
 <!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
 
 - **Size:** the smallest bundle of the libraries compared, minified and gzipped, for every scenario and for all of them together.
-- **On valid input:** faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios, though Zod as it is imported is faster on at least one of them;
-  Zod with its roots compiled ahead of time by `z.compile` is faster as a mean over the scenarios it compiles, and so is TypeBox, whose check builds no output and no issues, over all of them.
-- **On invalid input:** faster than Valibot and Zod in each of its modes on every scenario each has a figure of;
-  TypeBox, whose check stops at the first failure and builds no issues, is faster as a geometric mean.
-- **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod as it is imported, and Zod Mini as a geometric mean over the scenarios,
-  though Zod as it is imported is faster on at least one of them; TypeBox and compiled Zod are faster as a mean over the scenarios each has a figure of.
-- **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod as it is imported, Zod Mini, and TypeBox.
-- **Compiled,** with each schema through `compile_parse` or `compile_guard`: faster as a guard than each of the libraries compared, and on valid input than each but Sury,
-  as a geometric mean over the scenarios each has a figure of, though TypeBox is faster on at least one scenario of valid input; its bundle is then larger than Valibot's and it holds more memory, on every scenario measured.
-- **Allocation:** a parse of valid input allocates fewer heap bytes than Valibot's, plain Zod's, or Zod Mini's on every scenario;
-  TypeBox's check, which builds no output, allocates fewer on at least one.
-- **Allocation on invalid input:** a parse allocates fewer heap bytes than Valibot's or that of Zod in each of its modes on every scenario;
-  TypeBox's check, which builds no issues, allocates fewer on at least one.
 - **Cold start:** an entry, bundled or importing the package, imports, builds its schema, and parses once, and a hundred times, in less time than any of the libraries compared, on every scenario measured.
 - **Retained memory:** the least held of the libraries compared once a schema is built and has parsed once, on every scenario measured.
-- **Type-checking cost:** fewer instantiations than Valibot, Zod as it is imported, Zod Mini, and compiled Zod, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer;
-  TypeBox has fewer for the module, which infers nothing, and more once the types are inferred, read or not.
+- **On valid input:** faster than Valibot, Zod, and Zod Mini as a geometric mean over the scenarios.
+- **As a guard,** where a library only answers whether a valid input matches: faster than Valibot, Zod, and Zod Mini as a geometric mean over the scenarios.
+- **On invalid input:** faster than Valibot, Zod, and Zod Mini on every scenario.
+- **Against Valita:** about equal on valid input, on invalid input, and as a guard, as geometric means over the scenarios.
+- **Allocation:** a parse allocates fewer heap bytes than Valibot's, Zod's, or Zod Mini's on every scenario, of valid input and of invalid.
+- **Type-checking cost:** fewer instantiations than Valibot, Valita, Zod, and Zod Mini, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.
+- **On the recursive scenario,** `type_json`, a real schema: faster on valid input and as a guard than Valibot, Zod, Zod Mini, and TypeBox.
 - **On a consumer's schemas,** svelte-docinfo's, as it wrote them in Valibot and written again in this library: a smaller bundle, faster as a geometric mean over its documents, and fewer heap bytes a parse on every one.
 
 <!-- /claims -->
+
+### Compiled
+
+With each schema through `compile_parse` or `compile_guard`, against the libraries that generate code:
+Zod with each root compiled by `z.compile`, TypeBox, and Sury.
+The last bullet is of the libraries that interpret.
+
+<!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
+
+- **Compiled size, cold start, and memory:** a smaller bundle than compiled Zod's, TypeBox's, or Sury's, a quicker cold start, bundled or importing the package, to a first parse and to a hundredth, and less memory held, on every scenario measured.
+- **Compiled on valid input:** faster than compiled Zod and TypeBox as a geometric mean over the scenarios each has a figure of.
+- **Compiled as a guard:** faster than compiled Zod and TypeBox as a geometric mean over the scenarios each has a figure of.
+- **Compiled on invalid input:** faster than compiled Zod on every scenario it has a figure of.
+- **Compiled against Sury:** about equal on valid input and as a guard, as geometric means over the scenarios, and faster on invalid input.
+- **Compiled allocation:** a parse of valid input allocates fewer heap bytes than compiled Zod's or Sury's on every scenario, and a parse of invalid input fewer than compiled Zod's on every scenario.
+- **Compiled type-checking cost:** fewer instantiations than compiled Zod and Sury, for a module of every scenario, and for a file of a consumer's reads of the types its schemas infer.
+- **Compiled across the tiers:** faster on valid input and as a guard than Valibot, Valita, Zod, and Zod Mini too, as a geometric mean over the scenarios.
+
+<!-- /claims -->
+
+### Where it is behind
+
+<!-- claims: each bullet is held to results/latest.json by src/test/readme_measurements.test.ts -->
+
+- **Across the tiers:** compiled Zod, TypeBox, and Sury each check valid input and answer a guard faster than this library as it is imported, as a geometric mean over the scenarios each has a figure of.
+- **What compiling costs:** compiled, its bundle is larger than Valibot's and Valita's and it holds more memory than either, on every scenario measured,
+  and it reaches a first parse and a hundredth later than Valita, bundled or importing the package.
+- **Valita** allocates fewer heap bytes than a parse of this library on every scenario of invalid input, and on at least one of valid input.
+- **Zod and Valita** are each faster than this library as it is imported on at least one scenario of valid input, and on at least one as a guard.
+- **TypeBox,** whose check stops at the first failure and builds no output and no issues, refuses invalid input faster than this library as it is imported, as a geometric mean.
+- **TypeBox against the compiled mode** refuses invalid input faster too, as a geometric mean, and is faster on at least one scenario of valid input.
+- **TypeBox's check allocates** fewer heap bytes than a parse of this library on at least one scenario of each input,
+  and TypeBox has fewer instantiations for a module, which infers nothing, though more once the types are inferred, read or not.
+
+<!-- /claims -->
+
+### What the figures are of
 
 A valid parse that returns its input allocates the same few bytes for a list of records as for one record, as the page's allocation table shows,
 except where something makes a new value: a copy where an entry changed or a key is dropped,
@@ -99,15 +154,15 @@ Caveats:
 
 - The scenarios are few and small. `type_json` is a real schema taken from [svelte-docinfo](https://github.com/fuzdev/svelte-docinfo);
   the rest are synthetic. The page has two wider readings: a survey of many small shapes, row by row, which no claim here is of,
-  and harvested sets, consumers' own schemas and data in the library each was written in and in this one, of which the last claim is of one.
+  and harvested sets, consumers' own schemas and data in the library each was written in and in this one, of which the claim of a consumer's schemas is of one.
 - Timings come from one machine, which the page names with its state as the run started and ended, and nothing is pinned or isolated.
   Bundle sizes are exact. Allocation is exact for the code the engine is running when it is sampled,
   which a process settles and not always the same way, so a figure repeats within about a percent,
   but for a row that settles at one of a few figures further apart.
-- It isn't like-for-like. Valibot's bundles carry what this library leaves out or makes opt-in,
+- Inside a tier the libraries still don't do the same work. Valibot's bundles carry what this library leaves out or makes opt-in,
   messages looked up by language, the failed value in each issue, and a Standard Schema property on every schema,
   TypeBox's check builds no output and no issues,
-  and where this library returns its input Valibot and Zod return a copy of it.
+  and where this library and Valita return their input Valibot, Zod, and Sury return a copy of it.
   A guard row sets the copy aside only where the guard builds none: Valibot's `is`,
   Zod's `z.validate` where a schema has no compiled path, and this library's `is` of a `strip_object` given a key to drop
   run the parser, which still copies.
@@ -119,9 +174,10 @@ Caveats:
 ## When not to use it
 
 - Where the fastest parse of valid input matters most and code generated at runtime is not allowed:
-  the libraries [Measurements](#measurements) names as faster than the interpreter there each make code at runtime to be so,
-  as [`compile.ts`](#compiling-a-schema) does, which is faster than each of them as a mean.
+  the libraries that are faster there than this one as it is imported, as a mean, each make code at runtime to be so,
+  as [`compile.ts`](#compiling-a-schema) does, see [Where it is behind](#where-it-is-behind).
   Where that is refused the interpreter runs, and `to_guard_source` writes a guard as a module ahead of time, which no benchmark measures.
+- Where refusing invalid input fast matters most: TypeBox's check, which builds no issues, is faster at it.
 - Where the output must be a fresh copy, or the input comes from code that isn't trusted, whose getter or `Proxy` can change a value between reads:
   see [What copy-on-write gives up](#what-copy-on-write-gives-up).
 - Off V8: the one shape is tuned to V8's hidden classes, and nothing is measured on another engine.
@@ -977,7 +1033,7 @@ The interpreter is the oracle: the verdict, the output, the input coming back as
 and the issues are `is`'s and `parse`'s. Compiled code builds no issue, so a compiled parse of an input that fails calls `parse`.
 What it costs is the module's bytes, a compile for each schema, and `new Function`:
 where that is refused, as under a content security policy without `unsafe-eval`, the functions returned run the interpreter.
-What it gains is the claim marked **Compiled** in [Measurements](#measurements); an input that fails costs about what it costs `parse`.
+What it gains is under [Compiled](#compiled) in Measurements, and what it costs under [Where it is behind](#where-it-is-behind); an input that fails costs about what it costs `parse`.
 
 - A schema of a kind the compiler has no code for, [one of your own](#writing-a-schema) among them, is run in place by its own `run`,
   and the code around it is compiled. A compiled parse does the same for a `keyed_record`, an `object_with_rest`,

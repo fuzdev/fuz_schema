@@ -677,7 +677,7 @@ published run.
   is the survey's rule applied to the scenarios too, and its row is in no
   mean. A number level with its row's least is marked and not ranked, in a
   table and in a chart, and so is the least of a row where another is level
-  with it. A mark is of the least alone, so under a chart's bars are the
+  with it. Each is colored as level, whatever its ratio reads. A mark is of the least alone, so under a chart's bars are the
   pairs level with each other and not with it. Where a script
   takes one figure a process, the page compares with what this document says
   such a figure repeats within, [below](#reading-the-numbers): a percent
@@ -697,7 +697,13 @@ published run.
 - **The README's claims are held to the file**: each comparative sentence of
   its Measurements section is a row of `README_CLAIMS`
   (`src/test/readme_claims.ts`), with a predicate over a results file that
-  reads a difference as the page does, see the README.
+  reads a difference as the page does, see the README. The claims are like
+  for like: this library as it is imported against the libraries that
+  interpret a schema, its compiled mode against those that generate code,
+  and then where either is behind. A library added to the roster is placed
+  in one of the two, or the test fails. A close call is given no direction:
+  two libraries whose geometric means are within a quarter of each other are
+  called about equal, whichever is ahead.
 
 ## Reading the numbers
 

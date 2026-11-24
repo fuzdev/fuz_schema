@@ -7,7 +7,7 @@
 		type MatrixColumn,
 		type MatrixRow
 	} from './benchmark_matrix.ts';
-	import { to_ratio_color } from './benchmark_ratio.ts';
+	import { RATIO_LEVEL_COLOR, to_ratio_color } from './benchmark_ratio.ts';
 	import BenchmarksNotes from './BenchmarksNotes.svelte';
 
 	const {
@@ -105,9 +105,11 @@
 					<span
 						class="bar-ratio"
 						role="cell"
-						style:color={bar.ratio === undefined || bar.ratio.level !== null
+						style:color={bar.ratio === undefined
 							? undefined
-							: to_ratio_color(bar.ratio.ratio)}
+							: bar.ratio.level === null
+								? to_ratio_color(bar.ratio.ratio)
+								: RATIO_LEVEL_COLOR}
 					>
 						{#if bar.ratio !== undefined}
 							{bar.ratio.level === 'spread'

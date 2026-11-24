@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { format_ratio } from './benchmark_format.ts';
 	import type { MatrixColumn } from './benchmark_matrix.ts';
-	import { to_ratio_color } from './benchmark_ratio.ts';
+	import { RATIO_LEVEL_COLOR, to_ratio_color } from './benchmark_ratio.ts';
 	import { SURVEY_ALL, type SurveySummaryRow } from './benchmark_sections.ts';
 	import BenchmarksLabel from './BenchmarksLabel.svelte';
 
@@ -46,10 +46,15 @@
 						{#if !cell}
 							<td class="benchmarks-num text_70"><small>no figure</small></td>
 						{:else}
-							{@const tinted = cell.ratio !== null && !cell.level}
+							<!-- a mean that names neither is tinted as level, whatever it reads -->
+							{@const tinted = cell.ratio !== null}
 							<td
 								class={['benchmarks-num', { tinted }]}
-								style:--ratio_color={tinted ? to_ratio_color(cell.ratio!) : undefined}
+								style:--ratio_color={tinted
+									? cell.level
+										? RATIO_LEVEL_COLOR
+										: to_ratio_color(cell.ratio!)
+									: undefined}
 							>
 								{cell.ratio === null
 									? 'at the call floor'

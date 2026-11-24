@@ -44,6 +44,7 @@ import {
 	README_CLAIMS,
 	README_CLAIMS_EVERY_OTHER,
 	README_CLAIMS_SUBJECT,
+	check_readme_claim,
 	to_claim_others,
 	to_subject_modes
 } from './readme_claims.ts';
@@ -281,7 +282,7 @@ describe("each kind of file bears the README's claims", () => {
 			for (const claim of README_CLAIMS) {
 				const others = to_claim_others(claim, results);
 				assert.notInclude(others, README_CLAIMS_SUBJECT, claim.sentence);
-				const failure = claim.check(results, others);
+				const failure = check_readme_claim(claim, results, others);
 				if (modes.includes(claim.subject ?? README_CLAIMS_SUBJECT)) {
 					assert.strictEqual(failure, null, claim.sentence);
 				} else {
@@ -356,14 +357,18 @@ describe("each kind of file bears the README's claims", () => {
 			// the compiled mode is this library, not one compared with it: its lead fails nothing
 			const compiled = load_fixture();
 			change(compiled, COMPILED_LIB);
-			assert.strictEqual(claim.check(compiled, to_claim_others(claim, compiled)), null, starts);
+			assert.strictEqual(
+				check_readme_claim(claim, compiled, to_claim_others(claim, compiled)),
+				null,
+				starts
+			);
 			// every other library is compared, and its lead fails the claim, naming it
 			const others = to_claim_others(claim, load_fixture());
 			assert.isAbove(others.length, 0, starts);
 			for (const lib of others) {
 				const results = load_fixture();
 				change(results, lib);
-				const failure = claim.check(results, to_claim_others(claim, results));
+				const failure = check_readme_claim(claim, results, to_claim_others(claim, results));
 				assert.isString(failure, `${starts} ${lib}`);
 				assert.include(failure, lib, `${starts} ${lib}`);
 			}
