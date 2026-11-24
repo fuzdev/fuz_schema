@@ -221,10 +221,10 @@ describe('inference by position', () => {
 
 	test('a pipe of a generic action or schema, in a generic function', () => {
 		// a pipe of a generic action is assignable to the type it declares
-		const _action = <O>(a: s.SchemaAction<string, O>): s.Schema<O, string> => s.pipe(s.string, a);
+		const _action = <O>(a: s.SchemaAction<O, string>): s.Schema<O, string> => s.pipe(s.string, a);
 		expectTypeOf<ReturnType<typeof _action<number>>>().toEqualTypeOf<s.Schema<number, string>>();
 		// and so is what it parses to, returned or held in a variable
-		const _parsed = <O>(a: s.SchemaAction<string, O>): O => {
+		const _parsed = <O>(a: s.SchemaAction<O, string>): O => {
 			const p = s.pipe(s.string, a);
 			const v: O = s.parse_or_throw(p, '');
 			return v;
@@ -2649,15 +2649,49 @@ describe('key modifiers by wrapper', () => {
 		const required = Object.keys(_O.def).filter(
 			(k) => !(missing as ReadonlyArray<string>).includes(k)
 		);
-		for (const key of missing) {
-			const entry = s.object({ [key]: _O.def[key] });
-			assert(s.is(entry, {}), key);
+		// through each object kind, whose loops are not one
+		const kinds = [s.object, s.strip_object, s.loose_object] as const;
+		for (const kind of kinds) {
+			for (const key of missing) {
+				assert(s.is(kind({ [key]: _O.def[key] }), {}), `${kind.name} ${key}`);
+			}
+			for (const key of required) {
+				const entry = kind({ [key]: _O.def[key as keyof typeof _O.def] });
+				assert(!s.is(entry, {}), `${kind.name} ${key}`);
+			}
 		}
-		for (const key of required) {
-			const entry = s.object({ [key]: _O.def[key as keyof typeof _O.def] });
-			assert(!s.is(entry, {}), key);
+		// and of those, a key is in what a missing key gives exactly where the
+		// output type requires it: the list is held to the type, and the
+		// runtime to the list
+		type Out = s.Infer<typeof _O>;
+		type RequiredOut = {
+			// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+			[K in keyof Out]-?: {} extends Pick<Out, K> ? never : K;
+		}[keyof Out];
+		const filled = [
+			'with_default',
+			'with_default_fn',
+			'nullable_with_default',
+			'lazy_with_default',
+			// under a `nullable` or a `lazy` the steps run on the `undefined`
+			'nullable_pipe_optional_transform',
+			'lazy_pipe_optional_transform',
+			'pipe_with_default',
+			'union_with_default',
+			'with_default_optional',
+			'with_default_fn_optional'
+		] as const;
+		expectTypeOf<(typeof filled)[number]>().toEqualTypeOf<RequiredOut & (typeof missing)[number]>();
+		for (const kind of kinds) {
+			for (const key of missing) {
+				const given = s.parse_or_throw(kind({ [key]: _O.def[key] }), {});
+				assert.strictEqual(
+					key in given,
+					(filled as ReadonlyArray<string>).includes(key),
+					`${kind.name} ${key}`
+				);
+			}
 		}
-		// and a key the output type requires is there
 		const output = s.parse_or_throw(
 			s.object({
 				with_default_optional: _O.def.with_default_optional,
@@ -2942,6 +2976,26 @@ describe('empty object schemas', () => {
 		expectTypeOf<s.Infer<ReturnType<typeof s.object<typeof _mixed>>>>().toEqualTypeOf<
 			{ a: string } | Record<string, never>
 		>();
+	});
+
+	test('an entry typed as a union of schemas may be left out where one of them leaves it out', () => {
+		const optional_string = s.optional(s.string);
+		const either = optional_string as typeof s.string | typeof optional_string;
+		const Either = s.object({ a: either });
+		// out, the key is missing where the schema is the `optional`
+		expectTypeOf<s.Infer<typeof Either>>().toEqualTypeOf<{ a?: string | undefined }>();
+		// in, it is required, as the `string` refuses a missing key
+		expectTypeOf<s.InferInput<typeof Either>>().toEqualTypeOf<{ a: string | undefined }>();
+		assert.notProperty(s.parse_or_throw(Either, {}), 'a');
+		// and so under a pipe that starts with one, which runs no step for the key
+		const Piped = s.object({
+			a: s.pipe(
+				either,
+				s.check(() => true)
+			)
+		});
+		expectTypeOf<s.Infer<typeof Piped>>().toEqualTypeOf<{ a?: string | undefined }>();
+		assert.notProperty(s.parse_or_throw(Piped, {}), 'a');
 	});
 
 	test('object takes no keys in, and strip_object takes any', () => {

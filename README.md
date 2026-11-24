@@ -260,7 +260,7 @@ which [a copy filled from the start](docs/declined.md#a-copy-filled-from-the-sta
 | `safeParse` | `.safeParse()` | `parse` |
 | `ValiError` | `ZodError` | `SchemaError` |
 | `InferOutput`, `InferInput` | `z.infer`, `z.input` | `Infer`, `InferInput` |
-| `GenericSchema<Input, Output>` | `ZodType<Output, Input>` | `Schema<Output, Input>` |
+| `GenericSchema<Input, Output>` | `ZodType<Output, Input>` | `Schema<Output, Input>`, where one argument types both, as one does of Valibot's: a helper that takes any schema of an output is `Schema<Output, unknown>` |
 | `schema.entries` | `schema.shape` | `schema.def`, and `def.entries` of an `object_with_rest` |
 | `schema['~standard']` | `schema['~standard']` | `to_standard_schema(schema)`, in `standard_schema.ts` |
 
@@ -460,7 +460,7 @@ So the declaration emitted for an exported schema writes each schema it holds by
 and doesn't write out its output or its input, but for those two.
 A `pipe` is an `s.PipeSchema<TOutput, typeof first>`, whose output its steps compute,
 so a declaration writes that output out wherever the pipe is held.
-An action is a `SchemaRefinement` or a `SchemaAction`, typed by what it takes and gives.
+An action is a `SchemaRefinement` or a `SchemaAction`, typed by what it gives and then what it takes, as a `Schema` is.
 A declaration also writes out an object schema's entries, wherever the schema is held.
 Naming each exported object schema's type, and each exported `pipe` whose output is an object,
 keeps a declaration to references:

@@ -37,7 +37,10 @@
  * `SIDES` row with the copies' drop of a `__proto__` key. Where a rule brings
  * out a disagreement of zod and valibot, exactly one entry of
  * `SPLIT_RECOGNIZERS`, each of a `SIDES` row, must recognize it, and this
- * library's result is held to that of the row's side.
+ * library's result is held to that of the row's side. A case they disagree
+ * on as it was drawn is tallied by whose side this library is on, and its
+ * number kept, for `differential_sides.json`, which holds each such case of
+ * the fixed seeds to the side it was last seen on.
  *
  * Strings for the format tests are also drawn alone, near misses of the
  * grammars: where zod and valibot agree on one, this library must too, and
@@ -300,12 +303,18 @@ export const same_differential_result = (
 			render_parsed(relax_paths(spec, theirs.parsed, theirs.input, theirs.recipe, rules, run))
 		);
 	}
-	return same_value(structures(spec), ours.value, theirs.value, {
-		of_input: collect_input_objects(ours.input),
-		of_their_input: collect_input_objects(theirs.input),
-		rules,
-		inherited
-	});
+	return same_value(
+		structures(spec),
+		ours.value,
+		theirs.value,
+		{
+			of_input: collect_input_objects(ours.input),
+			of_their_input: collect_input_objects(theirs.input),
+			rules,
+			inherited
+		},
+		ours.input
+	);
 };
 
 //
@@ -422,12 +431,18 @@ const same_ours = (
 ): boolean => {
 	if (!ours.parsed || !rewritten.parsed || ours.ok !== rewritten.ok) return false;
 	if (!ours.parsed.ok) return ours.text === rewritten.text;
-	return same_value(structures(spec), ours.value, rewritten.value, {
-		of_input: collect_input_objects(ours.input),
-		of_their_input: collect_input_objects(rewritten.input),
-		rules,
-		inherited: 'prototype_taken'
-	});
+	return same_value(
+		structures(spec),
+		ours.value,
+		rewritten.value,
+		{
+			of_input: collect_input_objects(ours.input),
+			of_their_input: collect_input_objects(rewritten.input),
+			rules,
+			inherited: 'prototype_taken'
+		},
+		ours.input
+	);
 };
 
 /** Whether the rules made the three agree, and what `split_side` found where they ended in a split. */
@@ -902,7 +917,9 @@ const LEAF_WEIGHTS: Record<string, number> = {
 	safe_integer: 5,
 	bigint: 5,
 	check: 6,
-	transform: 6
+	transform: 6,
+	uuid: 7,
+	iso_datetime: 7
 };
 const KEY_WEIGHT = (key: string): number => ({ a: 0, b: 1, z: 1, d: 2 })[key] ?? 3;
 const VALUE_LADDER: Array<unknown> = ['x', undefined, 1, null, ''];
@@ -948,8 +965,13 @@ const spec_weight = (spec: DifferentialSpec): number => {
 			return 5 + value_weight(spec.v);
 		case 'one_of':
 			return 6 + spec.vs.length * 6;
-		default:
-			return LEAF_WEIGHTS[spec.t]!;
+		default: {
+			// a kind with no weight would weigh `NaN`, which is less than nothing:
+			// every candidate would be taken again, to the end of the budget
+			const weight = LEAF_WEIGHTS[spec.t];
+			if (weight === undefined) throw Error(`the minimizer has no weight for a \`${spec.t}\``);
+			return weight;
+		}
 	}
 };
 
@@ -1216,6 +1238,17 @@ export interface DifferentialOptions {
 	format_count?: number;
 }
 
+/** A case zod and valibot disagree on: where it was drawn, and whose side this library is on. */
+export interface DifferentialSided {
+	/** Its place among the cases of the seed, from zero. */
+	n: number;
+	side: DifferentialSide;
+	/** The schema and the input, as a report shows them. */
+	text: string;
+	/** What this library gave, as a report shows it. */
+	ours: string;
+}
+
 export interface DifferentialFinding {
 	/** The verdict on the case minimized, of the same sort as the case found. */
 	verdict: DifferentialVerdict;
@@ -1246,6 +1279,8 @@ export interface DifferentialReport {
 	findings: Array<DifferentialFinding>;
 	/** The cases where this library goes with neither, minimized when asked. */
 	neither: Array<DifferentialFinding>;
+	/** Every case zod and valibot disagree on, in the order drawn. */
+	sided: Array<DifferentialSided>;
 	/** Findings not minimized past `minimize_limit`. */
 	unminimized: number;
 	/** Each invariant broken, with the first case that broke it. */
@@ -1345,6 +1380,7 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 		rules: Object.fromEntries(DIFFERENTIAL_RULES.map((rule) => [rule.name, 0])) as any,
 		findings: [],
 		neither: [],
+		sided: [],
 		unminimized: 0,
 		invariants: [],
 		refusals: [],
@@ -1412,6 +1448,12 @@ export const run_differential = (options: DifferentialOptions): DifferentialRepo
 				break;
 			case 'sides':
 				report.tally.sides[verdict.side]++;
+				report.sided.push({
+					n,
+					side: verdict.side,
+					text: show_spec(spec) + ' :: ' + show_input(input),
+					ours: results.fuz_schema.text
+				});
 				if (verdict.side === 'neither' && minimize_neither) {
 					if (minimized_neither++ < minimize_limit) minimize_into(neither, verdict, spec, input);
 				}

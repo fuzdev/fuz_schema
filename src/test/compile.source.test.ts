@@ -227,7 +227,19 @@ describe('what a compile reads and what it refuses', () => {
 			'one optional of a pipe of it': (node) => {
 				const held = s.optional(s.pipe(node, checked));
 				return [held, held];
+			},
+			'one union of it': (node) => {
+				const held = s.union([node, s.string]);
+				return [held, held];
+			},
+			'one variant of it': (node) => {
+				const held = s.variant('k', [s.object({ k: s.literal('a'), v: node })]);
+				return [held, held];
 			}
+		};
+		// what an input holds the level below in, where it is not the level itself
+		const wraps: Record<string, (below: unknown) => unknown> = {
+			'one variant of it': (below) => ({ k: 'a', v: below })
 		};
 		for (const [name, hold] of Object.entries(holders)) {
 			const nest = (depth: number): s.AnySchema => {
@@ -244,18 +256,53 @@ describe('what a compile reads and what it refuses', () => {
 				);
 				const steps = lengths.slice(1).map((length, i) => length - lengths[i]!);
 				assert.isAbove(steps[0]!, 0, name);
-				// a level adds what a level is, give or take the digits of a counter
-				assert.isAtMost(Math.max(...steps) - Math.min(...steps), 16, `${name}: ${lengths}`);
+				// a level adds what a level is, give or take the digits of a counter,
+				// which a level of a union or a variant names more often
+				assert.isAtMost(Math.max(...steps) - Math.min(...steps), 32, `${name}: ${lengths}`);
 			}
 			// and a nesting whose paths are past counting compiles, and runs
 			const deep = nest(30);
 			let input: any = { leaf: 'x' };
-			for (let i = 0; i < 30; i++) input = i % 2 ? { x: input } : { x: input, d: i };
+			for (let i = 0; i < 30; i++) {
+				const below = wraps[name]?.(input) ?? input;
+				input = i % 2 ? { x: below } : { x: below, d: i };
+			}
 			assert.deepEqual(
 				find_compile_differences(deep, [() => input, () => ({ x: { x: 1 } })]),
 				[],
 				name
 			);
+		}
+	});
+
+	test('a schema held in many places is asked once whether it takes the object and the key', () => {
+		// a kind of one's own is asked by its `run`, whose reads are counted
+		const nest = (depth: number): [s.AnySchema, () => number] => {
+			let reads = 0;
+			const run: s.Schema['run'] = (v, ctx) => (typeof v === 'string' ? v : s.fail(ctx, 'leaf', v));
+			const leaf = {
+				kind: 'leaf',
+				def: undefined,
+				get run() {
+					reads++;
+					return run;
+				}
+			} as s.AnySchema;
+			const checked = s.check(() => true);
+			let node = leaf;
+			// each level holds the one below as an option and under a pipe: two paths a level
+			for (let i = 0; i < depth; i++) node = s.union([node, s.pipe(node, checked)]);
+			return [s.object({ a: node }), () => reads];
+		};
+		for (const compile of [compile_guard, compile_parse]) {
+			const [shallow, shallow_reads] = nest(4);
+			compile(shallow);
+			const [deep, deep_reads] = nest(16);
+			const compiled = compile(deep);
+			assert.isAbove(shallow_reads(), 0);
+			assert.strictEqual(deep_reads(), shallow_reads(), compile.name);
+			assert.deepEqual(find_compile_differences(deep, [() => ({ a: 'x' }), () => ({ a: 1 })]), []);
+			assert.isFunction(compiled);
 		}
 	});
 
@@ -381,6 +428,17 @@ describe('a schema with no code of the compiler is run in place', () => {
 		def: undefined,
 		run: (value, ctx) => (typeof value === 'number' ? value * 2 : s.fail(ctx, 'doubled', value))
 	};
+	const NO_STRING = Symbol('no string');
+	const Forwarded = s.pipe(
+		s.optional(s.string),
+		// refuses the `undefined` it is run on where the entry isn't said to be one
+		s.check((v) => typeof v === 'string' && v === v.toUpperCase())
+	);
+	const Forwarding: s.Schema = {
+		kind: 'forwarding',
+		def: Forwarded,
+		run: (value, ctx, parent, key, entry) => Forwarded.run(value, ctx, parent, key, entry)
+	};
 	const INPUTS: Array<() => unknown> = [
 		() => 2,
 		() => 3,
@@ -424,7 +482,39 @@ describe('a schema with no code of the compiler is run in place', () => {
 			kind: 'variant',
 			def: { key: 'a', options: [s.object({ b: s.literal(1) })] },
 			run: Even.run
-		}
+		},
+		// a def that holds what is no schema where the kind's holds one
+		'a union with an option that is no schema': s.object({
+			a: { kind: 'union', def: [s.string, 5], run: Even.run } as s.AnySchema
+		}),
+		'a pipe with a step that is no schema': s.object({
+			a: { kind: 'pipe', def: [s.number, 5], run: Even.run } as s.AnySchema
+		}),
+		'a keyed_record whose key is no schema': s.object({
+			a: { kind: 'keyed_record', def: { key: 5, value: s.number }, run: Even.run } as s.AnySchema
+		}),
+		'an object_with_rest whose rest is no schema': {
+			kind: 'object_with_rest',
+			def: { entries: {}, rest: 5 },
+			run: Even.run
+		},
+		'a lazy whose def is no function': s.object({
+			a: { kind: 'lazy', def: 5, run: Even.run } as s.AnySchema
+		}),
+		'a variant with an option that is no object schema': {
+			kind: 'variant',
+			def: { key: 'kind', options: [s.record(s.number)] },
+			run: Even.run
+		},
+		'a variant whose key is no string': {
+			kind: 'variant',
+			def: { key: NO_STRING, options: [s.object({ [NO_STRING]: s.literal(1) })] },
+			run: Even.run
+		},
+		// one that passes on all it is handed, the entry's `1` with the rest
+		'one that hands on what it is handed, to a pipe that starts with an optional': s.object({
+			a: Forwarding
+		})
 	};
 	const Recursive: s.Schema = s.union([
 		Doubled,

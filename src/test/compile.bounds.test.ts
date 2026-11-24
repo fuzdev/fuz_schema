@@ -3,6 +3,7 @@ import { describe, test, assert } from 'vitest';
 import * as s from '#lib/schema.ts';
 import { compile_guard, compile_parse, to_guard_source } from '#lib/compile.ts';
 import * as scenario_schemas from '../benchmarks/libs/schemas/fuz_schema.ts';
+import { COMPILE_UNBOUNDED_REFUSAL } from './compile_test_helpers.ts';
 
 // The bound of compiled code, by counted work and never by time: a slice of
 // an enumeration of small recursive schemas, each built with `union` and with
@@ -255,8 +256,6 @@ const growth_of = (
 			: 'faster';
 };
 
-const REFUSAL = /^cannot compile `(union|pipe)` at \/.*: two or more of its /;
-
 describe('the work of compiled code on recursive schemas, counted', () => {
 	const configs: Array<[options: Array<BoundsOption>, lazies: number]> = [];
 	for (const a of BOUNDS_OPTIONS) for (const b of BOUNDS_OPTIONS) configs.push([[a, b], 1]);
@@ -298,8 +297,8 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 				union_parse = compile_parse(of_union);
 				compiled++;
 			} catch (error) {
-				assert.match((error as Error).message, REFUSAL, name);
-				assert.throws(() => compile_parse(of_union), REFUSAL, name);
+				assert.match((error as Error).message, COMPILE_UNBOUNDED_REFUSAL, name);
+				assert.throws(() => compile_parse(of_union), COMPILE_UNBOUNDED_REFUSAL, name);
 				// a written guard is refused the same, in the same words
 				assert.throws(() => to_guard_source(of_union, 'guard'), (error as Error).message, name);
 				refused++;
@@ -340,7 +339,7 @@ describe('the work of compiled code on recursive schemas, counted', () => {
 	test('what the test would see: the interpreter’s union on a refused schema grows faster', () => {
 		const options = [BOUNDS_OPTIONS[0]!, BOUNDS_OPTIONS[0]!];
 		const of_union = build_bounds(options, s.union as Union, 1);
-		assert.throws(() => compile_guard(of_union), REFUSAL);
+		assert.throws(() => compile_guard(of_union), COMPILE_UNBOUNDED_REFUSAL);
 		const growths = bounds_families(options)
 			.filter(([small]) => !small.dag)
 			.map((sizes) => growth_of((v) => s.is(of_union, v), sizes));

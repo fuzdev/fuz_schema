@@ -4,12 +4,13 @@
  * killed when a test fails, hung when it outlives the timeout with none
  * failed, which counts as killed, survived when the tests pass, and an error
  * when vitest exits otherwise. Exits nonzero on a stale anchor, edits that
- * leave the file unparsable to TypeScript, an error, a survivor that doesn't
+ * leave the file unparsable to TypeScript or bring a type error to a module
+ * of the library, an error, a survivor that doesn't
  * say why in `survives`, and a mutant that says it survives and doesn't.
  *
  * The copy is the working tree's `src`, `docs`, and `results`, its
- * `README.md`, `package.json`, and `tsconfig.json`, and its `node_modules`
- * linked, under a directory of this
+ * `README.md`, `package.json`, and `tsconfig.json` without its `extends`, and
+ * its `node_modules` linked, under a directory of this
  * run's own in `~/.cache/fuz_schema_mutate/`, one copy to a worker. It has a
  * vitest config of its own, without `vite.config.ts` and the site's plugins,
  * which no test needs. The unmutated copy runs first, and the run stops if it
@@ -42,7 +43,13 @@ import { args_parse, argv_parse } from '@fuzdev/fuz_util/args.ts';
 import ts from 'typescript';
 
 import * as s from '#lib/schema.ts';
-import { apply_mutant, MUTANT_DEFAULT_FILE, MUTANTS, type Mutant } from './mutants.ts';
+import {
+	apply_mutant,
+	MUTANT_DEFAULT_FILE,
+	MUTANTS,
+	MUTATE_EXCLUDED_TESTS,
+	type Mutant
+} from './mutants.ts';
 
 const Args = s.object({
 	_: s.with_default_fn(s.array(s.string), () => []),
@@ -57,7 +64,7 @@ const parsed = args_parse(argv_parse(process.argv.slice(2)), Args);
 if (!parsed.ok) {
 	console.error(parsed.issues.map(s.format_issue).join('\n'));
 	console.error(
-		'\nusage: npm run mutate -- [--filter substr] [--workers n] [--timeout s] [--deep] [--keep]'
+		'\nusage: npm run mutate -- [--filter substr[,substr]] [--workers n] [--timeout s] [--deep] [--keep]'
 	);
 	process.exit(1);
 }
@@ -122,6 +129,8 @@ interface RunResult {
 	// the test files seen failed, in order; the group is killed at the first
 	// reported, so the others may be missing
 	failed: Array<string>;
+	// the tests of those files seen failed, by name
+	failed_tests: Array<string>;
 	output: string;
 	seconds: number;
 }
@@ -161,6 +170,18 @@ const failed_files = (output: string): Array<string> => [
 	...new Set(Array.from(output.matchAll(FAILED_FILE), (m) => (m[1] ?? m[2])!))
 ];
 
+// a test that failed, as the reporter lists it under its file once the file
+// finishes: `×`, the test's own name, and its time
+const FAILED_TEST = /^\s+×\s+(.+?)(?:\s+\d+(?:\.\d+)?\s*m?s)?$/gm;
+
+const failed_tests = (output: string): Array<string> => [
+	...new Set(Array.from(output.matchAll(FAILED_TEST), (m) => m[1]!))
+];
+
+// how long a group is left after its first failed file is seen, for the
+// names of the file's failed tests, which the reporter writes after it
+const STOP_GRACE_MS = 250;
+
 const tail = (output: string): string => output.trimEnd().split('\n').slice(-TAIL_LINES).join('\n');
 
 /**
@@ -186,6 +207,7 @@ const run_group = (
 		running.add(pid);
 		let output = '';
 		let stopped = false;
+		let grace: NodeJS.Timeout | undefined;
 		const failed_set: Set<string> = new Set();
 		// each stream's line in progress, so a line split across chunks is
 		// read whole once its rest arrives, and the other stream's chunks
@@ -199,7 +221,7 @@ const run_group = (
 				for (const f of failed) failed_set.add(f);
 				if (stop_on_fail && !stopped && failed.length) {
 					stopped = true;
-					kill_group(pid);
+					grace = setTimeout(() => kill_group(pid), STOP_GRACE_MS);
 				}
 				partial = partial.slice(partial.lastIndexOf('\n') + 1);
 			};
@@ -217,6 +239,7 @@ const run_group = (
 		}, timeout_s * 1000);
 		child.on('close', (code, signal) => {
 			clearTimeout(timer);
+			clearTimeout(grace);
 			// whatever of the group is left, as a test file's own child
 			kill_group(pid);
 			running.delete(pid);
@@ -226,6 +249,7 @@ const run_group = (
 				signal,
 				hung: hung && !failed.length,
 				failed,
+				failed_tests: failed_tests(output),
 				output,
 				seconds: (performance.now() - start) / 1000
 			});
@@ -240,9 +264,14 @@ const make_copy = (dir: string): void => {
 	for (const d of ['src', 'docs', 'results']) {
 		cpSync(join(ROOT, d), join(dir, d), { recursive: true });
 	}
-	for (const f of ['package.json', 'tsconfig.json', 'README.md']) {
+	for (const f of ['package.json', 'README.md']) {
 		copyFileSync(join(ROOT, f), join(dir, f));
 	}
+	// without its `extends`, a config SvelteKit generates under `node_modules`
+	// that an install without a sync leaves missing, which fails every test
+	// file of a copy as it loads
+	const { extends: _, ...tsconfig } = JSON.parse(readFileSync(join(ROOT, 'tsconfig.json'), 'utf8'));
+	writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify(tsconfig, null, '\t') + '\n');
 	symlinkSync(join(ROOT, 'node_modules'), join(dir, 'node_modules'));
 	writeFileSync(join(dir, 'vitest.config.ts'), VITEST_CONFIG);
 };
@@ -307,16 +336,100 @@ const prepare = (mutant: Mutant): Prepared | string => {
 	return { mutant, file, original, mutated };
 };
 
+/**
+ * The first type error a mutant's edits bring to the library, for a mutant of
+ * a module of it, or `undefined`. A test that typechecks the library, as the
+ * tests of what a consumer's declarations emit do, fails on one whatever the
+ * mutant does at runtime, so its kill would say nothing of the tests of
+ * behavior. Two programs, each the checks those tests make of what it holds:
+ * every module, with the built-ins of the edition
+ * `schema.invariants.test.ts` holds the library to, and `schema.ts` alone,
+ * the one module the programs of `schema.exact_optional.test.ts` and
+ * `compile.emit.test.ts` import, with an optional key held exactly, as the
+ * first has on, and a name left unused and code out of reach refused, as the
+ * second refuses them. Neither is an error here of another module.
+ */
+const create_type_checker = (): ((p: Prepared) => string | undefined) => {
+	const options: ts.CompilerOptions = {
+		target: ts.ScriptTarget.ESNext,
+		module: ts.ModuleKind.NodeNext,
+		moduleResolution: ts.ModuleResolutionKind.NodeNext,
+		strict: true,
+		noEmit: true,
+		allowImportingTsExtensions: true,
+		skipLibCheck: true,
+		types: [],
+		lib: ['lib.es2024.d.ts']
+	};
+	// with its file, as an edit of one module can bring an error to another
+	const message = (d: ts.Diagnostic): string =>
+		`${d.file ? d.file.fileName.slice(ROOT.length + 1) + ': ' : ''}${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
+	// a program of `files`, as the first error that `text` in place of the one at `path` brings it
+	const create = (
+		files: Array<string>,
+		options: ts.CompilerOptions
+	): ((path: string, text: string) => string | undefined) => {
+		const overrides: Map<string, string> = new Map();
+		const host = ts.createCompilerHost(options);
+		const read = host.getSourceFile.bind(host);
+		const sources: Map<string, ts.SourceFile | undefined> = new Map();
+		host.getSourceFile = (name, language, ...rest) => {
+			const text = overrides.get(name);
+			if (text !== undefined) return ts.createSourceFile(name, text, language);
+			if (!sources.has(name)) sources.set(name, read(name, language, ...rest));
+			return sources.get(name);
+		};
+		let program = ts.createProgram(files, options, host);
+		const baseline = new Set(ts.getPreEmitDiagnostics(program).map(message));
+		return (path, text) => {
+			overrides.clear();
+			overrides.set(path, text);
+			program = ts.createProgram(files, options, host, program);
+			const found = ts.getPreEmitDiagnostics(program).find((d) => !baseline.has(message(d)));
+			return found && message(found);
+		};
+	};
+	const files = readdirSync(join(ROOT, 'src/lib'))
+		.filter((name) => name.endsWith('.ts'))
+		.map((name) => join(ROOT, 'src/lib', name));
+	const core = join(ROOT, MUTANT_DEFAULT_FILE);
+	const of_library = create(files, options);
+	const of_core = create([core], {
+		...options,
+		exactOptionalPropertyTypes: true,
+		noUnusedLocals: true,
+		allowUnusedLabels: false,
+		allowUnreachableCode: false
+	});
+	return (p) => {
+		const path = join(ROOT, p.file);
+		if (!files.includes(path)) return undefined;
+		return of_library(path, p.mutated) ?? (path === core ? of_core(path, p.mutated) : undefined);
+	};
+};
+
 // every mutant's anchors and syntax are checked, whichever the filter selects
 const names: Set<string> = new Set();
 const problems: Array<string> = [];
 const prepared: Array<Prepared> = [];
+// a name holds no comma, so a filter of several is split on them
+const filters = args.filter?.split(',').filter(Boolean);
 for (const mutant of MUTANTS) {
 	if (names.has(mutant.name)) problems.push(`${mutant.name}: named twice`);
 	names.add(mutant.name);
 	const p = prepare(mutant);
 	if (typeof p === 'string') problems.push(p);
-	else if (!args.filter || mutant.name.includes(args.filter)) prepared.push(p);
+	else if (!filters || filters.some((f) => mutant.name.includes(f))) prepared.push(p);
+}
+// and the types of those selected, of the library's modules
+const type_error_of = create_type_checker();
+for (const p of prepared) {
+	const error = type_error_of(p);
+	if (error) {
+		problems.push(
+			`${p.mutant.name}: its edits bring a type error to the library, which a test of the library's types fails on whatever it does: ${error}`
+		);
+	}
 }
 if (problems.length) {
 	console.error(`mutants that can't run:\n  ${problems.join('\n  ')}`);
@@ -335,14 +448,7 @@ const VITEST_ARGS = [
 	join(ROOT, 'node_modules/vitest/vitest.mjs'),
 	'run',
 	`--maxWorkers=${vitest_workers}`,
-	'--exclude',
-	'src/test/sizes.test.ts',
-	// the site's rendering needs the site's plugins, and no mutant is of the site
-	'--exclude',
-	'src/test/site_render.test.ts',
-	// it holds every mutant's anchors, which the mutant applied has taken its own from
-	'--exclude',
-	'src/test/mutants.test.ts'
+	...MUTATE_EXCLUDED_TESTS.flatMap((file) => ['--exclude', file])
 ];
 clear_stale_runs();
 const dirs = Array.from({ length: worker_count }, (_, i) => join(RUN_DIR, `worker_${i}`));
@@ -390,7 +496,10 @@ const run_mutant = async (dir: string, p: Prepared): Promise<Outcome> => {
 		let detail: string;
 		if (result.failed.length) {
 			status = 'killed';
-			detail = result.failed.join(', ');
+			// the file, and the first test the output names as failed: what
+			// killed it, to be read against what the mutant breaks
+			const [test] = result.failed_tests;
+			detail = result.failed.join(', ') + (test ? `: ${test}` : '');
 		} else if (result.hung) {
 			status = 'hung';
 			detail = `outlived ${timeout} s`;

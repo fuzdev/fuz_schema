@@ -11,8 +11,10 @@ import {
 	load_json_fixture_names,
 	read_json_fixture_contract,
 	read_json_fixture_expected,
+	read_json_union_bounds,
 	type JsonFixtureExpected
 } from './fixtures/json/json_test_helpers.ts';
+import { generate_json_union_bounds } from './fixtures/json/union_bounds.ts';
 
 let names: Array<string> = [];
 const generated: Map<string, JsonFixtureExpected> = new Map();
@@ -48,6 +50,17 @@ describe('json fixtures', () => {
 			format_json_fixture(generate_json_fixture_contract()),
 			'contract.json is stale, run `gro task src/test/fixtures/json/update.task.ts`'
 		);
+	});
+
+	test('union_bounds.json is what the library generates, and holds both answers', async () => {
+		const rows = generate_json_union_bounds();
+		assert.strictEqual(
+			await read_json_union_bounds(),
+			format_json_fixture(rows),
+			'union_bounds.json is stale, run `gro task src/test/fixtures/json/update.task.ts`'
+		);
+		assert.isAbove(rows.filter((row) => row.refused).length, 0);
+		assert.isAbove(rows.filter((row) => !row.refused).length, 0);
 	});
 
 	test('an expected.json is plain JSON that reads back as it was generated', () => {

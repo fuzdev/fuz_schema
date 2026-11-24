@@ -209,10 +209,12 @@ fn load_group(dir: &Path, name: String) -> Result<Group, String> {
     let Some(Value::Array(list)) = expected.get("cases") else {
         return Err(format!("{name} has no `cases`"));
     };
+    unread_field(&expected, &["schema", "cases"], &name)?;
     let mut cases = Vec::with_capacity(list.len());
     for case in list {
         let case_name = string(case, "name", &name)?;
         let what = format!("{name}/{case_name}");
+        unread_field(case, CASE_FIELDS, &what)?;
         let oracle = if boolean(case, "json", &what)? {
             Some(boolean(case, "valid", &what)?)
         } else {
@@ -222,7 +224,7 @@ fn load_group(dir: &Path, name: String) -> Result<Group, String> {
             (Some(valid), Some(Value::Array(issues))) if valid == issues.is_empty() => {
                 Some(Value::Array(issues.clone()))
             }
-            (None, None) => None,
+            (None, None) if case.get("valid").is_none() => None,
             (_, other) => {
                 return Err(format!(
                     "{what}: oracle {oracle:?} does not go with issues {other:?}"
@@ -246,6 +248,20 @@ fn load_group(dir: &Path, name: String) -> Result<Group, String> {
         schema,
         cases,
     })
+}
+
+/// The fields of a case, each of which `load` reads.
+const CASE_FIELDS: &[&str] = &["name", "text", "json", "valid", "issues", "diverges"];
+
+/// Refuses an object with a field outside `read`: what the generator comes
+/// to write of a case and nothing here compares would pass unseen.
+fn unread_field(value: &Value, read: &[&str], what: &str) -> Result<(), String> {
+    value
+        .as_object()
+        .and_then(|fields| fields.keys().find(|key| !read.contains(&key.as_str())))
+        .map_or(Ok(()), |key| {
+            Err(format!("{what}: a field nothing here reads, `{key}`"))
+        })
 }
 
 /// Why `actual` is not what `expect` says, when it is not.
@@ -272,7 +288,7 @@ fn issue_json(issue: &SchemaIssue) -> Value {
         .path()
         .iter()
         .map(|segment| match segment {
-            PathSegment::Key(key) => json!(key),
+            PathSegment::Key(key) => json!(&**key),
             PathSegment::Index(index) => json!(index),
         })
         .collect();

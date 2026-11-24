@@ -519,8 +519,8 @@ all a missing key costs an object that has no schema asking.
   a `lazy` is, whose steps run. On the input side a `check` or a `transform`
   that is the entry types its key as needed, which the parse can do without.
   On the output side a default of `undefined` types as present a key the
-  parse leaves out, a known gap. The types are `EntryTakesMissing` and
-  `EntryLeavesMissingOut`, and `src/test/schema.inference.test.ts` pins a key
+  parse leaves out, a known gap. The types are `SchemaEntryTakesMissing` and
+  `SchemaEntryLeavesMissingOut`, and `src/test/schema.inference.test.ts` pins a key
   of every wrapper.
 - **An object schema with no entries types as what it matches.** `{}` is
   any value but `null` and `undefined`, so `object({})` types as
@@ -853,8 +853,8 @@ after it is given the lowercase, which can be longer than the input, as a
 dotted capital I's is. The keys are never set, so an action keeps the one
 shape.
 
-`to_integer` takes a string and outputs a `number`, a `SchemaAction<string,
-number>`, so a `pipe` refuses it after a step that isn't a string, as
+`to_integer` takes a string and outputs a `number`, a `SchemaAction<number,
+string>`, so a `pipe` refuses it after a step that isn't a string, as
 `pipe(number, to_integer())` and `pipe(optional(string), to_integer())`,
 and refuses a string's action after it. The bounds after it are of the
 integer: `pipe(string, to_integer(), min_value(1), max_value(1000))`. It
@@ -960,12 +960,17 @@ wrapped schema's and nothing is stored at runtime.
   to, and a brand and a flavor compose either way. A union of names marks with
   every one. Each key holds its own name, so a wide name (`string`) is an
   index signature that no specific brand satisfies.
-- **Of a type parameter neither is known to lack `null` and `undefined`**, as
-  `Extract` waits for the parameter. `Branded<T, 'N'>` with `T extends string`
-  doesn't assign to `Branded<string, 'N'>`, one with an unconstrained `T` is
-  possibly `null`, and two flavors of a `T` constrained to rule out `null` and
-  `undefined` assign to each other, where two brands don't. Flavoring the constraint keeps them apart:
-  `T & Flavored<string, 'N'>`.
+- **`unknown` takes a brand and no flavor.** `Branded<unknown, 'N'>` is
+  `Brand<'N'> | null | undefined`, as `brand(unknown, 'N')` passes both
+  through unmarked. `Flavored<unknown, 'N'>` is `unknown`: a flavored type
+  takes any plain value of its base, and `unknown` alone takes every value.
+- **A brand of a type parameter is read by the parameter's constraint.**
+  `Branded<T, 'N'>` with `T extends string` assigns to `Branded<string, 'N'>`,
+  and one with an unconstrained `T` is possibly `null`. A flavor is not:
+  `Flavored<T, 'N'>` with `T extends string` doesn't assign to
+  `Flavored<string, 'N'>`, and two flavors of a `T` constrained to rule out
+  `null` and `undefined` assign to each other, where two brands don't.
+  Flavoring the constraint keeps them apart: `T & Flavored<string, 'N'>`.
 - **They go outside a step that changes the value**, as
   `brand(pipe(string, uuid, to_lower_case), 'Uuid')`: a `to_lower_case`
   outputs a new string, so a brand or a flavor of a step before it is dropped
@@ -1018,9 +1023,12 @@ which carries metadata over and so holds its read of the registry.
   `message`, `flavor`, and `brand` are no layer, as what they return has the
   `kind` and `def` they were given.
 - **Metadata is read from the outermost layer that has the key**, as `meta`
-  attaches it to one object. `find_schema_meta` reads every schema a value
+  attaches it to one object, and a layer that has the key as `undefined` has
+  cleared it for the layers under it, as `to_json_schema` reads it too.
+  `find_schema_meta` reads every schema a value
   can reach instead, each once: every step of a `pipe`, every option, and
-  with `structural` what a container holds. Both find metadata attached to
+  with `structural` what a container holds, but the layers under one that
+  cleared the key. Both find metadata attached to
   the schema given to `message`, which carries it over.
 - **A default is the outermost `with_default`'s or `with_default_fn`'s**,
   unless an `optional` is outside it, which answers `undefined` before the
@@ -1171,6 +1179,12 @@ each.
   written or escaped, or an astral character, which under `u` a quantifier or
   a range takes whole: `^a😀?$` takes `a` under `u`, and without it `a`
   followed by the emoji's high surrogate. A plain `^😀$` is refused too.
+- **A number too large for a double is a `number` to the document**, where
+  `number` refuses it: `JSON.parse` reads `1e999` as `Infinity`, which JSON
+  Schema has no word for, so a validator of the text takes what `is` refuses
+  of the value parsed. Zod writes the same document and refuses the same
+  value. The differential's inputs are JSON values, which hold no `Infinity`,
+  so a case of its own pins this.
 
 Where zod writes something else, this library:
 
@@ -1433,8 +1447,9 @@ from the same emitter, with what that captures written out.
   entry of an object, so where a recursive schema has an object of many
   entries it runs out of stack at a depth where `is` answers. A `memo_union`
   keeps its verdicts for the length of a call, as in compiled code. A regex
-  is the module's own object, so one with a `g` or `y` flag keeps a
-  `lastIndex` of its own.
+  is the module's own object: `regex` refuses a pattern with a `g` or `y`
+  flag, and a schema of its kind written by hand that holds one keeps a
+  `lastIndex` of the module's own.
 
 ### What may differ from the interpreter
 
@@ -1447,7 +1462,13 @@ from the same emitter, with what that captures written out.
   that throws once and not again gets an answer from compiled code where
   `is` and `parse` throw. A compiled `memo_union` keeps its verdicts from
   its first value, where the library's keeps them only while it probes, so a
-  `check` under one can run fewer times.
+  `check` under one can run fewer times. A guard, compiled or written, tries
+  no option of a `union` again: where a later option fills a missing key in,
+  `is` runs each option before it that takes the object and the key once
+  more, with neither, and a guard has its answer already. The verdict is the
+  same, so only a function of such an option can tell, by how often it ran,
+  or by throwing on the `undefined` it is run on there, where `is` throws and
+  the guard answers. A compiled parse hands such a union to the library.
 - **What is read of the input.** A parse that matches first reads each value
   of the input in the library's order: an object's entries in the schema's
   order, and a union's options in theirs. It reads less often. A copy is
@@ -1466,7 +1487,14 @@ from the same emitter, with what that captures written out.
 - **A schema that takes a library kind's name and a `run` of its own** is
   compiled as the library's kind, by its `kind` and `def`, as the Rust crate
   reads one, see [rust.md](rust.md#the-interchange-form). But a `uuid`, an
-  `iso_datetime`, and a `to_integer` are run by the schema's `run`.
+  `iso_datetime`, and a `to_integer` are run by the schema's `run`, which is
+  handed the one probing context every compiled function shares: a `run` of
+  one's own that writes to its context writes to that one.
+- **When a `def` is read.** The library's `run`s hold what a factory was
+  given as the schema was made, and compiled code reads the `def` as it is
+  when the schema is compiled, so an array of a `one_of`'s values added to in
+  between is one set to `is` and another to the guard. Nothing writes to a
+  schema after it is made, and a `def` written to is not guarded.
 - **The depth at which an input runs the stack out.** Compiled code can
   answer an input so deep that the interpreter throws a `RangeError`, as its
   frames are not the interpreter's. `compile_guard` and `compile_parse` never
@@ -1743,6 +1771,8 @@ Where the two disagree, this library goes with:
   input's own keys, as a `record`'s schema is.
 - **Valibot on an unknown key the input inherits**, in a `loose_object` copy:
   Zod copies an enumerable one and Valibot doesn't, and here it is left out.
+  Beside an entry whose missing key Zod lets through and Valibot refuses, the
+  copy is neither's: Zod's entry in Valibot's copy.
   The copy otherwise has the keys Valibot's and Zod's loose objects give, in
   their order. By design: of the keys the schema doesn't name a copy takes
   the input's own, so no unknown key on a prototype becomes an own key of the
@@ -1771,7 +1801,10 @@ Where the two disagree, this library goes with:
 - **Valibot on a length check after an array whose item fails.** Zod checks
   the length of an array too long before its items and reports only that,
   and of one too short after them and reports both. Valibot reports the
-  item, as here, where a `pipe` stops at its first failing step.
+  item, as here, where a `pipe` stops at its first failing step. An infinity
+  among the items is an item that fails here, as it is Zod's, and one Valibot
+  takes, so beside another item that fails this library reports both, with
+  neither.
 - **Valibot on a check after an object with an unknown key.** Valibot stops
   at the unknown key, as here, where a `pipe` stops at its first failing
   step. Zod runs the check and reports it beside the key.
@@ -1795,8 +1828,11 @@ Where the two disagree, this library goes with:
 - **Valibot on a key outside the finite keys of a `keyed_record`.** Zod
   reports every key outside an enum or a literal as one unknown key of the
   object, and Valibot each as the key schema's issue at the key, as here, an
-  `invalid_key`. One named `constructor` or `prototype` Valibot leaves out
-  unread, and here it is refused as any other, which goes with neither. By
+  `invalid_key`. Where the value under such a key is wrong too, Valibot
+  reports it beside the key, and here the value of a key that failed is not
+  read, which goes with neither. One named `constructor` or `prototype`
+  Valibot leaves out unread, and here it is refused as any other, which goes
+  with neither too. By
   design: every issue has a path to what is wrong, and every own key is
   checked.
 - **Zod on the infinities.** `number` refuses `Infinity` and `-Infinity`, as

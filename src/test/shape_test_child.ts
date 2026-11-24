@@ -22,6 +22,14 @@ export interface ShapeChildOutput {
 	other_keys: Array<string>;
 	/** The schemas whose map is not the one `string` has. */
 	other_map: Array<string>;
+	/**
+	 * Whether `%HaveSameMap` tells maps apart here: an object of a schema's
+	 * three keys and a fourth has another map than `string`, one of its three
+	 * keys in another order has too, and one of the three in their order,
+	 * written by hand, has the same. An intrinsic that came to answer `true`
+	 * of any two objects would have every schema read as of one map.
+	 */
+	maps_told_apart: boolean;
 }
 
 // natives are not syntax a module can hold, so each is compiled from text
@@ -55,6 +63,10 @@ const output: ShapeChildOutput = {
 	other_keys: schemas
 		.filter((x) => Object.keys(x.schema).join() !== 'kind,def,run')
 		.map((x) => `${x.name}: ${Object.keys(x.schema).join()}`),
-	other_map: schemas.filter((x) => !have_same_map(s.string, x.schema)).map((x) => x.name)
+	other_map: schemas.filter((x) => !have_same_map(s.string, x.schema)).map((x) => x.name),
+	maps_told_apart:
+		!have_same_map(s.string, { kind: 'string', def: undefined, run: s.string.run, more: 1 }) &&
+		!have_same_map(s.string, { def: undefined, kind: 'string', run: s.string.run }) &&
+		have_same_map(s.string, { kind: 'other', def: 1, run: s.number.run })
 };
 console.error(JSON.stringify(output));

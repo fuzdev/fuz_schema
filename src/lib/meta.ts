@@ -85,13 +85,13 @@ export const meta: {
 	// its `~types` has no `action`, so the last takes it, unless it is an object literal written
 	// in the call without a `~types`, which the first takes as a refinement
 	<TInput, TOutput, TKind extends string, TDef>(
-		schema: SchemaRefinement<TInput, TOutput, TKind, TDef>,
+		schema: SchemaRefinement<TOutput, TInput, TKind, TDef>,
 		meta: SchemaMeta
-	): SchemaRefinement<TInput, TOutput, TKind, TDef>;
+	): SchemaRefinement<TOutput, TInput, TKind, TDef>;
 	<TInput, TOutput, TKind extends string, TDef>(
-		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		schema: SchemaAction<TOutput, TInput, TKind, TDef>,
 		meta: SchemaMeta
-	): SchemaAction<TInput, TOutput, TKind, TDef>;
+	): SchemaAction<TOutput, TInput, TKind, TDef>;
 	<T extends AnySchema>(schema: T, meta: SchemaMeta): T;
 } = <T extends AnySchema>(schema: T, meta: SchemaMeta): T => {
 	const copy = { kind: schema.kind, def: schema.def, run: schema.run } as AnySchema as T;

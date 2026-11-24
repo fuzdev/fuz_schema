@@ -65,8 +65,12 @@ const to_layers = (schema: AnySchema): Array<SchemaNode> => {
 export const unwrap_schema = (schema: AnySchema): SchemaNode => to_layers(schema).at(-1)!;
 
 /**
- * The value of metadata `key` on the outermost layer of `schema` that has it
- * other than `undefined`. `get_meta` reads the one object it is given.
+ * The value of metadata `key` on the outermost layer of `schema` that has
+ * the key. A layer that has it as `undefined` has cleared it, as `meta` says,
+ * and gives `undefined` whatever a layer under it holds, as `to_json_schema`
+ * reads the layers. The later steps of a `pipe` are no layers and are not
+ * read, where `to_json_schema` writes what they hold over the first's.
+ * `get_meta` reads the one object it is given.
  *
  * @param key - a key of `SchemaMeta`, `description` or one added by declaration merging
  */
@@ -75,8 +79,8 @@ export const get_schema_meta = <TKey extends keyof SchemaMeta>(
 	key: TKey
 ): SchemaMeta[TKey] | undefined => {
 	for (const layer of to_layers(schema)) {
-		const value = get_meta(layer)?.[key];
-		if (value !== undefined) return value;
+		const meta = get_meta(layer);
+		if (meta && Object.hasOwn(meta, key)) return meta[key];
 	}
 	return undefined;
 };
@@ -102,8 +106,14 @@ export interface FindSchemaMetaOptions {
  *   schema and action of a `pipe`, not only its first, every option of a
  *   `union`, a `memo_union`, and a `variant`, and with `structural` the
  *   schemas of a value's parts.
- * - Each schema object is read once, and a `lazy`'s function called once,
- *   so a recursive schema ends, `lazy(() => optional(L))` as `L` included.
+ * - A layer that has the key as `undefined` has cleared it for the layers
+ *   under it, as `get_schema_meta` reads it, and not for what those hold: the
+ *   options, the later steps of a `pipe`, and the parts are read as ever. A
+ *   schema reached again past no such layer is read there.
+ * - Each schema object is read once for its value, and walked at most
+ *   twice, under a layer that cleared the key and under none, a `lazy`'s
+ *   function called at each, so a recursive schema ends,
+ *   `lazy(() => optional(L))` as `L` included.
  *   A cycle that builds a new `lazy` each time round, as
  *   `const f = () => optional(lazy(f))`, never meets a schema it has read and
  *   ends in a stack overflow, though a parse of a finite value can end on it.
@@ -125,24 +135,34 @@ export const find_schema_meta = <TKey extends keyof SchemaMeta>(
 	options?: FindSchemaMetaOptions
 ): Array<Exclude<SchemaMeta[TKey], undefined>> => {
 	const found: Array<Exclude<SchemaMeta[TKey], undefined>> = [];
+	// the schemas read for the key, and those only walked, under a layer that cleared it
 	const seen = new Set<SchemaNode>();
+	const walked = new Set<SchemaNode>();
 	const structural = options?.structural;
-	const visit = (s: SchemaNode): void => {
-		if (seen.has(s)) return;
-		seen.add(s);
-		const value = get_meta(s)?.[key];
-		if (value !== undefined) found.push(value as Exclude<SchemaMeta[TKey], undefined>);
+	const visit = (s: SchemaNode, above_cleared?: boolean): void => {
+		if (seen.has(s) || (above_cleared && walked.has(s))) return;
+		(above_cleared ? walked : seen).add(s);
+		const meta = above_cleared ? undefined : get_meta(s);
+		let cleared = above_cleared;
+		if (meta && Object.hasOwn(meta, key)) {
+			const value = meta[key];
+			if (value === undefined) cleared = true;
+			else found.push(value as Exclude<SchemaMeta[TKey], undefined>);
+		}
 		switch (s.kind) {
 			case 'optional':
 			case 'nullable':
 			case 'with_default':
 			case 'with_default_fn':
-				visit(s.def.schema);
+				visit(s.def.schema, cleared);
 				break;
 			case 'lazy':
-				visit(s.def());
+				visit(s.def(), cleared);
 				break;
 			case 'pipe':
+				// its first schema is the layer under it, and its other steps are not
+				for (let i = 0; i < s.def.length; i++) visit(s.def[i]!, !i && cleared);
+				break;
 			case 'union':
 				for (const o of s.def) visit(o);
 				break;
@@ -235,16 +255,15 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
 		const entry = entries[name]!;
 		// the outermost `optional` or default: a default under an `optional` is never asked
 		let first: SchemaNode<'optional' | 'with_default' | 'with_default_fn'> | undefined;
-		let description: string | undefined;
 		for (const layer of to_layers(entry)) {
 			if (
 				layer.kind === 'optional' ||
 				layer.kind === 'with_default' ||
 				layer.kind === 'with_default_fn'
 			) {
-				first ??= layer;
+				first = layer;
+				break;
 			}
-			description ??= get_meta(layer)?.description;
 		}
 		fields.push({
 			name,
@@ -252,7 +271,7 @@ export const get_schema_fields = (schema: AnySchema): Array<SchemaField> => {
 			has_default: first !== undefined && first.kind !== 'optional',
 			default_computed: first?.kind === 'with_default_fn',
 			default: first?.kind === 'with_default' ? first.def.value : undefined,
-			description
+			description: get_schema_meta(entry, 'description')
 		});
 	}
 	return fields;
@@ -300,7 +319,7 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 		case 'literal':
 			return format_literal(s.def);
 		case 'one_of':
-			return s.def.map(format_literal).join(' | ');
+			return s.def.map(format_literal).join(' | ') || 'never';
 		case 'optional':
 			return to_type(s.def.schema, inside) + ' | undefined';
 		case 'nullable':
@@ -321,9 +340,9 @@ const to_type = (s: SchemaNode, inside?: boolean): string => {
 		case 'keyed_record':
 			return `Record<${to_type(s.def.key, inside)}, ${to_type(s.def.value, inside)}>`;
 		case 'union':
-			return s.def.map((o) => to_type(o, inside)).join(' | ');
+			return s.def.map((o) => to_type(o, inside)).join(' | ') || 'never';
 		case 'variant':
-			return s.def.options.map((o) => to_type(o, inside)).join(' | ');
+			return s.def.options.map((o) => to_type(o, inside)).join(' | ') || 'never';
 		case 'object':
 		case 'loose_object':
 		case 'strip_object':

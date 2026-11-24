@@ -35,7 +35,7 @@ export const branded_uuid = s.brand(s.pipe(s.string, s.uuid, s.to_lower_case), '
 export const branded_pipe = s.brand(s.pipe(s.string, s.min_length(1)), 'B');
 export const flavored_pipe = s.flavor(s.pipe(s.string, s.min_length(1)), 'F');
 export const regex_of = <T extends string>() => s.regex<T>(/a/);
-export const piped_action = <O>(a: s.SchemaAction<string, O>) => s.pipe(s.string, a, s.check((v) => v !== null));
+export const piped_action = <O>(a: s.SchemaAction<O, string>) => s.pipe(s.string, a, s.check((v) => v !== null));
 export const piped_named = <T extends Schema<string>>(x: T) => pipe(x, regex(/a/));
 `;
 
@@ -141,35 +141,46 @@ export const defaulted = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.with_def
 export const defaulted_fn = <T extends s.Schema>(x: T, d: s.Infer<T>) => s.with_default_fn(x, () => d);
 `;
 
-const NAMES = [
-	'ObjectSchema',
-	'StripObjectSchema',
-	'LooseObjectSchema',
-	'ObjectWithRestSchema',
-	'ArraySchema',
-	'RecordSchema',
-	'KeyedRecordSchema',
-	'OptionalSchema',
-	'NullableSchema',
-	'WithDefaultSchema',
-	'WithDefaultFnSchema',
-	'WithUndefinedDefaultSchema',
-	'WithUndefinedDefaultFnSchema',
-	'LazySchema',
-	'UnionSchema',
-	'VariantSchema',
-	'LiteralSchema',
-	'OneOfSchema',
+// what an export of `schema.ts` that is a schema, or a call signature that returns one, may
+// declare as its type: a named interface of a schema, the types of a pipe and of an action,
+// or a type parameter of the signature, as `message` returns the schema it was given
+const NAMED_SCHEMA_TYPES = new Set([
 	'StringSchema',
 	'NumberSchema',
 	'BooleanSchema',
 	'BigintSchema',
 	'UnknownSchema',
+	'LiteralSchema',
 	'VoidSchema',
+	'OneOfSchema',
+	'OptionalSchema',
+	'NullableSchema',
+	'WithDefaultSchema',
+	'WithUndefinedDefaultSchema',
+	'WithDefaultFnSchema',
+	'WithUndefinedDefaultFnSchema',
+	'LazySchema',
 	'BrandSchema',
 	'FlavorSchema',
-	'PipeSchema'
-];
+	'ObjectSchema',
+	'LooseObjectSchema',
+	'ObjectWithRestSchema',
+	'StripObjectSchema',
+	'RecordSchema',
+	'KeyedRecordSchema',
+	'ArraySchema',
+	'UnionSchema',
+	'VariantSchema',
+	'PipeSchema',
+	'SchemaAction',
+	'SchemaRefinement'
+]);
+
+// the named interfaces of schemas, which a declaration writes a held schema as:
+// every one of those but the types of an action, which is held in a pipe
+const NAMES = [...NAMED_SCHEMA_TYPES].filter(
+	(name) => name !== 'SchemaAction' && name !== 'SchemaRefinement'
+);
 
 test(
 	'nested exported schemas emit every factory by its name',
@@ -257,41 +268,6 @@ export const Actor = s.variant('kind', [User, Bot]);
 	},
 	TIMEOUT
 );
-
-// what an export of `schema.ts` that is a schema, or a call signature that returns one, may
-// declare as its type: a named interface of a schema, the types of a pipe and of an action,
-// or a type parameter of the signature, as `message` returns the schema it was given
-const NAMED_SCHEMA_TYPES = new Set([
-	'StringSchema',
-	'NumberSchema',
-	'BooleanSchema',
-	'BigintSchema',
-	'UnknownSchema',
-	'LiteralSchema',
-	'VoidSchema',
-	'OneOfSchema',
-	'OptionalSchema',
-	'NullableSchema',
-	'WithDefaultSchema',
-	'WithUndefinedDefaultSchema',
-	'WithDefaultFnSchema',
-	'WithUndefinedDefaultFnSchema',
-	'LazySchema',
-	'BrandSchema',
-	'FlavorSchema',
-	'ObjectSchema',
-	'LooseObjectSchema',
-	'ObjectWithRestSchema',
-	'StripObjectSchema',
-	'RecordSchema',
-	'KeyedRecordSchema',
-	'ArraySchema',
-	'UnionSchema',
-	'VariantSchema',
-	'PipeSchema',
-	'SchemaAction',
-	'SchemaRefinement'
-]);
 
 test(
 	'every export of schema.ts and meta.ts that is or makes a schema declares a named type',

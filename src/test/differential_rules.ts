@@ -974,29 +974,46 @@ export interface DifferentialCompareEnv {
 	inherited: DifferentialInherited;
 }
 
-// a key theirs writes as `undefined` that ours leaves out, as a rule allows
+// what `same_value` is handed for the input under a position where the input
+// is no object, so that what ours was given at a key of it is not known
+const DIFFERENTIAL_NOT_GIVEN: unique symbol = Symbol('not given');
+
+// what ours was given at `key` of what it was given, where that is known
+const given_at = (given: unknown, key: PropertyKey): unknown =>
+	is_object(given) ? (given as any)[key] : DIFFERENTIAL_NOT_GIVEN;
+
+// a key theirs writes as `undefined` that ours leaves out, as a rule allows:
+// one the input lacks, as each row is of a missing key, where the input at
+// the object is known
 const is_left_out = (
 	positions: Array<DifferentialSpec>,
 	key: PropertyKey,
 	ours: object,
 	theirs: object,
-	env: DifferentialCompareEnv
+	env: DifferentialCompareEnv,
+	given: unknown
 ): boolean =>
 	Object.hasOwn(theirs, key) &&
 	(theirs as any)[key] === undefined &&
 	!(key in ours) &&
+	!(is_object(given) && key in given) &&
 	entry_specs(positions, key).some(
 		(e) =>
 			(env.rules.has('pipe_default_left_out') && is_pipe_from_default(e)) ||
 			(env.rules.has('default_fn_left_out') && is_default_fn(e))
 	);
 
-/** Whether ours is theirs, a value at the structures `positions`, as the rules allow. */
+/**
+ * Whether ours is theirs, a value at the structures `positions`, as the rules
+ * allow, given what ours was given there, or `DIFFERENTIAL_NOT_GIVEN`: a
+ * relaxation of what ours does with a part of its input reads the part.
+ */
 export const same_value = (
 	positions: Array<DifferentialSpec>,
 	ours: unknown,
 	theirs: unknown,
-	env: DifferentialCompareEnv
+	env: DifferentialCompareEnv,
+	given: unknown
 ): boolean => {
 	if (!is_object(ours) || !is_object(theirs)) return render_value(ours) === render_value(theirs);
 	if (
@@ -1007,7 +1024,7 @@ export const same_value = (
 		return true;
 	}
 	if (Array.isArray(ours) !== Array.isArray(theirs)) return false;
-	if (Array.isArray(ours)) return same_array(positions, ours, theirs as Array<unknown>, env);
+	if (Array.isArray(ours)) return same_array(positions, ours, theirs as Array<unknown>, env, given);
 	const from_input = env.of_input.has(ours);
 	const theirs_keys = Reflect.ownKeys(theirs);
 	let compared: Array<PropertyKey> = [];
@@ -1020,7 +1037,7 @@ export const same_value = (
 				(env.rules.has('read_through') && typeof key === 'string' && key in ours)
 			) {
 				compared.push(key);
-			} else if (!is_left_out(positions, key, ours, theirs, env)) return false;
+			} else if (!is_left_out(positions, key, ours, theirs, env, given)) return false;
 		}
 		for (const key in ours) {
 			if (Object.hasOwn(theirs, key)) continue;
@@ -1061,21 +1078,41 @@ export const same_value = (
 		// one this library built: everything `render_value` writes
 		if (render_shape(ours) !== render_shape(theirs)) return false;
 		const ours_keys = Reflect.ownKeys(ours);
-		compared = theirs_keys.filter((key) => !is_left_out(positions, key, ours, theirs, env));
+		compared = theirs_keys.filter((key) => !is_left_out(positions, key, ours, theirs, env, given));
 		if (compared.length !== ours_keys.length || compared.some((key, i) => key !== ours_keys[i])) {
 			return false;
 		}
 	}
 	return compared.every((key) =>
-		same_value(entry_positions(positions, key), (ours as any)[key], (theirs as any)[key], env)
+		same_value(
+			entry_positions(positions, key),
+			(ours as any)[key],
+			(theirs as any)[key],
+			env,
+			given_at(given, key)
+		)
 	);
+};
+
+// whether a hole of a copy at `at` is one the copy kept: the input's, before
+// the first item that changed, which is where a copy starts and what it takes
+// as it is. An item after it is written, a hole as `undefined`
+const is_hole_kept = (ours: Array<unknown>, given: unknown, at: number): boolean => {
+	if (!Array.isArray(given)) return true;
+	for (let i = 0; i <= at; i++) {
+		if (Object.hasOwn(ours, i) !== Object.hasOwn(given, i) || !Object.is(ours[i], given[i])) {
+			return false;
+		}
+	}
+	return true;
 };
 
 const same_array = (
 	positions: Array<DifferentialSpec>,
 	ours: Array<unknown>,
 	theirs: Array<unknown>,
-	env: DifferentialCompareEnv
+	env: DifferentialCompareEnv,
+	given: unknown
 ): boolean => {
 	const from_input = env.of_input.has(ours);
 	if (!from_input && render_shape(ours) !== render_shape(theirs)) {
@@ -1093,13 +1130,18 @@ const same_array = (
 		const has = Object.hasOwn(ours, i);
 		const theirs_has = Object.hasOwn(theirs, i);
 		if (!has && theirs_has) {
-			if (theirs[i] === undefined && env.rules.has(from_input ? 'hole_kept' : 'hole_in_copy')) {
+			if (
+				theirs[i] === undefined &&
+				(from_input
+					? env.rules.has('hole_kept')
+					: env.rules.has('hole_in_copy') && is_hole_kept(ours, given, i))
+			) {
 				continue;
 			}
 			return false;
 		}
 		if (has !== theirs_has) return false;
-		if (!same_value(items, ours[i], theirs[i], env)) return false;
+		if (!same_value(items, ours[i], theirs[i], env, given_at(given, i))) return false;
 	}
 	const extra = (array: Array<unknown>): Array<PropertyKey> =>
 		Reflect.ownKeys(array).filter((key) => key !== 'length' && !is_index(key));
@@ -1117,7 +1159,8 @@ const same_array = (
 		ours_extra.length === theirs_extra.length &&
 		ours_extra.every(
 			(key, i) =>
-				key === theirs_extra[i] && same_value([], (ours as any)[key], (theirs as any)[key], env)
+				key === theirs_extra[i] &&
+				same_value([], (ours as any)[key], (theirs as any)[key], env, given_at(given, key))
 		)
 	);
 };

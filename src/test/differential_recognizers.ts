@@ -98,9 +98,16 @@ const map_spec = (
 	return fn(mapped) ?? mapped;
 };
 
+// whether a key schema is a set of keys, which zod holds an object's keys to
+const is_finite_key = (key: DifferentialSpec): boolean => key.t === 'one_of' || key.t === 'literal';
+
+// whether a key schema is a set of keys that `key` is none of
+const is_key_outside = (schema: DifferentialSpec, key: string): boolean =>
+	schema.t === 'one_of' ? !schema.vs.includes(key) : schema.t === 'literal' && schema.v !== key;
+
 // each own key named `constructor` or `prototype` of an input given to a
 // `loose_object` or an `object_with_rest` that doesn't name it, or to a
-// `record`, taken out
+// `record` or a `keyed_record` of any key, taken out
 const without_own_named = (
 	spec: DifferentialSpec,
 	input: DifferentialInput,
@@ -109,7 +116,15 @@ const without_own_named = (
 	rewrite_input(spec, input, (p, object) => {
 		if (records ? p.t !== 'record' && p.t !== 'keyed_record' : !is_loose_or_rest(p)) return object;
 		const own = object.own.filter(
-			([key]) => !((key === 'constructor' || key === 'prototype') && !names_entry(p, key))
+			([key]) =>
+				!(
+					(key === 'constructor' || key === 'prototype') &&
+					!names_entry(p, key) &&
+					// to a `keyed_record` of a set of keys without it, it is a key
+					// outside the set, which zod reports as an unknown key of the
+					// object: another row
+					!(p.t === 'keyed_record' && is_key_outside(p.key, key))
+				)
 		);
 		return own.length < object.own.length ? { ...object, own } : object;
 	});
@@ -387,7 +402,7 @@ const without_proto_infinities = (input: DifferentialInput, all = false): Differ
 const has_finite_keyed_record = (spec: DifferentialSpec): boolean => {
 	let found = false;
 	map_spec(spec, (s) => {
-		if (s.t === 'keyed_record' && (s.key.t === 'one_of' || s.key.t === 'literal')) found = true;
+		if (s.t === 'keyed_record' && is_finite_key(s.key)) found = true;
 		return null;
 	});
 	return found;
@@ -705,8 +720,8 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 	},
 	// a key outside the set of keys of a `keyed_record`: zod reports it as an
 	// unknown key of the object, and valibot at the key. Every issue they
-	// differ by is one of zod's unknown keys, or one of valibot's at or under
-	// such an object
+	// differ by is one of zod's unknown keys, or one of valibot's at such an
+	// object or at a key of it
 	{
 		row: 'keyed_record of one_of keys, a key outside',
 		combination:
@@ -721,14 +736,20 @@ const RECOGNIZERS: Array<SplitRecognizer> = [
 			const v_unknown = texts(v.unknown_keys);
 			const unknown = z.unknown_keys.filter((u) => !v_unknown.has(path_text(u)));
 			const extra = v.paths.filter((p) => !z_paths.has(path_text(p)));
-			const under = (p: ReadonlyArray<PropertyKey>, u: ReadonlyArray<PropertyKey>): boolean =>
-				u.length <= p.length && u.every((key, i) => String(key) === String(p[i]));
+			// the object at `u`, which a union it is an option of reports, or a
+			// key of it, and nothing under one: where the value under a key
+			// outside the set is wrong too, valibot reports it, and ours, which
+			// doesn't read it, is neither's, a row of its own
+			const key_of = (p: ReadonlyArray<PropertyKey>, u: ReadonlyArray<PropertyKey>): boolean =>
+				p.length <= u.length + 1 &&
+				u.length <= p.length &&
+				u.every((key, i) => String(key) === String(p[i]));
 			return (
 				unknown.length > 0 &&
 				[...v_unknown].every((u) => z.unknown_keys.some((x) => path_text(x) === u)) &&
 				[...z_paths].every((p) => v.paths.some((x) => path_text(x) === p)) &&
-				extra.every((p) => unknown.some((u) => under(p, u))) &&
-				unknown.every((u) => extra.some((p) => under(p, u)))
+				extra.every((p) => unknown.some((u) => key_of(p, u))) &&
+				unknown.every((u) => extra.some((p) => key_of(p, u)))
 			);
 		}
 	},

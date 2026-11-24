@@ -126,6 +126,13 @@ export interface SchemaContext {
  * schema with the same `run`. Only `message` passes the third, which says
  * that what it holds is the entry itself. Every other call gives the first
  * two only, and a `run` that takes only those works as an entry.
+ *
+ * The input type defaults to the output's, so a parameter typed
+ * `Schema<string>` refuses a schema that changes its value, a `transform` or
+ * a default, and one generic in `T`, typed `Schema<T>`, refuses a `transform`
+ * and infers `T` from the output and the input of a default together. A
+ * function generic over the output of whatever schema it is given takes a
+ * `Schema<T, unknown>`.
  */
 export interface Schema<
 	TOutput = unknown,
@@ -168,7 +175,8 @@ export interface Schema<
 
 /**
  * A schema of any types, for code that holds or reads one without typing its output.
- * A parameter that takes any schema is typed as a bare `Schema`.
+ * Every schema assigns to it, and to a bare `Schema`, which types what a
+ * `run` is given and returns as `unknown` where this types them `any`.
  */
 export type AnySchema = Schema<any, any, string, any>;
 
@@ -333,8 +341,8 @@ export type InferInput<T extends Schema> = NonNullable<T['~types']>['input'];
  * which `regex` reads as `'null'`.
  */
 export interface SchemaAction<
-	TInput,
-	TOutput = TInput,
+	TOutput,
+	TInput = TOutput,
 	TKind extends string = string,
 	TDef = unknown
 > extends Schema<TOutput, TInput, TKind, TDef> {
@@ -355,11 +363,11 @@ export interface SchemaAction<
  * branded or flavored.
  */
 export interface SchemaRefinement<
-	TInput,
-	TOutput = TInput,
+	TOutput,
+	TInput = TOutput,
 	TKind extends string = string,
 	TDef = unknown
-> extends SchemaAction<TInput, TOutput, TKind, TDef> {
+> extends SchemaAction<TOutput, TInput, TKind, TDef> {
 	/** Type-only, never set at runtime: says `run` returns the value it is given. */
 	readonly '~refines'?: true;
 }
@@ -374,7 +382,7 @@ export type SchemaEntries = Record<string, Schema>;
 
 type Flatten<T> = { [K in keyof T]: T[K] } & {};
 
-// The kinds `EntryTakesMissing` and `EntryLeavesMissingOut` can answer `true`
+// The kinds `SchemaEntryTakesMissing` and `SchemaEntryLeavesMissingOut` can answer `true`
 // for, which each tests first: an entry of any other kind is decided by that
 // one test, which costs the checker fewer instantiations than the chain alone.
 // A kind its chain answers for and its list leaves out answers `false`
@@ -399,33 +407,33 @@ type EntryMayLeaveMissingOut = {
  * Exported so a declaration emitted for a generic function that builds an
  * object schema can name it: inlined, it would be written out without end.
  */
-export type EntryTakesMissing<T> = 0 extends 1 & T
+export type SchemaEntryTakesMissing<T> = 0 extends 1 & T
 	? true
 	: T extends EntryMayTakeMissing
 		? T extends { readonly kind: 'optional' | 'with_default' | 'with_default_fn' }
 			? true
 			: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
-				? EntryTakesMissing<U>
+				? SchemaEntryTakesMissing<U>
 				: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
-					? EntryTakesMissing<U>
+					? SchemaEntryTakesMissing<U>
 					: T extends { readonly kind: 'union'; readonly def: ReadonlyArray<infer U> }
-						? true extends EntryTakesMissing<U>
+						? true extends SchemaEntryTakesMissing<U>
 							? true
 							: false
 						: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
-							? EntryTakesMissing<U>
+							? SchemaEntryTakesMissing<U>
 							: false
 		: false;
 
 /**
  * Whether `T` is an `optional`, or a `pipe` that starts with one, through
  * every pipe it starts with: a `pipe` that runs no step for a missing key.
- * Exported for the reason `EntryTakesMissing` is.
+ * Exported for the reason `SchemaEntryTakesMissing` is.
  */
-export type PipeStartsOptional<T> = T extends { readonly kind: 'optional' }
+export type SchemaPipeStartsOptional<T> = T extends { readonly kind: 'optional' }
 	? true
 	: T extends { readonly kind: 'pipe'; readonly '~types'?: { readonly first: infer U } }
-		? PipeStartsOptional<U>
+		? SchemaPipeStartsOptional<U>
 		: false;
 
 /**
@@ -437,20 +445,24 @@ export type PipeStartsOptional<T> = T extends { readonly kind: 'optional' }
  * `meta`, a `flavor`, or a `brand`, and not under a `nullable` or a `lazy`.
  * Any other `pipe`, and a `union`, that takes a missing key can leave it out
  * where it can give `undefined`. A default of `undefined` leaves it out too,
- * which the types don't say. Exported for the reason `EntryTakesMissing` is.
+ * which the types don't say. An entry typed as a union of schemas may leave
+ * it out where one of them does, so its key is optional in the output, and
+ * so is that of a `pipe` whose first schema is typed as such a union. A
+ * `brand` or a `flavor` of a schema typed as one is not read through, and
+ * its key is required. Exported for the reason `SchemaEntryTakesMissing` is.
  */
-export type EntryLeavesMissingOut<T, TEntry extends boolean = true> = 0 extends 1 & T
+export type SchemaEntryLeavesMissingOut<T, TEntry extends boolean = true> = 0 extends 1 & T
 	? true
 	: T extends EntryMayLeaveMissingOut
 		? T extends { readonly kind: 'optional' }
 			? true
 			: T extends { readonly kind: 'nullable'; readonly def: SchemaWrapperDef<infer U> }
-				? EntryLeavesMissingOut<U, false>
+				? SchemaEntryLeavesMissingOut<U, false>
 				: T extends { readonly kind: 'lazy'; readonly def: () => infer U }
-					? EntryLeavesMissingOut<U, false>
+					? SchemaEntryLeavesMissingOut<U, false>
 					: T extends { readonly kind: 'pipe' | 'union'; readonly run: (...args: any) => infer O }
 						? [TEntry] extends [true]
-							? [PipeStartsOptional<T>] extends [true]
+							? true extends SchemaPipeStartsOptional<T>
 								? true
 								: EntryGivesUndefined<T, O>
 							: EntryGivesUndefined<T, O>
@@ -458,7 +470,7 @@ export type EntryLeavesMissingOut<T, TEntry extends boolean = true> = 0 extends 
 		: false;
 
 // whether `T`, which outputs `O`, takes a missing key and can give `undefined` for it
-type EntryGivesUndefined<T, O> = [EntryTakesMissing<T>] extends [true]
+type EntryGivesUndefined<T, O> = [SchemaEntryTakesMissing<T>] extends [true]
 	? undefined extends O
 		? true
 		: false
@@ -491,12 +503,12 @@ type EntryGivesUndefined<T, O> = [EntryTakesMissing<T>] extends [true]
 export type SchemaObjectOutput<T extends SchemaEntries> = T extends unknown
 	? Flatten<
 			{
-				-readonly [K in keyof T as [EntryLeavesMissingOut<T[K]>] extends [true] ? never : K]: Infer<
-					T[K]
-				>;
+				-readonly [
+					K in keyof T as true extends SchemaEntryLeavesMissingOut<T[K]> ? never : K
+				]: Infer<T[K]>;
 			} & {
 				-readonly [
-					K in keyof T as [EntryLeavesMissingOut<T[K]>] extends [true] ? K : never
+					K in keyof T as true extends SchemaEntryLeavesMissingOut<T[K]> ? K : never
 				]?: Infer<T[K]>;
 			}
 		>
@@ -513,11 +525,11 @@ export type SchemaObjectInput<T extends SchemaEntries> = T extends unknown
 	? Flatten<
 			{
 				-readonly [
-					K in keyof T as [EntryTakesMissing<T[K]>] extends [true] ? never : K
+					K in keyof T as [SchemaEntryTakesMissing<T[K]>] extends [true] ? never : K
 				]: InferInput<T[K]>;
 			} & {
 				-readonly [
-					K in keyof T as [EntryTakesMissing<T[K]>] extends [true] ? K : never
+					K in keyof T as [SchemaEntryTakesMissing<T[K]>] extends [true] ? K : never
 				]?: InferInput<T[K]>;
 			}
 		>
@@ -668,8 +680,9 @@ const prefix_path = (issues: Array<SchemaIssue>, from: number, key: PropertyKey)
 		issues[i]!.path.length ? issues[i]!.path.push(key) : (issues[i]!.path = [key]);
 };
 
-// like `fail` for an issue about `key` of `value`, which is read only when an
-// issue is built: a probe has no use for it, and is handed `true` in its place
+// like `fail` for an issue about `key` of `value`, which is read only outside
+// probe mode, past the cap of issues too: a probe has no use for it, and is
+// handed `true` in its place
 const fail_at = (
 	ctx: SchemaContext,
 	kind: string,
@@ -718,6 +731,12 @@ export const parse_or_throw = <T extends Schema>(schema: T, value: unknown): Inf
  * Checks whether `value` matches `schema`, without building issues
  * and stopping at the first failure.
  * Narrows to the input type because the output is discarded.
+ *
+ * A type predicate narrows where it fails too, to what is left of the
+ * value's type without the input type. A schema that refuses values of its
+ * own input type, as a `pipe` with a check does, leaves a refused one typed
+ * as no such value: past `if (is(pipe(string, min_length(3)), value)) return`
+ * a `string | number` is typed `number`, though a short string reaches it.
  */
 export const is = <T extends Schema>(schema: T, value: unknown): value is InferInput<T> => {
 	const ctx: SchemaContext = { issues: undefined, fails: 0, probe: true };
@@ -837,9 +856,13 @@ export const get_issue_value = (
  * @throws TypeError where `get_issue_value` does, on a revoked `Proxy` on the path, and whatever a trap or a getter there throws
  */
 export const format_issue_with_value = (issue: SchemaIssue, input: unknown): string => {
-	// a key's issue is about the key, and its value is not looked up
+	// a key's issue is about the key, and its value is not looked up, nor is
+	// one whose `message` is the text, which says nothing received
 	const found =
-		issue.kind !== 'unknown_key' && issue.kind !== 'missing_key' && get_issue_value(issue, input);
+		issue.message === undefined &&
+		issue.kind !== 'unknown_key' &&
+		issue.kind !== 'missing_key' &&
+		get_issue_value(issue, input);
 	const value = found && found.ok ? found.value : undefined;
 	const text =
 		typeof value === 'string'
@@ -1408,13 +1431,13 @@ export const message: {
 	// its `~types` has no `action`, so the last takes it, unless it is an object literal written
 	// in the call without a `~types`, which the first takes as a refinement
 	<TInput, TOutput, TKind extends string, TDef>(
-		schema: SchemaRefinement<TInput, TOutput, TKind, TDef>,
+		schema: SchemaRefinement<TOutput, TInput, TKind, TDef>,
 		message: string | ((issue: SchemaIssue, value: unknown) => string)
-	): SchemaRefinement<TInput, TOutput, TKind, TDef>;
+	): SchemaRefinement<TOutput, TInput, TKind, TDef>;
 	<TInput, TOutput, TKind extends string, TDef>(
-		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		schema: SchemaAction<TOutput, TInput, TKind, TDef>,
 		message: string | ((issue: SchemaIssue, value: unknown) => string)
-	): SchemaAction<TInput, TOutput, TKind, TDef>;
+	): SchemaAction<TOutput, TInput, TKind, TDef>;
 	<T extends Schema>(
 		schema: T,
 		message: string | ((issue: SchemaIssue, value: unknown) => string)
@@ -1483,7 +1506,7 @@ declare const BrandedSymbol: unique symbol;
  * Its names are keys, each holding itself, so a flavor of a flavor holds both
  * and a wide name like `string` matches no particular one.
  */
-export interface Flavor<T extends PropertyKey> {
+export interface Flavor<T extends string> {
 	readonly [FlavoredSymbol]?: { readonly [K in T]: K };
 }
 
@@ -1492,7 +1515,7 @@ export interface Flavor<T extends PropertyKey> {
  * Its names are keys, each holding itself, so a brand of a brand holds both
  * and a wide name like `string` matches no particular one.
  */
-export interface Brand<T extends PropertyKey> {
+export interface Brand<T extends string> {
 	readonly [BrandedSymbol]: { readonly [K in T]: K };
 }
 
@@ -1520,7 +1543,8 @@ export interface Brand<T extends PropertyKey> {
  * ```
  *
  * `null` and `undefined` pass through unmarked: `Flavored<string | null, 'Email'>`
- * is the flavored string or `null`.
+ * is the flavored string or `null`. `Flavored<unknown, 'Email'>` is `unknown`,
+ * the one type every plain value assigns to.
  *
  * Of a type parameter whose constraint rules out `null` and `undefined`, as
  * `T extends string` and `T extends {}` do, two flavors assign to each other.
@@ -1536,8 +1560,8 @@ export interface Brand<T extends PropertyKey> {
  * ): T & Flavored<string, 'PostId'> => x;
  * ```
  */
-export type Flavored<TValue, TName extends PropertyKey> = TValue &
-	(Flavor<TName> | Extract<TValue, null | undefined>);
+export type Flavored<TValue, TName extends string> = TValue &
+	(Flavor<TName> | Extract<TValue, null | undefined> | (unknown extends TValue ? unknown : never));
 
 /**
  * Strict nominal typing. A plain value of the base type is not assignable to the branded type,
@@ -1564,9 +1588,14 @@ export type Flavored<TValue, TName extends PropertyKey> = TValue &
  *
  * `null` and `undefined` pass through unmarked: `Branded<string | null, 'Uuid'>`
  * is the branded string or `null`, and a plain `null` is assignable to it.
+ * `Branded<unknown, 'Uuid'>` is `Brand<'Uuid'> | null | undefined`.
  */
-export type Branded<TValue, TName extends PropertyKey> = TValue &
-	(Brand<TName> | Extract<TValue, null | undefined>);
+export type Branded<TValue, TName extends string> = TValue &
+	(
+		| Brand<TName>
+		| Extract<TValue, null | undefined>
+		| (unknown extends TValue ? null | undefined : never)
+	);
 
 // the type-only first schema of a `pipe`, which a `flavor` or a `brand` of one keeps for the
 // object schemas to read, and nothing of any other schema
@@ -1622,9 +1651,9 @@ export const flavor: {
 	// an object literal written in the call without a `~types`, which the first takes as an action.
 	// A `name` of type `any` makes `TName` `any` and still passes it
 	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
-		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		schema: SchemaAction<TOutput, TInput, TKind, TDef>,
 		name: TName
-	): SchemaAction<TInput, Flavored<TOutput, TName>, TKind, TDef>;
+	): SchemaAction<Flavored<TOutput, TName>, TInput, TKind, TDef>;
 	<T extends Schema, const TName extends string>(schema: T, name: TName): FlavorSchema<T, TName>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
@@ -1647,9 +1676,9 @@ export const brand: {
 	// an object literal written in the call without a `~types`, which the first takes as an action.
 	// A `name` of type `any` makes `TName` `any` and still passes it
 	<TInput, TOutput, TKind extends string, TDef, const TName extends string>(
-		schema: SchemaAction<TInput, TOutput, TKind, TDef>,
+		schema: SchemaAction<TOutput, TInput, TKind, TDef>,
 		name: TName
-	): SchemaAction<TInput, Branded<TOutput, TName>, TKind, TDef>;
+	): SchemaAction<Branded<TOutput, TName>, TInput, TKind, TDef>;
 	<T extends Schema, const TName extends string>(schema: T, name: TName): BrandSchema<T, TName>;
 } = <T extends AnySchema>(schema: T): T => schema;
 
@@ -1996,13 +2025,13 @@ type SchemaSame<A, B> =
 	(<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 
 // the mark of the names `N`, a brand or a flavor
-type SchemaMark<TBrand extends boolean, N extends PropertyKey> = TBrand extends true
+type SchemaMark<TBrand extends boolean, N extends string> = TBrand extends true
 	? Brand<N>
 	: Flavor<N>;
 
 // `M` with one round of the marks of `Brand` or of `Flavor` taken off, a name
 // at a time, or all of a mark's names at once where they are one mark
-type SchemaMarkOff<M, N extends PropertyKey, TBrand extends boolean> = (N extends unknown
+type SchemaMarkOff<M, N extends string, TBrand extends boolean> = (N extends unknown
 		? M extends infer L & SchemaMark<TBrand, N>
 			? L
 			: M
@@ -2558,8 +2587,9 @@ interface PipeStep<TInput, TOutput, TRefines> {
 type PipeStepOutput<TInput, TOutput, TRefines> = [TRefines] extends [true] ? TInput : TOutput;
 
 /**
- * The overloads of `pipe`: a schema and one to four actions. A pipe of more
- * starts with a pipe, `pipe(pipe(schema, a, b, c, d), e)`, which runs as one.
+ * The overloads of `pipe`: a schema and one to four steps, each an action or
+ * a schema. A pipe of more starts with a pipe,
+ * `pipe(pipe(schema, a, b, c, d), e)`, which runs as one.
  */
 export interface SchemaPipeFactory {
 	<T extends Schema, O1, R1>(
@@ -2716,7 +2746,7 @@ export type Uninferred<T> = [T] extends [infer U extends T] ? U : never;
 // @__NO_SIDE_EFFECTS__
 export const min_length = <T extends { length: number }>(
 	min: number
-): SchemaRefinement<T, Uninferred<T>, 'min_length', number> => {
+): SchemaRefinement<Uninferred<T>, T, 'min_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_length',
@@ -2737,7 +2767,7 @@ export const min_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const max_length = <T extends { length: number }>(
 	max: number
-): SchemaRefinement<T, Uninferred<T>, 'max_length', number> => {
+): SchemaRefinement<Uninferred<T>, T, 'max_length', number> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_length',
@@ -2758,7 +2788,7 @@ export const max_length = <T extends { length: number }>(
 // @__NO_SIDE_EFFECTS__
 export const min_value = <T extends number | bigint>(
 	min: T extends bigint ? bigint : number
-): SchemaRefinement<T, Uninferred<T>, 'min_value', number | bigint> => {
+): SchemaRefinement<Uninferred<T>, T, 'min_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'min_value',
@@ -2777,7 +2807,7 @@ export const min_value = <T extends number | bigint>(
 // @__NO_SIDE_EFFECTS__
 export const max_value = <T extends number | bigint>(
 	max: T extends bigint ? bigint : number
-): SchemaRefinement<T, Uninferred<T>, 'max_value', number | bigint> => {
+): SchemaRefinement<Uninferred<T>, T, 'max_value', number | bigint> => {
 	let expected: string | undefined;
 	return {
 		kind: 'max_value',
@@ -2818,18 +2848,24 @@ export const safe_integer: SchemaRefinement<number, number, 'safe_integer', unde
  * `to_schema_json` refuses it, as it holds a `RegExp`. For a UUID or a date
  * and time in UTC, use `uuid` or `iso_datetime`, which it writes.
  *
- * @param pattern - must not have the `g` or `y` flag, whose `lastIndex` state would leak between calls
+ * @param pattern - without the `g` or `y` flag, under which a test starts where the last one ended
  * @param expected - describes what was expected, defaulting to the pattern as `String` writes it
+ * @throws TypeError when `pattern` has the `g` or `y` flag
  */
 // @__NO_SIDE_EFFECTS__
 export const regex = <T extends string>(
 	pattern: RegExp,
 	expected: string = String(pattern)
-): SchemaRefinement<T, Uninferred<T>, 'regex', RegExp> => ({
-	kind: 'regex',
-	def: pattern,
-	run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
-});
+): SchemaRefinement<Uninferred<T>, T, 'regex', RegExp> => {
+	// either keeps a `lastIndex` between parses: a `y` then matches from where
+	// the last match ended, and a `g` fails every other string it should take
+	if (pattern.global || pattern.sticky) throw TypeError('g or y flag');
+	return {
+		kind: 'regex',
+		def: pattern,
+		run: (value, ctx) => (pattern.test(value) ? value : fail(ctx, 'regex', value, expected))
+	};
+};
 
 // the grammars are in `docs/formats.md`, which says why each is the one it is.
 // A UUID is read by its char codes, which takes less time than a `RegExp` of
@@ -2968,7 +3004,7 @@ const UNSIGNED_INTEGER_EXPECTED = 'an unsigned safe integer in decimal digits';
 // @__NO_SIDE_EFFECTS__
 export const to_integer = (
 	options?: ToIntegerOptions
-): SchemaAction<string, number, 'to_integer', SchemaToIntegerDef> => {
+): SchemaAction<number, string, 'to_integer', SchemaToIntegerDef> => {
 	const unsigned = !!options?.unsigned;
 	const trim = !!options?.trim;
 	const pattern = INTEGER_PATTERNS[+unsigned + 2 * +trim]!;
@@ -3007,7 +3043,7 @@ export const to_integer = (
 export const check = <V extends T, T = V>(
 	fn: (value: T) => boolean,
 	expected: string = 'check'
-): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean> => ({
+): SchemaRefinement<Uninferred<V>, V, 'check', (value: T) => boolean> => ({
 	kind: 'check',
 	def: fn,
 	run: (value, ctx) => (fn(value) ? value : fail(ctx, 'check', value, expected))
@@ -3079,12 +3115,12 @@ export const check_at: {
 		path: K,
 		fn: (value: T) => boolean,
 		expected?: string
-	): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean>;
+	): SchemaRefinement<Uninferred<V>, V, 'check', (value: T) => boolean>;
 	<V extends T, T = V, const TPath extends ReadonlyArray<PropertyKey> = ReadonlyArray<PropertyKey>>(
 		path: TPath & SchemaPathOf<T, TPath>,
 		fn: (value: T) => boolean,
 		expected?: string
-	): SchemaRefinement<V, Uninferred<V>, 'check', (value: T) => boolean>;
+	): SchemaRefinement<Uninferred<V>, V, 'check', (value: T) => boolean>;
 } = (
 	path: PropertyKey | ReadonlyArray<PropertyKey>,
 	fn: (value: any) => boolean,
@@ -3124,7 +3160,7 @@ export const check_at: {
 // @__NO_SIDE_EFFECTS__
 export const transform = <T, O>(
 	fn: (value: T) => O
-): SchemaAction<T, O, 'transform', (value: T) => O> => ({
+): SchemaAction<O, T, 'transform', (value: T) => O> => ({
 	kind: 'transform',
 	def: fn,
 	run: (value) => fn(value)

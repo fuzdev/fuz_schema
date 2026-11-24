@@ -403,4 +403,40 @@ describe('what is declared to differ from the interpreter', () => {
 		assert.isTrue(s.is(uuid_of_any, 'no uuid'));
 		assert.isTrue(compile_guard(uuid_of_any)('no uuid'));
 	});
+
+	test('a guard tries no option of a union again, where is does once a later option fills a key in', () => {
+		let runs = 0;
+		const counted = s.pipe(
+			s.unknown,
+			s.check(() => (runs++, true))
+		);
+		// `unknown` refuses the missing key, the default fills it in, and `is`
+		// then runs the first option again with neither the object nor the key
+		const Filled = s.object({ a: s.union([counted, s.with_default(s.string, 'D')]) });
+		const guard = compile_guard(Filled);
+		assert.isTrue(guard({}));
+		assert.strictEqual(runs, 0);
+		assert.isTrue(s.is(Filled, {}));
+		assert.strictEqual(runs, 1);
+		// the output is the library's, which a compiled parse asks for it
+		assert.deepEqual(compile_parse(Filled)({}), s.parse(Filled, {}));
+		// so a function that throws on the `undefined` it is run on there has `is` throw
+		const throwing = s.pipe(
+			s.unknown,
+			s.check((v) => (v as { x: number }).x === 1)
+		);
+		const Thrown = s.object({ a: s.union([throwing, s.with_default(s.string, 'D')]) });
+		assert.throws(() => s.is(Thrown, {}), TypeError);
+		assert.isTrue(compile_guard(Thrown)({}));
+		assert.throws(() => compile_parse(Thrown)({}), TypeError);
+	});
+
+	test('a def is read as it is when the schema is compiled', () => {
+		// not guarded: nothing writes to a schema after it is made
+		const values = ['a'];
+		const Values = s.one_of(values);
+		values.push('b');
+		assert.isFalse(s.is(Values, 'b'));
+		assert.isTrue(compile_guard(Values)('b'));
+	});
 });

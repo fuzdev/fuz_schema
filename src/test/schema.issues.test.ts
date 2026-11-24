@@ -1173,6 +1173,11 @@ describe('format_issue_with_value', () => {
 			'x: expected no unknown keys, received string'
 		);
 		assert.strictEqual(reads, 0);
+		// nor does an issue whose message is its text, which says nothing received
+		const labeled = issues_of(s.object({ x: s.message(s.number, 'not a number') }), watched)[0]!;
+		reads = 0;
+		assert.strictEqual(s.format_issue_with_value(labeled, watched), 'x: not a number');
+		assert.strictEqual(reads, 0);
 		// an entry whose schema refuses the missing key's `undefined` is that schema's issue
 		assert.deepEqual(format(s.object({ a: s.string }), {}), [
 			'a: expected string, received undefined'

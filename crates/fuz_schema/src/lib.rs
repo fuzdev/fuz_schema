@@ -28,8 +28,9 @@
 //!
 //! There are two evaluators:
 //!
-//! - `Schema::matches_json` reaches its verdict while it parses, builds no tree,
-//!   and stops at the first failure.
+//! - `Schema::matches_json` reaches its verdict while it parses and stops at
+//!   the first failure. It builds no tree but for the two shapes `stream.rs`
+//!   reads into one first.
 //! - `Schema::matches_json_exact` parses the whole text into a `Json` and walks
 //!   it, and agrees with the TypeScript library on every text it reads.
 //!

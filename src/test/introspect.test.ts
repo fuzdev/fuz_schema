@@ -58,11 +58,29 @@ describe('get_schema_meta', () => {
 		assert.strictEqual(get_schema_meta(A, 'description'), undefined);
 	});
 
-	test('passes a layer whose key is undefined', () => {
-		const A = meta(s.optional(meta(s.string, { description: 'kept' })), {
-			description: undefined
-		});
-		assert.strictEqual(get_schema_meta(A, 'description'), 'kept');
+	test('a layer whose key is undefined has cleared it, as to_json_schema reads it', () => {
+		const inner = meta(s.string, { description: 'inner', introspect_aliases: ['a'] });
+		const A = meta(s.optional(inner), { description: undefined });
+		assert.strictEqual(get_schema_meta(A, 'description'), undefined);
+		// and no other key
+		assert.deepEqual(get_schema_meta(A, 'introspect_aliases'), ['a']);
+		// through every kind of layer, and on the layer that set it
+		const P = meta(
+			s.pipe(
+				s.nullable(s.lazy(() => inner)),
+				s.check(() => true)
+			),
+			{ description: undefined }
+		);
+		assert.strictEqual(get_schema_meta(P, 'description'), undefined);
+		assert.strictEqual(
+			get_schema_meta(meta(inner, { description: undefined }), 'description'),
+			undefined
+		);
+		// a layer above the clear still says
+		const above = meta(s.nullable(A), { description: 'above' });
+		assert.strictEqual(get_schema_meta(above, 'description'), 'above');
+		assert.strictEqual(get_schema_fields(s.object({ a: A }))[0]!.description, undefined);
 	});
 
 	test('finds metadata outside message and inside it', () => {
@@ -258,6 +276,40 @@ describe('find_schema_meta', () => {
 		});
 		assert.deepEqual(find_schema_meta(A, 'description'), []);
 		assert.deepEqual(find_schema_meta(A, 'introspect_aliases'), [['b'], ['a']]);
+	});
+
+	test('a layer whose key is undefined has cleared it for the layers under it, and not for what they hold', () => {
+		const inner = mark(s.string, 'inner');
+		// the layers under the clear are unread
+		assert.deepEqual(
+			find_schema_meta(
+				meta(s.optional(s.nullable(inner)), { description: undefined }),
+				'description'
+			),
+			[]
+		);
+		// what they hold is read: a later step of a pipe, an option, a part
+		const held = meta(
+			s.pipe(
+				s.object({ a: mark(s.string, 'entry') }),
+				mark(
+					s.check(() => true),
+					'step'
+				)
+			),
+			{ description: undefined }
+		);
+		assert.deepEqual(find_schema_meta(held, 'description', { structural: true }), [
+			'entry',
+			'step'
+		]);
+		const options = meta(s.union([inner, mark(s.number, 'option')]), { description: undefined });
+		assert.deepEqual(find_schema_meta(options, 'description'), ['inner', 'option']);
+		// a schema under a clear in one place and under none in another is read
+		const both = s.union([meta(s.optional(inner), { description: undefined }), inner]);
+		assert.deepEqual(find_schema_meta(both, 'description'), ['inner']);
+		const other_way = s.union([inner, meta(s.optional(inner), { description: undefined })]);
+		assert.deepEqual(find_schema_meta(other_way, 'description'), ['inner']);
 	});
 
 	test('through flavor, brand, and message', () => {
@@ -582,6 +634,11 @@ describe('format_schema_type', () => {
 	});
 
 	test('literals', () => {
+		// what takes nothing
+		for (const schema of [s.union([]), s.memo_union([]), s.variant('k', []), s.one_of([])]) {
+			assert.strictEqual(format_schema_type(schema), 'never');
+		}
+		assert.strictEqual(format_schema_type(s.object({ a: s.union([]) })), '{a: never}');
 		assert.strictEqual(format_schema_type(s.literal(1n)), '1n');
 		assert.strictEqual(format_schema_type(s.literal(null)), 'null');
 		assert.strictEqual(format_schema_type(s.literal(undefined)), 'undefined');
@@ -642,12 +699,13 @@ describe('format_schema_type', () => {
 					)
 				),
 				s.record(J),
+				s.keyed_record(s.one_of(['x']), J),
 				s.variant('k', [s.object({ k: s.literal('a'), v: J })])
 			])
 		);
 		assert.strictEqual(
 			format_schema_type(J),
-			'... | null | Record<string, ...> | {k: "a"; v: ...}'
+			'... | null | Record<string, ...> | Record<"x", ...> | {k: "a"; v: ...}'
 		);
 	});
 

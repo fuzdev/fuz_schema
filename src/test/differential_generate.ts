@@ -471,6 +471,13 @@ export const map_spec_children = (
 		return next.some(([, e], i) => e !== items[i]![1]) ? next : null;
 	};
 	switch (spec.t) {
+		case 'keyed_record': {
+			// its key schema is a child too, which a walk that asks for a kind
+			// or rewrites one must reach
+			const key = fn(spec.key);
+			const of = fn(spec.of);
+			return key !== spec.key || of !== spec.of ? { ...spec, key, of } : spec;
+		}
 		case 'union': {
 			const of = list(spec.of);
 			return of ? { ...spec, of } : spec;

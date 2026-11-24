@@ -2,7 +2,7 @@ import { describe, test, assert } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import { meta, get_meta } from '#lib/meta.ts';
-import { issues_of } from './schema_test_helpers.ts';
+import { issues_of, spy_on_run } from './schema_test_helpers.ts';
 
 describe('missing keys', () => {
 	const factories = [s.object, s.strip_object, s.loose_object] as const;
@@ -1612,20 +1612,8 @@ describe('missing keys', () => {
 		for (const factory of factories) {
 			const order: Array<string> = [];
 			// a spy that takes the object and the key where its schema does
-			const spy = (name: string, schema: s.AnySchema): s.AnySchema => ({
-				kind: schema.kind,
-				def: schema.def,
-				run:
-					schema.run.length > 2
-						? (value, ctx, parent, key) => {
-								order.push(name);
-								return schema.run(value, ctx, parent, key);
-							}
-						: (value, ctx) => {
-								order.push(name);
-								return schema.run(value, ctx);
-							}
-			});
+			const spy = (name: string, schema: s.AnySchema): s.AnySchema =>
+				spy_on_run(schema, () => order.push(name));
 			const U = s.union([
 				spy('string', s.string),
 				spy('unknown', s.unknown),
@@ -1760,20 +1748,10 @@ describe('missing keys', () => {
 			});
 		const runs: Record<string, number> = {};
 		// counts the calls of a schema's `run`, taking the object and the key where it does
-		const spy = (name: string, schema: s.AnySchema): s.AnySchema => ({
-			kind: schema.kind,
-			def: schema.def,
-			run:
-				schema.run.length > 2
-					? (value, ctx, parent, key) => {
-							runs[name] = (runs[name] ?? 0) + 1;
-							return schema.run(value, ctx, parent, key);
-						}
-					: (value, ctx) => {
-							runs[name] = (runs[name] ?? 0) + 1;
-							return schema.run(value, ctx);
-						}
-		});
+		const spy = (name: string, schema: s.AnySchema): s.AnySchema =>
+			spy_on_run(schema, () => {
+				runs[name] = (runs[name] ?? 0) + 1;
+			});
 		// each union with the runs of its options and of its transform for a
 		// missing key, an `undefined` one, and a string
 		const unions: Array<

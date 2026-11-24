@@ -101,11 +101,17 @@ reads a schema by its `kind` and `def` and never its `run`, so a hand-written
 schema with one of the library's kinds and a `run` of its own is written as
 that kind and behaves as the library's in the crate.
 
+A document is the developer's, written by `to_schema_json` from a schema of
+theirs, and not a remote party's: the loader is strict and refuses what it
+can't carry, and it is not hardened as a reader of hostile documents, whose
+size and count of nodes nothing bounds. What a remote party writes is the
+JSON text a schema is asked of, which is guarded.
+
 ## Two evaluators
 
 | | `matches_json`, `matches_json_bytes` | `matches_json_exact` |
 |---|---|---|
-| Reads | as it parses, with no tree | the whole text into a `Json`, then walks it |
+| Reads | as it parses, into a tree only for the two shapes below | the whole text into a `Json`, then walks it |
 | Stops | at the first failure | at the end of the text |
 | Against the TypeScript library | never looser, sometimes stricter | the same verdict |
 
@@ -188,7 +194,7 @@ the same order. A `SchemaIssue` owns what it holds:
 | `kind()` | a `SchemaIssueKind`: the kind of the schema or action that failed, or `UnknownKey` or `MissingKey` |
 | `expected()` | the library's text, character for character |
 | `received()` | a `Received`: the type of the value, `Undefined` for a missing key. The parser reads no number that isn't finite, so none is the library's `NaN`, `Infinity`, or `-Infinity` |
-| `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array |
+| `path()` | `PathSegment`s from the root, a `Key` for an object and an `Index` for an array. A key of the text is one copy shared by the issues under it, as the library's hold the input's own string, so the paths hold no more of the text than the text does. A key of the schema, at a missing entry or a `variant`'s discriminator, and an `expected` text are the schema's, written an issue each |
 
 - **At most `MAX_ISSUES` of them, a hundred**, the library's cap: past it a
   failure is still a failure and builds no issue, so a text that fails more
@@ -328,6 +334,16 @@ integers, see [formats.md](formats.md#integers): carrying it is exact.
   that lacks the part its row names, and the Rust tests when the crate loads
   a document or refuses it as another kind, or when no row is of a kind they
   list as a refusal of both sides.
+- And `union_bounds.json`, from the shapes of `union_bounds.ts`: recursive
+  unions of two options, and unions written out whole, of three options
+  among them, each with whether `compile_guard` refuses it as one it can't
+  bound. `compile.ts` and the builder hold one rule for a plain
+  `union` on a cycle, written twice, and a test of the builder's, in
+  `builder/tests.rs`, holds it to the rows: of the unions on a cycle, one
+  refused there has its verdicts kept, and no other. The builder keeps more
+  than a compile refuses: a `memo_union`, which the form writes as a `union`
+  and a compile takes, and a union off every cycle with two options that
+  reach one.
 - `src/test/json.fixtures.test.ts` fails when a generated file is stale.
 - `crates/fuz_schema/tests/fixtures.rs` loads every group and asserts both
   evaluators against the oracle or the declared divergence, and the issues
@@ -337,7 +353,8 @@ integers, see [formats.md](formats.md#integers): carrying it is exact.
   issue or received type no case reports, an issue at the root, and one whose
   path has a key, an index, or a key its `Display` quotes, that no case
   reports, too few groups or
-  cases, and a constant that differs from `contract.json`. It reads the
+  cases, a constant that differs from `contract.json`, and a field of a
+  group or a case that it doesn't read. It reads the
   generated files with serde_json's tree and not the crate's.
 - The `generated_*` groups are written by `json_generate.ts` from fixed
   seeds: each a random schema the crate carries, drawn from every kind

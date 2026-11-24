@@ -12,8 +12,10 @@ import { render_parsed, render_value } from './conformance_test_helpers.ts';
 import {
 	classify_differential_case,
 	format_differential_report,
+	minimize_differential_case,
 	run_differential,
 	run_format_differential,
+	type DifferentialReport,
 	type DifferentialVerdict
 } from './differential_classify.ts';
 import {
@@ -29,16 +31,28 @@ import {
 	run_differential_case,
 	show_input,
 	show_spec,
+	map_spec_children,
 	spec_has_kind,
 	value_in,
 	type DifferentialInput,
+	type DifferentialResults,
 	type DifferentialSpec
 } from './differential_generate.ts';
 import {
 	FORMAT_SPLIT_RECOGNIZERS,
 	SPLIT_RECOGNIZERS,
-	format_split_side
+	format_split_side,
+	split_side
 } from './differential_recognizers.ts';
+import {
+	DIFFERENTIAL_COUNT,
+	DIFFERENTIAL_SEEDS,
+	find_moved_differential_sides,
+	format_differential_sides,
+	measure_differential_sides,
+	read_differential_sides,
+	type DifferentialSides
+} from './differential_sides.ts';
 import {
 	DIFFERENTIAL_RULES,
 	DIFFERENTIAL_UNRULED,
@@ -49,13 +63,22 @@ import { create_seeded_rng, type SeededRng } from './seeded_rng.ts';
 // The differential at a fixed depth: the same seeds and counts on every run
 // and in CI, so what passes here passes there. A deeper run, of any seed, is
 // `npm run differential`.
-const SEEDS = [1, 2, 3];
-const COUNT = 5000;
+const SEEDS = DIFFERENTIAL_SEEDS;
+const COUNT = DIFFERENTIAL_COUNT;
+
+// each seed is run once, for its findings and for the sides of its cases
+const reports: Map<number, DifferentialReport> = new Map();
+const report_of = (seed: number): DifferentialReport => {
+	let report = reports.get(seed);
+	if (!report)
+		reports.set(seed, (report = run_differential({ seed, count: COUNT, minimize_limit: 5 })));
+	return report;
+};
 
 describe('the differential', () => {
 	for (const seed of SEEDS) {
 		test(`seed ${seed}: no undeclared difference, no throw, no invariant broken`, () => {
-			const report = run_differential({ seed, count: COUNT, minimize_limit: 5 });
+			const report = report_of(seed);
 			const { tally } = report;
 			if (
 				tally.undeclared ||
@@ -72,6 +95,32 @@ describe('the differential', () => {
 			assert.ok(tally.agree > COUNT / 2, 'most cases agree');
 		}, 30_000);
 	}
+
+	// where zod and valibot disagree the tables hold the matrix's cases to a
+	// side, and these, which have no rows, to the side each was last seen on
+	test('differential_sides.json is the side of every case zod and valibot disagree on', async () => {
+		const text = await read_differential_sides();
+		const now = measure_differential_sides(new Map(SEEDS.map((seed) => [seed, report_of(seed)])));
+		if (text === format_differential_sides(now)) return;
+		const held: DifferentialSides | null = text === null ? null : JSON.parse(text);
+		const moved = SEEDS.flatMap((seed) =>
+			find_moved_differential_sides(report_of(seed), held?.seeds[seed]).map(
+				(line) => `seed ${seed}, ${line}`
+			)
+		);
+		const what = !held
+			? 'there is no file'
+			: held.count !== COUNT
+				? `it is of ${held.count} cases a seed, and the test runs ${COUNT}`
+				: moved.length
+					? 'a case moved to another side, or gives another result with neither'
+					: 'its text is not what is generated, though no case moved';
+		assert.fail(
+			`src/test/differential_sides.json is stale: ${what}. If the change is meant, run \`gro task src/test/update_differential_sides.task.ts\` and read its diff\n` +
+				moved.slice(0, 20).join('\n') +
+				(moved.length > 20 ? `\nand ${moved.length - 20} more` : '')
+		);
+	}, 30_000);
 
 	test('every rule is of a declared difference', () => {
 		for (const rule of DIFFERENTIAL_RULES) {
@@ -183,6 +232,7 @@ const arr = (items: Array<DifferentialInput>): DifferentialInput => ({
 });
 const check_true: DifferentialSpec = { t: 'check', fn: 'true' };
 const to_t: DifferentialSpec = { t: 'transform', fn: 'to_T' };
+const to_t_of_string: DifferentialSpec = { t: 'map', of: { t: 'string' }, fn: 'to_T' };
 const loose = (entries: Array<[string, DifferentialSpec]>): DifferentialSpec => ({
 	t: 'object',
 	flavor: 'loose',
@@ -717,6 +767,135 @@ describe('the differential pins', () => {
 			kind: 'undeclared',
 			split: null
 		});
+	});
+
+	// ours as though it did what a relaxation's row doesn't say: each allows
+	// only what ours does with the part of the input its row is of
+	test('a relaxation of a missing key or of a hole reads what ours was given', () => {
+		const with_value = (results: DifferentialResults, value: unknown): DifferentialResults => {
+			const parsed: ConformanceParsed = { ok: true, value };
+			return {
+				...results,
+				fuz_schema: { ...results.fuz_schema, ok: true, value, parsed, text: render_parsed(parsed) }
+			};
+		};
+		// a hole kept after the first item that changed, where a copy writes it
+		const holes: DifferentialSpec = { t: 'array', of: { t: 'optional', of: to_t_of_string } };
+		const holed = arr([v('x'), null as unknown as DifferentialInput]);
+		const hole_results = run_differential_case(holes, holed);
+		// ours writes it as `undefined`, as the others do
+		assert.strictEqual(classify_differential_case(holes, holed, hole_results).kind, 'agree');
+		const kept = new Array(2);
+		kept[0] = 'T';
+		assert.deepEqual(classify_differential_case(holes, holed, with_value(hole_results, kept)), {
+			kind: 'undeclared',
+			split: null
+		});
+		// a key the input has left out, where the rows are of a missing key:
+		// zod and valibot agree on each, so nothing but the rule explains ours
+		for (const entry of [
+			{ t: 'map', of: { t: 'default', of: { t: 'string' }, v: 'D' }, fn: 'to_undefined' },
+			{ t: 'default_fn', of: { t: 'transform', fn: 'to_undefined' }, v: undefined }
+		] as Array<DifferentialSpec>) {
+			const spec = strip([['a', entry]]);
+			const input = obj([['a', v('x')]]);
+			const results = run_differential_case(spec, input);
+			assert.strictEqual(results.zod.text, results.valibot.text, show_spec(spec));
+			assert.deepEqual(
+				classify_differential_case(spec, input, with_value(results, {})),
+				{ kind: 'undeclared', split: null },
+				show_spec(spec)
+			);
+		}
+	});
+
+	// each of these is a row of `SIDES` of its own, with a case of the matrix
+	test('a recognizer claims no disagreement that is of another row', () => {
+		const keys: DifferentialSpec = { t: 'one_of', vs: ['k0', 'k1'] };
+		const claimed = (spec: DifferentialSpec, input: DifferentialInput): string => {
+			const results = run_differential_case(spec, input);
+			assert.notStrictEqual(results.zod.text, results.valibot.text, show_spec(spec));
+			const split = split_side(
+				spec,
+				input,
+				results.zod,
+				results.valibot,
+				create_differential_run()
+			);
+			return split.kind === 'one' ? split.row : split.kind;
+		};
+		// a key outside a set of keys, at the key alone
+		const of_numbers: DifferentialSpec = { t: 'keyed_record', key: keys, of: { t: 'number' } };
+		assert.strictEqual(
+			claimed(of_numbers, obj([['c', v(1)]])),
+			'keyed_record of one_of keys, a key outside'
+		);
+		// and not where the value under it is wrong too, which valibot reports
+		// and ours, with neither, doesn't read
+		const of_objects: DifferentialSpec = {
+			t: 'keyed_record',
+			key: keys,
+			of: strip([['x', { t: 'string' }]])
+		};
+		assert.strictEqual(claimed(of_objects, obj([['c', obj([['x', v(1)]])]])), 'none');
+		// an own key named `constructor` of a record, whose value is wrong
+		const record: DifferentialSpec = { t: 'record', of: { t: 'number' } };
+		assert.strictEqual(
+			claimed(record, obj([['constructor', v('x')]])),
+			'record, own key named prototype, wrong'
+		);
+		// and not of a `keyed_record` of a set of keys, where it is a key outside
+		assert.strictEqual(claimed(of_numbers, obj([['constructor', v('x')]])), 'none');
+		// but of one whose set has the key
+		const named: DifferentialSpec = {
+			t: 'keyed_record',
+			key: { t: 'one_of', vs: ['constructor', 'k1'] },
+			of: { t: 'number' }
+		};
+		assert.strictEqual(
+			claimed(named, obj([['constructor', v('x')]])),
+			'record, own key named prototype, wrong'
+		);
+	});
+
+	test('a walk of a schema reaches the key schema of a keyed_record', () => {
+		const keyed: DifferentialSpec = {
+			t: 'keyed_record',
+			key: { t: 'regex', of: { t: 'string' }, re: 'lower' },
+			of: { t: 'number' }
+		};
+		assert(spec_has_kind(keyed, 'regex'));
+		assert(spec_has_kind(strip([['a', keyed]]), 'regex'));
+		assert(!spec_has_kind(keyed, 'boolean'));
+		// and a rewrite of its children gives one back with the key rewritten
+		assert.deepEqual(
+			map_spec_children(keyed, (child) => (child.t === 'regex' ? { t: 'string' } : child)),
+			{ t: 'keyed_record', key: { t: 'string' }, of: { t: 'number' } }
+		);
+	});
+
+	test('the minimizer ends on a finding that holds a format, at the smaller case', () => {
+		for (const format of ['uuid', 'iso_datetime'] as const) {
+			const spec = strip([
+				['a', { t: format }],
+				['b', { t: 'string' }]
+			]);
+			const input = obj([
+				['a', v('x')],
+				['b', v('y')]
+			]);
+			let checks = 0;
+			const [minimized] = minimize_differential_case(
+				spec,
+				input,
+				(candidate) => (checks++, spec_has_kind(candidate, format)),
+				4000
+			);
+			assert.strictEqual(show_spec(minimized), format);
+			// a candidate is taken once: with no weight for the kind each was
+			// taken again and again, to the end of the budget
+			assert.isBelow(checks, 100, format);
+		}
 	});
 
 	test('every entry of SPLIT_RECOGNIZERS and every rule of a split, the prototype, or a symbol key has a pin', () => {

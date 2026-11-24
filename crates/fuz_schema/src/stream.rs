@@ -1,5 +1,5 @@
 //! The streaming evaluator: a verdict reached while the text is parsed, with
-//! no tree, that stops at the first failure.
+//! no tree but for the two shapes below, that stops at the first failure.
 //!
 //! It is a serde visitor per node. A scalar goes to the tree evaluator's
 //! `run`, so the two read every kind the same way. An array or object is

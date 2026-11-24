@@ -83,6 +83,12 @@ describe('schema shape', () => {
 
 	test('every schema has the one map', () => {
 		assert.deepEqual(output.other_map, [], 'schemas whose map is not the one `string` has');
+		// and the engine's answer is one that can be no: a fourth key, or another
+		// order of the three, is another map
+		assert(
+			output.maps_told_apart,
+			`%HaveSameMap does not tell a schema's map from another object's, on Node ${process.version}`
+		);
 	});
 
 	test('the print of an object is read: its fields, and which were written to', () => {

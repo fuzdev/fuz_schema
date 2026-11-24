@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as s from '#lib/schema.ts';
 import { compile_guard, to_guard_source } from '#lib/compile.ts';
 import { COMPILE_HAND_INPUTS, COMPILE_HAND_SCHEMAS } from './compile_test_helpers.ts';
+import { regex_of_any_flags } from './schema_test_helpers.ts';
 import { create_seeded_rng, type SeededRng } from './seeded_rng.ts';
 
 // `to_guard_source`: the text of a module, imported and run, held to `is` and
@@ -571,6 +572,22 @@ export const wrong: string = is_user(1);
 });
 
 describe('the order captured values are written in', () => {
+	test('a long one_of under unions and wrappers is one Set, however deep', () => {
+		const values = Array.from({ length: 20 }, (_, i) => 'v' + i);
+		let options: s.AnySchema = s.one_of(values);
+		let wrapped: s.AnySchema = s.one_of(values);
+		for (let i = 0; i < 4; i++) {
+			options = s.union([options, s.object({ ['k' + i]: s.number })]);
+			wrapped = s.optional(s.nullable(wrapped));
+		}
+		for (const schema of [options, s.object({ a: wrapped })]) {
+			const text = to_guard_source(schema, 'guard');
+			assert.strictEqual(text.split('new Set(').length - 1, 1, text);
+			// and nothing is captured that the guard doesn't read
+			assert.strictEqual(text.match(/^const c\d+ = /gm)?.length, 1, text);
+		}
+	});
+
 	test('a value the text of a long one_of captures is written before the Set that holds it', async () => {
 		// outside `SchemaLiteral`: a schema the module imports, held as a value
 		const schema = s.one_of([...Array.from({ length: 13 }, (_, i) => i), s.uuid as any]);
@@ -730,10 +747,11 @@ describe('a regex is written as its pattern and its flags', () => {
 	});
 
 	test('with a g or a y flag the written regex keeps a lastIndex of its own, from 0', async () => {
-		// declared: `regex` is not for a pattern with either flag, whose state `is` reads and writes
+		// declared: `regex` refuses a pattern with either flag, whose state a test
+		// reads and writes, so the schema is one written by hand
 		for (const flags of ['g', 'y']) {
 			const pattern = new RegExp('a', flags);
-			const schema = s.pipe(s.string, s.regex(pattern));
+			const schema = s.pipe(s.string, regex_of_any_flags(pattern));
 			pattern.lastIndex = 1;
 			assert.include(to_guard_source(schema, 'guard'), `new RegExp("a", "${flags}")`);
 			const guard = await write(schema);
@@ -780,8 +798,10 @@ describe('a regex is written as its pattern and its flags', () => {
 			[guard('zzz'), s.is(schema, 'zzz'), compile_guard(schema)('zzz')],
 			[true, false, false]
 		);
-		// and one with no trap throws as `is` does, from the getter of `source`
-		const bare = s.pipe(s.string, s.regex(new Proxy(/^a$/, {}), 'a pattern'));
+		// and one with no trap is refused as it is made, by the getter of a flag
+		assert.throws(() => s.regex(new Proxy(/^a$/, {}), 'a pattern'), TypeError);
+		// and in a schema made by hand it throws as `is` does, from the getter of `source`
+		const bare = s.pipe(s.string, regex_of_any_flags(new Proxy(/^a$/, {})));
 		assert.throws(() => to_guard_source(bare, 'guard'), TypeError);
 		assert.throws(() => s.is(bare, 'a'), TypeError);
 		// and what it says is written as a string, so its text stays a pattern and flags
@@ -856,6 +876,18 @@ describe('what has no text is refused, by its kind and where it is', () => {
 				'/def/0'
 			],
 			[own, 'own', '/'],
+			// a discriminator that is no `literal` has no text as a `case`: refused
+			// as the variant's, and not at the entry its option's body emitted last
+			[
+				s.object({
+					v: s.variant('t', [
+						s.object({ t: s.literal('a'), x: s.string }),
+						s.object({ t: s.one_of(['b', 'c']), y: s.number })
+					])
+				}),
+				'variant',
+				'/def/v'
+			],
 			[s.object({ a: s.nullable(own) }), 'own', '/def/a/def/schema'],
 			[s.lazy(() => s.union([own, s.string])), 'own', '/def()/def/0'],
 			// a library kind whose `def` is not the kind's is run in place

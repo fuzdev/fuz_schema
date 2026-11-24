@@ -725,3 +725,202 @@ fn pointer_tokens_escape_their_two_characters() {
     assert_eq!(pointer_token("~1"), "~01");
     assert_eq!(pointer_token(""), "");
 }
+
+#[test]
+fn a_variant_value_given_twice_has_its_first_place_and_its_last_option() {
+    // "a", 1, "b", "a", 0, -0, 1, "a": a `0` and a `-0` are one value
+    let values: [SchemaLiteral; 8] = [
+        "a".into(),
+        1.0.into(),
+        "b".into(),
+        "a".into(),
+        0.0.into(),
+        (-0.0).into(),
+        1.0.into(),
+        "a".into(),
+    ];
+    let mut options = Vec::new();
+    let schema = built(|b| {
+        for value in values.clone() {
+            let literal = b.literal(value);
+            options.push(b.object([("k", literal)]));
+        }
+        b.variant("k", options.clone())
+    });
+    let SchemaNode::Variant(def) = schema.at(schema.root) else {
+        panic!("no variant");
+    };
+    let rows: Vec<(&SchemaLiteral, NodeId)> = def
+        .table
+        .iter()
+        .map(|(literal, option)| (literal, *option))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            (&values[0], options[7]),
+            (&values[1], options[6]),
+            (&values[2], options[2]),
+            (&values[4], options[5]),
+        ]
+    );
+}
+
+/// The comparisons a build makes of the document `text`.
+fn comparisons(text: &str) -> usize {
+    COMPARISONS.set(0);
+    Schema::from_json(text).unwrap();
+    COMPARISONS.get()
+}
+
+/// A variant of `count` options, a value each.
+fn wide_variant(count: usize) -> String {
+    let options: Vec<String> = (0..count)
+        .map(|i| format!(r#"{{"kind":"object","def":{{"k":{{"kind":"literal","def":"v{i}"}}}}}}"#))
+        .collect();
+    format!(
+        r#"{{"schema":{{"kind":"variant","def":{{"key":"k","options":[{}]}}}}}}"#,
+        options.join(",")
+    )
+}
+
+/// A recursive union of two objects of `count` literal entries each, before
+/// the entry that reaches the cycle: at keys the other lacks, or at the keys
+/// of the other with one value at all but the last.
+fn wide_options(count: usize, shared: bool) -> String {
+    let options: Vec<String> = (0..2)
+        .map(|option| {
+            let entries: Vec<String> = (0..count)
+                .map(|i| {
+                    let key = if shared {
+                        format!("k{i}")
+                    } else {
+                        format!("o{option}k{i}")
+                    };
+                    let value = if shared && i == count - 1 {
+                        format!("v{option}")
+                    } else {
+                        "a".to_owned()
+                    };
+                    format!(r#""{key}":{{"kind":"literal","def":"{value}"}}"#)
+                })
+                .collect();
+            format!(
+                r#"{{"kind":"object","def":{{{},"zz":{{"kind":"array","def":{{"kind":"lazy","def":"$0"}}}}}}}}"#,
+                entries.join(",")
+            )
+        })
+        .collect();
+    format!(
+        r#"{{"schema":{{"kind":"lazy","def":"$0"}},"defs":{{"$0":{{"kind":"union","def":[{}]}}}}}}"#,
+        options.join(",")
+    )
+}
+
+/// A recursive union of `count` objects, each a value of its own at one key
+/// before the entry that reaches the cycle.
+fn many_options(count: usize) -> String {
+    let options: Vec<String> = (0..count)
+        .map(|i| {
+            format!(
+                r#"{{"kind":"object","def":{{"t":{{"kind":"literal","def":"v{i}"}},"zz":{{"kind":"array","def":{{"kind":"lazy","def":"$0"}}}}}}}}"#
+            )
+        })
+        .collect();
+    format!(
+        r#"{{"schema":{{"kind":"lazy","def":"$0"}},"defs":{{"$0":{{"kind":"union","def":[{}]}}}}}}"#,
+        options.join(",")
+    )
+}
+
+/// A build compares rows, keys and values by sorting them, never each
+/// against each: four times the options or the entries is a little over four
+/// times the comparisons, where each against each is sixteen times. It counts
+/// what the passes compare through `count_comparison`: a search added to one
+/// that compares without it is not seen here.
+#[test]
+fn a_build_compares_in_the_order_of_what_it_is_given() {
+    let documents: [fn(usize) -> String; 4] = [
+        wide_variant,
+        |count| wide_options(count, false),
+        |count| wide_options(count, true),
+        many_options,
+    ];
+    for document in documents {
+        let (small, large) = (comparisons(&document(500)), comparisons(&document(2000)));
+        assert!(small > 0);
+        assert!(large < small * 6, "{small} then {large}");
+    }
+    // and the wide options are told apart by the key they share, or by none
+    let memoized = |text: &str| -> Vec<[bool; 2]> {
+        let schema = Schema::from_json(text).unwrap();
+        (0..schema.nodes.len())
+            .filter(|&index| matches!(schema.nodes[index], SchemaNode::Union(_)))
+            .map(|index| schema.memoized[index])
+            .collect()
+    };
+    assert_eq!(memoized(&wide_options(50, true)), [[false, false]]);
+    assert_eq!(memoized(&wide_options(50, false)), [[false, true]]);
+}
+
+/// `compile.ts` refuses a `union` it can't bound, by the rule that has the
+/// builder keep a union's verdicts: `union_bounds.json`, which the TypeScript
+/// side generates, has unions, most of them recursive, with whether a compile
+/// refuses each. A union refused there has its verdicts kept here, and no
+/// other, so a change to either side's rule shows in the other's tests.
+#[test]
+fn the_unions_whose_verdicts_are_kept_are_those_a_compile_refuses() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../src/test/fixtures/json/union_bounds.json");
+    let text = std::fs::read_to_string(&path).unwrap();
+    let rows: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let rows = rows.as_array().unwrap();
+    // whether a node reaches itself
+    let on_cycle = |schema: &Schema, start: usize| -> bool {
+        let mut seen = vec![false; schema.nodes.len()];
+        let mut stack = vec![start];
+        while let Some(index) = stack.pop() {
+            for_each_child(&schema.nodes[index], |_, child| {
+                if !seen[child.index()] {
+                    seen[child.index()] = true;
+                    stack.push(child.index());
+                }
+            });
+        }
+        seen[start]
+    };
+    let mut differing = Vec::new();
+    let mut kept_count = 0;
+    for row in rows {
+        let name = row["name"].as_str().unwrap();
+        let refused = row["refused"].as_bool().unwrap();
+        let schema = Schema::from_json(row["document"].as_str().unwrap()).unwrap();
+        let kept = (0..schema.nodes.len()).any(|index| {
+            matches!(schema.nodes[index], SchemaNode::Union(_))
+                && schema.memoized[index] != [false, false]
+                && on_cycle(&schema, index)
+        });
+        if kept != refused {
+            differing.push(format!("{name}: refused {refused}, kept {kept}"));
+        }
+        kept_count += usize::from(kept);
+    }
+    assert!(differing.is_empty(), "{differing:#?}");
+    // the rows hold both answers
+    assert!(kept_count > 0 && kept_count < rows.len());
+}
+
+/// The `variant_wide` fixture group is of a table read through its sorted
+/// index: more values than are searched in order.
+#[test]
+fn the_wide_variant_fixture_is_past_the_linear_search() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../src/test/fixtures/json/variant_wide/expected.json");
+    let expected: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    let schema = Schema::from_json(&expected["schema"].to_string()).unwrap();
+    let SchemaNode::Variant(def) = schema.at(schema.root) else {
+        panic!("no variant");
+    };
+    assert!(def.table.len() > json::LINEAR_MAX);
+}

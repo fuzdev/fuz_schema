@@ -13,6 +13,75 @@ const summary = (
 ): Array<[string, Array<PropertyKey>, string]> =>
 	issues_of(schema, input).map((i) => [i.kind, i.path, i.expected]);
 
+describe('record', () => {
+	test('record validates values and ignores __proto__', () => {
+		const Counts = s.record(s.number);
+		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: 2 }), { a: 1, b: 2 });
+		assert.deepEqual(issues_of(Counts, { a: 1, b: 'x' })[0]!.path, ['b']);
+		const output = s.parse_or_throw(Counts, JSON.parse('{"__proto__": 1, "a": 2}'));
+		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
+		assert.deepEqual(Object.keys(output), ['a']);
+	});
+
+	test('record leaves a __proto__ key that failed out of a copy begun after it', () => {
+		const Next = s.record(
+			s.pipe(
+				s.number,
+				s.transform((x) => x + 1)
+			)
+		);
+		// a frozen prototype refuses the write of `a`, and a setter takes it
+		const written: Array<unknown> = [];
+		const protos = [
+			Object.freeze({ a: 0 }),
+			{
+				set a(value: unknown) {
+					written.push(value);
+				}
+			}
+		];
+		for (const proto of protos) {
+			const input = { ['__proto__']: proto, a: 1 };
+			assert(Object.hasOwn(input, '__proto__'));
+			assert.deepEqual(
+				issues_of(Next, input).map((issue) => issue.path),
+				[['__proto__']]
+			);
+		}
+		assert.deepEqual(written, []);
+	});
+
+	// the value is an object, under a schema that takes one: assigning a
+	// primitive to `__proto__` does nothing, and would pass with no guard
+	test('record leaves a __proto__ key whose value is an object out of a copy, begun before it or by it', () => {
+		const Upper = s.pipe(
+			s.string,
+			s.transform((v) => v.toUpperCase())
+		);
+		const Values = s.record(s.union([Upper, s.record(s.number)]));
+		for (const text of [
+			'{"b": "x", "__proto__": {"p": 1}, "c": "y"}',
+			'{"__proto__": {"p": 1}, "b": "x", "c": "y"}'
+		]) {
+			const output: object = s.parse_or_throw(Values, JSON.parse(text));
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype, text);
+			assert.deepEqual(Reflect.ownKeys(output), ['b', 'c'], text);
+			assert(!('p' in output), text);
+		}
+	});
+
+	test('record copies when a value changes or a __proto__ key is present', () => {
+		const Counts = s.record(s.with_default(s.number, 0));
+		const same = { a: 1 };
+		assert.strictEqual(s.parse_or_throw(Counts, same), same);
+		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: undefined, c: 3 }), { a: 1, b: 0, c: 3 });
+		const with_proto = JSON.parse('{"a": 1, "__proto__": 2}');
+		const output = s.parse_or_throw(Counts, with_proto);
+		assert.notStrictEqual(output, with_proto);
+		assert.deepEqual(Reflect.ownKeys(output), ['a']);
+	});
+});
+
 describe('keyed_record', () => {
 	test('checks every key and every value', () => {
 		const R = s.keyed_record(Name, s.number);
@@ -194,6 +263,54 @@ describe('keyed_record', () => {
 		assert.deepEqual(summary(s.keyed_record(Name, s.number), JSON.parse('{"__proto__": 1}')), [
 			['invalid_key', ['__proto__'], '/^[a-z]+$/']
 		]);
+	});
+
+	// the value is an object, under a schema that takes one: assigning a
+	// primitive to `__proto__` does nothing, and would pass with no guard
+	test('an own __proto__ key whose value is an object is left out of a copy, begun before it or by it', () => {
+		const Upper = s.pipe(
+			s.string,
+			s.transform((v) => v.toUpperCase())
+		);
+		const R = s.keyed_record(s.string, s.union([Upper, s.record(s.number)]));
+		for (const text of [
+			'{"b": "x", "__proto__": {"p": 1}, "c": "y"}',
+			'{"__proto__": {"p": 1}, "b": "x", "c": "y"}'
+		]) {
+			const output: object = s.parse_or_throw(R, JSON.parse(text));
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype, text);
+			assert.deepEqual(Reflect.ownKeys(output), ['b', 'c'], text);
+			assert(!('p' in output), text);
+		}
+	});
+
+	test('a __proto__ key that failed is left out of a copy begun after it', () => {
+		const Next = s.keyed_record(
+			s.string,
+			s.pipe(
+				s.number,
+				s.transform((x) => x + 1)
+			)
+		);
+		// a frozen prototype refuses the write of `a`, and a setter takes it
+		const written: Array<unknown> = [];
+		const protos = [
+			Object.freeze({ a: 0 }),
+			{
+				set a(value: unknown) {
+					written.push(value);
+				}
+			}
+		];
+		for (const proto of protos) {
+			const input = { ['__proto__']: proto, a: 1 };
+			assert(Object.hasOwn(input, '__proto__'));
+			assert.deepEqual(
+				issues_of(Next, input).map((issue) => issue.path),
+				[['__proto__']]
+			);
+		}
+		assert.deepEqual(written, []);
 	});
 
 	test('a key that gives __proto__ is left out', () => {

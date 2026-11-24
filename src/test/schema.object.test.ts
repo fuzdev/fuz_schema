@@ -6,6 +6,15 @@ import { describe, test, assert, expectTypeOf } from 'vitest';
 import * as s from '#lib/schema.ts';
 import { issues_of } from './schema_test_helpers.ts';
 
+// every own key of a value, a symbol and a hidden one too, in order
+const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
+
+// a schema that changes its value, so what holds it makes a copy
+const upper = s.pipe(
+	s.string,
+	s.transform((v) => v.toUpperCase())
+);
+
 describe('object', () => {
 	const User = s.strip_object({
 		name: s.string,
@@ -95,43 +104,6 @@ describe('object', () => {
 			assert(!s.is(schema, { a: 1 }));
 			assert(!s.is(schema, 'x'));
 		}
-	});
-
-	test('record validates values and ignores __proto__', () => {
-		const Counts = s.record(s.number);
-		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: 2 }), { a: 1, b: 2 });
-		assert.deepEqual(issues_of(Counts, { a: 1, b: 'x' })[0]!.path, ['b']);
-		const output = s.parse_or_throw(Counts, JSON.parse('{"__proto__": 1, "a": 2}'));
-		assert.strictEqual(Object.getPrototypeOf(output), Object.prototype);
-		assert.deepEqual(Object.keys(output), ['a']);
-	});
-
-	test('record leaves a __proto__ key that failed out of a copy begun after it', () => {
-		const Next = s.record(
-			s.pipe(
-				s.number,
-				s.transform((x) => x + 1)
-			)
-		);
-		// a frozen prototype refuses the write of `a`, and a setter takes it
-		const written: Array<unknown> = [];
-		const protos = [
-			Object.freeze({ a: 0 }),
-			{
-				set a(value: unknown) {
-					written.push(value);
-				}
-			}
-		];
-		for (const proto of protos) {
-			const input = { ['__proto__']: proto, a: 1 };
-			assert(Object.hasOwn(input, '__proto__'));
-			assert.deepEqual(
-				issues_of(Next, input).map((issue) => issue.path),
-				[['__proto__']]
-			);
-		}
-		assert.deepEqual(written, []);
 	});
 });
 
@@ -403,13 +375,6 @@ describe('copy on write', () => {
 		assert.deepEqual(s.parse_or_throw(Upper, input), ['A', 'B', undefined, undefined]);
 	});
 
-	test('record copies when a value changes or a __proto__ key is present', () => {
-		const Counts = s.record(s.with_default(s.number, 0));
-		const same = { a: 1 };
-		assert.strictEqual(s.parse_or_throw(Counts, same), same);
-		assert.deepEqual(s.parse_or_throw(Counts, { a: 1, b: undefined, c: 3 }), { a: 1, b: 0, c: 3 });
-	});
-
 	// every container, each holding one child at `a` or at the first index
 	describe('a child changed when its output is not its input by Object.is', () => {
 		const containers: Record<
@@ -545,10 +510,6 @@ describe('copy on write', () => {
 			input.b = 'y';
 			return input;
 		};
-		const upper = s.pipe(
-			s.string,
-			s.transform((v) => v.toUpperCase())
-		);
 		for (const schema of [
 			s.record(upper),
 			s.keyed_record(s.string, upper),
@@ -562,9 +523,6 @@ describe('copy on write', () => {
 describe('object keys', () => {
 	// all three, which copy the schema's keys the same way
 	const factories = [s.object, s.strip_object, s.loose_object] as const;
-
-	// the own keys of `value`, symbols included, in order
-	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
 
 	test('a copy has the schema keys in the schema order', () => {
 		for (const factory of factories) {
@@ -974,14 +932,7 @@ describe('object keys', () => {
 });
 
 describe('loose_object copy', () => {
-	// the own keys of `value`, symbols included, in order
-	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
-
 	const sym = Symbol('sym');
-	const upper = s.pipe(
-		s.string,
-		s.transform((v) => v.toUpperCase())
-	);
 	// nothing changes in the first, and each of the others has an entry that does
 	const Same = s.loose_object({ a: s.optional(s.string), b: s.optional(s.string) });
 	const Defaulted = s.loose_object({ a: s.string, d: s.with_default(s.string, 'D') });
@@ -1294,12 +1245,7 @@ describe('loose_object copy', () => {
 });
 
 describe('object_with_rest', () => {
-	const keys_of = (value: object): Array<string | symbol> => Reflect.ownKeys(value);
 	const sym = Symbol('sym');
-	const upper = s.pipe(
-		s.string,
-		s.transform((v) => v.toUpperCase())
-	);
 	const Numbers = s.object_with_rest({ a: s.string, b: s.optional(s.string) }, s.number);
 	const Defaulted = s.object_with_rest({ a: s.string, d: s.with_default(s.string, 'D') }, s.number);
 	const Upper = s.object_with_rest({ a: s.string }, upper);
@@ -1503,6 +1449,20 @@ describe('object_with_rest', () => {
 		assert.deepEqual(keys_of(before), ['a', 'y']);
 		assert.deepEqual(before, { a: 'x', y: 'Y' });
 		assert.strictEqual(({} as any).p, undefined);
+		// its value an object under a rest that takes one, in a copy an entry
+		// began and in one another key began: a primitive would pass unguarded
+		for (const [schema, text] of [
+			[s.object_with_rest({ a: upper }, s.unknown), '{"a": "x", "__proto__": {"p": 1}, "z": 1}'],
+			[
+				s.object_with_rest({}, s.union([upper, s.record(s.number)])),
+				'{"b": "x", "__proto__": {"p": 1}, "c": "y"}'
+			]
+		] as const) {
+			const output: object = s.parse_or_throw(schema, JSON.parse(text));
+			assert.strictEqual(Object.getPrototypeOf(output), Object.prototype, text);
+			assert(!('p' in output), text);
+			assert(!Object.hasOwn(output, '__proto__'), text);
+		}
 	});
 
 	test('an entry named __proto__ is run and written as the other object schemas do', () => {

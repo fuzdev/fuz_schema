@@ -156,6 +156,22 @@ describe('pipe and actions', () => {
 		}
 	});
 
+	test('regex refuses a pattern that keeps state between tests', () => {
+		for (const pattern of [/a/g, /a/y, /a/gy, /a/giu]) {
+			assert.throws(() => s.regex(pattern), TypeError, 'g or y flag');
+			assert.throws(() => s.regex(pattern, 'an a'), TypeError);
+		}
+		// every other flag is taken, and a parse leaves the pattern as it was
+		for (const pattern of [/a/, /a/i, /a/m, /a/s, /a/u, /a/v, /a/d]) {
+			const Has = s.pipe(s.string, s.regex(pattern));
+			assert.deepEqual(
+				['a', 'ba', 'a', 'b'].map((value) => s.is(Has, value)),
+				[true, true, true, false]
+			);
+			assert.strictEqual(pattern.lastIndex, 0);
+		}
+	});
+
 	test('regex, check, transform', () => {
 		assert(s.is(s.pipe(s.string, s.regex(/^a/)), 'ab'));
 		assert(!s.is(s.pipe(s.string, s.regex(/^a/)), 'ba'));
@@ -442,6 +458,16 @@ describe('check_at', () => {
 		s.object({ password: s.string, confirm: s.optional(s.string) }),
 		s.check_at('confirm', (v) => v.password === v.confirm, 'the password again')
 	);
+
+	test('keeps the path it was given, whatever the array does after', () => {
+		const path: Array<'a' | 'b'> = ['a'];
+		const At = s.pipe(
+			s.object({ a: s.object({ b: s.number }) }),
+			s.check_at(path as ['a'], (_: { a: { b: number } }) => false)
+		);
+		path.push('b');
+		assert.deepEqual(issues_of(At, { a: { b: 1 } })[0]!.path, ['a']);
+	});
 
 	test('fails as check does, at the path below the value', () => {
 		assert.deepEqual(s.parse(Passwords, { password: 'a', confirm: 'a' }), {
@@ -738,6 +764,13 @@ describe('message', () => {
 				(i) => i.message
 			),
 			[undefined, 'm']
+		);
+		// and so where what it wraps takes the object and the key
+		assert.deepEqual(
+			issues_of(s.object({ a: s.string, b: s.message(s.unknown, 'b is required') }), { a: 1 }).map(
+				(i) => i.message
+			),
+			[undefined, 'b is required']
 		);
 	});
 

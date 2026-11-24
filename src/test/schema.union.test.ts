@@ -181,6 +181,15 @@ describe('array, union, variant', () => {
 		assert(!s.is(Shape, null));
 	});
 
+	test('of two variant options with one discriminator value, the later is picked', () => {
+		const Twice = s.variant('kind', [
+			s.object({ kind: s.literal('a'), first: s.number }),
+			s.object({ kind: s.literal('a'), second: s.number })
+		]);
+		assert(s.is(Twice, { kind: 'a', second: 1 }));
+		assert(!s.is(Twice, { kind: 'a', first: 1 }));
+	});
+
 	describe('a recursive union', () => {
 		// a chain of nodes each with one child, of the last option, counting the
 		// `check` every option reaches in a node before its `op`, or after it
@@ -272,7 +281,9 @@ describe('probe mode', () => {
 			[s.strip_object({ a: Counted, b: Counted }), { a: 1, b: 2 }],
 			[s.object({ a: Counted, b: Counted }), { a: 1, b: 2 }],
 			[s.array(Counted), [1, 2, 3]],
-			[s.record(Counted), { a: 1, b: 2 }]
+			[s.record(Counted), { a: 1, b: 2 }],
+			[s.keyed_record(s.string, Counted), { a: 1, b: 2 }],
+			[s.object_with_rest({}, Counted), { a: 1, b: 2 }]
 		] as const) {
 			calls = 0;
 			assert(!s.is(schema, value));
@@ -282,6 +293,14 @@ describe('probe mode', () => {
 			assert(!s.parse(schema, value).ok);
 			assert(calls > 1, schema.kind);
 		}
+	});
+
+	// a probe reads no value of an unknown key, so the context counts the keys
+	test('a probe of an object stops at its first unknown key', () => {
+		const ctx: s.SchemaContext = { issues: undefined, fails: 0, probe: true };
+		s.object({ a: s.string }).run({ a: 'x', y: 1, z: 2 }, ctx);
+		assert.strictEqual(ctx.fails, 1);
+		assert.strictEqual(ctx.issues, undefined);
 	});
 
 	test('is matches parse on unknown keys, variants, and messages', () => {
@@ -374,7 +393,7 @@ describe('probe mode', () => {
 		assert.strictEqual(reads, 1);
 	});
 
-	test('a failure about a key reads its value only to build an issue', () => {
+	test('a failure about a key reads its value only outside probe mode', () => {
 		let reads = 0;
 		const unknown = {
 			a: 'x',

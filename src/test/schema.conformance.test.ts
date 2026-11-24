@@ -33,13 +33,12 @@ import {
 // and the tests at the end of this file hold it.
 
 const rows = run_conformance();
-const differences = expand_conformance_table(
-	Object.fromEntries(
-		DIFFERENCES.flatMap((difference) =>
-			Object.entries(difference.rows).map(([key, results]) => [key, { difference, results }])
-		)
-	)
+// a row is of one difference: two that name one row would have the later
+// stand for both here, unseen
+const difference_rows = DIFFERENCES.flatMap((difference) =>
+	Object.entries(difference.rows).map(([key, results]) => [key, { difference, results }] as const)
 );
+const differences = expand_conformance_table(Object.fromEntries(difference_rows));
 const sides = expand_conformance_table(SIDES);
 const informational = expand_conformance_table(INFORMATIONAL);
 
@@ -141,6 +140,14 @@ describe('conformance with zod and valibot', () => {
 		}
 	});
 
+	test('a row is of one difference', () => {
+		const keys = difference_rows.map(([key]) => key);
+		assert.deepEqual(
+			keys.filter((key, i) => keys.indexOf(key) !== i),
+			[]
+		);
+	});
+
 	test('no library throws', () => {
 		assert.deepEqual(
 			rows
@@ -150,11 +157,13 @@ describe('conformance with zod and valibot', () => {
 		);
 	});
 
-	test('every declared difference is in docs/design.md', () => {
-		const docs = readFileSync(new URL('../../docs/design.md', import.meta.url), 'utf8').replace(
-			/\s+/g,
-			' '
-		);
+	test('every declared difference is in the list of them in docs/design.md', () => {
+		const whole = readFileSync(new URL('../../docs/design.md', import.meta.url), 'utf8');
+		// the section alone: words found elsewhere in the file hold nothing of it
+		const start = whole.indexOf('\n## Behavior that differs from Valibot and Zod\n');
+		assert.isAbove(start, -1, 'the section is in docs/design.md');
+		const end = whole.indexOf('\n## ', start + 1);
+		const docs = whole.slice(start, end < 0 ? undefined : end).replace(/\s+/g, ' ');
 		for (const difference of DIFFERENCES) {
 			if (difference.status === 'undecided') {
 				assert.strictEqual(difference.docs, undefined, difference.reason);

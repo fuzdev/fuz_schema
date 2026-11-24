@@ -30,9 +30,11 @@ export interface EngineStateOutput {
  * The protectors a fast path of the engine depends on, each read by the
  * intrinsic of its name. One that is invalidated stays so for the life of the
  * process, and every function that relied on it is slower. A name this engine
- * doesn't have is left out of the output.
+ * doesn't have is left out of the output: the test holds the ones it has to
+ * be read, by a list of its own, and the rest are asked for an engine that
+ * has them.
  */
-export const PROTECTOR_NAMES = [
+const PROTECTOR_NAMES = [
 	'ArraySpeciesProtector',
 	'NoElementsProtector',
 	'MapIteratorProtector',
@@ -118,7 +120,7 @@ const to_inputs = (i: number): Array<unknown> => {
 };
 
 /** How many distinct inputs of each schema a batch parses. */
-export const HEAP_INPUTS = 1000;
+const HEAP_INPUTS = 1000;
 
 const parse_inputs = (count: number, from: number): void => {
 	for (let i = from; i < from + count; i++) {

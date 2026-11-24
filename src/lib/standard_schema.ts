@@ -11,14 +11,15 @@
 import { parse, type AnySchema, type Infer, type InferInput } from './schema.ts';
 
 /**
- * The Standard Schema types for a schema library without JSON Schema output,
+ * The Standard Schema types for an adapter without JSON Schema output,
  * copied from version 1.1 of the spec as it recommends so there's no
  * dependency on `@standard-schema/spec`. The spec nests its types in
  * namespaces. Here each is flat, named by its path.
  *
- * Left out: the spec's JSON Schema interface, which nothing here produces,
- * and its inference helpers, which a consumer takes from the spec itself and
- * which work on these types as they are.
+ * Left out: the spec's JSON Schema interface, which this adapter doesn't
+ * produce (`to_json_schema` is a module of its own), and its inference
+ * helpers, which a consumer takes from the spec itself and which work on
+ * these types as they are.
  */
 export interface StandardSchemaV1<TInput = unknown, TOutput = TInput> {
 	readonly '~standard': StandardSchemaV1Props<TInput, TOutput>;

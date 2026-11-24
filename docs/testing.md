@@ -26,6 +26,11 @@ each module, these hold the library to more than its own examples:
   type before, and `src/test/schema.emit.test.ts` emits the declarations of a
   consumer's exported schemas and generic helpers, which must compile where
   they are read and write each factory's type by its name.
+  `src/test/schema.exact_optional.test.ts` checks the library's types of an
+  optional key under `exactOptionalPropertyTypes`, which the repo's own
+  `tsconfig` has off: with it off `a?: X` and `a?: X | undefined` are one
+  type, and the `| undefined` of every optional key in the inference test
+  holds nothing.
 - **What an editor shows**: `src/test/schema.docs.test.ts` asks TypeScript's
   language service for the doc comment and the definition of each property
   of a type inferred from an object schema, which must be its entry's. The
@@ -78,8 +83,18 @@ and is classified by the tables of `src/test/conformance_tables.ts`:
   undeclared, and its finding says which, with the rows of the entries
   that recognized it.
 - **disagree**: Zod and Valibot disagree, tallied as this library being on
-  Zod's side, Valibot's, both, or neither. Reported, never a failure:
-  `SIDES` is the gate for those.
+  Zod's side, Valibot's, both, or neither. Reported, and at depth never a
+  failure: `SIDES` is the gate for those. At the fixed seeds of `gro check`
+  each such case is held to the side it was last seen on, by
+  `src/test/differential_sides.json`, which is generated: a case that moves,
+  as every one with an infinity does when `number` comes to take one, fails
+  the test, and the diff of the file regenerated, which holds a case to a
+  line, is what moved, to be read as the diff of `sizes.json` is. A case with neither is held to its result
+  too, by a digest of it, as nothing else says what it gave. A case on a
+  side is held to that side and no closer: a result that changes and stays
+  the side's, by a relaxation, moves nothing. The file moves too when the
+  generator, an adapter, or the Zod or Valibot installed changes, and a
+  break of the library can hide in the diff of such a change.
 - **refused**: Zod or Valibot threw, building the schema or parsing.
   Reported, with the error.
 - **THROWS**: this library threw. A failure.
@@ -105,8 +120,9 @@ result of `parse`, and of `is`, alone and under a `union` of one option.
 It compares the verdict and the paths of the issues, and not their text, so the
 name an issue gives `NaN` and a `union`'s `expected` are held by
 `src/test/schema.issues.test.ts` and `src/test/schema.union.test.ts`, and this
-library moving to the other side of a recorded disagreement is only a change in
-the tallies, which the conformance test's `SIDES` fails on.
+library moving to the other side of a recorded disagreement is a change in
+the tallies, which the conformance test's `SIDES` fails on, and at the fixed
+seeds `differential_sides.json`.
 
 `gro check` runs `src/test/schema.differential.test.ts`, fixed seeds and a
 fixed count, the same everywhere, and fails on an undeclared difference, a
@@ -268,7 +284,8 @@ the interpreter's has one (`find_compile_difference` in
   `then`, each refused, and names the module uses or the language reserves,
   each exported and working. Patterns with a `/`, a quote, a line separator,
   and each flag but `g` and `y`, each written and matching as the regex does,
-  and with either of those two a `lastIndex` of the module's own. A `Proxy`
+  and with either of those two, in a schema written by hand, a `lastIndex` of
+  the module's own. A `Proxy`
   of a regex written as it says, as strings whatever it says, and a regex
   that is no `regex`'s pattern refused. A value the text of a long `one_of`
   captures, written before the `Set` that holds it. Every refusal's text,
@@ -298,22 +315,27 @@ npm run mutate -- --filter record --deep
 
 It copies the working tree's `src`, `docs`, and `results`, `package.json`,
 `tsconfig.json`, and `README.md`, which the tests of the README read, with
-`node_modules` linked, to a directory of the run's own
+`node_modules` linked and `tsconfig.json` without its `extends`, a file
+SvelteKit generates, to a directory of the run's own
 under `~/.cache/fuz_schema_mutate/`, a copy to a worker, with a vitest config
 of its own, without the site's plugins, and a test
 timeout of 60 s, as the tests that take seconds alone are slower beside the
 other copies. Each copy's vitest gets an even share of the cores. It runs the tests
 of the unmutated copy first and stops if they fail, then for each mutant
-applies its edits, runs `vitest run` without `sizes.test.ts`,
-`site_render.test.ts`, which needs the site's plugins, and
-`mutants.test.ts`, which the mutant's own edit would fail, and
-restores the file. Each mutant is:
+applies its edits, runs `vitest run` without `sizes.test.ts`, the tests
+that render the site's components, which need the site's plugins
+(`MUTATE_EXCLUDED_TESTS` lists them, and `mutants.test.ts` fails on a test
+file that imports a component and isn't there), and `mutants.test.ts`, which
+the mutant's own edit would fail, and restores the file. Each mutant is:
 
 - **killed**: a test failed, and the test files reported failed before the
-  kill are printed, usually the first. The tests' process group is killed by
-  this script at the first test file it reports failed, as a break can leave
-  another test looping: not by vitest's `--bail`, which can exit before it
-  reports the failure.
+  kill are printed, usually the first, with the first test the output names
+  as failed: what killed it, to be read against what the mutant breaks, as a
+  mutant of one export killed by a test of another is held by no test of
+  its own. The tests' process group is killed by this script a moment after
+  the first test file it reports failed, as a break can leave another test
+  looping: not by vitest's `--bail`, which can exit before it reports the
+  failure.
 - **hung**: the tests outlived the timeout with none failed, and their whole
   process group was killed. Counted as killed: a break that makes a test loop
   forever is found, if slowly.
@@ -324,12 +346,18 @@ restores the file. Each mutant is:
 
 The run fails on a stale anchor, a `find` that doesn't occur exactly once, or
 edits that leave the file unparsable to TypeScript, checked of every mutant in
-the table before any runs, whichever are selected; on an error; on a survivor
-whose entry has no `survives`, the reason the suite can't kill it; and on an
-entry with a `survives` that is killed or hung. An edit TypeScript parses that
+the table before any runs, whichever are selected; on a mutant selected whose
+edits bring a type error to the library, which the tests of the library's
+types fail on whatever the mutant does, so its kill would say nothing of the
+tests of behavior: among them, in `schema.ts` alone, as those tests hold it
+alone to them, a name left unused, code out of reach, and an optional key
+not held exactly; on an error; on a survivor whose entry has no `survives`,
+the reason the suite can't kill it; and on an entry with a `survives` that
+is killed or hung. An edit TypeScript parses that
 the engine still refuses to load, a bad regex literal or a duplicate `let`,
 fails its test file and reads as killed. `--filter <substr>` runs the mutants
-whose names have it, `--workers` sets the copies run at once, 2 by default,
+whose names have it, or any of several split by commas, `--workers` sets the
+copies run at once, 2 by default,
 `--timeout <s>` the timeout, by default 120 s or three times the unmutated run
 where that is longer, and refused under one and a half times the unmutated run,
 where a slow run would read as hung. The copies are removed at the end, or left

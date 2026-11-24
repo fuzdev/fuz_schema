@@ -30,6 +30,20 @@ export interface Mutant {
 export const MUTANT_DEFAULT_FILE = 'src/lib/schema.ts';
 
 /**
+ * The test files `npm run mutate` leaves out of every run: the snapshot of
+ * sizes, which any edit of the library fails, the tests that render the
+ * site's components, which need the site's plugins and which no mutant is
+ * of, and the test of this table, whose anchors a mutant applied has taken
+ * its own from.
+ */
+export const MUTATE_EXCLUDED_TESTS = [
+	'src/test/sizes.test.ts',
+	'src/test/site_render.test.ts',
+	'src/test/results_roster.test.ts',
+	'src/test/mutants.test.ts'
+];
+
+/**
  * Applies a mutant's edits to the text of its file.
  *
  * @param mutant - the mutant
@@ -161,7 +175,7 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `					else if (!Object.hasOwn(entries, key)) {
 						fail_at(ctx, 'unknown_key'`,
-				replace: `					else if (false) {
+				replace: `					else if (false as boolean) {
 						fail_at(ctx, 'unknown_key'`
 			}
 		]
@@ -193,7 +207,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `			if (output !== value || ctx.fails > count) return output;`,
-				replace: `			return output;`
+				replace: `			if ((true as boolean) || ctx.fails > count) return output;`
 			}
 		]
 	},
@@ -236,7 +250,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `							if (output !== undefined && parent && !((key as string) in parent)) {`,
-				replace: `							if (false) {`
+				replace: `							if (false as boolean) {`
 			}
 		]
 	},
@@ -634,7 +648,7 @@ export const MUTANTS: Array<Mutant> = [
 		}
 		return output;
 	};`,
-				replace: `		for (let i = 1; i < schemas.length; i++) {
+				replace: `		for (let i = 1; i < schemas.length && (ctx.fails === count || true); i++) {
 			output = schemas[i]!.run(output, ctx);
 		}
 		return output;
@@ -777,7 +791,8 @@ export const MUTANTS: Array<Mutant> = [
 			{
 				find: `	run: (value) => fn(value)
 });`,
-				replace: `	run: (value: any, _ctx: any, parent?: any, key?: any) => (parent && !(key in parent) ? 'X' : fn(value))
+				replace: `	run: (value: any, _ctx: any, parent?: any, key?: any) =>
+		parent && !(key in parent) ? ('X' as O) : fn(value)
 });`
 			}
 		]
@@ -1238,7 +1253,9 @@ export const MUTANTS: Array<Mutant> = [
 		name: 'issue_value_of_a_key',
 		edits: [
 			{
-				find: `issue.kind !== 'unknown_key' && issue.kind !== 'missing_key' && `,
+				find: `		issue.kind !== 'unknown_key' &&
+		issue.kind !== 'missing_key' &&
+`,
 				replace: ``
 			}
 		]
@@ -1271,15 +1288,6 @@ export const MUTANTS: Array<Mutant> = [
 		]
 	},
 	{
-		name: 'issue_value_over_message',
-		edits: [
-			{
-				find: `	return format_issue(text ? { ...issue, received: text } : issue);`,
-				replace: `	return format_issue(text ? { ...issue, received: text, message: undefined } : issue);`
-			}
-		]
-	},
-	{
 		name: 'pipe_optional_missing_gives_value',
 		edits: [
 			{
@@ -1293,7 +1301,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `	if (meta) registry!.set(labeled, meta);`,
-				replace: ``
+				replace: `	if (meta && (false as boolean)) registry!.set(labeled, meta);`
 			}
 		]
 	},
@@ -1429,7 +1437,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `						if (i + 1 < steps.length) {`,
-				replace: `						if (false) {`
+				replace: `						if (false as boolean) {`
 			}
 		]
 	},
@@ -1509,7 +1517,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `			if (chain.has(value)) {`,
-				replace: `			if (false) {`
+				replace: `			if (false as boolean) {`
 			}
 		]
 	},
@@ -1605,8 +1613,9 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/json_schema.ts',
 		edits: [
 			{
-				find: `(o.kind === 'object' || o.kind === 'strip_object' || o.kind === 'loose_object') &&`,
-				replace: `true &&`
+				find: `					(o.kind === 'object' || o.kind === 'strip_object' || o.kind === 'loose_object') &&
+					o.def[key]?.kind === 'literal';`,
+				replace: `					(o.def as any)?.[key]?.kind === 'literal';`
 			}
 		]
 	},
@@ -1878,7 +1887,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `memo.set(value, ctx.fails > count ? memos : output);`,
-				replace: `memo.set(value, output);`
+				replace: `memo.set(value, ctx.fails > count && (false as boolean) ? memos : output);`
 			}
 		]
 	},
@@ -2761,7 +2770,8 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/introspect.ts',
 		edits: [
 			{
-				find: `				first ??= layer;`,
+				find: `				first = layer;
+				break;`,
 				replace: `				first = layer;`
 			}
 		]
@@ -2881,7 +2891,7 @@ export const MUTANTS: Array<Mutant> = [
 				find: `				for (const j in input) {
 					if (j === k) break;`,
 				replace: `				for (const j in input) {
-					if (j === k || true) break;`
+					if (j === k || (true as boolean)) break;`
 			}
 		]
 	},
@@ -2999,7 +3009,7 @@ export const MUTANTS: Array<Mutant> = [
 		edits: [
 			{
 				find: `if (n !== n) n = +value.replace(`,
-				replace: `if (false) n = +value.replace(`
+				replace: `if (false as boolean) n = +value.replace(`
 			}
 		]
 	},
@@ -5589,7 +5599,9 @@ export const MUTANTS: Array<Mutant> = [
 			);
 		}
 `,
-				replace: ``
+				replace: `		// to the types a text, and still none
+		if (written === undefined) written = undefined as unknown as string;
+`
 			}
 		]
 	},
@@ -5764,9 +5776,11 @@ export const MUTANTS: Array<Mutant> = [
 		file: 'src/lib/compile.ts',
 		edits: [
 			{
-				find: `				emitting = schema;
+				find: `				const [code, out] = emit_out(def.schema, v, null, bail);
+				emitting = schema;
 `,
-				replace: ``
+				replace: `				const [code, out] = emit_out(def.schema, v, null, bail);
+`
 			}
 		]
 	},
@@ -5807,6 +5821,514 @@ export const MUTANTS: Array<Mutant> = [
 `,
 				replace: `				'',
 `
+			}
+		]
+	},
+	// what a test whose inputs can't tell a guard from none let through: a
+	// `__proto__` key whose value is an object, a probe that goes on, a def
+	// that holds what is no schema
+	{
+		name: 'record_copy_begun_keeps_proto',
+		edits: [
+			{
+				find: `			} else if (output) {
+				if (keep) output[key] = v;
+			} else if (!Object.is(v, input) || !keep) {`,
+				replace: `			} else if (output) {
+				output[key] = v;
+			} else if (!Object.is(v, input) || !keep) {`
+			}
+		]
+	},
+	{
+		name: 'record_copy_begun_by_proto_keeps_it',
+		edits: [
+			{
+				find: `					if (Object.hasOwn(value, k) && k !== '__proto__') output[k] = value[k];
+				}
+				if (keep) output[key] = v;`,
+				replace: `					if (Object.hasOwn(value, k) && k !== '__proto__') output[k] = value[k];
+				}
+				output[key] = v;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_copy_begun_keeps_proto',
+		edits: [
+			{
+				find: `			} else if (output) {
+				if (keep) output[name] = v;`,
+				replace: `			} else if (output) {
+				output[name] = v;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_copy_begun_by_proto_keeps_it',
+		edits: [
+			{
+				find: `					if (Object.hasOwn(input, j) && j !== '__proto__') output[j] = input[j];
+				}
+				if (keep) output[name] = v;`,
+				replace: `					if (Object.hasOwn(input, j) && j !== '__proto__') output[j] = input[j];
+				}
+				output[name] = v;`
+			}
+		]
+	},
+	{
+		name: 'keyed_record_failed_proto_copied',
+		edits: [
+			{
+				find: `					if (Object.hasOwn(input, j) && j !== '__proto__') output[j] = input[j];`,
+				replace: `					if (Object.hasOwn(input, j)) output[j] = input[j];`
+			}
+		]
+	},
+	{
+		name: 'rest_copy_begun_keeps_proto',
+		edits: [
+			{
+				find: `					} else if (output !== value) {
+						if (keep) output[key] = v;`,
+				replace: `					} else if (output !== value) {
+						output[key] = v;`
+			}
+		]
+	},
+	{
+		name: 'rest_probe_goes_on',
+		edits: [
+			{
+				find: `					if (ctx.fails > count) {
+						if (ctx.probe) return;
+						prefix_path(ctx.issues!, count, key);`,
+				replace: `					if (ctx.fails > count) {
+						if (ctx.probe) continue;
+						prefix_path(ctx.issues!, count, key);`
+			}
+		]
+	},
+	{
+		name: 'object_probe_goes_on_past_an_unknown_key',
+		edits: [
+			{
+				find: `						fail_at(ctx, 'unknown_key', value, 'no unknown keys', key);
+						if (ctx.probe) break;`,
+				replace: `						fail_at(ctx, 'unknown_key', value, 'no unknown keys', key);`
+			}
+		]
+	},
+	{
+		name: 'void_refuses_an_inherited_key',
+		edits: [
+			{
+				find: `			? // the key comes with the object
+				parent && !((key as string) in parent)
+				? fail(ctx, 'missing_key', v, 'a required key')`,
+				replace: `			? // the key comes with the object
+				parent && !Object.hasOwn(parent, key as string)
+				? fail(ctx, 'missing_key', v, 'a required key')`
+			}
+		]
+	},
+	{
+		name: 'message_keyed_labels_earlier',
+		edits: [
+			{
+				find: `						const output = schema.run(value, ctx, parent, key, entry);
+						if (ctx.issues) label_issues(ctx.issues, count, message, value);`,
+				replace: `						const output = schema.run(value, ctx, parent, key, entry);
+						if (ctx.issues) label_issues(ctx.issues, count * 0, message, value);`
+			}
+		]
+	},
+	{
+		name: 'check_at_keeps_the_callers_path',
+		edits: [
+			{
+				find: `Array.isArray(path) ? [...path] : [path as PropertyKey]`,
+				replace: `Array.isArray(path) ? path : [path as PropertyKey]`
+			}
+		]
+	},
+	{
+		name: 'variant_first_of_two_alike',
+		edits: [
+			{
+				find: `	for (const option of options) by_value.set(option.def[key]!.def, option);`,
+				replace: `	for (const option of options) {
+		if (!by_value.has(option.def[key]!.def)) by_value.set(option.def[key]!.def, option);
+	}`
+			}
+		]
+	},
+	{
+		name: 'compile_entry_not_said_to_a_schema_run_in_place',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `\${entry && key.entry ? ', 1' : ''}`,
+				replace: `\${entry && key.entry ? '' : ''}`
+			}
+		]
+	},
+	{
+		name: 'compile_union_and_variant_never_shared',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `|keyed_record|union|variant)$/;`,
+				replace: `|keyed_record)$/;`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_union_with_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			return Array.isArray(def) && every_schema(def);`,
+				replace: `			return Array.isArray(def);`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_pipe_with_no_schema',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			return Array.isArray(def) && def.length > 0 && every_schema(def);`,
+				replace: `			return Array.isArray(def) && def.length > 0;`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_keyed_record_key_unasked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			return is_record(def) && is_schema(def.key) && is_schema(def.value);`,
+				replace: `			return is_record(def) && is_schema(def.value);`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_rest_unasked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				every_schema(Object.values(def.entries)) &&
+				is_schema(def.rest)`,
+				replace: `				every_schema(Object.values(def.entries))`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_lazy_unasked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			return typeof def === 'function';`,
+				replace: `			return true;`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_variant_option_of_any_kind',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `						is_schema(option) &&
+						OBJECT_KIND.test(option.kind) &&
+						is_def_of(option.kind, option.def) &&`,
+				replace: `						is_schema(option) &&`
+			}
+		]
+	},
+	{
+		name: 'compile_def_of_variant_key_unasked',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `				typeof def.key === 'string' &&`,
+				replace: `				true &&`
+			}
+		]
+	},
+	{
+		name: 'compile_optional_read_as_definite',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `			/^(string|number|boolean|bigint|array|variant)$|object|record/.test(kind) ||`,
+				replace: `			/^(string|number|boolean|bigint|array|variant|optional|unknown)$|object|record/.test(kind) ||`
+			}
+		]
+	},
+	{
+		name: 'introspect_keyed_record_value_depth_dropped',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `\${to_type(s.def.key, inside)}, \${to_type(s.def.value, inside)}>`,
+				replace: `\${to_type(s.def.key, inside)}, \${to_type(s.def.value)}>`
+			}
+		]
+	},
+	{
+		name: 'json_schema_id_copied',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `	$id: 1,
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'json_schema_negative_length_written',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `					if (!Number.isInteger(bound) || bound < 0) {`,
+				replace: `					if (!Number.isInteger(bound)) {`
+			}
+		]
+	},
+	{
+		name: 'rest_copy_begun_by_proto_keeps_it',
+		edits: [
+			{
+				find: `							if (Object.hasOwn(value, k) && !Object.hasOwn(entries, k)) output[k] = value[k];
+						}
+						if (keep) output[key] = v;`,
+				replace: `							if (Object.hasOwn(value, k) && !Object.hasOwn(entries, k)) output[k] = value[k];
+						}
+						output[key] = v;`
+			}
+		]
+	},
+	{
+		name: 'fail_at_reads_in_probe',
+		edits: [
+			{
+				find: `	fail(ctx, kind, ctx.probe || value[key], expected);`,
+				replace: `	fail(ctx, kind, value[key], expected);`
+			}
+		]
+	},
+	{
+		name: 'regex_takes_a_global_pattern',
+		edits: [
+			{
+				find: `if (pattern.global || pattern.sticky) throw`,
+				replace: `if (pattern.sticky) throw`
+			}
+		]
+	},
+	{
+		name: 'regex_takes_a_sticky_pattern',
+		edits: [
+			{
+				find: `if (pattern.global || pattern.sticky) throw`,
+				replace: `if (pattern.global) throw`
+			}
+		]
+	},
+	{
+		name: 'compile_handed_asked_at_each_place',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (known === undefined) handed.set(schema, (known = handed_of(schema)));`,
+				replace: `		known = handed_of(schema);`
+			}
+		]
+	},
+	{
+		name: 'compile_cond_built_at_each_place',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `		if (of_schema.has(at)) return of_schema.get(at);
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'compile_variant_value_written_after_its_body',
+		file: 'src/lib/compile.ts',
+		edits: [
+			{
+				find: `					emitting = schema;
+					const of_value = literal(value);
+					const body = emit_object(option, v, bail, true);`,
+				replace: `					const body = emit_object(option, v, bail, true);
+					const of_value = literal(value);`
+			}
+		]
+	},
+	{
+		name: 'issue_value_read_under_a_message',
+		edits: [
+			{
+				find: `		issue.message === undefined &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'introspect_meta_cleared_key_read_through',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `		if (meta && Object.hasOwn(meta, key)) return meta[key];`,
+				replace: `		if (meta?.[key] !== undefined) return meta[key];`
+			}
+		]
+	},
+	{
+		name: 'introspect_find_meta_reads_under_a_clear',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `			if (value === undefined) cleared = true;
+			else found.push`,
+				replace: `			if (value !== undefined) found.push`
+			}
+		]
+	},
+	{
+		name: 'introspect_find_meta_clear_reaches_later_steps',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `visit(s.def[i]!, !i && cleared);`,
+				replace: `visit(s.def[i]!, cleared);`
+			}
+		]
+	},
+	{
+		name: 'introspect_find_meta_walked_under_a_clear_is_seen',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `		(above_cleared ? walked : seen).add(s);`,
+				replace: `		seen.add(s);`
+			}
+		]
+	},
+	{
+		name: 'introspect_empty_union_has_no_text',
+		file: 'src/lib/introspect.ts',
+		edits: [
+			{
+				find: `			return s.def.map((o) => to_type(o, inside)).join(' | ') || 'never';`,
+				replace: `			return s.def.map((o) => to_type(o, inside)).join(' | ');`
+			}
+		]
+	},
+	{
+		name: 'json_schema_empty_union_written_as_no_types',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				return s.def.length
+					? compact({ anyOf: s.def.map((o, i) => emit(o, \`\${path}/anyOf/\${i}\`)) })
+					: { not: {} };`,
+				replace: `				return compact({ anyOf: s.def.map((o, i) => emit(o, \`\${path}/anyOf/\${i}\`)) });`
+			}
+		]
+	},
+	{
+		name: 'json_schema_empty_variant_written_as_no_options',
+		file: 'src/lib/json_schema.ts',
+		edits: [
+			{
+				find: `				if (!options.length) return { not: {} };
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'differential_hole_after_a_change_allowed',
+		file: 'src/test/differential_rules.ts',
+		edits: [
+			{
+				find: `					: env.rules.has('hole_in_copy') && is_hole_kept(ours, given, i))`,
+				replace: `					: env.rules.has('hole_in_copy'))`
+			}
+		]
+	},
+	{
+		name: 'differential_present_key_left_out_allowed',
+		file: 'src/test/differential_rules.ts',
+		edits: [
+			{
+				find: `	!(is_object(given) && key in given) &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'differential_minimizer_weighs_no_uuid',
+		file: 'src/test/differential_classify.ts',
+		edits: [
+			{
+				find: `	uuid: 7,
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'differential_walk_skips_a_keyed_key',
+		file: 'src/test/differential_generate.ts',
+		edits: [
+			{
+				find: `			const key = fn(spec.key);
+			const of = fn(spec.of);
+			return key !== spec.key || of !== spec.of ? { ...spec, key, of } : spec;`,
+				replace: `			const of = fn(spec.of);
+			return of !== spec.of ? { ...spec, of } : spec;`
+			}
+		]
+	},
+	{
+		name: 'recognizer_keyed_key_outside_claims_a_value_under_it',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `				p.length <= u.length + 1 &&
+`,
+				replace: ``
+			}
+		]
+	},
+	{
+		name: 'recognizer_own_named_claims_a_key_outside_a_set',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `					!(p.t === 'keyed_record' && is_key_outside(p.key, key))`,
+				replace: `					true`
+			}
+		]
+	},
+	{
+		name: 'recognizer_own_named_leaves_every_set_of_keys',
+		file: 'src/test/differential_recognizers.ts',
+		edits: [
+			{
+				find: `					!(p.t === 'keyed_record' && is_key_outside(p.key, key))`,
+				replace: `					!(p.t === 'keyed_record' && is_finite_key(p.key))`
 			}
 		]
 	}

@@ -1,0 +1,494 @@
+{
+	"schema": {
+		"schema": {
+			"kind": "variant",
+			"def": {
+				"key": "k",
+				"options": [
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "m"
+							},
+							"a": {
+								"kind": "number"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": 10
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "b"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": true
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": -1.5
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": null
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": ""
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": 0
+							},
+							"zero": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "string"
+									}
+								}
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": false
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "z"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": 2
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "10"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "m"
+							},
+							"b": {
+								"kind": "string"
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": 0
+							},
+							"minus": {
+								"kind": "optional",
+								"def": {
+									"schema": {
+										"kind": "string"
+									}
+								}
+							}
+						}
+					},
+					{
+						"kind": "object",
+						"def": {
+							"k": {
+								"kind": "literal",
+								"def": "a"
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"cases": [
+		{
+			"name": "string_given_twice_later",
+			"text": "{\"k\":\"m\",\"b\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_given_twice_first",
+			"text": "{\"k\":\"m\",\"a\":1}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "string",
+					"expected": "string",
+					"received": "undefined",
+					"path": [
+						"b"
+					],
+					"formatted": "b: expected string, received undefined"
+				},
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "number",
+					"path": [
+						"a"
+					],
+					"formatted": "a: expected no unknown keys, received number"
+				}
+			]
+		},
+		{
+			"name": "string_first_sorted",
+			"text": "{\"k\":\"\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_last_sorted",
+			"text": "{\"k\":\"z\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_between",
+			"text": "{\"k\":\"b\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_of_a_number",
+			"text": "{\"k\":\"10\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_added_last",
+			"text": "{\"k\":\"a\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "string_missing",
+			"text": "{\"k\":\"c\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "string",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received string"
+				}
+			]
+		},
+		{
+			"name": "string_before_every_one",
+			"text": "{\"k\":\" \"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "string",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received string"
+				}
+			]
+		},
+		{
+			"name": "string_after_every_one",
+			"text": "{\"k\":\"zz\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "string",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received string"
+				}
+			]
+		},
+		{
+			"name": "number",
+			"text": "{\"k\":10}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_float",
+			"text": "{\"k\":10.0}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_negative",
+			"text": "{\"k\":-1.5}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_two",
+			"text": "{\"k\":2}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "number_missing",
+			"text": "{\"k\":3}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "number",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received number"
+				}
+			]
+		},
+		{
+			"name": "number_below_every_one",
+			"text": "{\"k\":-2}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "number",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received number"
+				}
+			]
+		},
+		{
+			"name": "number_above_every_one",
+			"text": "{\"k\":1e21}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "number",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received number"
+				}
+			]
+		},
+		{
+			"name": "zero_takes_the_later",
+			"text": "{\"k\":0,\"minus\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "zero_refuses_the_first",
+			"text": "{\"k\":0,\"zero\":\"x\"}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "unknown_key",
+					"expected": "no unknown keys",
+					"received": "string",
+					"path": [
+						"zero"
+					],
+					"formatted": "zero: expected no unknown keys, received string"
+				}
+			]
+		},
+		{
+			"name": "negative_zero",
+			"text": "{\"k\":-0,\"minus\":\"x\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "true_value",
+			"text": "{\"k\":true}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "false_value",
+			"text": "{\"k\":false}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "null_value",
+			"text": "{\"k\":null}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "array_value",
+			"text": "{\"k\":[]}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "array",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received array"
+				}
+			]
+		},
+		{
+			"name": "object_value",
+			"text": "{\"k\":{}}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "object",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received object"
+				}
+			]
+		},
+		{
+			"name": "missing_key",
+			"text": "{}",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "\"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\"",
+					"received": "undefined",
+					"path": [
+						"k"
+					],
+					"formatted": "k: expected \"m\" | 10 | \"b\" | true | -1.5 | null | \"\" | 0 | false | \"z\" | 2 | \"10\" | \"a\", received undefined"
+				}
+			]
+		},
+		{
+			"name": "discriminator_last",
+			"text": "{\"b\":\"x\",\"k\":\"m\"}",
+			"json": true,
+			"valid": true,
+			"issues": []
+		},
+		{
+			"name": "not_an_object",
+			"text": "[]",
+			"json": true,
+			"valid": false,
+			"issues": [
+				{
+					"kind": "variant",
+					"expected": "object",
+					"received": "array",
+					"path": [],
+					"formatted": "expected object, received array"
+				}
+			]
+		}
+	]
+}

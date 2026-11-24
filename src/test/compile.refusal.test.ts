@@ -2,6 +2,7 @@ import { describe, test, assert } from 'vitest';
 
 import * as s from '#lib/schema.ts';
 import { compile_guard, compile_parse } from '#lib/compile.ts';
+import { COMPILE_UNBOUNDED_REFUSAL } from './compile_test_helpers.ts';
 
 // Every condition of the refusal, a shape for each: the kinds a cycle is seen
 // through, what could take an array and what an object, and what tells
@@ -9,7 +10,6 @@ import { compile_guard, compile_parse } from '#lib/compile.ts';
 // input can nest through it, by the runs of a check under the interpreter,
 // counted and never timed. A shape that compiles is held to a walk.
 
-const REFUSED = /^cannot compile `(union|pipe)` at \/.*: two or more of its /;
 const DEPTH = 12;
 const CAP = 200_000;
 
@@ -39,8 +39,8 @@ const lazy_of = (make: (N: s.AnySchema) => s.AnySchema): s.AnySchema => {
 	return N;
 };
 const assert_refused = (schema: s.AnySchema, name: string): void => {
-	assert.throws(() => compile_guard(schema), REFUSED, name);
-	assert.throws(() => compile_parse(schema), REFUSED, name);
+	assert.throws(() => compile_guard(schema), COMPILE_UNBOUNDED_REFUSAL, name);
+	assert.throws(() => compile_parse(schema), COMPILE_UNBOUNDED_REFUSAL, name);
 };
 // the interpreter walks it twice a level: past what a walk of every node takes, many times over
 const assert_exponential = (schema: s.AnySchema, input: unknown, name: string): void => {

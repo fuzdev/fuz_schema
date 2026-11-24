@@ -30,6 +30,7 @@ import {
 	type SchemaJson
 } from '#lib/schema_json.ts';
 import { JSON_REFUSALS } from './refusals.ts';
+import { generate_json_union_bounds, type JsonUnionBound } from './union_bounds.ts';
 
 /** Every `JsonDivergence`. The Rust tests fail on a flag that isn't one of these. */
 export const JSON_DIVERGENCES = [
@@ -240,9 +241,10 @@ export const generate_json_fixture = (fixture: JsonFixture): JsonFixtureExpected
 	)
 });
 
-/** The text of an `expected.json` or of `contract.json`. */
-export const format_json_fixture = (expected: JsonFixtureExpected | JsonFixtureContract): string =>
-	JSON.stringify(expected, null, '\t') + '\n';
+/** The text of an `expected.json`, of `contract.json`, or of `union_bounds.json`. */
+export const format_json_fixture = (
+	expected: JsonFixtureExpected | JsonFixtureContract | ReadonlyArray<JsonUnionBound>
+): string => JSON.stringify(expected, null, '\t') + '\n';
 
 /**
  * The contents of `contract.json`: what the serializer and the fixtures hold
@@ -343,6 +345,11 @@ const contract_path = join(JSON_FIXTURES_DIR, 'contract.json');
 /** Reads `contract.json`, or `null` when there is none. */
 export const read_json_fixture_contract = (): Promise<string | null> => read_or_null(contract_path);
 
+const union_bounds_path = join(JSON_FIXTURES_DIR, 'union_bounds.json');
+
+/** Reads `union_bounds.json`, or `null` when there is none. */
+export const read_json_union_bounds = (): Promise<string | null> => read_or_null(union_bounds_path);
+
 const expected_path = (name: string): string => join(JSON_FIXTURES_DIR, name, 'expected.json');
 
 const read_or_null = async (path: string): Promise<string | null> => {
@@ -359,8 +366,8 @@ export const read_json_fixture_expected = (name: string): Promise<string | null>
 	read_or_null(expected_path(name));
 
 /**
- * Regenerates every group's `expected.json` and `contract.json`, writing only
- * the ones that changed.
+ * Regenerates every group's `expected.json`, `contract.json`, and
+ * `union_bounds.json`, writing only the ones that changed.
  *
  * @returns the paths written, relative to the fixtures directory
  */
@@ -370,6 +377,11 @@ export const update_json_fixtures = async (): Promise<Array<string>> => {
 	if ((await read_json_fixture_contract()) !== contract) {
 		await writeFile(contract_path, contract);
 		written.push('contract.json');
+	}
+	const union_bounds = format_json_fixture(generate_json_union_bounds());
+	if ((await read_json_union_bounds()) !== union_bounds) {
+		await writeFile(union_bounds_path, union_bounds);
+		written.push('union_bounds.json');
 	}
 	for (const name of await load_json_fixture_names()) {
 		const text = format_json_fixture(generate_json_fixture(await load_json_fixture(name)));

@@ -2,6 +2,7 @@
 //! does not match, without the `message` a schema there can set.
 
 use std::fmt;
+use std::sync::Arc;
 
 use crate::js::quote;
 use crate::json::Value;
@@ -11,7 +12,11 @@ use crate::schema::SchemaKind;
 ///
 /// Past it a failure is still a failure, and builds no issue. A path is as
 /// long as the failing value is deep, so issues without a bound hold memory in the
-/// product of the input's size and its depth.
+/// product of the input's size and its depth. A key of the text is one copy
+/// shared by the issues under it, `PathSegment::Key`, so the cap bounds the
+/// steps of the paths and the text bounds the bytes of its keys in them. What
+/// an issue holds of the schema, a key of a missing entry or of a `variant`'s
+/// discriminator and its `expected` text, is the schema's, an issue each.
 pub const MAX_ISSUES: usize = 100;
 
 /// A validation failure, as the TypeScript library's `SchemaIssue` has it.
@@ -89,7 +94,12 @@ fn is_word(key: &str) -> bool {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PathSegment {
     /// A key of an object, which the TypeScript library has as a string.
-    Key(String),
+    ///
+    /// Shared: every issue under a key of the text holds the one copy of it,
+    /// as the library's issues hold the input's own string, so what the
+    /// paths of an evaluation hold of the text is bounded by the text and
+    /// not by the text a hundred times over, an issue each.
+    Key(Arc<str>),
     /// An index of an array, which the TypeScript library has as a number.
     Index(usize),
 }
@@ -424,7 +434,7 @@ mod tests {
             received: Received::Number,
             path,
         };
-        let key = |key: &str| PathSegment::Key(key.to_owned());
+        let key = |key: &str| PathSegment::Key(key.into());
         assert_eq!(
             issue(vec![]).to_string(),
             "expected string, received number"

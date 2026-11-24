@@ -8,6 +8,7 @@ import {
 	to_schema_json,
 	type SchemaJsonNode
 } from '#lib/schema_json.ts';
+import { assert_throws_exactly } from './schema_test_helpers.ts';
 
 const node = (schema: s.AnySchema): SchemaJsonNode => to_schema_json(schema).schema;
 
@@ -364,16 +365,8 @@ describe('to_schema_json', () => {
 });
 
 describe('to_schema_json refuses', () => {
-	const assert_refuses = (schema: () => s.AnySchema, message: string): void => {
-		try {
-			to_schema_json(schema());
-		} catch (error) {
-			assert(error instanceof Error);
-			assert.strictEqual(error.message, message);
-			return;
-		}
-		assert.fail(`expected a throw: ${message}`);
-	};
+	const assert_refuses = (schema: () => s.AnySchema, message: string): void =>
+		assert_throws_exactly(() => to_schema_json(schema()), message);
 
 	test('kinds that hold a JavaScript value', () => {
 		assert_refuses(

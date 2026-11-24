@@ -82,7 +82,7 @@ fn failures(schema: &Schema, text: &str) -> Vec<String> {
                 .path()
                 .iter()
                 .map(|segment| match segment {
-                    PathSegment::Key(key) => key.clone(),
+                    PathSegment::Key(key) => key.to_string(),
                     PathSegment::Index(index) => index.to_string(),
                 })
                 .collect();
@@ -110,7 +110,7 @@ pub fn build(build: impl FnOnce(&mut SchemaBuilder) -> NodeId) -> Schema {
     builder.build(root).unwrap()
 }
 
-fn check(schema: &Schema, valid: &[&str], invalid: &[&str]) {
+fn check_exact(schema: &Schema, valid: &[&str], invalid: &[&str]) {
     for text in valid {
         assert_eq!(matches_json(schema, text), Ok(true), "{text}");
     }
@@ -144,33 +144,33 @@ fn primitives_match_their_type() {
 
 #[test]
 fn literals_match_by_strict_equality() {
-    check(
+    check_exact(
         &build(|b| b.literal(1)),
         &["1", "1.0", "1e0", "10e-1"],
         &["2", r#""1""#, "true"],
     );
-    check(
+    check_exact(
         &build(|b| b.literal(0)),
         &["0", "-0", "0.0", "-0e5"],
         &["false", "null", r#""""#],
     );
-    check(&build(|b| b.literal(-0.0)), &["0", "-0"], &[]);
-    check(
+    check_exact(&build(|b| b.literal(-0.0)), &["0", "-0"], &[]);
+    check_exact(
         &build(|b| b.literal("a")),
         &[r#""a""#, r#""\u0061""#],
         &[r#""A""#, r#""a ""#, "1"],
     );
-    check(
+    check_exact(
         &build(|b| b.literal(true)),
         &["true"],
         &["false", "1", r#""true""#],
     );
-    check(
+    check_exact(
         &build(|b| b.literal(SchemaLiteral::Null)),
         &["null"],
         &["0", "false", r#""null""#, "[]"],
     );
-    check(
+    check_exact(
         &build(|b| b.literal(0.1 + 0.2)),
         &["0.30000000000000004"],
         &["0.3", "0.30000000000000001"],
@@ -183,7 +183,7 @@ fn literals_match_by_strict_equality() {
             SchemaLiteral::from(false),
         ])
     });
-    check(
+    check_exact(
         &one_of,
         &[r#""a""#, "1", "1.0", "null", "false"],
         &[r#""b""#, "2", "true", "[]", "{}"],
@@ -253,7 +253,7 @@ fn a_missing_key_is_undefined() {
             .collect();
         format!("{{{}}}", rest.join(","))
     };
-    check(
+    check_exact(
         &schema,
         &[
             &format!("{{{needed}}}"),
@@ -316,7 +316,7 @@ fn a_missing_key_is_undefined() {
                 b.strip_object(entries)
             }
         });
-        check(
+        check_exact(
             &schema,
             &[r#"{"a":null}"#, r#"{"z":1,"a":1}"#],
             &["{}", r#"{"b":1}"#],
@@ -336,7 +336,7 @@ fn object_reports_entries_then_unknown_keys() {
         let number = b.number();
         b.object([("b", string), ("a", number), ("2", number)])
     });
-    check(
+    check_exact(
         &schema,
         &[r#"{"b":"x","a":1,"2":2}"#, r#"{"2":2,"a":1,"b":"x"}"#],
         &[
@@ -370,7 +370,7 @@ fn a_repeated_key_is_its_last_value() {
         let number = b.number();
         b.object([("a", number)])
     });
-    check(&schema, &[r#"{"a":"x","a":1}"#], &[r#"{"a":1,"a":"x"}"#]);
+    check_exact(&schema, &[r#"{"a":"x","a":1}"#], &[r#"{"a":1,"a":"x"}"#]);
 }
 
 #[test]
@@ -385,7 +385,7 @@ fn loose_and_strip_ignore_unknown_keys() {
                 b.strip_object(entries)
             }
         });
-        check(
+        check_exact(
             &schema,
             &[
                 r#"{"a":1}"#,
@@ -407,7 +407,7 @@ fn record_checks_every_value() {
         let number = b.number();
         b.record(number)
     });
-    check(
+    check_exact(
         &schema,
         &["{}", r#"{"a":1,"__proto__":2,"":3}"#, r#"{"a":"x","a":1}"#],
         &[
@@ -432,7 +432,7 @@ fn array_checks_every_item() {
         let inner = b.array(number);
         b.array(inner)
     });
-    check(
+    check_exact(
         &schema,
         &["[]", "[[]]", "[[1],[2,3],[]]"],
         &["{}", "null", "[1]", "[[1],[null]]", r#"[["1"]]"#, "[[[]]]"],
@@ -457,7 +457,7 @@ fn union_matches_any_option_and_reports_once() {
         let c = b.object([("a", number), ("c", flag)]);
         b.union([string, a, c])
     });
-    check(
+    check_exact(
         &schema,
         &[r#""x""#, r#"{"a":"x"}"#, r#"{"a":1,"c":true}"#],
         &[
@@ -487,7 +487,7 @@ fn variant_dispatches_on_the_discriminator() {
         let z = b.object([("kind", null)]);
         b.variant("kind", [a, s, n, z])
     });
-    check(
+    check_exact(
         &schema,
         &[
             r#"{"kind":"circle","r":1}"#,
@@ -535,7 +535,7 @@ fn string_pipes_measure_utf16() {
         let max = b.max_length(4.0);
         b.pipe([string, min, max])
     });
-    check(
+    check_exact(
         &schema,
         &[
             r#""ab""#,
@@ -570,7 +570,7 @@ fn string_pipes_measure_utf16() {
         let max = b.max_length(2.5);
         b.pipe([string, min, max])
     });
-    check(&fractional, &[r#""ab""#], &[r#""a""#, r#""abc""#]);
+    check_exact(&fractional, &[r#""ab""#], &[r#""a""#, r#""abc""#]);
 }
 
 #[test]
@@ -616,7 +616,7 @@ fn number_pipes_test_the_value() {
         let integer = b.integer();
         b.pipe([number, integer])
     });
-    check(
+    check_exact(
         &integer,
         &[
             "1",
@@ -636,7 +636,7 @@ fn number_pipes_test_the_value() {
         let safe = b.safe_integer();
         b.pipe([number, safe])
     });
-    check(
+    check_exact(
         &safe,
         &[
             "9007199254740991",
@@ -658,7 +658,7 @@ fn number_pipes_test_the_value() {
         let max = b.max_value(0.3);
         b.pipe([number, min, max])
     });
-    check(
+    check_exact(
         &bounded,
         &[
             "0.1",
@@ -680,7 +680,7 @@ fn number_pipes_test_the_value() {
         let min = b.min_value(0.0);
         b.pipe([number, min])
     });
-    check(&zero, &["0", "-0", "5e-324"], &["-5e-324", "-1"]);
+    check_exact(&zero, &["0", "-0", "5e-324"], &["-5e-324", "-1"]);
 }
 
 #[test]
@@ -710,7 +710,7 @@ fn number_rejects_what_is_not_finite() {
         );
     }
     // an integer of any size is a number
-    check(
+    check_exact(
         &schema,
         &[
             "9007199254740993",
@@ -744,7 +744,7 @@ fn number_tests_stand_alone() {
         let positive = b.pipe([integer, min]);
         b.array(positive)
     });
-    check(
+    check_exact(
         &items,
         &["[]", "[1,2]"],
         &["[0]", "[1.5]", r#"["1"]"#, "[null]"],
@@ -761,7 +761,7 @@ fn array_pipes_count_items() {
         let max = b.max_length(2.0);
         b.pipe([inner, max])
     });
-    check(
+    check_exact(
         &schema,
         &["[1]", "[1,2]"],
         &["[]", "[1,2,3]", r#"["a"]"#, r#""ab""#, "{}", "1"],
@@ -791,7 +791,7 @@ fn pipes_of_pipes_run_the_innermost_actions_first() {
         let shorter = b.max_length(2.0);
         b.pipe([single, shorter])
     });
-    check(
+    check_exact(
         &schema,
         &[],
         &[r#""a""#, r#""ab""#, r#""abc""#, r#""abcd""#, "1"],
@@ -820,7 +820,7 @@ fn pipes_of_pipes_run_the_innermost_actions_first() {
         let max = b.max_value(2.0);
         b.pipe([inner, max])
     });
-    check(&numbers, &["1", "2"], &["0", "3", "1.5", "[]"]);
+    check_exact(&numbers, &["1", "2"], &["0", "3", "1.5", "[]"]);
 }
 
 #[test]
@@ -838,7 +838,7 @@ fn recursive_schemas() {
         json
     });
     check_types(&json, &EVERY_TYPE);
-    check(&json, &[r#"{"a":[1,{"b":[null,"x",[[]]]}]}"#], &[]);
+    check_exact(&json, &[r#"{"a":[1,{"b":[null,"x",[[]]]}]}"#], &[]);
     let tree = build(|b| {
         let tree = b.declare();
         let number = b.number();
@@ -847,7 +847,7 @@ fn recursive_schemas() {
         b.define(tree, node);
         tree
     });
-    check(
+    check_exact(
         &tree,
         &[
             r#"{"value":1,"children":[]}"#,
@@ -1201,6 +1201,49 @@ fn a_variant_expects_an_object_then_the_values_of_its_options() {
 }
 
 #[test]
+fn the_issues_under_a_key_share_one_copy_of_it() {
+    // a key over a hundred failing items, and under a second key: a copy an
+    // issue would hold a long key of the text a hundred times
+    let schema = build(|b| {
+        let number = b.number();
+        let items = b.array(number);
+        let inner = b.record(items);
+        b.record(inner)
+    });
+    let long = "k".repeat(1 << 10);
+    let items = vec!["null"; MAX_ISSUES + 20].join(",");
+    let text = format!(r#"{{"outer":{{"{long}":[{items}]}}}}"#);
+    let issues = issues(&schema, &text);
+    assert_eq!(issues.len(), MAX_ISSUES);
+    let key_at = |issue: &SchemaIssue, at: usize| match &issue.path()[at] {
+        PathSegment::Key(key) => Arc::clone(key),
+        PathSegment::Index(_) => panic!("an index at {at}"),
+    };
+    let (outer, inner) = (key_at(&issues[0], 0), key_at(&issues[0], 1));
+    assert_eq!((&*outer, &*inner), ("outer", long.as_str()));
+    for issue in &issues {
+        assert!(Arc::ptr_eq(&key_at(issue, 0), &outer));
+        assert!(Arc::ptr_eq(&key_at(issue, 1), &inner));
+    }
+    // and nothing else holds one: the issues' own, and the two taken here
+    assert_eq!(Arc::strong_count(&inner), MAX_ISSUES + 1);
+    // a key past the cap, whose failure built no issue, is in no path
+    let after = format!(r#"{{"a":[{items}],"{long}":[null]}}"#);
+    let schema = build(|b| {
+        let number = b.number();
+        let items = b.array(number);
+        b.record(items)
+    });
+    let issues = self::issues(&schema, &after);
+    assert_eq!(issues.len(), MAX_ISSUES);
+    assert!(
+        issues
+            .iter()
+            .all(|issue| issue.path()[0] == PathSegment::Key("a".into()))
+    );
+}
+
+#[test]
 fn paths_tell_a_key_from_an_index() {
     let schema = build(|b| {
         let number = b.number();
@@ -1210,7 +1253,7 @@ fn paths_tell_a_key_from_an_index() {
     });
     let issues = issues(&schema, r#"[{"0":[1,null],"a":[[]],"b":1},2]"#);
     let paths: Vec<&[PathSegment]> = issues.iter().map(SchemaIssue::path).collect();
-    let key = |key: &str| PathSegment::Key(key.to_owned());
+    let key = |key: &str| PathSegment::Key(key.into());
     assert_eq!(
         paths,
         [
@@ -1724,7 +1767,7 @@ fn the_steps_after_to_lower_case_are_given_the_lowercase() {
         let max = b.max_length(1.0);
         b.pipe([string, lower, max])
     });
-    check(&longer, &[r#""A""#, r#""a""#], &[r#""\u0130""#]);
+    check_exact(&longer, &[r#""A""#, r#""a""#], &[r#""\u0130""#]);
     assert_eq!(
         failures(&longer, r#""\u0130""#),
         [": max_length received String"]
@@ -1736,7 +1779,7 @@ fn the_steps_after_to_lower_case_are_given_the_lowercase() {
         let lower = b.to_lower_case();
         b.pipe([string, max, lower])
     });
-    check(&before, &[r#""\u0130""#], &[r#""ab""#]);
+    check_exact(&before, &[r#""\u0130""#], &[r#""ab""#]);
     // an `iso_datetime` after it is given a lowercase `t` and `z`, and
     // matches nothing, and one before it matches as it would alone
     let datetime = |after: bool| {
@@ -1751,12 +1794,12 @@ fn the_steps_after_to_lower_case_are_given_the_lowercase() {
             })
         })
     };
-    check(
+    check_exact(
         &datetime(false),
         &[r#""2024-01-01T00:00:00Z""#],
         &[r#""x""#],
     );
-    check(&datetime(true), &[], &[r#""2024-01-01T00:00:00Z""#]);
+    check_exact(&datetime(true), &[], &[r#""2024-01-01T00:00:00Z""#]);
     assert_eq!(
         failures(&datetime(true), r#""2024-01-01T00:00:00Z""#),
         [": iso_datetime received String"]
@@ -1770,7 +1813,7 @@ fn the_steps_after_to_lower_case_are_given_the_lowercase() {
         let again = b.to_lower_case();
         b.pipe([inner, max, again])
     });
-    check(&nested, &[r#""A""#], &[r#""\u0130""#, "1"]);
+    check_exact(&nested, &[r#""A""#], &[r#""\u0130""#, "1"]);
     // a uuid either side of it, in either case
     for uuid_first in [true, false] {
         let schema = build(move |b| {
@@ -1783,7 +1826,7 @@ fn the_steps_after_to_lower_case_are_given_the_lowercase() {
                 [string, lower, uuid]
             })
         });
-        check(
+        check_exact(
             &schema,
             &[
                 r#""123E4567-E89B-42D3-A456-426614174000""#,

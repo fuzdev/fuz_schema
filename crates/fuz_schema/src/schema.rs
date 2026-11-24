@@ -596,7 +596,7 @@ const fn literal_rank(value: Value<'_>) -> Option<u8> {
 
 /// The order of a variant's index: by type, then by value, with `0` and `-0`
 /// one value as `===` has them. A literal is finite, so no `NaN` is ordered.
-fn compare_literal(literal: &SchemaLiteral, value: Value<'_>) -> std::cmp::Ordering {
+pub fn compare_literal(literal: &SchemaLiteral, value: Value<'_>) -> std::cmp::Ordering {
     use std::cmp::Ordering;
     let ours = literal.as_value();
     match (ours, value) {

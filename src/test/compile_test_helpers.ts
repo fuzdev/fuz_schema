@@ -518,3 +518,10 @@ export const COMPILE_HAND_SCHEMAS: Record<string, s.AnySchema> = {
 	array_length: s.pipe(s.array(s.unknown), s.min_length(1), s.max_length(2)),
 	nullable_action: s.pipe(s.nullable(s.string), s.union([s.regex(/n/)]))
 };
+
+/**
+ * The refusal of a `union` or a `pipe` the compiler can't bound, by the start
+ * of its message, which names the kind and where it is.
+ */
+export const COMPILE_UNBOUNDED_REFUSAL =
+	/^cannot compile `(union|pipe)` at \/.*: two or more of its /;

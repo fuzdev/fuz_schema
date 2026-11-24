@@ -691,6 +691,17 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 			}),
 		input: () => inheriting({ z: 'x' }, { b: 'x' })
 	},
+	// a bare transform in place of the check, whose missing key zod lets
+	// through and valibot refuses
+	{
+		name: 'loose, a bare transform entry, key missing, an unknown inherited key, an entry that changes',
+		schema: (l) =>
+			l.loose({
+				a: l.map(l.string, () => null),
+				z: l.transform((x: unknown) => x)
+			}),
+		input: () => inheriting({ b: 'x' }, { a: 'x' })
+	},
 	{
 		name: 'a bare check entry, key missing, a record with an own key named constructor',
 		schema: (l) => l.strip({ a: l.check(() => true), r: l.record(l.number) }),
@@ -1540,6 +1551,18 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'keyed_record of a literal key, another key',
 		schema: (l) => l.keyed_record(l.literal('x'), l.number),
 		input: () => ({ y: 1 })
+	},
+	// and where the value under such a key is wrong too, which valibot reports
+	// beside the key, and which here is not read
+	{
+		name: 'keyed_record of one_of keys, a key outside, its value wrong',
+		schema: (l) => l.keyed_record(l.one_of(['a', 'b']), l.strict({ x: l.string })),
+		input: () => ({ a: { x: 'y' }, c: { x: 1 } })
+	},
+	{
+		name: 'keyed_record of a literal key, another key, its value wrong',
+		schema: (l) => l.keyed_record(l.literal('x'), l.array(l.string)),
+		input: () => ({ y: [1] })
 	},
 	{
 		name: 'keyed_record of one_of keys, a value of a default undefined',
@@ -2677,6 +2700,12 @@ export const CONFORMANCE_CASES: ReadonlyArray<ConformanceCase> = [
 		name: 'a max_length after an array too long, an Infinity item',
 		schema: (l) => l.max_length(l.array(l.number), 1),
 		input: () => [Infinity, 1]
+	},
+	// and with an item both refuse beside it, which valibot alone reports
+	{
+		name: 'a max_length after an array too long, an Infinity item and an item wrong',
+		schema: (l) => l.max_length(l.array(l.number), 1),
+		input: () => [Infinity, 'x']
 	},
 	// and with another item zod refuses and valibot takes
 	{

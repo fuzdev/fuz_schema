@@ -20,6 +20,7 @@
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use crate::error::JsonError;
 use crate::format;
@@ -251,11 +252,18 @@ impl Report for Collect<'_> {
     }
 
     fn prefix(&mut self, from: usize, segment: Segment<'_>) {
-        for issue in self.issues.iter_mut().skip(from) {
-            issue.path.push(match segment {
-                Segment::Key(key) => PathSegment::Key(key.to_owned()),
-                Segment::Index(index) => PathSegment::Index(index),
-            });
+        // past the cap the count reaches no issue, and a key need not be copied
+        if from >= self.issues.len() {
+            return;
+        }
+        // one copy of a key for every issue under it: a copy an issue would
+        // hold the text's keys once for each of the hundred
+        let segment = match segment {
+            Segment::Key(key) => PathSegment::Key(Arc::from(key)),
+            Segment::Index(index) => PathSegment::Index(index),
+        };
+        for issue in &mut self.issues[from..] {
+            issue.path.push(segment.clone());
         }
     }
 

@@ -979,9 +979,13 @@ export const to_json_schema = (schema: AnySchema, options?: JsonSchemaOptions): 
 			case 'array':
 				return { type: 'array', items: into(s.def, `${path}/items`) };
 			case 'union':
-				return compact({ anyOf: s.def.map((o, i) => emit(o, `${path}/anyOf/${i}`)) });
+				// of no options it takes nothing, and an empty `anyOf` is no schema
+				return s.def.length
+					? compact({ anyOf: s.def.map((o, i) => emit(o, `${path}/anyOf/${i}`)) })
+					: { not: {} };
 			case 'variant': {
 				const { key, options } = s.def;
+				if (!options.length) return { not: {} };
 				// an option of a discriminator a later one shares is never picked
 				const picked = options.filter(
 					(o, i) => !options.some((later, j) => j > i && same_discriminator(o, later, key))

@@ -527,7 +527,8 @@ describe('recursive unions', () => {
 	});
 
 	test('a verdict kept in one call is not read by the next', () => {
-		for (const union of [s.memo_union] as Array<Union>) {
+		// of the `memo_union` alone: a plain `union` of these options is refused
+		for (const union of [s.memo_union as Union]) {
 			const guard: (value: unknown) => boolean = compile_guard(differ_deep(union));
 			const input: any = chain(6, deep);
 			assert(guard(input));
@@ -539,7 +540,8 @@ describe('recursive unions', () => {
 	});
 
 	test('two unions that keep verdicts, asked of one object, each give their own', () => {
-		for (const union of [s.memo_union] as Array<Union>) {
+		// of the `memo_union` alone: a plain `union` of these options is refused
+		for (const union of [s.memo_union as Union]) {
 			const One = differ_deep(union);
 			const Other: s.AnySchema = s.lazy(() =>
 				union([
@@ -631,6 +633,7 @@ describe('the state of a call', () => {
 			on_run?.();
 			return true;
 		});
+		// of the `memo_union` alone: a plain `union` of these options is refused
 		for (const union of [s.memo_union]) {
 			const N: s.AnySchema = s.lazy(() =>
 				(

@@ -478,7 +478,15 @@ const to_source = (root: AnySchema, output: boolean, write?: WriteCaptured): Com
 	// has them: the library's `run.length > 2 || kind === 'lazy'`, read of a
 	// library kind from its `kind` and `def`, by which the library chose its
 	// closure, and of a schema run in place from its `run`
+	// Kept by schema: one held in several places is asked once, where asking at
+	// each place walks every path to it, two to the depth of the nesting
+	const handed: Map<AnySchema, boolean> = new Map();
 	const is_handed = (schema: AnySchema): boolean => {
+		let known = handed.get(schema);
+		if (known === undefined) handed.set(schema, (known = handed_of(schema)));
+		return known;
+	};
+	const handed_of = (schema: AnySchema): boolean => {
 		const def: any = schema.def;
 		switch (kind_of(schema)) {
 			case '':
@@ -771,12 +779,27 @@ const to_source = (root: AnySchema, output: boolean, write?: WriteCaptured): Com
 	};
 
 	// A boolean expression that is true where `v` passes `schema`, or
-	// `undefined` where the schema needs statements: a loop, or a value made
+	// `undefined` where the schema needs statements: a loop, or a value made.
+	// Kept by the schema and what it is written about: a `union` and a wrapper
+	// ask for it and then emit what they hold, which asks again at each level
+	// below, and each asking of a long `one_of` captures a `Set` of its own.
+	// A schema that is called is not kept: its call is written from inside its
+	// own function too, where the expression is its body's
+	const conds: Map<AnySchema, Map<string, string | undefined>> = new Map();
 	const cond = (schema: AnySchema, v: string, key: Key | null): string | undefined => {
-		const kind = kind_of(schema);
-		const def: any = schema.def;
 		if (is_called(schema)) return call_of(schema, v, key, false);
 		emitting = schema;
+		let of_schema = conds.get(schema);
+		if (!of_schema) conds.set(schema, (of_schema = new Map()));
+		const at = key ? `${v} ${key.object} ${key.key} ${key.entry}` : v;
+		if (of_schema.has(at)) return of_schema.get(at);
+		const made = cond_of(schema, v, key);
+		of_schema.set(at, made);
+		return made;
+	};
+	const cond_of = (schema: AnySchema, v: string, key: Key | null): string | undefined => {
+		const kind = kind_of(schema);
+		const def: any = schema.def;
 		// present, where a missing key is what `undefined` could be
 		const present = key ? `${key.key} in ${key.object}` : 'true';
 		switch (kind) {
@@ -963,10 +986,14 @@ const to_source = (root: AnySchema, output: boolean, write?: WriteCaptured): Com
 				let code = `if (${not_object(v)}) ${bail}\nconst ${d} = ${read(v, def.key)};\nswitch (${d}) {\n`;
 				let of_nan = `${bail}\n`;
 				for (const [value, option] of options_of(def)) {
+					// written before the option's body, which leaves `emitting` on the
+					// last schema it emitted: a value with no text is the variant's
+					emitting = schema;
+					const of_value = literal(value);
 					const body = emit_object(option, v, bail, true);
 					// eslint-disable-next-line no-self-compare
 					if (value !== value) of_nan = `if (${d} === ${d}) ${bail}\n${body}`;
-					else code += `case ${literal(value)}: {\n${body}break;\n}\n`;
+					else code += `case ${of_value}: {\n${body}break;\n}\n`;
 				}
 				return `${code}default: {\n${of_nan}}\n}\n`;
 			}
@@ -1107,10 +1134,13 @@ const to_source = (root: AnySchema, output: boolean, write?: WriteCaptured): Com
 				let code = `if (${not_object(v)}) ${bail}\nlet ${o};\nconst ${d} = ${read(v, def.key)};\nswitch (${d}) {\n`;
 				let of_nan = `${bail}\n`;
 				for (const [value, option] of options_of(def)) {
+					// as the guard's: before the body, for the variant's own path
+					emitting = schema;
+					const of_value = literal(value);
 					const [body, out] = emit_object_out(option, v, bail, true);
 					// eslint-disable-next-line no-self-compare
 					if (value !== value) of_nan = `if (${d} === ${d}) ${bail}\n${body}${o} = ${out};\n`;
-					else code += `case ${literal(value)}: {\n${body}${o} = ${out};\nbreak;\n}\n`;
+					else code += `case ${of_value}: {\n${body}${o} = ${out};\nbreak;\n}\n`;
 				}
 				return [`${code}default: {\n${of_nan}}\n}\n`, o];
 			}

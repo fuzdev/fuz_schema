@@ -7,6 +7,7 @@ use crate::bits::Bits;
 use crate::error::{SchemaBuildError, SchemaBuildErrorKind};
 use crate::js;
 use crate::json::{self, Json, Value};
+use crate::schema::compare_literal;
 use crate::schema::{
     Candidates, MAX_NESTING, NodeId, Schema, SchemaEntries, SchemaKind, SchemaLiteral, SchemaNode,
     UnionTexts, VariantDef, WithDefaultDef,
@@ -380,8 +381,14 @@ impl SchemaBuilder {
 
 /// The discriminator values of a variant's options and the option each
 /// selects.
+///
+/// A value given more than once has one row, where it was first given, with
+/// the last option given for it, as the `Map` of the library's `variant`
+/// keeps a key it is set twice. Found by sorting, so a table of many options
+/// is not compared row against row.
 fn variant_table(nodes: &[SchemaNode], variant: &VariantDef) -> Box<[(SchemaLiteral, NodeId)]> {
-    let mut table: Vec<(SchemaLiteral, NodeId)> = Vec::new();
+    // a row an option, and `None` for one a row before it stands for
+    let mut rows: Vec<(&SchemaLiteral, Option<NodeId>)> = Vec::new();
     for &option in &variant.options {
         let literal = nodes
             .get(option.index())
@@ -392,21 +399,55 @@ fn variant_table(nodes: &[SchemaNode], variant: &VariantDef) -> Box<[(SchemaLite
         let Some(SchemaNode::Literal(literal)) = literal else {
             continue;
         };
-        if let Some(known) = table
-            .iter_mut()
-            .find(|(known, _)| literals_equal(known, literal))
-        {
-            known.1 = option;
+        rows.push((literal, Some(option)));
+    }
+    // the rows by value, and of one value by where they were given
+    let order = json::sort_positions(rows.len(), &mut |a, b| {
+        compare_literals(rows[a].0, rows[b].0).then(a.cmp(&b))
+    });
+    let mut first = 0;
+    for at in 1..order.len() {
+        if literals_equal(rows[order[at]].0, rows[order[first]].0) {
+            rows[order[first]].1 = rows[order[at]].1.take();
         } else {
+            first = at;
+        }
+    }
+    let mut table = Vec::new();
+    for (literal, option) in rows {
+        if let Some(option) = option {
             table.push((literal.clone(), option));
         }
     }
     table.into_boxed_slice()
 }
 
+/// The order of two literals that `compare_literal` gives a literal and a
+/// value: equal where `literals_equal` says they are one.
+fn compare_literals(a: &SchemaLiteral, b: &SchemaLiteral) -> std::cmp::Ordering {
+    count_comparison();
+    compare_literal(a, b.as_value())
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How many literals and keys the two passes below have compared, which a
+    /// test reads to hold them to the size of what they are given.
+    pub(super) static COMPARISONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+fn count_comparison() {
+    COMPARISONS.set(COMPARISONS.get() + 1);
+}
+
+#[cfg(not(test))]
+const fn count_comparison() {}
+
 /// Whether two literals are one value, as `===` and the keys of a `Map` have
 /// it: `0` and `-0` are one.
 fn literals_equal(a: &SchemaLiteral, b: &SchemaLiteral) -> bool {
+    count_comparison();
     match (a, b) {
         (SchemaLiteral::Number(a), SchemaLiteral::Number(b)) => js::number_equals(*a, *b),
         _ => a == b,
@@ -536,13 +577,12 @@ fn union_memoized(
 /// of the options asked of one object, at most one gets past the key and
 /// reads on without end.
 fn told_apart(nodes: &[SchemaNode], reaches: &[bool], options: &[NodeId]) -> bool {
-    // for each option, its literal entries that run before it reaches a cycle
-    let mut discriminators: Vec<Vec<(&str, &SchemaLiteral)>> = Vec::new();
+    // every option's literal entries that run before it reaches a cycle
+    let mut found: Vec<(&str, &SchemaLiteral)> = Vec::new();
     for &option in options {
         let Some(entries) = object_entries(nodes, option) else {
             return false;
         };
-        let mut found = Vec::new();
         for (key, entry) in entries.iter() {
             if reaches[entry.index()] {
                 break;
@@ -551,24 +591,34 @@ fn told_apart(nodes: &[SchemaNode], reaches: &[bool], options: &[NodeId]) -> boo
                 found.push((key, literal));
             }
         }
-        discriminators.push(found);
     }
-    let Some((first, rest)) = discriminators.split_first() else {
-        return false;
-    };
-    first.iter().any(|&(key, literal)| {
-        let mut values = vec![literal];
-        for found in rest {
-            let Some(&(_, literal)) = found.iter().find(|(known, _)| *known == key) else {
-                return false;
-            };
-            if values.iter().any(|known| literals_equal(known, literal)) {
-                return false;
-            }
-            values.push(literal);
+    // by key and then by value, so the keys every option has, and whether
+    // their values differ, are read off one walk: a search of each option for
+    // each key of the first is the square of their entries
+    let order = json::sort_positions(found.len(), &mut |a, b| {
+        count_comparison();
+        found[a]
+            .0
+            .cmp(found[b].0)
+            .then_with(|| compare_literal(found[a].1, found[b].1.as_value()))
+    });
+    // an object has a key once, so a key every option has is a run as long as
+    // the options are many, and it tells them apart where no two values of the
+    // run, which are in order, are one
+    let mut start = 0;
+    for at in 1..=order.len() {
+        if at < order.len() && found[order[at]].0 == found[order[start]].0 {
+            continue;
         }
-        true
-    })
+        if at - start == options.len()
+            && (start + 1..at)
+                .all(|next| !literals_equal(found[order[next - 1]].1, found[order[next]].1))
+        {
+            return true;
+        }
+        start = at;
+    }
+    false
 }
 
 /// The entries of the object schema `id` is, looked through the wrappers and

@@ -5,6 +5,10 @@ import { describe, test, assert } from 'vitest';
 import * as s from '#lib/schema.ts';
 import { issues_of } from './schema_test_helpers.ts';
 
+// for a test that walks every UTF-16 code unit, or every char at every
+// position: seconds on a loaded machine, past the default
+const WHOLE_RANGE = { timeout: 30_000 };
+
 describe('uuid', () => {
 	// the grammar of `docs/formats.md`, which `uuid` reads by char codes
 	const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
@@ -30,7 +34,7 @@ describe('uuid', () => {
 		assert.strictEqual(s.is(s.uuid, value), GRAMMAR.test(value), JSON.stringify(value));
 	};
 
-	test('matches as its grammar with any char at any position', () => {
+	test('matches as its grammar with any char at any position', WHOLE_RANGE, () => {
 		for (const base of BASES) {
 			assert(s.is(s.uuid, base), base);
 			for (let i = 0; i <= base.length; i++) {
@@ -43,7 +47,7 @@ describe('uuid', () => {
 		}
 	});
 
-	test('matches as its grammar with every UTF-16 code unit at any position', () => {
+	test('matches as its grammar with every UTF-16 code unit at any position', WHOLE_RANGE, () => {
 		const base = BASES[0]!;
 		const wrong: Array<string> = [];
 		for (let i = 0; i < 36; i++) {
@@ -240,7 +244,7 @@ describe('to_integer', () => {
 		String.fromCodePoint(0x1d7ce)
 	];
 
-	test('reads as its grammar with any char at any position', () => {
+	test('reads as its grammar with any char at any position', WHOLE_RANGE, () => {
 		for (const base of BASES) {
 			for (let i = 0; i <= base.length; i++) {
 				for (const c of CHARS) {
@@ -252,7 +256,7 @@ describe('to_integer', () => {
 		}
 	});
 
-	test('with trim, takes every white space of Unicode around it, and no other', () => {
+	test('with trim, takes every white space of Unicode around it, and no other', WHOLE_RANGE, () => {
 		const White_Space = /^\p{White_Space}$/u;
 		for (let c = 0; c <= 0xffff; c++) {
 			const space = String.fromCharCode(c);

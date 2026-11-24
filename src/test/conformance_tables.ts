@@ -225,7 +225,7 @@ const differences = [
 		reason:
 			'a key read through the prototype stays inherited in an input that comes back, where a copy has it as an own key',
 		status: 'declared',
-		docs: 'A key read through the prototype stays inherited in an input that comes back',
+		docs: 'a key read through the prototype, which stays inherited',
 		rows: {
 			'required inherited / *': { both: 'ok {a: "x"}', ours: 'ok {} proto=other' },
 			'optional inherited undefined / *': {
@@ -299,7 +299,7 @@ const differences = [
 		reason:
 			'a `loose_object` input that comes back keeps an own `__proto__` key, which a copy leaves out',
 		status: 'declared',
-		docs: 'The input returned as it is keeps them all',
+		docs: 'an own `__proto__` key, of a `loose_object` input',
 		rows: {
 			'unknown own __proto__ key / loose': {
 				both: 'ok {a: "x"}',
@@ -432,7 +432,7 @@ const differences = [
 	{
 		reason: 'an entry named `__proto__` is not guarded, so an input that comes back keeps the key',
 		status: 'declared',
-		docs: 'an input that comes back keeps its own `__proto__` key',
+		docs: 'of a `loose_object` input and of an entry named so',
 		rows: {
 			'entry named __proto__, own / *': { both: 'ok {a: "x"}', ours: 'ok {a: "x", __proto__: "p"}' }
 		}
@@ -503,7 +503,7 @@ const differences = [
 		reason:
 			'an enumerable key the input inherits is still read through a `record` or `keyed_record` input that comes back, unvalidated, where a copy has only the own keys',
 		status: 'declared',
-		docs: 'An enumerable key the input inherits is still read through an input that comes back',
+		docs: 'an enumerable key a `record` or `keyed_record` input inherits, which is still read through it',
 		rows: {
 			'record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' },
 			'keyed_record, inherited key': { both: 'ok {a: 1}', ours: 'ok {a: 1} proto=other' }
@@ -513,7 +513,7 @@ const differences = [
 		reason:
 			'a hole of an array stays a hole in an array that comes back, where both write `undefined`',
 		status: 'declared',
-		docs: 'a hole stays a hole',
+		docs: "an array's holes",
 		rows: {
 			'array of optionals, a hole': {
 				both: 'ok ["x", undefined, "y"]',
@@ -525,7 +525,7 @@ const differences = [
 		reason:
 			'a copy of an array is a `slice`, so a hole before the first item that changed stays a hole in it, where both write `undefined`',
 		status: 'declared',
-		docs: 'a hole before the first item that changed stays a hole in it',
+		docs: "an array copy's hole before the first item that changed",
 		rows: {
 			'array of optionals, a hole before an item that changes': {
 				both: 'ok [undefined, "x!"]',
@@ -536,7 +536,7 @@ const differences = [
 	{
 		reason: 'an array that comes back keeps its own keys that are not items, where a copy has none',
 		status: 'declared',
-		docs: 'its own keys that are not items stay',
+		docs: 'its own keys that are not items',
 		rows: {
 			'array with another key': { both: 'ok ["x"]', ours: 'ok ["x"] with {z: 1}' }
 		}
@@ -545,7 +545,7 @@ const differences = [
 		reason:
 			"a copy of an array is a `slice`, so an instance of the input's `Array` subclass, where both give a plain array",
 		status: 'declared',
-		docs: "it is an instance of the input's `Array` subclass",
+		docs: 'before the first item that changed, and its subclass',
 		rows: {
 			'array of a subclass, an item changes': { both: 'ok ["x!"]', ours: 'ok ["x!"] proto=other' }
 		}
@@ -723,6 +723,14 @@ const sides = {
 		zod: 'ok {a: "x", z: 1}',
 		valibot: 'ok {a: "x"}',
 		ours: 'ok {a: "x"} proto=other'
+	},
+	// in a copy beside an entry whose missing key zod lets through and valibot
+	// refuses: zod's entry and valibot's copy
+	'loose, a bare transform entry, key missing, an unknown inherited key, an entry that changes': {
+		side: 'neither',
+		zod: 'ok {a: null, b: "x"}',
+		valibot: 'fail at z',
+		ours: 'ok {a: null}'
 	},
 	'default + unknown inherited key / loose': {
 		side: 'valibot',
@@ -975,6 +983,14 @@ const sides = {
 		side: 'valibot',
 		zod: 'fail at <root>',
 		valibot: 'fail at [0]'
+	},
+	// with an infinity beside the item, which is an item wrong here as it is
+	// zod's, and one valibot takes: the items valibot reports and that one
+	'a max_length after an array too long, an Infinity item and an item wrong': {
+		side: 'neither',
+		zod: 'fail at <root>',
+		valibot: 'fail at [1]',
+		ours: 'fail at [0], [1]'
 	},
 	'a min_length after an array too short, an item wrong': {
 		side: 'valibot',
@@ -1389,6 +1405,20 @@ const sides = {
 		side: 'valibot',
 		zod: 'fail +unknown keys in <root>',
 		valibot: 'fail at y'
+	},
+	// where the value under such a key is wrong too, valibot reports it beside
+	// the key: here the value of a key that failed is not read, nor run
+	'keyed_record of one_of keys, a key outside, its value wrong': {
+		side: 'neither',
+		zod: 'fail +unknown keys in <root>',
+		valibot: 'fail at c, c.x',
+		ours: 'fail at c'
+	},
+	'keyed_record of a literal key, another key, its value wrong': {
+		side: 'neither',
+		zod: 'fail +unknown keys in <root>',
+		valibot: 'fail at y, y.[0]',
+		ours: 'fail at y'
 	},
 	// and one named `constructor`, which valibot leaves out unread, and which
 	// here is a key refused, as any other outside the set

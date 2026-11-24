@@ -174,6 +174,10 @@ describe('primitives', () => {
 			}
 		]);
 		assert(s.is(s.object({ a: s.void }), { a: undefined }));
+		// and takes a key the input inherits, as the literal does
+		for (const schema of [s.void, s.literal(undefined)]) {
+			assert(s.is(s.strip_object({ a: schema }), Object.create({ a: undefined })));
+		}
 		expectTypeOf<s.Infer<typeof s.void>>().toEqualTypeOf<void>();
 		expectTypeOf<s.InferInput<typeof s.void>>().toEqualTypeOf<void>();
 		// a parameter typed from it can be left out, where one typed `undefined` can't
@@ -1141,6 +1145,7 @@ describe('types', () => {
 	});
 
 	test('a flavor and a brand mark every other type as an intersection', () => {
+		const _BrandedUnknown = s.brand(s.unknown, 'N');
 		expectTypeOf<s.Flavored<string, 'N'>>().toEqualTypeOf<string & s.Flavor<'N'>>();
 		expectTypeOf<s.Branded<string, 'N'>>().toEqualTypeOf<string & s.Brand<'N'>>();
 		expectTypeOf<s.Flavored<string | number, 'N'>>().toEqualTypeOf<
@@ -1150,8 +1155,17 @@ describe('types', () => {
 		expectTypeOf<s.Flavored<boolean, 'N'>>().toEqualTypeOf<boolean & s.Flavor<'N'>>();
 		expectTypeOf<s.Flavored<{ a: 1 }, 'N'>>().toEqualTypeOf<{ a: 1 } & s.Flavor<'N'>>();
 		expectTypeOf<s.Branded<Array<string>, 'N'>>().toEqualTypeOf<Array<string> & s.Brand<'N'>>();
-		expectTypeOf<s.Flavored<unknown, 'N'>>().toEqualTypeOf<s.Flavor<'N'>>();
-		expectTypeOf<s.Branded<unknown, 'N'>>().toEqualTypeOf<s.Brand<'N'>>();
+		// `unknown` holds `null` and `undefined`, which pass through a brand
+		// unmarked, and takes no flavor: only `unknown` has every value assign to it
+		expectTypeOf<s.Flavored<unknown, 'N'>>().toEqualTypeOf<unknown>();
+		expectTypeOf<s.Branded<unknown, 'N'>>().toEqualTypeOf<s.Brand<'N'> | null | undefined>();
+		expectTypeOf<s.Infer<typeof _BrandedUnknown>>().toEqualTypeOf<
+			s.Brand<'N'> | null | undefined
+		>();
+		assert.strictEqual(s.parse_or_throw(_BrandedUnknown, null), null);
+		assert.strictEqual(s.parse_or_throw(s.flavor(s.unknown, 'N'), null), null);
+		const plain: s.Flavored<unknown, 'N'> = 1;
+		assert.strictEqual(plain, 1);
 		expectTypeOf<s.Flavored<any, 'N'>>().toBeAny();
 		expectTypeOf<s.Branded<any, 'N'>>().toBeAny();
 		expectTypeOf<s.Flavored<never, 'N'>>().toBeNever();
@@ -1174,11 +1188,13 @@ describe('types', () => {
 		expectTypeOf(brand_base('a' as s.Branded<string, 'N'> | null)).toEqualTypeOf<string | null>();
 	});
 
-	test('a flavor and a brand of a type parameter are not known to lack null and undefined', () => {
-		// `Extract` of a type parameter waits for the parameter, so what the
-		// intersection alone allowed here is given up
-		const widen = <T extends string>(value: s.Branded<T, 'N'>): s.Branded<string, 'N'> =>
-			// @ts-expect-error not the brand of its constraint
+	test('a flavor and a brand of a type parameter are read by its constraint', () => {
+		// one that rules out `null` and `undefined` is the brand of its constraint
+		const widen = <T extends string>(value: s.Branded<T, 'N'>): s.Branded<string, 'N'> => value;
+		const widen_nullable = <T extends string | null>(
+			value: s.Branded<T, 'N'>
+		): s.Branded<string, 'N'> =>
+			// @ts-expect-error possibly null
 			value;
 		const marker = <T>(value: s.Branded<T, 'N'>): s.Brand<'N'> =>
 			// @ts-expect-error possibly null or undefined
@@ -1189,6 +1205,7 @@ describe('types', () => {
 			// @ts-expect-error a different brand does not assign
 			value;
 		expectTypeOf(widen<'a'>).returns.toEqualTypeOf<s.Branded<string, 'N'>>();
+		expectTypeOf(widen_nullable<'a'>).returns.toEqualTypeOf<s.Branded<string, 'N'>>();
 		expectTypeOf(marker<string>).returns.toEqualTypeOf<s.Brand<'N'>>();
 		expectTypeOf(mix<'a'>).returns.toEqualTypeOf<s.Flavored<'a', 'N'>>();
 		expectTypeOf(mix_brand<'a'>).returns.toEqualTypeOf<s.Branded<'a', 'N'>>();

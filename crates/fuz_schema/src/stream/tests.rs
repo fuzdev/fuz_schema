@@ -4,7 +4,7 @@ use crate::error::JsonErrorKind;
 use crate::schema::SchemaLiteral;
 use crate::walk::tests::build;
 
-fn check(schema: &Schema, valid: &[&str], invalid: &[&str]) {
+fn check_stream(schema: &Schema, valid: &[&str], invalid: &[&str]) {
     for text in valid {
         assert_eq!(matches_json(schema, text), Ok(true), "{text}");
     }
@@ -36,9 +36,9 @@ fn person() -> Schema {
 #[test]
 fn the_first_failure_ends_the_parse() {
     let numbers = numbers();
-    check(&numbers, &["[]", "[1,2]"], &[r#"["x",2]"#, "{}", "1"]);
+    check_stream(&numbers, &["[]", "[1,2]"], &[r#"["x",2]"#, "{}", "1"]);
     // what follows the failure is not read, malformed or not
-    check(
+    check_stream(
         &numbers,
         &[],
         &[
@@ -80,7 +80,7 @@ fn a_match_reads_to_the_end_of_the_text() {
     assert_eq!(error(&numbers, "[1]]"), JsonErrorKind::Syntax);
     assert_eq!(error(&numbers, "[1"), JsonErrorKind::Eof);
     assert_eq!(error(&numbers, ""), JsonErrorKind::Eof);
-    check(&numbers, &[" [ 1 , 2 ] \n"], &[]);
+    check_stream(&numbers, &[" [ 1 , 2 ] \n"], &[]);
     let unknown = build(SchemaBuilder::unknown);
     assert_eq!(error(&unknown, "1 2"), JsonErrorKind::Syntax);
     assert_eq!(error(&unknown, "[1,]"), JsonErrorKind::Syntax);
@@ -90,7 +90,7 @@ fn a_match_reads_to_the_end_of_the_text() {
 #[test]
 fn every_occurrence_of_a_key_must_match() {
     let person = person();
-    check(
+    check_stream(
         &person,
         &[r#"{"name":"a","name":"b"}"#],
         // the tree evaluator, like JavaScript, sees only the last
@@ -109,14 +109,14 @@ fn every_occurrence_of_a_key_must_match() {
         let number = b.number();
         b.record(number)
     });
-    check(&record, &[r#"{"a":1,"a":2}"#], &[r#"{"a":"x","a":2}"#]);
+    check_stream(&record, &[r#"{"a":1,"a":2}"#], &[r#"{"a":"x","a":2}"#]);
     assert_eq!(walk::matches_json(&record, r#"{"a":"x","a":2}"#), Ok(true));
 }
 
 #[test]
 fn entries_are_matched_in_any_order() {
     let person = person();
-    check(
+    check_stream(
         &person,
         &[
             r#"{"name":"a"}"#,
@@ -141,7 +141,7 @@ fn unknown_keys_of_a_loose_object_are_not_read() {
         let number = b.number();
         b.loose_object([("a", number)])
     });
-    check(
+    check_stream(
         &loose,
         &[
             r#"{"a":1,"b":[1,{"c":null}]}"#,
@@ -179,7 +179,7 @@ fn what_is_accepted_unread_is_skipped() {
         let optional = b.optional(unknown);
         b.array(optional)
     });
-    check(
+    check_stream(
         &schema,
         &["[]", r#"[1,"a",null,[],{}]"#, "[1e400]", r#"["\ud800"]"#],
         &["{}", "1"],
@@ -221,7 +221,7 @@ fn a_union_with_one_option_for_a_container_is_matched_as_it_arrives() {
         let either = b.union([string, inner, nullable]);
         b.array(either)
     });
-    check(
+    check_stream(
         &schema,
         &[
             r#"["x",null,[1,2],{"name":"a"},[],{"n":1,"name":"a"}]"#,
@@ -274,7 +274,7 @@ fn a_union_with_one_option_skips_what_the_option_skips() {
         let loose = b.loose_object([("a", number)]);
         b.union([string, loose])
     });
-    check(
+    check_stream(
         &schema,
         &[
             r#"{"a":1}"#,
@@ -300,7 +300,7 @@ fn a_union_with_no_option_for_a_container_fails_unread() {
         let nullable = b.nullable(object);
         b.union([string, number, nullable])
     });
-    check(
+    check_stream(
         &no_array,
         &[r#""x""#, "1", "null", r#"{"a":1}"#],
         &["[]", "[1]", "[", "[1,}", "[1e400]", r#"["\ud800"]"#],
@@ -312,7 +312,7 @@ fn a_union_with_no_option_for_a_container_fails_unread() {
         let inner = b.union([number, numbers]);
         b.union([string, inner])
     });
-    check(
+    check_stream(
         &no_object,
         &[r#""x""#, "1", "[1]"],
         &["{}", r#"{"a":1}"#, "{", r#"{"a":}"#, r#"{"a":1e400}"#],
@@ -339,7 +339,7 @@ fn a_union_steps_to_a_pipe_of_an_array() {
         let outer = b.pipe([inner, max]);
         b.union([never, outer])
     });
-    check(
+    check_stream(
         &schema,
         &["[1]", "[1,2]"],
         &["[]", "[1,2,3]", r#"["x"]"#, "{}", "1", "[1,2,3,}"],
@@ -358,7 +358,7 @@ fn a_union_of_a_container_is_read_whole() {
         let either = b.union([strings, numbers, named, counted, number]);
         b.array(either)
     });
-    check(
+    check_stream(
         &schema,
         &[
             r#"[["a"],[1],{"name":"a"},{"count":1},2]"#,
@@ -399,7 +399,7 @@ fn shapes() -> Schema {
 #[test]
 fn a_variant_dispatches_on_a_first_key() {
     let shapes = shapes();
-    check(
+    check_stream(
         &shapes,
         &[
             r#"{"kind":"circle","r":1}"#,
@@ -442,7 +442,7 @@ fn a_variant_dispatches_on_a_first_key() {
 #[test]
 fn a_variant_with_a_later_discriminator_is_read_whole() {
     let shapes = shapes();
-    check(
+    check_stream(
         &shapes,
         &[
             r#"{"r":1,"kind":"circle"}"#,
@@ -480,7 +480,7 @@ fn array_pipes_count_as_items_arrive() {
         let outer = b.pipe([inner, max]);
         b.nullable(outer)
     });
-    check(
+    check_stream(
         &schema,
         &["null", "[1,2]", "[1,2,3]"],
         &[
@@ -501,7 +501,7 @@ fn array_pipes_count_as_items_arrive() {
         let max = b.max_length(1.5);
         b.pipe([array, min, max])
     });
-    check(&fractional, &["[null]"], &["[]", "[1,2]"]);
+    check_stream(&fractional, &["[null]"], &["[]", "[1,2]"]);
 }
 
 #[test]
@@ -511,7 +511,7 @@ fn scalar_pipes_reject_containers() {
         let min = b.min_length(1.0);
         b.pipe([string, min])
     });
-    check(
+    check_stream(
         &schema,
         &[r#""a""#],
         &[r#""""#, "[1]", r#"{"length":1}"#, "1"],
@@ -521,7 +521,7 @@ fn scalar_pipes_reject_containers() {
         let min = b.min_value(0.0);
         b.pipe([integer, min])
     });
-    check(&number, &["0", "1e2"], &["-1", "0.5", "[]", "{}", r#""1""#]);
+    check_stream(&number, &["0", "1e2"], &["-1", "0.5", "[]", "{}", r#""1""#]);
 }
 
 #[test]
@@ -586,4 +586,13 @@ fn bytes_are_validated_as_utf8_first() {
         JsonErrorKind::Syntax
     );
     assert_eq!(loose.matches_json_bytes(b"[]"), Ok(false));
+    // and for the issues: refused, never read with its bad bytes replaced
+    assert_eq!(
+        loose.validate_json_bytes(&skipped).unwrap_err().kind(),
+        JsonErrorKind::InvalidUtf8
+    );
+    assert_eq!(
+        loose.validate_json_bytes("{\"a\":\"é\"}".as_bytes()),
+        Ok(Vec::new())
+    );
 }

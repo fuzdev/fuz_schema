@@ -212,6 +212,14 @@ describe('the declared differences', () => {
 		assert.strictEqual(check_json_schema(doc, value, { rest_skips_proto: true }), false);
 	});
 
+	test('a number too large for a double is a number to the document, and refused by number', () => {
+		const value = JSON.parse('1e999');
+		for (const schema of [s.number, s.pipe(s.number, s.min_value(0))]) {
+			assert.strictEqual(s.is(schema, value), false);
+			assert.strictEqual(check_json_schema(to_json_schema(schema, { io: 'input' }), value), true);
+		}
+	});
+
 	test('a recognizer applies only to a schema that holds what triggers it', () => {
 		const by_name = (name: string) => JSON_SCHEMA_DIFFERENCES.find((d) => d.name === name)!;
 		const of = (spec: DifferentialSpec): JsonSchemaCase =>

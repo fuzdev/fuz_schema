@@ -4,6 +4,10 @@ import { readFileSync } from 'node:fs';
 import * as s from '#lib/schema.ts';
 import { meta as attach, type SchemaMeta } from '#lib/meta.ts';
 import { to_json_schema, type JsonSchemaOptions } from '#lib/json_schema.ts';
+import {
+	assert_throws_exactly as assert_throws,
+	regex_of_any_flags
+} from './schema_test_helpers.ts';
 
 // any keys, as a consumer adds them to `SchemaMeta` by declaration merging
 const meta = <T extends s.Schema>(schema: T, data: Record<string, unknown>): T =>
@@ -33,16 +37,6 @@ const write = (schema: s.Schema, options?: JsonSchemaOptions): Record<string, an
 	const { $schema: written, ...rest } = to_json_schema(schema, options);
 	assert.strictEqual(written, $schema);
 	return rest;
-};
-
-const assert_throws = (f: () => unknown, message: string): void => {
-	try {
-		f();
-	} catch (error) {
-		assert.strictEqual((error as Error).message, message);
-		return;
-	}
-	assert.fail(`did not throw: ${message}`);
 };
 
 describe('to_json_schema', () => {
@@ -75,6 +69,25 @@ describe('to_json_schema', () => {
 		assert.deepEqual(write(s.one_of(['a', 1])), { enum: ['a', 1] });
 		assert.deepEqual(write(s.one_of(['a'])), { type: 'string', const: 'a' });
 		assert.deepEqual(write(s.one_of([])), { not: {} });
+	});
+
+	test('a union and a variant of no options take nothing, and are no empty list', () => {
+		// an empty `anyOf`, `oneOf` or `type` is no schema by the metaschema
+		for (const schema of [s.union([]), s.memo_union([]), s.variant('k', [])]) {
+			for (const options of [OUTPUT, INPUT]) {
+				assert.deepEqual(write(schema, options), { not: {} }, schema.kind);
+			}
+		}
+		assert.deepEqual(write(s.object({ a: s.union([]) })), {
+			type: 'object',
+			properties: { a: { not: {} } },
+			required: ['a'],
+			additionalProperties: false
+		});
+		// beside another option it is one that matches nothing
+		assert.deepEqual(write(s.nullable(s.union([]))), {
+			anyOf: [{ not: {} }, { type: 'null' }]
+		});
 	});
 
 	test('a literal JSON has no value for is unrepresentable', () => {
@@ -1044,19 +1057,29 @@ describe('to_json_schema', () => {
 			const source = readFileSync(new URL('../lib/schema.ts', import.meta.url), 'utf8');
 			const literal = /const ISO_DATETIME =\s*\/(.*)\/;/.exec(source)?.[1];
 			assert.strictEqual(write(s.iso_datetime).pattern, literal);
-			// `uuid` reads char codes, held to this grammar by schema.formats.test.ts
 			const formats = readFileSync(new URL('../../docs/formats.md', import.meta.url), 'utf8');
+			// the doc writes the date apart, as `<date>`
+			const time = /### `iso_datetime`\n\n```\n(.*)\n```/.exec(formats)?.[1];
+			const date = /where `<date>` is[^\n]*\n\n```\n(.*)\n```/.exec(formats)?.[1];
+			assert(time !== undefined && date !== undefined);
+			assert.strictEqual(
+				time.replace('<date>', () => date),
+				literal
+			);
+			// `uuid` reads char codes, held to this grammar by schema.formats.test.ts
 			const grammar = /### `uuid`\n\n```\n(.*)\n```/.exec(formats)?.[1];
 			assert.strictEqual(write(s.uuid).pattern, grammar);
 		});
 
 		test('a regex with flags past d and u is unrepresentable', () => {
-			for (const re of [/a/i, /a/g, /a/m, /a/s, /a/v]) {
+			// `regex` refuses a `g` and a `y`, so those are of a schema written by hand
+			for (const re of [/a/i, /a/g, /a/y, /a/m, /a/s, /a/v]) {
+				const schema = s.pipe(s.string, regex_of_any_flags(re));
 				assert_throws(
-					() => to_json_schema(s.pipe(s.string, s.regex(re))),
+					() => to_json_schema(schema),
 					`cannot express \`regex\` at #: its flags ${JSON.stringify(re.flags)} are not JSON Schema's`
 				);
-				assert.deepEqual(write(s.pipe(s.string, s.regex(re)), ANY), { type: 'string' });
+				assert.deepEqual(write(schema, ANY), { type: 'string' });
 			}
 			assert.deepEqual(write(s.pipe(s.string, s.regex(/a/du))).pattern, 'a');
 		});
@@ -1140,6 +1163,13 @@ describe('to_json_schema', () => {
 				() => to_json_schema(s.pipe(s.string, s.min_length(1.5))),
 				'cannot express `min_length` at #: the bound is not a whole number'
 			);
+			// a length below zero, which a metaschema refuses
+			for (const action of [s.min_length(-1), s.max_length(-1)]) {
+				assert_throws(
+					() => to_json_schema(s.pipe(s.string, action)),
+					`cannot express \`${action.kind}\` at #: the bound is not a whole number`
+				);
+			}
 			assert.deepEqual(write(s.pipe(s.number, s.max_value(Infinity)), ANY), { type: 'number' });
 		});
 
@@ -1366,6 +1396,10 @@ describe('to_json_schema', () => {
 				'required'
 			);
 			refused(meta(s.string, { $schema: 'evil' }), 'string', '$schema');
+			// one that names a node or moves the base a `$ref` of this module resolves from
+			for (const key of ['$id', '$anchor', '$dynamicAnchor', '$dynamicRef', '$ref']) {
+				refused(meta(s.string, { [key]: 'x' }), 'string', key);
+			}
 			refused(meta(s.string, { if: {} }), 'string', 'if');
 			refused(meta(s.string, { minimum: undefined }), 'string', 'minimum');
 			// of an older draft or OpenAPI, which a validator may apply too
