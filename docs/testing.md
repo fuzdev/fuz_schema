@@ -304,7 +304,7 @@ table of small breaks, each a name, a file (`src/lib/schema.ts` when
 omitted), and edits, each a `find` that occurs exactly once in the file and
 its `replace`, applied in order. Most break the library; some break a table
 the tests read, as a recognizer of the differential or a `SIDES` row.
-`gro check` typechecks and lints the table and never runs a mutant, and
+`gro check` typechecks the table (and `--lint` lints it) and never runs a mutant, and
 `src/test/mutants.test.ts` holds every anchor to its file, so an edit that
 moves one fails there and not at the next run.
 
